@@ -1,0 +1,2401 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  TextField,
+  Button,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  CircularProgress,
+  Alert,
+  IconButton,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Switch,
+  FormControlLabel,
+} from "@mui/material";
+import {
+  Storefront,
+  PersonOutline,
+  LocationOn,
+  Collections,
+  VerifiedUser,
+  AccountBalance,
+  Schedule,
+  Fastfood,
+  CloudUpload,
+  Delete,
+  AddCircleOutline,
+  Lock,
+  GpsFixed,
+  CheckCircle,
+  PhotoCamera,
+  InsertDriveFile,
+} from "@mui/icons-material";
+
+import { API_BASE_URL } from "../../../utils/utils";
+import GoogleServiceAreaMap, { parseGooglePlaceDetails } from "../../components/GoogleServiceAreaMap";
+import { Slider } from "@mui/material";
+import { useCities } from "../../api/city";
+
+const BRAND_MAIN = "#ed2026";
+const BRAND_HOVER = "#c8161b";
+const BRAND_LIGHT = "#FFF5F4";
+
+// Clean Form Section Card Component
+const FormSectionCard = ({ step, title, subtitle, icon: Icon, actionButton, children }) => (
+  <Paper
+    variant="outlined"
+    sx={{
+      p: { xs: 2.5, sm: 3.5 },
+      mb: 3.5,
+      borderRadius: 3.5,
+      borderColor: "#E2E8F0",
+      backgroundColor: "#FFFFFF",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.02), 0 10px 25px -5px rgba(0,0,0,0.02)",
+    }}
+  >
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2.5,
+            bgcolor: BRAND_LIGHT,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: BRAND_MAIN,
+          }}
+        >
+          {Icon ? <Icon sx={{ fontSize: 22 }} /> : null}
+        </Box>
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#0F172A", lineHeight: 1.2 }}>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography variant="caption" sx={{ color: "#64748B", display: "block", mt: 0.3 }}>
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+      {actionButton}
+    </Box>
+
+    <Grid container spacing={2.5}>
+      {children}
+    </Grid>
+  </Paper>
+);
+
+// Clean Document Upload Box
+const DocumentUploadBox = ({ label, file, onUpload, onRemove, onFileRead }) => (
+  <Box
+    sx={{
+      p: 1.5,
+      border: "1px solid",
+      borderColor: file ? "#BBF7D0" : "#E2E8F0",
+      borderRadius: 2.5,
+      bgcolor: file ? "#F0FDF4" : "#F8FAFC",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      minHeight: 56,
+      transition: "all 0.2s ease",
+    }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, overflow: "hidden" }}>
+      {file ? (
+        <CheckCircle sx={{ color: "#16A34A", fontSize: 20 }} />
+      ) : (
+        <InsertDriveFile sx={{ color: "#94A3B8", fontSize: 20 }} />
+      )}
+      <Box sx={{ overflow: "hidden" }}>
+        <Typography variant="body2" fontWeight={600} color={file ? "#166534" : "#475569"} noWrap>
+          {label}
+        </Typography>
+        <Typography variant="caption" color={file ? "#15803D" : "#94A3B8"} display="block">
+          {file ? "Document Uploaded ✓" : "PDF or Image (Max 5MB)"}
+        </Typography>
+      </Box>
+    </Box>
+
+    {file ? (
+      <IconButton size="small" onClick={onRemove} sx={{ color: "#DC2626", "&:hover": { bgcolor: "#FEE2E2" } }}>
+        <Delete fontSize="small" />
+      </IconButton>
+    ) : (
+      <Button
+        component="label"
+        size="small"
+        variant="outlined"
+        startIcon={<CloudUpload fontSize="small" />}
+        sx={{
+          borderColor: "#CBD5E1",
+          color: "#334155",
+          textTransform: "none",
+          fontWeight: 600,
+          borderRadius: 2,
+          fontSize: "0.8rem",
+          "&:hover": { borderColor: BRAND_MAIN, color: BRAND_MAIN, bgcolor: BRAND_LIGHT },
+        }}
+      >
+        Upload
+        <input
+          type="file"
+          hidden
+          accept="image/*,application/pdf"
+          onChange={(e) => onFileRead(e.target.files[0], onUpload)}
+        />
+      </Button>
+    )}
+  </Box>
+);
+
+const AddRestaurantForm = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ type: "", msg: "" });
+
+  // 1. Restaurant Details (Step 1 of App)
+  const [name, setName] = useState("");
+  const [restaurantType, setRestaurantType] = useState("Both (Veg & Non-Veg)");
+  const [deliveryType, setDeliveryType] = useState("Both");
+  const [description, setDescription] = useState("");
+  const [rating, setRating] = useState("4.5");
+  const [restaurantImages, setRestaurantImages] = useState([]);
+
+  // 2. Owner & PIN (Step 2 of App)
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerMobile, setOwnerMobile] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPin, setOwnerPin] = useState("1234");
+
+  // 3. Location & GPS (Step 3 of App)
+  const { cities = [] } = useCities();
+  const [address, setAddress] = useState("");
+  const [area, setArea] = useState("");
+  const [city, setCity] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  // Search Map / Location State
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [locationSearchResults, setLocationSearchResults] = useState([]);
+  const [showLocationResults, setShowLocationResults] = useState(false);
+
+  // 4. KYC Documents (Step 4 of App: FSSAI & GST)
+  const [fssaiNumber, setFssaiNumber] = useState("");
+  const [fssaiDoc, setFssaiDoc] = useState(null);
+  const [gstNumber, setGstNumber] = useState("");
+  const [gstDoc, setGstDoc] = useState(null);
+
+  // 5. Bank Account Details (Step 5 of App)
+  const [accountHolder, setAccountHolder] = useState("");
+  const [bankName, setBankName] = useState("HDFC Bank");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [ifscCode, setIfscCode] = useState("");
+  const [upiId, setUpiId] = useState("");
+
+  // 6. Operational & Delivery Controls (Step 6 of App)
+  const [geofenceRadius, setGeofenceRadius] = useState("5");
+  const [preparationTime, setPreparationTime] = useState("15");
+  const [isSelfPickupEnabled, setIsSelfPickupEnabled] = useState(true);
+  const [autoApproveMenu, setAutoApproveMenu] = useState(true);
+  const [isKitchenBusy, setIsKitchenBusy] = useState(false);
+  const [kitchenBusyReason, setKitchenBusyReason] = useState("Normal");
+  const daysOfWeek = [
+    { key: "monday", label: "Monday" },
+    { key: "tuesday", label: "Tuesday" },
+    { key: "wednesday", label: "Wednesday" },
+    { key: "thursday", label: "Thursday" },
+    { key: "friday", label: "Friday" },
+    { key: "saturday", label: "Saturday" },
+    { key: "sunday", label: "Sunday" },
+  ];
+
+  const [weeklySchedule, setWeeklySchedule] = useState({
+    monday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+    tuesday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+    wednesday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+    thursday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+    friday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+    saturday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+    sunday: { open: "10:00", close: "22:00", isOpen: true, isClosed: false },
+  });
+
+  // 7. Initial Menu Items & Bulk Upload (Step 7 of App)
+  const [menuItems, setMenuItems] = useState([]);
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemPrice, setNewItemPrice] = useState("");
+  const [newItemMrp, setNewItemMrp] = useState("");
+  const [newItemB2bPrice, setNewItemB2bPrice] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState("Main Course");
+  const [newItemFoodType, setNewItemFoodType] = useState("Veg");
+  const [newItemDesc, setNewItemDesc] = useState("");
+  const [newItemImage, setNewItemImage] = useState(null);
+
+  // Portion & Sizes (Matching Edit Restaurant Menu)
+  const [newItemPortionType, setNewItemPortionType] = useState("none"); // "none" | "half_full" | "size"
+  const [newItemHalfSelling, setNewItemHalfSelling] = useState("");
+  const [newItemHalfMrp, setNewItemHalfMrp] = useState("");
+  const [newItemHalfB2b, setNewItemHalfB2b] = useState("");
+  const [newItemFullSelling, setNewItemFullSelling] = useState("");
+  const [newItemFullMrp, setNewItemFullMrp] = useState("");
+  const [newItemFullB2b, setNewItemFullB2b] = useState("");
+  const [newItemSmallSelling, setNewItemSmallSelling] = useState("");
+  const [newItemSmallMrp, setNewItemSmallMrp] = useState("");
+  const [newItemSmallB2b, setNewItemSmallB2b] = useState("");
+  const [newItemMedSelling, setNewItemMedSelling] = useState("");
+  const [newItemMedMrp, setNewItemMedMrp] = useState("");
+  const [newItemMedB2b, setNewItemMedB2b] = useState("");
+  const [newItemLargeSelling, setNewItemLargeSelling] = useState("");
+  const [newItemLargeMrp, setNewItemLargeMrp] = useState("");
+  const [newItemLargeB2b, setNewItemLargeB2b] = useState("");
+
+  // Dynamic Add-ons for dish
+  const [newItemAddOns, setNewItemAddOns] = useState([]);
+  const [addonNameInput, setAddonNameInput] = useState("");
+  const [addonPriceInput, setAddonPriceInput] = useState("");
+
+  // Bulk Menu Upload Handler (JSON / CSV)
+  const handleBulkMenuUpload = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        let parsedItems = [];
+
+        const parseCSVLine = (line) => {
+          const result = [];
+          let current = "";
+          let inQuotes = false;
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"' || char === "'") {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              result.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result.map((c) => c.replace(/^["']|["']$/g, "").trim());
+        };
+
+        if (file.name.endsWith(".json")) {
+          const raw = JSON.parse(text);
+          parsedItems = (Array.isArray(raw) ? raw : []).map((it, i) => {
+            const imgVal = it.image || it.imageUrl || it.image_url || it.photo || it.photoUrl || it.dishPhoto || it["image url"] || it.picture || it.img || it.url || it.link || "";
+            return {
+              name: it.name || it["item name"] || `Item ${i + 1}`,
+              price: Number(it.price || it.sellingPrice || it.basePrice || (it.portions?.full?.sellingPrice || it.portions?.small?.sellingPrice) || 0),
+              basePrice: Number(it.price || it.sellingPrice || it.basePrice || (it.portions?.full?.sellingPrice || it.portions?.small?.sellingPrice) || 0),
+              mrp: Number(it.mrp || it.b2cMrp || it.price || 0),
+              b2bPrice: Number(it.b2bPrice || it.b2bprice || it.b2bSellingPrice || it.price || 0),
+              category: it.category || "Main Course",
+              foodType: it.foodType || (it.isVeg !== false ? "Veg" : "Non-Veg"),
+              isVeg: it.isVeg !== false && !(it.foodType || "").toLowerCase().includes("non"),
+              description: it.description || "",
+              image: imgVal,
+              portionType: it.portionType || (it.portions ? (it.portions.half || it.portions.full ? "half_full" : "size") : "none"),
+              portions: it.portions || null,
+              variations: it.variations || [],
+              addOns: it.addOns || it.addons || [],
+              halfSellingPrice: it.halfSellingPrice || it.halfPrice || it.half_price || null,
+              halfMrp: it.halfMrp || null,
+              halfB2bPrice: it.halfB2bPrice || null,
+              fullSellingPrice: it.fullSellingPrice || it.fullPrice || it.full_price || null,
+              fullMrp: it.fullMrp || null,
+              fullB2bPrice: it.fullB2bPrice || null,
+              smallSellingPrice: it.smallSellingPrice || it.smallPrice || null,
+              smallMrp: it.smallMrp || null,
+              smallB2bPrice: it.smallB2bPrice || null,
+              medSellingPrice: it.medSellingPrice || it.mediumSellingPrice || it.medPrice || null,
+              medMrp: it.medMrp || it.mediumMrp || null,
+              medB2bPrice: it.medB2bPrice || it.mediumB2bPrice || null,
+              largeSellingPrice: it.largeSellingPrice || it.largePrice || null,
+              largeMrp: it.largeMrp || null,
+              largeB2bPrice: it.largeB2bPrice || null,
+            };
+          });
+        } else {
+          // Parse CSV
+          const lines = text.split("\n").filter((l) => l.trim());
+          const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase());
+          for (let i = 1; i < lines.length; i++) {
+            const cols = parseCSVLine(lines[i]);
+            if (cols.length >= 2) {
+              const item = {};
+              headers.forEach((h, idx) => {
+                item[h] = cols[idx] || "";
+              });
+              const imgVal = item.image || item["image url"] || item["image_url"] || item.imageurl || item.imageUrl || item.photo || item["photo url"] || item.photo_url || item.dishphoto || item["dish photo"] || item.dish_photo || item.picture || item.img || item.url || item.link || "";
+              parsedItems.push({
+                name: item.name || item["item name"] || item["dish name"] || `Item ${i}`,
+                price: Number(item.price || item["selling price"] || item.sellingprice || item.baseprice || item.full_price || item.half_price || 0),
+                basePrice: Number(item.price || item["selling price"] || item.sellingprice || item.baseprice || item.full_price || item.half_price || 0),
+                mrp: Number(item.mrp || item.b2cmrp || item.price || 0),
+                b2bPrice: Number(item.b2bprice || item["b2b price"] || item.b2bsellingprice || item.price || 0),
+                category: item.category || "Main Course",
+                foodType: item.foodtype || item["food type"] || "Veg",
+                isVeg: !(item.foodtype || "").toLowerCase().includes("non"),
+                description: item.description || "",
+                image: imgVal,
+                portionType: item.portiontype || (item.half_price || item.full_price ? "half_full" : item.small_price || item.med_price ? "size" : "none"),
+                halfSellingPrice: item.half_price || item.halfprice || null,
+                halfMrp: item.half_mrp || null,
+                halfB2bPrice: item.half_b2b || null,
+                fullSellingPrice: item.full_price || item.fullprice || null,
+                fullMrp: item.full_mrp || null,
+                fullB2bPrice: item.full_b2b || null,
+                smallSellingPrice: item.small_price || null,
+                smallMrp: item.small_mrp || null,
+                smallB2bPrice: item.small_b2b || null,
+                medSellingPrice: item.med_price || item.medium_price || null,
+                medMrp: item.med_mrp || null,
+                medB2bPrice: item.med_b2b || null,
+                largeSellingPrice: item.large_price || null,
+                largeMrp: item.large_mrp || null,
+                largeB2bPrice: item.large_b2b || null,
+              });
+            }
+          }
+        }
+        if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+          const formatted = parsedItems.map((it) => ({
+            name: it.name || "Bulk Item",
+            price: Number(it.price || it.basePrice || 0),
+            basePrice: Number(it.price || it.basePrice || 0),
+            mrp: Number(it.mrp || it.price || 0),
+            b2bPrice: Number(it.b2bPrice || it.b2bprice || it.price || 0),
+            category: it.category || "Main Course",
+            foodType: it.foodType || (it.isVeg !== false ? "Veg" : "Non-Veg"),
+            isVeg: it.isVeg !== false && !(it.foodType || "").toLowerCase().includes("non"),
+            description: it.description || "",
+            image: it.image || it.imageUrl || it.photo || "",
+            portionType: it.portionType || "none",
+            portions: it.portions || null,
+            variations: it.variations || [],
+            addOns: it.addOns || [],
+            halfSellingPrice: it.halfSellingPrice || null,
+            halfMrp: it.halfMrp || null,
+            halfB2bPrice: it.halfB2bPrice || null,
+            fullSellingPrice: it.fullSellingPrice || null,
+            fullMrp: it.fullMrp || null,
+            fullB2bPrice: it.fullB2bPrice || null,
+            smallSellingPrice: it.smallSellingPrice || null,
+            smallMrp: it.smallMrp || null,
+            smallB2bPrice: it.smallB2bPrice || null,
+            medSellingPrice: it.medSellingPrice || null,
+            medMrp: it.medMrp || null,
+            medB2bPrice: it.medB2bPrice || null,
+            largeSellingPrice: it.largeSellingPrice || null,
+            largeMrp: it.largeMrp || null,
+            largeB2bPrice: it.largeB2bPrice || null,
+          }));
+          setMenuItems((prev) => [...prev, ...formatted]);
+          alert(`Successfully imported ${formatted.length} menu items!`);
+        } else {
+          alert("Invalid menu file format. Please upload valid JSON or CSV.");
+        }
+      } catch (err) {
+        console.error("Bulk upload parse error:", err);
+        alert("Failed to parse menu file. Ensure it is valid JSON or CSV.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Download Sample Menu JSON Template
+  const handleDownloadMenuTemplate = () => {
+    const sample = [
+      {
+        name: "Paneer Butter Masala (Full/Half Plate)",
+        price: 240,
+        mrp: 290,
+        b2bPrice: 200,
+        category: "Main Course",
+        foodType: "Veg",
+        description: "Rich creamy tomato gravy with soft cottage cheese cubes",
+        image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=400&q=80",
+        portionType: "half_full",
+        portions: {
+          half: {
+            sellingPrice: 140,
+            mrp: 170,
+            b2bPrice: 120
+          },
+          full: {
+            sellingPrice: 240,
+            mrp: 290,
+            b2bPrice: 200
+          }
+        },
+        addOns: [
+          { name: "Extra Butter", price: 20 },
+          { name: "Extra Paneer Cubes", price: 50 }
+        ]
+      },
+      {
+        name: "Farmhouse Cheesy Pizza (S/M/L Sizes)",
+        price: 199,
+        mrp: 249,
+        b2bPrice: 160,
+        category: "Pizza",
+        foodType: "Veg",
+        description: "Loaded with crunchy bell peppers, onions, tomatoes and 100% mozzarella cheese",
+        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80",
+        portionType: "size",
+        portions: {
+          small: {
+            sellingPrice: 199,
+            mrp: 249,
+            b2bPrice: 160
+          },
+          medium: {
+            sellingPrice: 349,
+            mrp: 419,
+            b2bPrice: 280
+          },
+          large: {
+            sellingPrice: 499,
+            mrp: 599,
+            b2bPrice: 390
+          }
+        },
+        addOns: [
+          { name: "Cheese Burst Crust", price: 79 },
+          { name: "Spicy Peri-Peri Dip", price: 25 }
+        ]
+      },
+      {
+        name: "Hyderabadi Chicken Biryani",
+        price: 280,
+        mrp: 340,
+        b2bPrice: 230,
+        category: "Biryani",
+        foodType: "Non-Veg",
+        description: "Authentic slow-cooked dum biryani served with raita and mirchi ka salan",
+        image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=400&q=80",
+        portionType: "half_full",
+        portions: {
+          half: {
+            sellingPrice: 160,
+            mrp: 190,
+            b2bPrice: 130
+          },
+          full: {
+            sellingPrice: 280,
+            mrp: 340,
+            b2bPrice: 230
+          }
+        },
+        addOns: [
+          { name: "Extra Raita", price: 25 },
+          { name: "Boiled Egg (2 pcs)", price: 30 }
+        ]
+      }
+    ];
+    const blob = new Blob([JSON.stringify(sample, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ECDKART_Sample_Menu_Template.json";
+    a.click();
+  };
+
+  // File to base64 helper
+  const handleFileRead = (file, callback) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => callback(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  // Multiple files to base64 helper
+  const handleMultipleFilesRead = (files) => {
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setRestaurantImages((prev) => [...prev, e.target.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Reverse Geocode (lat, lng -> address, city, area)
+  const handleReverseGeocode = async (lat, lng) => {
+    setLatitude(String(Number(lat).toFixed(6)));
+    setLongitude(String(Number(lng).toFixed(6)));
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/service-areas/reverse-geocode`, {
+        params: { lat, lng }
+      }).catch(() => null);
+      if (res && res.data && res.data.success) {
+        if (res.data.displayName) setAddress(res.data.displayName);
+        if (res.data.city) setCity(res.data.city);
+        if (res.data.zone) setArea(res.data.zone);
+      } else {
+        const nomRes = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`).catch(() => null);
+        if (nomRes && nomRes.data) {
+          const item = nomRes.data;
+          const addr = item.address || {};
+          if (item.display_name) setAddress(item.display_name);
+          const c = addr.city || addr.town || addr.village || addr.county || "";
+          const a = addr.suburb || addr.neighbourhood || addr.residential || addr.road || "";
+          if (c) setCity(c);
+          if (a) setArea(a);
+        }
+      }
+    } catch (err) {
+      console.error("Reverse geocode error:", err);
+    }
+  };
+
+  // Auto Detect GPS Location
+  const handleAutoDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            await handleReverseGeocode(pos.coords.latitude, pos.coords.longitude);
+            setIsDetectingLocation(false);
+          },
+          async (err) => {
+            console.warn("Geolocation error:", err);
+            await fetchIpLocation();
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        await fetchIpLocation();
+      }
+    } catch {
+      fetchIpLocation();
+    }
+  };
+
+  const fetchIpLocation = async () => {
+    try {
+      const res = await axios.get("https://ipapi.co/json/").catch(() => null);
+      if (res && res.data && res.data.latitude && res.data.longitude) {
+        await handleReverseGeocode(res.data.latitude, res.data.longitude);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
+  const handleLocationSearch = async (e) => {
+    if (e) e.preventDefault();
+    if (!locationSearchQuery || !locationSearchQuery.trim()) return;
+    setIsSearchingLocation(true);
+    setShowLocationResults(true);
+    try {
+      const res = await axios.get("https://nominatim.openstreetmap.org/search", {
+        params: { q: locationSearchQuery.trim(), format: "json", addressdetails: 1, limit: 5 }
+      });
+      if (res.data && res.data.length > 0) {
+        setLocationSearchResults(res.data);
+      } else {
+        setLocationSearchResults([]);
+      }
+    } catch (err) {
+      console.error("Location search error:", err);
+      setLocationSearchResults([]);
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  const handleSelectSearchResult = (item) => {
+    const lat = parseFloat(item.lat);
+    const lng = parseFloat(item.lon);
+    setLatitude(lat.toFixed(6));
+    setLongitude(lng.toFixed(6));
+    setAddress(item.display_name || "");
+    const addr = item.address || {};
+    setCity(addr.city || addr.town || addr.village || addr.county || "");
+    setArea(addr.suburb || addr.neighbourhood || addr.residential || addr.road || "");
+    setShowLocationResults(false);
+  };
+
+  // Add Menu Item with Full / Half and S / M / L support
+  const handleAddMenuItem = () => {
+    if (!newItemName.trim()) {
+      alert("Please enter Dish Name");
+      return;
+    }
+    if (!newItemImage) {
+      alert("Dish Photo is mandatory! Please upload a photo for this item.");
+      return;
+    }
+
+    let calculatedPrice = 0;
+    let calculatedMrp = 0;
+    let calculatedB2b = 0;
+    let portionsObj = null;
+
+    if (newItemPortionType === "half_full") {
+      if (!newItemFullSelling && !newItemHalfSelling) {
+        alert("Please enter Selling Price for Full plate or Half plate");
+        return;
+      }
+      portionsObj = {};
+      if (newItemHalfSelling) {
+        portionsObj.half = {
+          sellingPrice: Number(newItemHalfSelling),
+          mrp: Number(newItemHalfMrp || newItemHalfSelling),
+          b2bPrice: Number(newItemHalfB2b || newItemHalfSelling),
+        };
+      }
+      if (newItemFullSelling) {
+        portionsObj.full = {
+          sellingPrice: Number(newItemFullSelling),
+          mrp: Number(newItemFullMrp || newItemFullSelling),
+          b2bPrice: Number(newItemFullB2b || newItemFullSelling),
+        };
+      }
+      calculatedPrice = portionsObj.full?.sellingPrice || portionsObj.half?.sellingPrice || 0;
+      calculatedMrp = portionsObj.full?.mrp || portionsObj.half?.mrp || calculatedPrice;
+      calculatedB2b = portionsObj.full?.b2bPrice || portionsObj.half?.b2bPrice || calculatedPrice;
+    } else if (newItemPortionType === "size") {
+      if (!newItemSmallSelling && !newItemMedSelling && !newItemLargeSelling) {
+        alert("Please enter Selling Price for at least one size (Small, Medium, or Large)");
+        return;
+      }
+      portionsObj = {};
+      if (newItemSmallSelling) {
+        portionsObj.small = {
+          sellingPrice: Number(newItemSmallSelling),
+          mrp: Number(newItemSmallMrp || newItemSmallSelling),
+          b2bPrice: Number(newItemSmallB2b || newItemSmallSelling),
+        };
+      }
+      if (newItemMedSelling) {
+        portionsObj.medium = {
+          sellingPrice: Number(newItemMedSelling),
+          mrp: Number(newItemMedMrp || newItemMedSelling),
+          b2bPrice: Number(newItemMedB2b || newItemMedSelling),
+        };
+      }
+      if (newItemLargeSelling) {
+        portionsObj.large = {
+          sellingPrice: Number(newItemLargeSelling),
+          mrp: Number(newItemLargeMrp || newItemLargeSelling),
+          b2bPrice: Number(newItemLargeB2b || newItemLargeSelling),
+        };
+      }
+      calculatedPrice = portionsObj.small?.sellingPrice || portionsObj.medium?.sellingPrice || portionsObj.large?.sellingPrice || 0;
+      calculatedMrp = portionsObj.small?.mrp || portionsObj.medium?.mrp || portionsObj.large?.mrp || calculatedPrice;
+      calculatedB2b = portionsObj.small?.b2bPrice || portionsObj.medium?.b2bPrice || portionsObj.large?.b2bPrice || calculatedPrice;
+    } else {
+      if (!newItemPrice.trim()) {
+        alert("Please enter Selling Price");
+        return;
+      }
+      calculatedPrice = Number(newItemPrice.trim());
+      calculatedMrp = Number(newItemMrp ? newItemMrp.trim() : calculatedPrice);
+      calculatedB2b = Number(newItemB2bPrice ? newItemB2bPrice.trim() : calculatedPrice);
+    }
+
+    const itemObj = {
+      name: newItemName.trim(),
+      price: calculatedPrice,
+      basePrice: calculatedPrice,
+      sellingPrice: calculatedPrice,
+      mrp: calculatedMrp,
+      b2bPrice: calculatedB2b,
+      category: newItemCategory,
+      foodType: newItemFoodType,
+      isVeg: newItemFoodType === "Veg",
+      description: newItemDesc.trim(),
+      image: newItemImage,
+      portionType: newItemPortionType,
+      portions: portionsObj,
+      halfSellingPrice: portionsObj?.half?.sellingPrice || null,
+      fullSellingPrice: portionsObj?.full?.sellingPrice || null,
+      smallSellingPrice: portionsObj?.small?.sellingPrice || null,
+      medSellingPrice: portionsObj?.medium?.sellingPrice || null,
+      largeSellingPrice: portionsObj?.large?.sellingPrice || null,
+      addOns: [...newItemAddOns],
+    };
+
+    setMenuItems((prev) => [...prev, itemObj]);
+    setNewItemName("");
+    setNewItemPrice("");
+    setNewItemMrp("");
+    setNewItemB2bPrice("");
+    setNewItemDesc("");
+    setNewItemImage(null);
+    setNewItemPortionType("none");
+    setNewItemHalfSelling("");
+    setNewItemHalfMrp("");
+    setNewItemHalfB2b("");
+    setNewItemFullSelling("");
+    setNewItemFullMrp("");
+    setNewItemFullB2b("");
+    setNewItemSmallSelling("");
+    setNewItemSmallMrp("");
+    setNewItemSmallB2b("");
+    setNewItemMedSelling("");
+    setNewItemMedMrp("");
+    setNewItemMedB2b("");
+    setNewItemLargeSelling("");
+    setNewItemLargeMrp("");
+    setNewItemLargeB2b("");
+    setNewItemAddOns([]);
+  };
+
+  const handleAddAddOn = () => {
+    if (!addonNameInput.trim()) return;
+    setNewItemAddOns((prev) => [
+      ...prev,
+      { name: addonNameInput.trim(), price: Number(addonPriceInput.trim()) || 0 },
+    ]);
+    setAddonNameInput("");
+    setAddonPriceInput("");
+  };
+
+  const handleRemoveAddOn = (idx) => {
+    setNewItemAddOns((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleRemoveMenuItem = (idx) => {
+    setMenuItems(menuItems.filter((_, i) => i !== idx));
+  };
+
+  // Format 24h string to 12h AM/PM IST representation
+  const formatToAmPm = (timeStr) => {
+    if (!timeStr || typeof timeStr !== "string") return "";
+    const trimmed = timeStr.trim();
+    if (trimmed.toUpperCase() === "CLOSED") return "Closed";
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})(?:\s*([AP]M))?$/i);
+    if (!match) return trimmed;
+    let h = parseInt(match[1], 10);
+    const m = match[2];
+    let mod = match[3] ? match[3].toUpperCase() : null;
+    if (!mod) {
+      mod = h >= 12 ? "PM" : "AM";
+      h = h % 12;
+      if (h === 0) h = 12;
+    }
+    const hStr = h < 10 ? `0${h}` : `${h}`;
+    return `${hStr}:${m} ${mod}`;
+  };
+
+  const handleTimingChange = (dayKey, field, value) => {
+    setWeeklySchedule((prev) => {
+      const current = prev[dayKey] || { open: "10:00", close: "22:00", isOpen: true, isClosed: false };
+      return {
+        ...prev,
+        [dayKey]: {
+          ...current,
+          [field]: value,
+          ...(field === "isOpen" ? { isClosed: !value } : {}),
+          ...(field === "isClosed" ? { isOpen: !value } : {}),
+        },
+      };
+    });
+  };
+
+  const applyMondayToAll = () => {
+    const mon = weeklySchedule.monday || { open: "10:00", close: "22:00", isOpen: true, isClosed: false };
+    setWeeklySchedule({
+      monday: { ...mon },
+      tuesday: { ...mon },
+      wednesday: { ...mon },
+      thursday: { ...mon },
+      friday: { ...mon },
+      saturday: { ...mon },
+      sunday: { ...mon },
+    });
+  };
+
+  // Submit Handler
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setStatus({ type: "error", msg: "Please enter Restaurant Trade Name" });
+      return;
+    }
+    const cleanMobile = ownerMobile.replace(/\D/g, "");
+    if (!cleanMobile || cleanMobile.length < 10) {
+      setStatus({ type: "error", msg: "Please enter a valid 10-digit Owner Mobile Number" });
+      return;
+    }
+    const cleanPin = ownerPin.trim();
+    if (!cleanPin || cleanPin.length !== 4) {
+      setStatus({ type: "error", msg: "Please set a valid 4-digit Login PIN" });
+      return;
+    }
+
+    setLoading(true);
+    setStatus({ type: "", msg: "" });
+
+    const payload = {
+      name: { en: name.trim() },
+      description: { en: description.trim() },
+      restaurantType,
+      rating: Number(rating) || 4.5,
+      adminRating: Number(rating) || 4.5,
+      avgRating: Number(rating) || 4.5,
+      cuisine: [restaurantType, "North Indian", "Fast Food"],
+      brand: name.trim(),
+      ownerName: ownerName.trim() || `${name.trim()} Owner`,
+      ownerEmail: ownerEmail.trim() || `vendor_${cleanMobile}@ecdkart.com`,
+      ownerMobile: cleanMobile,
+      contactNumber: cleanMobile,
+      email: ownerEmail.trim() || `vendor_${cleanMobile}@ecdkart.com`,
+      ownerPassword: cleanPin,
+      ownerPin: cleanPin,
+      pin: cleanPin,
+      address: address.trim() || `${area}, ${city}`.trim(),
+      city: city.trim(),
+      area: area.trim(),
+      location: {
+        type: "Point",
+        coordinates: [parseFloat(longitude || "0"), parseFloat(latitude || "0")],
+      },
+      image: restaurantImages.length > 0 ? restaurantImages[0] : null,
+      bannerImage: restaurantImages.length > 0 ? restaurantImages[0] : null,
+      restaurantImages: restaurantImages,
+      images: restaurantImages,
+      documents: {
+        license: { number: fssaiNumber.trim(), file: fssaiDoc || "" },
+        gst: { number: gstNumber.trim(), file: gstDoc || "" },
+      },
+      bankDetails: {
+        accountHolder: accountHolder.trim() || ownerName.trim(),
+        bankName: bankName.trim() || "HDFC Bank",
+        accountNumber: accountNumber.trim(),
+        ifscCode: ifscCode.trim(),
+        upiId: upiId.trim(),
+      },
+      deliveryTime: Number(preparationTime) || 30,
+      estimatedPreparationTime: Number(preparationTime) || 15,
+      geofenceRadius: Number(geofenceRadius) || 5,
+      isSelfPickupEnabled: Boolean(isSelfPickupEnabled),
+      autoApproveMenu: Boolean(autoApproveMenu),
+      isTemporarilyClosed: Boolean(isKitchenBusy),
+      kitchenBusyReason: kitchenBusyReason || "Normal",
+      packagingCharge: 0,
+      adminCommission: 10,
+      paymentMethods: "Both",
+      deliveryType:
+        deliveryType === "Both"
+          ? ["Home Delivery", "Pickup", "Both"]
+          : [deliveryType],
+      timing: weeklySchedule,
+      menu: menuItems,
+      menuItems: menuItems,
+      restaurantApproved: true,
+      isActive: true,
+      verificationStatus: "verified",
+    };
+
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      let res;
+      try {
+        res = await axios.post(`${API_BASE_URL}/api/restaurants/admin/create`, payload, {
+          headers,
+          withCredentials: true,
+        });
+      } catch (adminErr) {
+        console.warn("admin/create endpoint notice:", adminErr?.response?.data || adminErr.message);
+        res = await axios.post(`${API_BASE_URL}/api/restaurants/apply`, payload, {
+          headers,
+          withCredentials: true,
+        });
+      }
+
+      setStatus({
+        type: "success",
+        msg: `Restaurant "${name.trim()}" created & verified successfully! Login Phone: +91 ${cleanMobile} | PIN: ${cleanPin}`,
+      });
+
+      setTimeout(() => {
+        navigate("/restaurants");
+      }, 2500);
+    } catch (err) {
+      console.error("Add restaurant error:", err);
+      setStatus({
+        type: "error",
+        msg: err.response?.data?.message || "Failed to create restaurant. Please check details and try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{
+        maxWidth: 1000,
+        mx: "auto",
+        my: 2,
+        pb: 10,
+        px: { xs: 1.5, sm: 3 },
+      }}
+    >
+      {/* Alert Notice */}
+      {status.msg && (
+        <Alert
+          severity={status.type}
+          sx={{
+            mb: 3,
+            borderRadius: 3,
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+          }}
+        >
+          {status.msg}
+        </Alert>
+      )}
+
+      {/* SECTION 1: RESTAURANT BASIC DETAILS */}
+      <FormSectionCard
+        step="1"
+        title="Restaurant Details"
+        subtitle="Basic profile and trade information as requested during partner registration"
+        icon={Storefront}
+      >
+        <Grid item xs={12} sm={4}>
+          <TextField
+            label="Restaurant Trade Name *"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            required
+            size="medium"
+            placeholder="e.g. Shikha ka Dhaba / Royal Rasoi"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControl fullWidth size="medium">
+            <InputLabel>Restaurant Food Type *</InputLabel>
+            <Select
+              value={restaurantType}
+              label="Restaurant Food Type *"
+              onChange={(e) => setRestaurantType(e.target.value)}
+            >
+              <MenuItem value="Both (Veg & Non-Veg)">Both (Veg & Non-Veg)</MenuItem>
+              <MenuItem value="Pure Veg">Pure Veg (100% Vegetarian)</MenuItem>
+              <MenuItem value="Non-Veg">Non-Veg Specialty</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControl fullWidth size="medium">
+            <InputLabel>Delivery Type *</InputLabel>
+            <Select
+              value={deliveryType}
+              label="Delivery Type *"
+              onChange={(e) => setDeliveryType(e.target.value)}
+            >
+              <MenuItem value="Both">Both (Home Delivery & Pickup)</MenuItem>
+              <MenuItem value="Home Delivery">Home Delivery</MenuItem>
+              <MenuItem value="Pickup">Pickup</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={2}>
+          <TextField
+            label="Initial Rating (1.0 - 5.0) *"
+            type="number"
+            inputProps={{ min: 1, max: 5, step: 0.1 }}
+            value={rating}
+            onChange={(e) => setRating(e.target.value)}
+            fullWidth
+            required
+            size="medium"
+            placeholder="4.5"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="About Restaurant / Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            fullWidth
+            multiline
+            rows={2.5}
+            placeholder="Describe food specialties, cuisine types, hygiene standards, and dining experience..."
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Box
+            sx={{
+              p: 2.5,
+              border: "1.5px dashed #E2E8F0",
+              borderRadius: 3,
+              bgcolor: "#FAFAFA",
+              textAlign: "center",
+              transition: "all 0.2s ease",
+              "&:hover": { borderColor: BRAND_MAIN, bgcolor: BRAND_LIGHT },
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Collections sx={{ color: BRAND_MAIN, fontSize: 20 }} />
+                <Typography variant="subtitle2" fontWeight={700} color="#1E293B">
+                  Restaurant Photos ({restaurantImages.length})
+                </Typography>
+              </Box>
+              <Button
+                component="label"
+                size="small"
+                variant="contained"
+                startIcon={<PhotoCamera fontSize="small" />}
+                sx={{
+                  bgcolor: BRAND_MAIN,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2,
+                  "&:hover": { bgcolor: BRAND_HOVER },
+                }}
+              >
+                Add Photos
+                <input
+                  type="file"
+                  hidden
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => handleMultipleFilesRead(e.target.files)}
+                />
+              </Button>
+            </Box>
+
+            {restaurantImages.length === 0 ? (
+              <Typography variant="caption" color="text.secondary" display="block">
+                Upload facade, dining area, or kitchen photos (JPEG, PNG).
+              </Typography>
+            ) : (
+              <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+                {restaurantImages.map((img, idx) => (
+                  <Grid item xs={4} sm={3} md={2} key={idx}>
+                    <Box sx={{ position: "relative", borderRadius: 2, overflow: "hidden", border: "1px solid #E2E8F0" }}>
+                      <Box component="img" src={img} sx={{ width: "100%", height: 70, objectFit: "cover" }} />
+                      <IconButton
+                        size="small"
+                        onClick={() => setRestaurantImages(restaurantImages.filter((_, i) => i !== idx))}
+                        sx={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          bgcolor: "rgba(0,0,0,0.6)",
+                          color: "white",
+                          p: 0.4,
+                          "&:hover": { bgcolor: "red" },
+                        }}
+                      >
+                        <Delete sx={{ fontSize: 13 }} />
+                      </IconButton>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
+        </Grid>
+      </FormSectionCard>
+
+      {/* SECTION 2: OWNER CREDENTIALS & 4-DIGIT PIN */}
+      <FormSectionCard
+        step="2"
+        title="Owner Profile & 4-Digit Login PIN"
+        subtitle="Used by partner to sign in on the Restaurant Partner App (Mobile + PIN or OTP)"
+        icon={PersonOutline}
+      >
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Owner Full Name *"
+            value={ownerName}
+            onChange={(e) => setOwnerName(e.target.value)}
+            fullWidth
+            required
+            placeholder="e.g. Shikha Sharma"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Owner Mobile Number (10 Digits) *"
+            value={ownerMobile}
+            onChange={(e) => setOwnerMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            fullWidth
+            required
+            placeholder="e.g. 9876543210"
+            helperText="Primary number used for Restaurant App authentication & OTP"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Owner Email Address"
+            type="email"
+            value={ownerEmail}
+            onChange={(e) => setOwnerEmail(e.target.value)}
+            fullWidth
+            placeholder="owner@example.com"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="4-Digit Login PIN *"
+            value={ownerPin}
+            onChange={(e) => setOwnerPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            fullWidth
+            required
+            placeholder="1234"
+            InputProps={{
+              startAdornment: <Lock sx={{ color: BRAND_MAIN, mr: 1, fontSize: 18 }} />,
+            }}
+            helperText="Partner can log in immediately using their Mobile Number + this 4-Digit PIN"
+          />
+        </Grid>
+      </FormSectionCard>
+
+      {/* SECTION 3: LOCATION & GPS */}
+      <FormSectionCard
+        step="3"
+        title="Restaurant Location & GPS"
+        subtitle="Exact physical address and coordinates for customer ordering & rider dispatch"
+        icon={LocationOn}
+      >
+        <Grid item xs={12}>
+          <TextField
+            label="Complete Street Address *"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            fullWidth
+            required
+            placeholder="e.g. Shop No. 12, Main Market Road, Near Clock Tower"
+            multiline
+            rows={2}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Area / Locality *"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+            fullWidth
+            required
+            placeholder="e.g. Cyber City / Sector 14"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth required>
+            <InputLabel>Operational City *</InputLabel>
+            <Select
+              label="Operational City *"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            >
+              {cities && cities.map((cityItem, idx) => {
+                const cityName = typeof cityItem === 'object' ? cityItem.name : cityItem;
+                const isAvailable = typeof cityItem === 'object' ? (cityItem.isServiceAvailable || cityItem.hasService) : false;
+                return (
+                  <MenuItem key={cityItem._id || idx} value={cityName}>
+                    <Box sx={{ display: 'flex', items: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                      <span className="font-medium text-gray-800">{cityName}</span>
+                      {isAvailable ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-full border border-emerald-300">
+                          📍 Services Available
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 rounded-full border border-gray-200">
+                          Haryana City
+                        </span>
+                      )}
+                    </Box>
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Latitude (°N) *"
+            value={latitude}
+            onChange={(e) => setLatitude(e.target.value)}
+            fullWidth
+            required
+            placeholder="e.g. 28.4595"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Longitude (°E) *"
+            value={longitude}
+            onChange={(e) => setLongitude(e.target.value)}
+            fullWidth
+            required
+            placeholder="e.g. 77.0266"
+          />
+        </Grid>
+
+        {/* Geofence Delivery Radius Selection & Edit */}
+        <Grid item xs={12}>
+          <Box sx={{ p: 2.5, bgcolor: "#F0FDF4", borderRadius: 2, border: "1px solid #BBF7D0" }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#166534" }}>
+                📍 Service Area Delivery Radius (Geofence Radius)
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: "#00a67e" }}>
+                {geofenceRadius} KM
+              </Typography>
+            </Box>
+            <Slider
+              value={Number(geofenceRadius) || 5}
+              min={1}
+              max={50}
+              step={1}
+              onChange={(e, val) => setGeofenceRadius(String(val))}
+              sx={{ color: "#00a67e" }}
+            />
+            <Typography variant="caption" sx={{ color: "#475569" }}>
+              Drag slider to change delivery coverage circle on the Google Map below.
+            </Typography>
+          </Box>
+        </Grid>
+
+        {/* REAL GOOGLE MAP CONTAINER WITH SEARCH & AUTO DETECT */}
+        <Grid item xs={12}>
+          <Box sx={{ mt: 1, borderRadius: 2, overflow: "hidden", border: "2px solid #00a67e" }}>
+            <Typography variant="caption" sx={{ p: 1.5, display: "block", bgcolor: "#00a67e", color: "#ffffff", fontWeight: 700 }}>
+              📍 Real Google Map: Search Nearby Location, Drag Marker or Auto-Detect Device GPS
+            </Typography>
+            <Box sx={{ p: 2, bgcolor: "#ffffff" }}>
+              <GoogleServiceAreaMap
+                lat={parseFloat(latitude) || 28.6139}
+                lng={parseFloat(longitude) || 77.2090}
+                radiusKm={Number(geofenceRadius) || 5}
+                onLocationSelect={(selLat, selLng, placeObj) => {
+                  setLatitude(String(Number(selLat).toFixed(6)));
+                  setLongitude(String(Number(selLng).toFixed(6)));
+                  if (placeObj) {
+                    const parsed = parseGooglePlaceDetails(placeObj);
+                    if (parsed.address) setAddress(parsed.address);
+                    if (parsed.city) setCity(parsed.city);
+                    if (parsed.area) setArea(parsed.area);
+                  }
+                }}
+              />
+            </Box>
+          </Box>
+        </Grid>
+      </FormSectionCard>
+
+      {/* SECTION 4: FSSAI & GST KYC DOCUMENTS */}
+      <FormSectionCard
+        step="4"
+        title="FSSAI & GST Documents"
+        subtitle="Government licenses and regulatory certificates"
+        icon={VerifiedUser}
+      >
+        {/* FSSAI */}
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="FSSAI Food License Number"
+            value={fssaiNumber}
+            onChange={(e) => setFssaiNumber(e.target.value)}
+            fullWidth
+            placeholder="e.g. 10821005000123"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <DocumentUploadBox
+            label="FSSAI Certificate Document"
+            file={fssaiDoc}
+            onUpload={(fileData) => setFssaiDoc(fileData)}
+            onRemove={() => setFssaiDoc(null)}
+            onFileRead={handleFileRead}
+          />
+        </Grid>
+
+        {/* GST */}
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="GST Registration Number"
+            value={gstNumber}
+            onChange={(e) => setGstNumber(e.target.value)}
+            fullWidth
+            placeholder="e.g. 06ABCDE1234F1Z5"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <DocumentUploadBox
+            label="GST Certificate Document"
+            file={gstDoc}
+            onUpload={(fileData) => setGstDoc(fileData)}
+            onRemove={() => setGstDoc(null)}
+            onFileRead={handleFileRead}
+          />
+        </Grid>
+      </FormSectionCard>
+
+      {/* SECTION 5: BANK DETAILS */}
+      <FormSectionCard
+        step="5"
+        title="Bank Account & Payouts"
+        subtitle="Settlement bank account details for order payouts"
+        icon={AccountBalance}
+      >
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Account Holder Name"
+            value={accountHolder}
+            onChange={(e) => setAccountHolder(e.target.value)}
+            fullWidth
+            placeholder="As per Bank Passbook"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Bank Name"
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            fullWidth
+            placeholder="e.g. HDFC Bank, SBI, ICICI"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Account Number"
+            value={accountNumber}
+            onChange={(e) => setAccountNumber(e.target.value)}
+            fullWidth
+            placeholder="e.g. 50100234567890"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="IFSC Code"
+            value={ifscCode}
+            onChange={(e) => setIfscCode(e.target.value)}
+            fullWidth
+            placeholder="e.g. HDFC0001234"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="UPI ID / VPA (Optional)"
+            value={upiId}
+            onChange={(e) => setUpiId(e.target.value)}
+            fullWidth
+            placeholder="e.g. shikhafoods@okaxis"
+          />
+        </Grid>
+      </FormSectionCard>
+
+      {/* SECTION 6: OPERATIONAL & DELIVERY CONTROLS */}
+      <FormSectionCard
+        step="6"
+        title="Operational & Delivery Controls"
+        subtitle="Delivery radius, preparation time, self pickup, kitchen busy status & trusted auto-approve settings"
+        icon={Schedule}
+      >
+        <Grid item xs={12} sm={4}>
+          <TextField
+            label="Delivery Radius (KM) *"
+            type="number"
+            value={geofenceRadius}
+            onChange={(e) => setGeofenceRadius(e.target.value)}
+            fullWidth
+            required
+            placeholder="5"
+            helperText="Maximum delivery radius in KM"
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={4}>
+          <TextField
+            label="Avg. Preparation Time (Mins) *"
+            type="number"
+            value={preparationTime}
+            onChange={(e) => setPreparationTime(e.target.value)}
+            fullWidth
+            required
+            placeholder="15"
+            helperText="Estimated kitchen prep time per order"
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={4}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              borderRadius: 2.5,
+              bgcolor: isSelfPickupEnabled ? "#F0FDF4" : "#F8FAFC",
+              borderColor: isSelfPickupEnabled ? "#BBF7D0" : "#E2E8F0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} color="#1E293B">
+                Self Pickup Mode
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Allow customers to pick up orders directly
+              </Typography>
+            </Box>
+            <Switch
+              checked={isSelfPickupEnabled}
+              onChange={(e) => setIsSelfPickupEnabled(e.target.checked)}
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: "#16A34A" },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#16A34A" },
+              }}
+            />
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              borderRadius: 2.5,
+              bgcolor: autoApproveMenu ? "#EFF6FF" : "#F8FAFC",
+              borderColor: autoApproveMenu ? "#BFDBFE" : "#E2E8F0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} color="#1E293B">
+                Trusted Partner (Auto-Approve Menu)
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Menu items added by restaurant bypass admin approval
+              </Typography>
+            </Box>
+            <Switch
+              checked={autoApproveMenu}
+              onChange={(e) => setAutoApproveMenu(e.target.checked)}
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: "#2563EB" },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#2563EB" },
+              }}
+            />
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              borderRadius: 2.5,
+              bgcolor: isKitchenBusy ? "#FFF1F2" : "#F8FAFC",
+              borderColor: isKitchenBusy ? "#FECDD3" : "#E2E8F0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} color={isKitchenBusy ? "#BE123C" : "#1E293B"}>
+                Kitchen Busy Switch
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Pause incoming orders temporarily
+              </Typography>
+            </Box>
+            <Switch
+              checked={isKitchenBusy}
+              onChange={(e) => setIsKitchenBusy(e.target.checked)}
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: "#E11D48" },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#E11D48" },
+              }}
+            />
+          </Paper>
+        </Grid>
+
+        {isKitchenBusy && (
+          <Grid item xs={12}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Kitchen Busy Reason</InputLabel>
+              <Select
+                value={kitchenBusyReason}
+                label="Kitchen Busy Reason"
+                onChange={(e) => setKitchenBusyReason(e.target.value)}
+              >
+                <MenuItem value="High Demand">High Rush / High Demand</MenuItem>
+                <MenuItem value="Kitchen Maintenance">Kitchen Maintenance</MenuItem>
+                <MenuItem value="Rain Delay">Heavy Rain Delay</MenuItem>
+                <MenuItem value="Staff Shortage">Staff Shortage</MenuItem>
+                <MenuItem value="Normal">Other Reason</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        )}
+
+        {/* Weekly Operational Hours & Timings */}
+        <Grid item xs={12}>
+          <Box
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              bgcolor: "#F8FAFC",
+              borderRadius: 3,
+              border: "1px solid #E2E8F0",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
+                mb: 2.5,
+              }}
+            >
+              <Box>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={800}
+                  color="#1E293B"
+                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                >
+                  <Schedule sx={{ color: BRAND_MAIN, fontSize: 20 }} />
+                  Weekly Operational Hours & Timings
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Set opening and closing timings for each day. Mark days closed as needed (All times in IST).
+                </Typography>
+              </Box>
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={applyMondayToAll}
+                sx={{
+                  textTransform: "none",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  borderColor: BRAND_MAIN,
+                  color: BRAND_MAIN,
+                  borderRadius: 2,
+                  "&:hover": {
+                    borderColor: BRAND_HOVER,
+                    backgroundColor: BRAND_LIGHT,
+                  },
+                }}
+              >
+                ⚡ Copy Monday to All Days
+              </Button>
+            </Box>
+
+            <Grid container spacing={2}>
+              {daysOfWeek.map((day) => {
+                const daySchedule = weeklySchedule[day.key] || {
+                  open: "10:00",
+                  close: "22:00",
+                  isOpen: true,
+                  isClosed: false,
+                };
+                const isClosed = Boolean(daySchedule.isClosed || daySchedule.isOpen === false);
+                const openTime = daySchedule.open || "10:00";
+                const closeTime = daySchedule.close || "22:00";
+
+                return (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={day.key}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: 2.5,
+                        border: "1px solid",
+                        borderColor: isClosed ? "#FECACA" : "#E2E8F0",
+                        bgcolor: isClosed ? "#FEF2F2" : "#FFFFFF",
+                        transition: "all 0.2s ease-in-out",
+                        "&:hover": {
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          mb: 1.5,
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight={800} color="#1E293B">
+                          {day.label}
+                        </Typography>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={!isClosed}
+                              onChange={(e) => {
+                                handleTimingChange(day.key, "isOpen", e.target.checked);
+                              }}
+                              sx={{
+                                "& .MuiSwitch-switchBase.Mui-checked": { color: BRAND_MAIN },
+                                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                                  bgcolor: BRAND_MAIN,
+                                },
+                              }}
+                            />
+                          }
+                          label={
+                            <Typography
+                              variant="caption"
+                              fontWeight={700}
+                              color={!isClosed ? "success.main" : "error.main"}
+                            >
+                              {!isClosed ? "Open" : "Closed"}
+                            </Typography>
+                          }
+                          sx={{ m: 0 }}
+                        />
+                      </Box>
+
+                      {!isClosed ? (
+                        <Box>
+                          <Grid container spacing={1.5}>
+                            <Grid item xs={6}>
+                              <TextField
+                                label="Open Time"
+                                type="time"
+                                size="small"
+                                fullWidth
+                                value={openTime}
+                                onChange={(e) =>
+                                  handleTimingChange(day.key, "open", e.target.value)
+                                }
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{ step: 300 }}
+                              />
+                            </Grid>
+                            <Grid item xs={6}>
+                              <TextField
+                                label="Close Time"
+                                type="time"
+                                size="small"
+                                fullWidth
+                                value={closeTime}
+                                onChange={(e) =>
+                                  handleTimingChange(day.key, "close", e.target.value)
+                                }
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{ step: 300 }}
+                              />
+                            </Grid>
+                          </Grid>
+                          <Box
+                            sx={{
+                              mt: 1,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              px: 0.5,
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ fontSize: "11px", color: "#64748B", fontWeight: 600 }}>
+                              {formatToAmPm(openTime)} - {formatToAmPm(closeTime)} (IST)
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            py: 1.5,
+                            textAlign: "center",
+                            bgcolor: "#FEE2E2",
+                            borderRadius: 1.5,
+                          }}
+                        >
+                          <Typography variant="caption" fontWeight={700} color="#DC2626">
+                            Closed All Day
+                          </Typography>
+                        </Box>
+                      )}
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </Box>
+        </Grid>
+      </FormSectionCard>
+
+      {/* SECTION 7: INITIAL MENU ITEMS & BULK MENU UPLOAD */}
+      <FormSectionCard
+        step="7"
+        title="Menu Master & Bulk Menu Upload"
+        subtitle="Add individual starter dishes or bulk upload complete restaurant menu via JSON / CSV"
+        icon={Fastfood}
+        actionButton={
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleDownloadMenuTemplate}
+              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+            >
+              Template
+            </Button>
+            <Button
+              component="label"
+              size="small"
+              variant="contained"
+              startIcon={<CloudUpload fontSize="small" />}
+              sx={{ bgcolor: "#2563EB", "&:hover": { bgcolor: "#1D4ED8" }, textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+            >
+              Bulk Upload
+              <input
+                type="file"
+                hidden
+                accept=".json,.csv"
+                onChange={(e) => handleBulkMenuUpload(e.target.files[0])}
+              />
+            </Button>
+          </Box>
+        }
+      >
+        {/* Row 1: Dish Basic Details */}
+        <Grid item xs={12} sm={4}>
+          <TextField
+            label="Dish Name *"
+            size="small"
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
+            fullWidth
+            placeholder="e.g. Paneer Butter Masala"
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={newItemCategory}
+              label="Category"
+              onChange={(e) => setNewItemCategory(e.target.value)}
+            >
+              <MenuItem value="Main Course">Main Course</MenuItem>
+              <MenuItem value="Starters & Snacks">Starters & Snacks</MenuItem>
+              <MenuItem value="Breads & Rice">Breads & Rice</MenuItem>
+              <MenuItem value="Beverages & Shakes">Beverages & Shakes</MenuItem>
+              <MenuItem value="Desserts">Desserts</MenuItem>
+              <MenuItem value="Pizza">Pizza</MenuItem>
+              <MenuItem value="Biryani">Biryani</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Food Type</InputLabel>
+            <Select
+              value={newItemFoodType}
+              label="Food Type"
+              onChange={(e) => setNewItemFoodType(e.target.value)}
+            >
+              <MenuItem value="Veg">Veg (Green)</MenuItem>
+              <MenuItem value="Non-Veg">Non-Veg (Red)</MenuItem>
+              <MenuItem value="Egg">Egg (Yellow)</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* Row 2: Portion Type Selector & Photo */}
+        <Grid item xs={12} sm={5}>
+          <FormControl fullWidth size="small">
+            <InputLabel sx={{ fontWeight: 700, color: BRAND_MAIN }}>Portion / Plate / Size Type</InputLabel>
+            <Select
+              value={newItemPortionType}
+              label="Portion / Plate / Size Type"
+              onChange={(e) => setNewItemPortionType(e.target.value)}
+              sx={{ fontWeight: 700 }}
+            >
+              <MenuItem value="none">Standard Dish (Single Base Price)</MenuItem>
+              <MenuItem value="half_full">Full & Half Plate (Half / Full Price)</MenuItem>
+              <MenuItem value="size">Size Based (Small / Medium / Large Sizes)</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Button
+            component="label"
+            size="small"
+            variant="outlined"
+            fullWidth
+            sx={{
+              height: 40,
+              borderColor: newItemImage ? "#22C55E" : "#EF4444",
+              color: newItemImage ? "#16A34A" : "#DC2626",
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: 2,
+              bgcolor: newItemImage ? "#F0FDF4" : "#FEF2F2",
+            }}
+          >
+            {newItemImage ? "Photo ✓ (Uploaded)" : "Dish Photo *"}
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={(e) => handleFileRead(e.target.files[0], setNewItemImage)}
+            />
+          </Button>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <TextField
+            label="Dish Description"
+            size="small"
+            value={newItemDesc}
+            onChange={(e) => setNewItemDesc(e.target.value)}
+            fullWidth
+            placeholder="e.g. Rich gravy with butter"
+          />
+        </Grid>
+
+        {/* CONDITIONAL PRICING ROW: Standard (Single Price) */}
+        {newItemPortionType === "none" && (
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ p: 2, bgcolor: "#F8FAFC", borderRadius: 2, border: "1px solid #E2E8F0" }}>
+              <Typography variant="caption" fontWeight={700} color="#475569" sx={{ display: "block", mb: 1.5 }}>
+                Standard Single Pricing (₹)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Customer Selling Price (₹) *"
+                    size="small"
+                    type="number"
+                    value={newItemPrice}
+                    onChange={(e) => setNewItemPrice(e.target.value)}
+                    fullWidth
+                    placeholder="240"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="MRP (₹)"
+                    size="small"
+                    type="number"
+                    value={newItemMrp}
+                    onChange={(e) => setNewItemMrp(e.target.value)}
+                    fullWidth
+                    placeholder="290"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="B2B / Partner Price (₹)"
+                    size="small"
+                    type="number"
+                    value={newItemB2bPrice}
+                    onChange={(e) => setNewItemB2bPrice(e.target.value)}
+                    fullWidth
+                    placeholder="210"
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* CONDITIONAL PRICING ROW: Full & Half Plate */}
+        {newItemPortionType === "half_full" && (
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ p: 2, bgcolor: "#F0FDF4", borderRadius: 2, border: "1px solid #BBF7D0" }}>
+              <Typography variant="caption" fontWeight={800} color="#15803D" sx={{ display: "block", mb: 1.5 }}>
+                🍽️ Full & Half Plate Pricing (₹)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ p: 1.5, bgcolor: "#FFFFFF", borderRadius: 1.5, border: "1px solid #DCFCE7" }}>
+                    <Typography variant="caption" fontWeight={700} color="#16A34A" sx={{ display: "block", mb: 1 }}>
+                      Half Plate Pricing
+                    </Typography>
+                    <Grid container spacing={1}>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="Selling (₹) *"
+                          size="small"
+                          type="number"
+                          value={newItemHalfSelling}
+                          onChange={(e) => setNewItemHalfSelling(e.target.value)}
+                          fullWidth
+                          placeholder="140"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="MRP (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemHalfMrp}
+                          onChange={(e) => setNewItemHalfMrp(e.target.value)}
+                          fullWidth
+                          placeholder="170"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="B2B (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemHalfB2b}
+                          onChange={(e) => setNewItemHalfB2b(e.target.value)}
+                          fullWidth
+                          placeholder="120"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ p: 1.5, bgcolor: "#FFFFFF", borderRadius: 1.5, border: "1px solid #DCFCE7" }}>
+                    <Typography variant="caption" fontWeight={700} color="#16A34A" sx={{ display: "block", mb: 1 }}>
+                      Full Plate Pricing
+                    </Typography>
+                    <Grid container spacing={1}>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="Selling (₹) *"
+                          size="small"
+                          type="number"
+                          value={newItemFullSelling}
+                          onChange={(e) => setNewItemFullSelling(e.target.value)}
+                          fullWidth
+                          placeholder="240"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="MRP (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemFullMrp}
+                          onChange={(e) => setNewItemFullMrp(e.target.value)}
+                          fullWidth
+                          placeholder="290"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="B2B (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemFullB2b}
+                          onChange={(e) => setNewItemFullB2b(e.target.value)}
+                          fullWidth
+                          placeholder="200"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* CONDITIONAL PRICING ROW: Size Based (Small / Medium / Large) */}
+        {newItemPortionType === "size" && (
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ p: 2, bgcolor: "#EFF6FF", borderRadius: 2, border: "1px solid #BFDBFE" }}>
+              <Typography variant="caption" fontWeight={800} color="#1D4ED8" sx={{ display: "block", mb: 1.5 }}>
+                🍕 Size-Based Pricing (Small / Medium / Large) (₹)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ p: 1.5, bgcolor: "#FFFFFF", borderRadius: 1.5, border: "1px solid #DBEAFE" }}>
+                    <Typography variant="caption" fontWeight={700} color="#2563EB" sx={{ display: "block", mb: 1 }}>
+                      Small Size
+                    </Typography>
+                    <Grid container spacing={1}>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="Selling (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemSmallSelling}
+                          onChange={(e) => setNewItemSmallSelling(e.target.value)}
+                          fullWidth
+                          placeholder="199"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="MRP"
+                          size="small"
+                          type="number"
+                          value={newItemSmallMrp}
+                          onChange={(e) => setNewItemSmallMrp(e.target.value)}
+                          fullWidth
+                          placeholder="249"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="B2B"
+                          size="small"
+                          type="number"
+                          value={newItemSmallB2b}
+                          onChange={(e) => setNewItemSmallB2b(e.target.value)}
+                          fullWidth
+                          placeholder="160"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ p: 1.5, bgcolor: "#FFFFFF", borderRadius: 1.5, border: "1px solid #DBEAFE" }}>
+                    <Typography variant="caption" fontWeight={700} color="#2563EB" sx={{ display: "block", mb: 1 }}>
+                      Medium Size
+                    </Typography>
+                    <Grid container spacing={1}>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="Selling (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemMedSelling}
+                          onChange={(e) => setNewItemMedSelling(e.target.value)}
+                          fullWidth
+                          placeholder="349"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="MRP"
+                          size="small"
+                          type="number"
+                          value={newItemMedMrp}
+                          onChange={(e) => setNewItemMedMrp(e.target.value)}
+                          fullWidth
+                          placeholder="419"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="B2B"
+                          size="small"
+                          type="number"
+                          value={newItemMedB2b}
+                          onChange={(e) => setNewItemMedB2b(e.target.value)}
+                          fullWidth
+                          placeholder="280"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ p: 1.5, bgcolor: "#FFFFFF", borderRadius: 1.5, border: "1px solid #DBEAFE" }}>
+                    <Typography variant="caption" fontWeight={700} color="#2563EB" sx={{ display: "block", mb: 1 }}>
+                      Large Size
+                    </Typography>
+                    <Grid container spacing={1}>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="Selling (₹)"
+                          size="small"
+                          type="number"
+                          value={newItemLargeSelling}
+                          onChange={(e) => setNewItemLargeSelling(e.target.value)}
+                          fullWidth
+                          placeholder="499"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="MRP"
+                          size="small"
+                          type="number"
+                          value={newItemLargeMrp}
+                          onChange={(e) => setNewItemLargeMrp(e.target.value)}
+                          fullWidth
+                          placeholder="599"
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          label="B2B"
+                          size="small"
+                          type="number"
+                          value={newItemLargeB2b}
+                          onChange={(e) => setNewItemLargeB2b(e.target.value)}
+                          fullWidth
+                          placeholder="390"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* DYNAMIC ADD-ONS ROW */}
+        <Grid item xs={12}>
+          <Box sx={{ p: 2, bgcolor: "#FAFAFA", borderRadius: 2, border: "1px dashed #CBD5E1" }}>
+            <Typography variant="caption" fontWeight={700} color="#475569" sx={{ display: "block", mb: 1 }}>
+              Custom Add-ons / Flavours (Optional)
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center", mb: 1.5 }}>
+              <TextField
+                label="Add-on Name"
+                size="small"
+                value={addonNameInput}
+                onChange={(e) => setAddonNameInput(e.target.value)}
+                placeholder="e.g. Extra Butter / Cheese Dip"
+                sx={{ width: 220 }}
+              />
+              <TextField
+                label="Extra Price (₹)"
+                size="small"
+                type="number"
+                value={addonPriceInput}
+                onChange={(e) => setAddonPriceInput(e.target.value)}
+                placeholder="20"
+                sx={{ width: 130 }}
+              />
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleAddAddOn}
+                sx={{ textTransform: "none", fontWeight: 700, borderColor: BRAND_MAIN, color: BRAND_MAIN }}
+              >
+                + Add Add-on
+              </Button>
+            </Box>
+            {newItemAddOns.length > 0 && (
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {newItemAddOns.map((ao, aIdx) => (
+                  <Chip
+                    key={aIdx}
+                    label={`${ao.name} (+₹${ao.price})`}
+                    size="small"
+                    onDelete={() => handleRemoveAddOn(aIdx)}
+                    sx={{ bgcolor: "#E0E7FF", color: "#3730A3", fontWeight: 700 }}
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+        </Grid>
+
+        {/* ADD DISH BUTTON */}
+        <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button
+            variant="contained"
+            size="medium"
+            startIcon={<AddCircleOutline />}
+            onClick={handleAddMenuItem}
+            sx={{
+              bgcolor: BRAND_MAIN,
+              textTransform: "none",
+              fontWeight: 800,
+              borderRadius: 2,
+              px: 3.5,
+              py: 1,
+              boxShadow: "0 4px 12px rgba(237, 32, 38, 0.3)",
+              "&:hover": { bgcolor: BRAND_HOVER },
+            }}
+          >
+            + Add Dish to Menu
+          </Button>
+        </Grid>
+
+        {/* Menu Items Table */}
+        {menuItems.length > 0 && (
+          <Grid item xs={12}>
+            <Box sx={{ border: "1px solid #E2E8F0", borderRadius: 2.5, overflow: "hidden", mt: 1.5 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Dish</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Category</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Portions & Pricing</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Add-ons</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: "#475569" }}>Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {menuItems.map((item, idx) => {
+                    const isHalfFull = item.portionType === "half_full";
+                    const isSize = item.portionType === "size";
+                    const halfPrice = item.portions?.half?.sellingPrice || item.halfSellingPrice;
+                    const fullPrice = item.portions?.full?.sellingPrice || item.fullSellingPrice;
+                    const smallPrice = item.portions?.small?.sellingPrice || item.smallSellingPrice;
+                    const medPrice = item.portions?.medium?.sellingPrice || item.medSellingPrice;
+                    const largePrice = item.portions?.large?.sellingPrice || item.largeSellingPrice;
+
+                    return (
+                      <TableRow key={idx} hover>
+                        <TableCell sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          {item.image && (
+                            <Box
+                              component="img"
+                              src={item.image}
+                              sx={{ width: 34, height: 34, borderRadius: 1.5, objectFit: "cover" }}
+                            />
+                          )}
+                          <Typography variant="body2" fontWeight={700} color="#1E293B">
+                            {item.name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={item.foodType}
+                            size="small"
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: "0.7rem",
+                              height: 22,
+                              bgcolor: item.isVeg ? "#DCFCE7" : "#FEE2E2",
+                              color: item.isVeg ? "#15803D" : "#B91C1C",
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {isHalfFull ? (
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
+                              <Chip label="Full & Half Plate" size="small" sx={{ height: 18, fontSize: "0.65rem", fontWeight: 800, bgcolor: "#DCFCE7", color: "#166534", width: "fit-content" }} />
+                              <Typography variant="caption" fontWeight={700} color="#1E293B">
+                                {halfPrice ? `Half: ₹${halfPrice}` : ""} {halfPrice && fullPrice ? " | " : ""} {fullPrice ? `Full: ₹${fullPrice}` : ""}
+                              </Typography>
+                            </Box>
+                          ) : isSize ? (
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
+                              <Chip label="S / M / L Sizes" size="small" sx={{ height: 18, fontSize: "0.65rem", fontWeight: 800, bgcolor: "#DBEAFE", color: "#1E40AF", width: "fit-content" }} />
+                              <Typography variant="caption" fontWeight={700} color="#1E293B">
+                                {smallPrice ? `S: ₹${smallPrice} ` : ""}{medPrice ? `M: ₹${medPrice} ` : ""}{largePrice ? `L: ₹${largePrice}` : ""}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" fontWeight={800} color={BRAND_MAIN}>
+                              ₹{item.price || item.basePrice}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.addOns && item.addOns.length > 0 ? (
+                            <Chip
+                              label={`${item.addOns.length} add-on${item.addOns.length > 1 ? "s" : ""}`}
+                              size="small"
+                              sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700, bgcolor: "#F1F5F9", color: "#475569" }}
+                            />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton size="small" onClick={() => handleRemoveMenuItem(idx)} color="error">
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Box>
+          </Grid>
+        )}
+      </FormSectionCard>
+
+      {/* SUBMIT BUTTON BAR */}
+      <Paper
+        elevation={3}
+        sx={{
+          position: "sticky",
+          bottom: 16,
+          zIndex: 10,
+          p: 2.5,
+          borderRadius: 3,
+          bgcolor: "#FFFFFF",
+          border: "1px solid #E2E8F0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+        }}
+      >
+        <Box>
+          <Typography variant="subtitle2" fontWeight={800} color="#1E293B">
+            Ready to Onboard Restaurant?
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Account will be auto-approved and ready for instant Partner App login.
+          </Typography>
+        </Box>
+
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          disabled={loading}
+          sx={{
+            bgcolor: BRAND_MAIN,
+            px: 4.5,
+            py: 1.4,
+            fontSize: "1rem",
+            fontWeight: 800,
+            textTransform: "none",
+            borderRadius: 2.5,
+            boxShadow: "0 4px 14px rgba(237, 32, 38, 0.4)",
+            "&:hover": { bgcolor: BRAND_HOVER },
+          }}
+        >
+          {loading ? <CircularProgress size={22} color="inherit" /> : "Create & Onboard Restaurant Partner"}
+        </Button>
+      </Paper>
+    </Box>
+  );
+};
+
+export default AddRestaurantForm;

@@ -1,0 +1,82 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'services/notification_service.dart';
+
+class ApiConstants {
+  // Pass --dart-define=BACKEND_URL=https://... or --dart-define=LOCAL_IP=192.168.x.x for custom backend
+  static const String _customBackendUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
+  static const String _customLocalIp = String.fromEnvironment('LOCAL_IP', defaultValue: '');
+
+  static String get baseUrl {
+    if (_customBackendUrl.isNotEmpty) {
+      return _customBackendUrl;
+    }
+    if (_customLocalIp.isNotEmpty) {
+      return 'http://$_customLocalIp:5000/api/v1';
+    }
+    if (kIsWeb) return 'http://localhost:5000/api/v1';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:5000/api/v1';
+    }
+    return 'http://localhost:5000/api/v1';
+  }
+  
+  static String? _restaurantId;
+  static String? _authToken;
+
+  static String get restaurantId => _restaurantId ?? '';
+  static String get authToken => _authToken ?? '';
+
+  static void setAuthenticatedSession({
+    required String restaurantId,
+    required String authToken,
+  }) {
+    if (restaurantId.isEmpty || authToken.isEmpty) {
+      throw ArgumentError('Restaurant ID and auth token must not be empty');
+    }
+    _restaurantId = restaurantId;
+    _authToken = authToken;
+
+    // Register FCM token with backend when session is set
+    RestaurantNotificationService.registerToken();
+  }
+
+  static void clearAuthenticatedSession() {
+    _restaurantId = null;
+    _authToken = null;
+  }
+
+  // Auth & Profile
+  static String get sendOtp => "$baseUrl/restaurants/send-otp";
+  static String get verifyOtp => "$baseUrl/restaurants/verify-otp";
+  static String get loginWithPin => "$baseUrl/restaurants/login-with-pin";
+  static String getProfile(String id) => "$baseUrl/restaurants/$id/profile";
+  static String getOrderHistory(String id) => "$baseUrl/restaurants/$id/order-history";
+  static String getDashboardStats(String id, String filter) => "$baseUrl/restaurants/$id/dashboard-stats?filter=$filter";
+  static String get deleteAccount => "$baseUrl/restaurants/vendor/delete-account";
+  static String getApprovalStatus(String id) => "$baseUrl/restaurants/$id/status";
+  static String checkApprovalStatusByMobile(String mobile) => "$baseUrl/restaurants/status/check?mobile=$mobile";
+
+  // Endpoints
+  static String getRestaurantOrders(String id) => "$baseUrl/orders/restaurant/$id";
+  static String toggleActive(String id) => "$baseUrl/restaurants/$id/toggle-active";
+  
+  // Menu Management
+  static String addMenuItem(String id) => "$baseUrl/restaurants/vendor/menu/add/$id";
+  static String toggleMenuItem(String restId, String itemId) => "$baseUrl/restaurants/vendor/menu/toggle/$restId/$itemId";
+  static String requestDeleteMenuItem(String restId, String itemId) => "$baseUrl/restaurants/$restId/menu/$itemId/request-delete";
+  
+  // Restaurant Payment & Wallet
+  static String get restaurantWallet => "$baseUrl/payment/restaurant/wallet";
+  static String get restaurantApply => "$baseUrl/restaurants/apply";
+  static String restaurantSettings(String id) => "$baseUrl/restaurants/$id/settings";
+  
+  static String prepareOrder(String orderId) => "$baseUrl/orders/restaurant/prepare/$orderId";
+  static String assignRider(String orderId) => "$baseUrl/orders/restaurant/ready/$orderId";
+  static String verifyPickup(String orderId) => "$baseUrl/orders/restaurant/verify-pickup/$orderId";
+  static String completePickup(String orderId) => "$baseUrl/orders/restaurant/complete-pickup/$orderId";
+  static String cancelOrder(String orderId) => "$baseUrl/orders/restaurant/cancel/$orderId";
+  
+  // Notifications
+  static String get notifications => "$baseUrl/notifications";
+  static String get markAllNotificationsRead => "$baseUrl/notifications/mark-all-read";
+}

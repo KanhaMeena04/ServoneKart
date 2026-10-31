@@ -1,0 +1,211 @@
+import { useEffect, useState, useCallback } from "react";
+import axios from "axios";
+import { API_BASE_URL } from "../../utils/utils";
+import { CheckCircle, Cancel, AccessTime, EventNote } from "@mui/icons-material";
+import toast from "react-hot-toast";
+
+const useAdminOrders = ({
+  status = "all",
+  timeRange = "all",
+  search = "",
+  orderType = "all",
+  date,
+  orderId,
+  refreshInterval = 5000,
+  enabled = true,
+} = {}) => {
+  const [orders, setOrders] = useState([]);
+  const [summary, setSummary] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    activeCount: 0,
+    deliveredCount: 0,
+    cancelledCount: 0,
+    selfPickupCount: 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError("");
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/orders/admin/all`, {
+        params: { status, timeRange, search, orderType, date, orderId, limit: 100 },
+        withCredentials: true,
+      });
+
+      const list = Array.isArray(res.data?.orders)
+        ? res.data.orders
+        : Array.isArray(res.data)
+        ? res.data
+        : [];
+
+      setOrders(list);
+      if (res.data?.summary) {
+        setSummary(res.data.summary);
+      }
+    } catch (err) {
+      if (!silent) {
+        setOrders([]);
+        setError(err?.response?.data?.message || "Failed to fetch orders");
+      }
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [status, timeRange, search, orderType, date, orderId]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    fetchOrders(false);
+    if (refreshInterval > 0) {
+      const interval = setInterval(() => {
+        fetchOrders(true);
+      }, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [fetchOrders, refreshInterval, enabled]);
+
+  return { orders, summary, loading, error, refetch: () => fetchOrders(false), setOrders };
+};
+
+
+const useAdminOrderDetails = (orderId) => {
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchOrderDetails = useCallback(async () => {
+    if (!orderId) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/orders/admin/${orderId}`, {
+        withCredentials: true,
+      });
+      setOrder(res.data?.order || res.data || null);
+    } catch (err) {
+      console.error("Fetch order details failed:", err);
+      setOrder(null);
+      setError(err?.response?.data?.message || "Failed to fetch order details");
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, [fetchOrderDetails]);
+
+  return { order, loading, error, refetch: fetchOrderDetails, setOrder };
+};
+
+
+export const INITIAL_STATS = [
+  { label: "Today Orders", value: 0, type: "today", icon: EventNote, bg: "bg-orange-100", color: "text-orange-500" },
+  { label: "Today Completed Orders", value: 0, type: "completed", icon: CheckCircle, bg: "bg-green-100", color: "text-green-500" },
+  { label: "Today Cancelled Orders", value: 0, type: "cancelled", icon: Cancel, bg: "bg-red-100", color: "text-red-500" },
+  { label: "Today Processing Orders", value: 0, type: "processing", icon: AccessTime, bg: "bg-yellow-100", color: "text-yellow-500" },
+];
+
+export const INITIAL_TODAY_ORDERS = {
+  total: 0,
+  completedPercent: 0,
+  breakdown: [
+    { label: "New Orders", value: 0 },
+    { label: "Processing Orders", value: 0 },
+    { label: "Cancelled Orders", value: 0 },
+  ],
+};
+
+export const INITIAL_STATUS_COUNTS = {
+  all: 0,
+  pending: 0,
+  accepted: 0,
+  preparing: 0,
+  assigned: 0,
+  ready: 0,
+  picked_up: 0,
+  cancelled: 0,
+  delivered: 0,
+};
+
+const useOrderDashboard = ({ period = 'today', startDate = '', endDate = '', status = 'all', onlyAnalytics = false } = {}) => {
+  const [stats, setStats] = useState(INITIAL_STATS);
+  const [todayOrders, setTodayOrders] = useState(INITIAL_TODAY_ORDERS);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [statusCounts, setStatusCounts] = useState(INITIAL_STATUS_COUNTS);
+  const [liveStatusCounts, setLiveStatusCounts] = useState(INITIAL_STATUS_COUNTS);
+  const [chartData, setChartData] = useState({
+    labels: [],
+    orders: [],
+    completed: [],
+    cancelled: [],
+    revenue: [],
+  });
+  const [totalAllTimeOrders, setTotalAllTimeOrders] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const fetchDashboard = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(false);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/admin/order-dashboard`, {
+        params: { period, startDate, endDate, status, limit: 100, onlyAnalytics },
+        withCredentials: true,
+      });
+      const data = res.data || {};
+
+      setStats(Array.isArray(data.stats) ? data.stats : INITIAL_STATS);
+      setTodayOrders(data.todayOrders || INITIAL_TODAY_ORDERS);
+      setRecentOrders(Array.isArray(data.recentOrders) ? data.recentOrders : []);
+      if (data.statusCounts) {
+        setStatusCounts(data.statusCounts);
+      }
+      if (data.liveStatusCounts) {
+        setLiveStatusCounts(data.liveStatusCounts);
+      }
+      if (data.chartData) {
+        setChartData(data.chartData);
+      }
+      if (typeof data.totalAllTimeOrders === "number") {
+        setTotalAllTimeOrders(data.totalAllTimeOrders);
+      }
+    } catch (err) {
+      console.error("Dashboard fetch failed:", err);
+      if (!silent) {
+        setStats(INITIAL_STATS);
+        setTodayOrders(INITIAL_TODAY_ORDERS);
+        setRecentOrders([]);
+        setError(true);
+      }
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [period, startDate, endDate, status, onlyAnalytics]);
+
+  useEffect(() => {
+    fetchDashboard(false);
+    const interval = setInterval(() => {
+      fetchDashboard(true);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [fetchDashboard]);
+
+  return {
+    stats,
+    todayOrders,
+    recentOrders,
+    statusCounts,
+    liveStatusCounts,
+    chartData,
+    totalAllTimeOrders,
+    loading,
+    error,
+    refetch: () => fetchDashboard(false)
+  };
+};
+
+export { useAdminOrders, useAdminOrderDetails, useOrderDashboard };
+

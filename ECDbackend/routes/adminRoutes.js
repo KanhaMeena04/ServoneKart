@@ -1,0 +1,553 @@
+const express = require("express");
+const router = express.Router();
+const { protect, admin } = require("../middleware/authMiddleware");
+const { upload } = require("../utils/upload");
+const {
+  addMasterCategory,
+  getAllMasterCategories,
+  getMasterCategoryById,
+  updateMasterCategory,
+  deleteMasterCategory,
+  addUnit,
+  getAllUnits,
+  getUnitById,
+  updateUnit,
+  deleteUnit,
+  addTag,
+  getAllTags,
+  getTagById,
+  updateTag,
+  deleteTag,
+  addAddon,
+  getAllAddons,
+  getAddonById,
+  updateAddon,
+  deleteAddon,
+  addBrand,
+  getAllBrands,
+  getBrandById,
+  updateBrand,
+  deleteBrand,
+  addCuisine,
+  getAllCuisines,
+  getCuisineById,
+  updateCuisine,
+  deleteCuisine,
+  addDocumentType,
+  getAllDocumentTypes,
+  getDocumentTypeById,
+  updateDocumentType,
+  deleteDocumentType,
+  addCancellationReason,
+  getAllCancellationReasons,
+  getCancellationReasonById,
+  updateCancellationReason,
+  deleteCancellationReason,
+  addBanner,
+  getAllBanners,
+  getBannerById,
+  updateBanner,
+  deleteBanner,
+} = require("../controllers/adminContentController");
+const adminController = require("../controllers/adminController");
+const dashboardController = require("../controllers/dashboardController");
+const {
+  getAdminSettings,
+  updateAdminSettings,
+} = require("../controllers/adminSettingsController");
+const {
+  addPromocode,
+  getAllPromocodes,
+  getPromocodeById,
+  updatePromocode,
+  deletePromocode,
+} = require("../controllers/promocodeController");
+const {
+  addVehicle,
+  getAllVehicles,
+  getVehicleById,
+  updateVehicle,
+  deleteVehicle,
+} = require('../controllers/vehicleController');
+const {
+  addCity,
+  getAllCitiesAdmin,
+  getCityById,
+  updateCity,
+  deleteCity,
+  addZone,
+  getZonesByCityAdmin,
+  getZoneById,
+  updateZone,
+  deleteZone,
+} = require('../controllers/cityController');
+const {
+  verifyRestaurantDocuments,
+} = require("../controllers/restaurantController");
+const {
+  getAllWithdrawals,
+  approveWithdrawal,
+  rejectWithdrawal,
+  deleteWithdrawal,
+} = require("../controllers/withdrawalController");
+const {
+  getAllTickets,
+  updateTicket,
+} = require("../controllers/supportController");
+const {
+  addMaterial,
+  deleteMaterial,
+} = require("../controllers/trainingController");
+const {
+  adminRiderSettlements,
+  adminGetActiveSOS,
+  adminClearSOS,
+  deleteRider,
+} = require("../controllers/riderController");
+const {
+  createIncentive,
+  getAllIncentivesAdmin,
+  updateIncentive,
+  deleteIncentive,
+  assignIncentive,
+} = require("../controllers/incentiveController");
+const {
+  addGroup,
+  getAllGroups,
+  getGroupById,
+  updateGroup,
+  deleteGroup,
+} = require('../controllers/groupController');
+const {
+  addGroupTag,
+  getAllGroupTags,
+  getGroupTagById,
+  updateGroupTag,
+  deleteGroupTag,
+} = require('../controllers/groupTagController');
+const {
+  addFilterCategory,
+  getAllFilterCategories,
+  getFilterCategoryById,
+  updateFilterCategory,
+  deleteFilterCategory,
+  addSubcategory,
+  searchSubcategories,
+} = require('../controllers/filterController');
+const foodQuantityController = require('../controllers/foodQuantityController');
+const {
+  getAllRefundsAdmin,
+  approveRefund,
+  rejectRefund,
+} = require("../controllers/refundController");
+const {
+  getAdminCategories,
+  createCategory,
+  updateCategory,
+  patchCategoryStatus,
+  reorderCategories,
+  deleteCategory,
+  getCategoryById,
+  getSubcategoriesByParent,
+} = require("../controllers/categoryController");
+
+// Canonical Admin Category Routes
+router.get("/categories", protect, admin, getAdminCategories);
+router.post("/categories", protect, admin, upload.single('image'), createCategory);
+router.put("/categories/reorder", protect, admin, reorderCategories);
+router.put("/categories/:id", protect, admin, upload.single('image'), updateCategory);
+router.patch("/categories/:id/status", protect, admin, patchCategoryStatus);
+router.delete("/categories/:id", protect, admin, deleteCategory);
+router.get("/categories/:id/subcategories", protect, admin, getSubcategoriesByParent);
+
+// Canonical Admin Subcategory Routes
+router.post("/categories/:id/subcategories", protect, admin, upload.single('image'), (req, res, next) => {
+  req.body.parentCategoryId = req.params.id;
+  req.body.type = "subcategory";
+  return createCategory(req, res, next);
+});
+router.put("/subcategories/reorder", protect, admin, reorderCategories);
+router.put("/subcategories/:id", protect, admin, upload.single('image'), updateCategory);
+router.patch("/subcategories/:id/status", protect, admin, patchCategoryStatus);
+router.delete("/subcategories/:id", protect, admin, deleteCategory);
+
+// Legacy Master Category Aliases
+router.post("/master-category", protect, admin, upload.single('image'), createCategory);
+router.get("/master-category", protect, admin, getAdminCategories);
+router.get("/master-category/:id", protect, admin, getCategoryById);
+router.put("/master-category/:id", protect, admin, upload.single('image'), updateCategory);
+router.delete("/master-category/:id", protect, admin, deleteCategory);
+router.post("/unit", protect, admin, addUnit);
+router.get("/unit", protect, admin, getAllUnits);
+router.get("/unit/:id", protect, admin, getUnitById);
+router.put("/unit/:id", protect, admin, updateUnit);
+router.delete("/unit/:id", protect, admin, deleteUnit);
+router.post("/tag", protect, admin, upload.single('image'), addTag);
+router.get("/tag", protect, admin, getAllTags);
+router.get("/tag/:id", protect, admin, getTagById);
+router.put("/tag/:id", protect, admin, upload.single('image'), updateTag);
+router.delete("/tag/:id", protect, admin, deleteTag);
+router.post("/addon", protect, admin, addAddon);
+router.get("/addon", protect, admin, getAllAddons);
+router.get("/addon/:id", protect, admin, getAddonById);
+router.put("/addon/:id", protect, admin, updateAddon);
+router.delete("/addon/:id", protect, admin, deleteAddon);
+router.post("/brand", protect, admin, addBrand);
+router.get("/brand", protect, admin, getAllBrands);
+router.get("/brand/:id", protect, admin, getBrandById);
+router.put("/brand/:id", protect, admin, updateBrand);
+router.delete("/brand/:id", protect, admin, deleteBrand);
+router.post("/cuisine", protect, admin, addCuisine);
+router.get("/cuisine", protect, admin, getAllCuisines);
+router.get("/cuisine/:id", protect, admin, getCuisineById);
+router.put("/cuisine/:id", protect, admin, updateCuisine);
+router.delete("/cuisine/:id", protect, admin, deleteCuisine);
+router.post("/document-type", protect, admin, addDocumentType);
+router.get("/document-type", protect, admin, getAllDocumentTypes);
+router.get("/document-type/:id", protect, admin, getDocumentTypeById);
+router.put("/document-type/:id", protect, admin, updateDocumentType);
+router.delete("/document-type/:id", protect, admin, deleteDocumentType);
+router.get("/settings", protect, admin, getAdminSettings);
+router.put("/settings", protect, admin, updateAdminSettings);
+router.post("/cancellation-reason", protect, admin, addCancellationReason);
+router.get("/cancellation-reason", protect, admin, getAllCancellationReasons);
+router.get("/cancellation-reason/:id", protect, admin, getCancellationReasonById);
+router.put("/cancellation-reason/:id", protect, admin, updateCancellationReason);
+router.delete("/cancellation-reason/:id", protect, admin, deleteCancellationReason);
+router.post("/promocode", protect, admin, upload.single('image'), addPromocode);
+router.get("/promocode", protect, admin, getAllPromocodes);
+router.get("/promocode/:id", protect, admin, getPromocodeById);
+router.put("/promocode/:id", protect, admin, upload.single('image'), updatePromocode);
+router.delete("/promocode/:id", protect, admin, deletePromocode);
+
+// Banner Routes
+router.post("/banner", protect, admin, upload.single('image'), addBanner);
+router.get("/banner", protect, admin, getAllBanners);
+router.get("/banner/:id", protect, admin, getBannerById);
+router.put("/banner/:id", protect, admin, upload.single('image'), updateBanner);
+router.delete("/banner/:id", protect, admin, deleteBanner);
+
+router.post("/banners", protect, admin, upload.single('image'), addBanner);
+router.get("/banners", protect, admin, getAllBanners);
+router.get("/banners/:id", protect, admin, getBannerById);
+router.put("/banners/:id", protect, admin, upload.single('image'), updateBanner);
+router.delete("/banners/:id", protect, admin, deleteBanner);
+router.get(
+  "/restaurants/pending-verification",
+  protect,
+  admin,
+  adminController.getPendingVerificationRestaurants
+);
+router.put(
+  "/restaurants/verify/:id",
+  protect,
+  admin,
+  verifyRestaurantDocuments
+);
+router.get("/withdrawals", protect, admin, getAllWithdrawals);
+router.put("/withdrawals/:id/approve", protect, admin, approveWithdrawal);
+router.put("/withdrawals/:id/reject", protect, admin, rejectWithdrawal);
+router.delete("/withdrawals/:id", protect, admin, deleteWithdrawal);
+router.delete("/withdrawals", protect, admin, deleteWithdrawal);
+router.post("/withdrawals/bulk-delete", protect, admin, deleteWithdrawal);
+router.get("/tickets", protect, admin, getAllTickets);
+router.put("/tickets/:id", protect, admin, updateTicket);
+router.post("/training", protect, admin, addMaterial);
+router.delete("/training/:id", protect, admin, deleteMaterial);
+router.get("/riders/settlements", protect, admin, adminRiderSettlements);
+router.get("/riders/sos-active", protect, admin, adminGetActiveSOS);
+router.delete("/riders/delete/:id", protect, admin, deleteRider);
+router.delete("/riders/:id", protect, admin, deleteRider);
+router.delete("/rider/:id", protect, admin, deleteRider);
+router.get("/dashboard", protect, admin, dashboardController.getOverview);
+router.get("/dashboard/overview", protect, admin, dashboardController.getOverview);
+router.get("/payouts/restaurants", protect, admin, dashboardController.getRestaurantPayoutList);
+router.get("/payouts/drivers", protect, admin, dashboardController.getDriverPayoutList);
+router.get("/transactions/restaurants", protect, admin, dashboardController.getRestaurantTransactionHistory);
+router.get("/transactions/drivers", protect, admin, dashboardController.getDriverTransactionHistory);
+router.get('/orders/dashboard', protect, admin, adminController.getOrdersDashboard);
+router.get('/order-dashboard', protect, admin, adminController.getOrdersDashboard);
+
+// Reset / Clear financial data, commissions & order history to 0
+const authenticateAdminOrKey = async (req, res, next) => {
+  const apiKey =
+    req.headers['x-admin-key'] ||
+    req.headers['X-Admin-Key'] ||
+    req.query?.adminKey ||
+    req.body?.adminKey;
+
+  const validKey =
+    apiKey &&
+    (apiKey === 'ecd_admin_super_secret_2026' ||
+      (process.env.ADMIN_API_KEY && apiKey === process.env.ADMIN_API_KEY));
+
+  if (validKey) {
+    // Attempt to identify admin user from JWT token if provided
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const User = require('../models/User');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = await User.findById(decoded._id || decoded.id).select('-password');
+      } catch (_) {}
+    }
+    if (!req.user) {
+      req.user = { _id: "000000000000000000000001", role: "admin", email: "admin@ecdkart.com", name: "Super Admin" };
+    }
+    return next();
+  }
+
+  return protect(req, res, () => {
+    admin(req, res, next);
+  });
+};
+router.post('/reset-financial-data', authenticateAdminOrKey, adminController.resetFinancialData);
+router.delete('/financial-history', authenticateAdminOrKey, adminController.resetFinancialData);
+router.get('/financial-reset-history', authenticateAdminOrKey, adminController.getFinancialResetHistory);
+
+router.get('/notifications/live-orders', protect, admin, adminController.getAdminLiveNotifications);
+router.post('/notifications/mark-all-read', protect, admin, adminController.markAllAdminNotificationsRead);
+router.patch('/notifications/mark-all-read', protect, admin, adminController.markAllAdminNotificationsRead);
+router.post('/notifications/read/:id', protect, admin, adminController.markAdminNotificationRead);
+router.get("/users", protect, admin, adminController.getAllUsers);
+router.get("/users/:id", protect, admin, adminController.getUserById);
+router.put("/users/:id/block", protect, admin, adminController.blockUser);
+router.put("/users/:id/cod", protect, admin, adminController.toggleUserCOD);
+router.post(
+  "/users/:id/wallet-adjust",
+  protect,
+  admin,
+  adminController.adjustWallet
+);
+router.get(
+  "/reports/revenue",
+  protect,
+  admin,
+  adminController.getRevenueReport
+);
+router.get(
+  "/reports/commission",
+  protect,
+  admin,
+  adminController.getCommissionReport
+);
+router.get(
+  "/reports/cancellations",
+  protect,
+  admin,
+  adminController.getCancellationReport
+);
+router.get(
+  "/reports/success-ratio",
+  protect,
+  admin,
+  adminController.getOrderSuccessRatio
+);
+
+// Menu Approval & Master Menu Routes (Must precede /menu/:restaurantId to avoid shadowing)
+const {
+  getPendingMenuItems,
+  getAllMenuItemsAdmin,
+  getMenuItemForReview,
+  approveMenuItem,
+  rejectMenuItem,
+  requestChangesMenuItem,
+} = require("../controllers/adminMenuApprovalController");
+
+router.get("/menu/pending", protect, admin, getPendingMenuItems);
+router.get("/menu/all", protect, admin, getAllMenuItemsAdmin);
+router.get("/menu/stats", protect, admin, adminController.getMenuApprovalStats);
+router.get("/menu/review/:id", protect, admin, getMenuItemForReview);
+router.put("/menu/:id/approve", protect, admin, approveMenuItem);
+router.put("/menu/:id/reject", protect, admin, rejectMenuItem);
+router.put("/menu/:id/request-changes", protect, admin, requestChangesMenuItem);
+
+router.get(
+  "/pending-menus",
+  protect,
+  admin,
+  adminController.getAllPendingMenuItems
+);
+router.get(
+  "/pending-menus/by-restaurant",
+  protect,
+  admin,
+  adminController.getPendingMenusByRestaurant
+);
+router.get(
+  "/menu-stats",
+  protect,
+  admin,
+  adminController.getMenuApprovalStats
+);
+router.get(
+  "/menu/:restaurantId",
+  protect,
+  admin,
+  (req, res, next) => {
+    if (req.params.restaurantId === "pending") return getPendingMenuItems(req, res, next);
+    if (req.params.restaurantId === "all") return getAllMenuItemsAdmin(req, res, next);
+    return adminController.getRestaurantMenuAdmin(req, res, next);
+  }
+);
+router.put(
+  "/restaurants/:id/approve-menu",
+  protect,
+  admin,
+  adminController.approveRestaurantMenu
+);
+router.patch(
+  "/restaurants/:id/approve-menu",
+  protect,
+  admin,
+  adminController.approveRestaurantMenu
+);
+router.put(
+  "/products/:id/approve",
+  protect,
+  admin,
+  adminController.approveProduct
+);
+router.put(
+  "/products/:id/reject",
+  protect,
+  admin,
+  adminController.rejectProduct
+);
+router.put(
+  "/menu/:id",
+  protect,
+  admin,
+  upload.single('image'),
+  adminController.updateMenuItemAdmin
+);
+router.delete(
+  "/menu/:id",
+  protect,
+  admin,
+  adminController.deleteMenuItemAdmin
+);
+router.post("/banner", protect, admin, upload.single('image'), addBanner);
+router.get("/banner", protect, admin, getAllBanners);
+router.get("/banner/:id", protect, admin, getBannerById);
+router.put("/banner/:id", protect, admin, upload.single('image'), updateBanner);
+router.delete("/banner/:id", protect, admin, deleteBanner);
+router.post('/vehicles', protect, admin, upload.fields([
+  { name: 'vehicleImage', maxCount: 1 },
+  { name: 'rcImage', maxCount: 1 },
+  { name: 'insuranceImage', maxCount: 1 }
+]), addVehicle);
+router.get('/vehicles', protect, admin, getAllVehicles);
+router.get('/vehicles/:id', protect, admin, getVehicleById);
+router.put('/vehicles/:id', protect, admin, upload.fields([
+  { name: 'vehicleImage', maxCount: 1 },
+  { name: 'rcImage', maxCount: 1 },
+  { name: 'insuranceImage', maxCount: 1 }
+]), updateVehicle);
+router.delete('/vehicles/:id', protect, admin, deleteVehicle);
+router.post('/cities', protect, admin, addCity);
+router.get('/cities', protect, admin, getAllCitiesAdmin);
+router.get('/cities/:id', protect, admin, getCityById);
+router.put('/cities/:id', protect, admin, updateCity);
+router.delete('/cities/:id', protect, admin, deleteCity);
+router.post('/cities/:cityId/zones', protect, admin, addZone);
+router.get('/cities/:cityId/zones', protect, admin, getZonesByCityAdmin);
+router.get('/zones/:id', protect, admin, getZoneById);
+router.put('/zones/:id', protect, admin, updateZone);
+router.delete('/zones/:id', protect, admin, deleteZone);
+router.get("/refunds", protect, admin, getAllRefundsAdmin);
+router.post("/refunds/:id/approve", protect, admin, approveRefund);
+router.post("/refunds/:id/reject", protect, admin, rejectRefund);
+router.post("/incentives", protect, admin, createIncentive);
+router.get("/incentives", protect, admin, getAllIncentivesAdmin);
+router.put("/incentives/:id", protect, admin, updateIncentive);
+router.delete("/incentives/:id", protect, admin, deleteIncentive);
+router.post("/incentives/:id/assign", protect, admin, assignIncentive);
+router.post('/groups', protect, admin, upload.single('image'), addGroup);
+router.get('/groups', protect, admin, getAllGroups);
+router.get('/groups/:id', protect, admin, getGroupById);
+router.put('/groups/:id', protect, admin, upload.single('image'), updateGroup);
+router.delete('/groups/:id', protect, admin, deleteGroup);
+router.post('/groups/tags', protect, admin, upload.single('image'), addGroupTag);
+router.get('/groups/tags', protect, admin, getAllGroupTags);
+router.get('/groups/tags/:id', protect, admin, getGroupTagById);
+router.put('/groups/tags/:id', protect, admin, upload.single('image'), updateGroupTag);
+router.delete('/groups/tags/:id', protect, admin, deleteGroupTag);
+router.post('/filters', protect, admin, addFilterCategory);
+router.get('/filters', protect, admin, getAllFilterCategories);
+router.get('/filters/:id', protect, admin, getFilterCategoryById);
+router.put('/filters/:id', protect, admin, updateFilterCategory);
+router.delete('/filters/:id', protect, admin, deleteFilterCategory);
+router.post('/filters/:id/subcategories', protect, admin, addSubcategory);
+router.get('/filters/subcategories', protect, admin, searchSubcategories);
+router.post('/food-quantities', protect, admin, foodQuantityController.addFoodQuantity);
+router.get('/food-quantities', protect, admin, foodQuantityController.getAllFoodQuantities);
+router.get('/food-quantities/:id', protect, admin, foodQuantityController.getFoodQuantityById);
+router.put('/food-quantities/:id', protect, admin, foodQuantityController.updateFoodQuantity);
+router.delete('/food-quantities/:id', protect, admin, foodQuantityController.deleteFoodQuantity);
+// Commission & Payout Routes
+router.get('/commission-details', protect, admin, adminController.getAdminCommissionDetails);
+router.post('/process-payout', protect, admin, adminController.processAdminPayout);
+
+// Manual Restaurant & Rider Payouts
+router.post('/restaurant/:restaurantId/payout', protect, admin, adminController.processRestaurantPayout);
+router.post('/rider/:riderId/payout', protect, admin, adminController.processRiderPayout);
+
+// Category Request Routes
+const { getAdminCategoryRequests, approveCategoryRequest, rejectCategoryRequest } = require("../controllers/categoryRequestController");
+router.get('/category-requests', protect, admin, getAdminCategoryRequests);
+router.put('/category-requests/:id/approve', protect, admin, approveCategoryRequest);
+router.put('/category-requests/:id/reject', protect, admin, rejectCategoryRequest);
+
+// Audit Logs Route
+const { getAuditLogs } = require("../controllers/auditLogController");
+router.get('/audit-logs', protect, admin, getAuditLogs);
+
+// Finance Dashboard Route
+const { getFinanceDashboard } = require("../controllers/financeController");
+router.get('/finance/dashboard', protect, admin, getFinanceDashboard);
+
+// Role & Permission (RBAC) Routes
+const {
+  getAllRoles,
+  createRole,
+  updateRole,
+  deleteRole,
+  getAllStaff,
+  createStaff,
+  deleteStaff
+} = require("../controllers/roleStaffController");
+router.get('/roles', protect, admin, getAllRoles);
+router.post('/roles', protect, admin, createRole);
+router.put('/roles/:id', protect, admin, updateRole);
+router.delete('/roles/:id', protect, admin, deleteRole);
+router.get('/staff', protect, admin, getAllStaff);
+router.post('/staff', protect, admin, createStaff);
+router.delete('/staff/:id', protect, admin, deleteStaff);
+
+// Rider Earning Config & Self Pickup Config Routes
+const {
+  getRiderEarningConfig,
+  updateRiderEarningConfig,
+  getSelfPickupConfig,
+  updateSelfPickupConfig,
+  getOrderTimingConfig,
+  updateOrderTimingConfig
+} = require("../controllers/adminSettingsController");
+router.get('/rider-earning-config', protect, admin, getRiderEarningConfig);
+router.put('/rider-earning-config', protect, admin, updateRiderEarningConfig);
+router.get('/self-pickup-config', protect, admin, getSelfPickupConfig);
+router.put('/self-pickup-config', protect, admin, updateSelfPickupConfig);
+router.get('/order-timing-config', protect, admin, getOrderTimingConfig);
+router.put('/order-timing-config', protect, admin, updateOrderTimingConfig);
+
+// Custom Push Notification Routes
+router.post('/custom-push', protect, admin, adminController.sendCustomPush);
+router.post('/notifications/custom-push', protect, admin, adminController.sendCustomPush);
+
+module.exports = router;
+

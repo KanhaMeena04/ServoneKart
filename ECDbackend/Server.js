@@ -1,0 +1,387 @@
+const dotenv = require('dotenv');
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '.env') });
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'aKiuLfDr5Nrae7VjN4LYvY5V26JIMoBwrz7mMnG3cNwb-oSFu1hcvgCKWuNXYaUXJtOUF0sjVZjUYBTcJc7HVQ';
+const express = require('express');
+const http = require('http');
+const socketIO = require('socket.io');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
+const authRoutes = require('./routes/authRoutes');
+const restaurantRoutes = require('./routes/restaurantRoutes');
+const menuRoutes = require('./routes/menuRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const riderRoutes = require('./routes/riderRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const searchRoutes = require('./routes/searchRoutes');
+const homeRoutes = require('./routes/homeRoutes');
+const cityRoutes = require('./routes/cityRoutes');
+const zoneRoutes = require('./routes/zoneRoutes');
+const foodQuantityRoutes = require('./routes/foodQuantityRoutes');
+const userRoutes = require('./routes/userRoutes');
+const walletRoutes = require('./routes/walletRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const incentiveRoutes = require('./routes/incentiveRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const cmsRoutes = require('./routes/cmsRoutes');
+const adminCmsRoutes = require('./routes/adminCmsRoutes');
+const trainingRoutes = require('./routes/trainingRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const app = express();
+const server = http.createServer(app);
+app.set('trust proxy', 1);
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_ORIGIN,
+  process.env.SOCKET_IO_CLIENT_URL,
+  'https://ecdadminpanel.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://localhost:5005',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5005'
+].filter(Boolean);
+
+const corsConfig = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    const extraOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [];
+    if (
+      allowedOrigins.includes(origin) ||
+      extraOrigins.includes(origin) ||
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+      /\.vercel\.app$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+    console.warn(`CORS Warning: Origin ${origin} allowed in development mode.`);
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-auth-token",
+    "x-admin-key",
+    "X-Admin-Key",
+    "x-access-token",
+    "x-refresh-token",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+    "Cache-Control",
+    "Pragma",
+    "adminKey",
+    "adminkey"
+  ],
+  exposedHeaders: ["x-admin-key", "Authorization"]
+};
+
+const io = socketIO(server, {
+  cors: corsConfig,
+  path: '/socket.io',
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
+});
+app.set('io', io);
+const socketService = require('./services/socketService');
+socketService.init(io);
+
+io.on('connection', (socket) => {
+  console.log('⚡ Socket connected:', socket.id);
+
+  socket.on('joinOrder', (target) => {
+    if (!target) return;
+    const str = String(target);
+    const room = (str.startsWith('order_') || str.startsWith('restaurant_') || str.startsWith('user_') || str.startsWith('rider_') || str.includes(':'))
+      ? str
+      : `order_${str}`;
+    socket.join(room);
+    console.log(`📡 Socket ${socket.id} joined room via joinOrder: ${room}`);
+  });
+
+  socket.on('leaveOrder', (target) => {
+    if (!target) return;
+    const str = String(target);
+    const room = str.startsWith('order_') ? str : `order_${str}`;
+    socket.leave(room);
+  });
+
+  socket.on('joinRoom', (room) => {
+    if (!room) return;
+    socket.join(String(room));
+    console.log(`📡 Socket ${socket.id} joined room via joinRoom: ${room}`);
+  });
+
+  socket.on('joinRestaurant', (restaurantId) => {
+    if (!restaurantId) return;
+    const idStr = String(restaurantId);
+    socket.join(`restaurant_${idStr}`);
+    socket.join(`restaurant:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined restaurant rooms: restaurant_${idStr}, restaurant:${idStr}`);
+  });
+
+  socket.on('joinUser', (userId) => {
+    if (!userId) return;
+    const idStr = String(userId);
+    socket.join(`user_${idStr}`);
+    socket.join(`user:${idStr}`);
+    socket.join(`customer_${idStr}`);
+    socket.join(`customer:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined user rooms: ${idStr}`);
+  });
+
+  socket.on('joinCustomer', (customerId) => {
+    if (!customerId) return;
+    const idStr = String(customerId);
+    socket.join(`customer_${idStr}`);
+    socket.join(`customer:${idStr}`);
+    socket.join(`user_${idStr}`);
+    socket.join(`user:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined customer rooms: ${idStr}`);
+  });
+
+  socket.on('joinRider', (riderId) => {
+    if (!riderId) return;
+    const idStr = String(riderId);
+    socket.join(`rider_${idStr}`);
+    socket.join(`rider:${idStr}`);
+    socket.join(`user_${idStr}`);
+    socket.join(`user:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined rider rooms: ${idStr}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Socket disconnected:', socket.id);
+  });
+});
+const initCronJobs = require('./services/cronService');
+const initPaymentCronJobs = require('./services/paymentCronJobs');
+
+app.use(cookieParser());
+app.use(cors(corsConfig));
+app.use((req, res, next) => {
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, x-auth-token, x-admin-key, X-Admin-Key, x-access-token, x-refresh-token, Accept, Origin, X-Requested-With, Cache-Control, Pragma, adminKey, adminkey"
+  );
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+const { handleStripeWebhook } = require('./controllers/paymentController');
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+const paymentRoutes = require('./routes/paymentRoutes');
+const paymentSystemRoutes = require('./routes/paymentSystemRoutes'); // NEW: Swiggy-style payment system
+app.use('/api/payment', paymentRoutes);
+app.use('/api/payment', paymentSystemRoutes); // NEW: COD wallet, freeze, commission, weekly payout
+app.use('/api/v1/payment', paymentRoutes);
+app.use('/api/v1/payment', paymentSystemRoutes);
+
+app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
+
+app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/v1/restaurants', restaurantRoutes);
+
+app.use('/api/menu', menuRoutes);
+app.use('/api/v1/menu', menuRoutes);
+
+const { submitCategoryRequest } = require('./controllers/categoryRequestController');
+const { protect: protectAuth, restaurantOwner: ownerAuth } = require('./middleware/authMiddleware');
+app.post('/api/vendor/category-requests', protectAuth, ownerAuth, submitCategoryRequest);
+app.post('/api/v1/vendor/category-requests', protectAuth, ownerAuth, submitCategoryRequest);
+
+app.use('/api/orders', orderRoutes);
+app.use('/api/v1/orders', orderRoutes);
+
+app.use('/api/riders', riderRoutes);
+app.use('/api/v1/riders', riderRoutes);
+app.use('/api/drivers', riderRoutes);
+app.use('/api/v1/drivers', riderRoutes);
+
+app.use('/api/cms', cmsRoutes);
+app.use('/api/v1/cms', cmsRoutes);
+app.use('/api/admin/cms', adminCmsRoutes); // Must come BEFORE /api/admin
+app.use('/api/admin/reports', reportRoutes); // Must come BEFORE /api/admin
+app.use('/api/admin', adminRoutes);
+app.use('/api/v1/admin/cms', adminCmsRoutes);
+app.use('/api/v1/admin/reports', reportRoutes);
+app.use('/api/v1/admin', adminRoutes);
+
+app.use('/api/settings', settingsRoutes);
+app.use('/api/v1/settings', settingsRoutes);
+
+app.use('/api/search', searchRoutes);
+app.use('/api/v1/search', searchRoutes);
+
+const homeCmsRoutes = require('./routes/homeCmsRoutes');
+app.use('/api/home', homeCmsRoutes);
+app.use('/api/v1/home', homeCmsRoutes);
+
+const locationRoutes = require('./routes/locationRoutes');
+app.use('/api/location', locationRoutes);
+app.use('/api/v1/location', locationRoutes);
+
+const catalogCmsRoutes = require('./routes/catalogCmsRoutes');
+app.use('/api/catalog', catalogCmsRoutes);
+app.use('/api/v1/catalog', catalogCmsRoutes);
+
+const pricingCmsRoutes = require('./routes/pricingCmsRoutes');
+app.use('/api/pricing', pricingCmsRoutes);
+app.use('/api/v1/pricing', pricingCmsRoutes);
+
+app.use('/api/home', homeRoutes);
+app.use('/api/v1/home', homeRoutes);
+
+const categoryRoutes = require('./routes/categoryRoutes');
+app.use('/api/categories', categoryRoutes);
+app.use('/api/v1/categories', categoryRoutes);
+app.use('/api/admin/categories', categoryRoutes);
+
+const { getCategories, getBanners, getPopularDishes } = require('./controllers/homeController');
+app.get('/api/banners', getBanners);
+app.get('/api/v1/banners', getBanners);
+app.get('/api/popular-dishes', getPopularDishes);
+app.get('/api/v1/popular-dishes', getPopularDishes);
+
+
+app.use('/api/cities', cityRoutes);
+app.use('/api/v1/cities', cityRoutes);
+
+app.use('/api/zones', zoneRoutes);
+app.use('/api/v1/zones', zoneRoutes);
+
+app.use('/api/food-quantities', foodQuantityRoutes);
+app.use('/api/v1/food-quantities', foodQuantityRoutes);
+
+app.use('/api/user', userRoutes);
+app.use('/api/v1/user', userRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/api/users', userRoutes);
+app.use('/api/v1/api/user', userRoutes);
+
+const notificationRoutes = require('./routes/notificationRoutes');
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+
+const addressRoutes = require('./routes/addressRoutes');
+app.use('/api/addresses', addressRoutes);
+app.use('/api/v1/addresses', addressRoutes);
+
+app.use('/api/wallet', walletRoutes);
+app.use('/api/v1/wallet', walletRoutes);
+
+app.use('/api/cart', cartRoutes);
+app.use('/api/v1/cart', cartRoutes);
+
+const couponRoutes = require('./routes/couponRoutes');
+app.use('/api/coupons', couponRoutes);
+app.use('/api/v1/coupons', couponRoutes);
+
+const razorpayRoutes = require('./routes/razorpayRoutes');
+app.use('/api/razorpay', razorpayRoutes);
+app.use('/api/v1/razorpay', razorpayRoutes);
+
+const issueRoutes = require('./routes/issueRoutes');
+app.use('/api/issues', issueRoutes);
+app.use('/api/v1/issues', issueRoutes);
+
+const supportChatRoutes = require('./routes/supportChatRoutes');
+app.use('/api/support', supportChatRoutes);
+app.use('/api/v1/support', supportChatRoutes);
+
+
+const uploadRoutes = require('./routes/uploadRoutes');
+app.use('/api/upload', uploadRoutes);
+app.use('/api/v1/upload', uploadRoutes);
+
+app.use('/api/incentives', incentiveRoutes);
+app.use('/api/v1/incentives', incentiveRoutes);
+
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
+
+app.use('/api/cms', cmsRoutes);
+app.use('/api/v1/cms', cmsRoutes);
+
+const ruleEngineRoutes = require('./routes/ruleEngineRoutes');
+const emergencyRoutes = require('./routes/emergencyRoutes');
+const featureFlagRoutes = require('./routes/featureFlagRoutes');
+const scheduledChangeRoutes = require('./routes/scheduledChangeRoutes');
+const serviceAreaRoutes = require('./routes/serviceAreaRoutes');
+const reconciliationRoutes = require('./routes/reconciliationRoutes');
+const settlementRoutes = require('./routes/settlementRoutes');
+
+app.use('/api/rules', ruleEngineRoutes);
+app.use('/api/v1/rules', ruleEngineRoutes);
+app.use('/api/emergency', emergencyRoutes);
+app.use('/api/v1/emergency', emergencyRoutes);
+app.use('/api/feature-flags', featureFlagRoutes);
+app.use('/api/v1/feature-flags', featureFlagRoutes);
+app.use('/api/scheduled-changes', scheduledChangeRoutes);
+app.use('/api/v1/scheduled-changes', scheduledChangeRoutes);
+app.use('/api/service-areas', serviceAreaRoutes);
+app.use('/api/v1/service-areas', serviceAreaRoutes);
+app.use('/api/reconciliations', reconciliationRoutes);
+app.use('/api/v1/reconciliations', reconciliationRoutes);
+app.use('/api/settlements', settlementRoutes);
+app.use('/api/v1/settlements', settlementRoutes);
+
+app.use('/api/training', trainingRoutes);
+app.use('/api/v1/training', trainingRoutes);
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/health', (req, res) => {
+  const mongoose = require('mongoose');
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.status(200).json({
+    status: 'ok',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: dbStatus
+  });
+});
+app.get('/', (req, res) => {
+  res.send('Food Delivery API is running...');
+});
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+app.use(notFound);
+app.use(errorHandler);
+const PORT = process.env.PORT || 5000;
+const HOST = "0.0.0.0";
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on http://0.0.0.0:${PORT}`);
+  console.log(`Socket.IO server ready for real-time connections`);
+});
+
+const InitializeConnection = async () => {
+  try {
+    await Promise.resolve(connectDB());
+    console.log("DB connect");
+    initCronJobs();
+    initPaymentCronJobs();
+    const { backfillMissingIds } = require("./utils/idGenerator");
+    backfillMissingIds().catch(e => console.error("[idGenerator] Backfill error:", e.message));
+  }
+  catch (err) {
+    console.log("error occured " + err);
+  }
+};
+InitializeConnection();
+// Settlement & Payout Engine Active - Updated 2026-09-30 (Pure Real Data Flow Active)

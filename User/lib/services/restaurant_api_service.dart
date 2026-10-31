@@ -1,0 +1,988 @@
+import '../core/constants/app_constants.dart';
+import '../core/config/app_mode.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:http/http.dart' as http;
+import '../core/models/restaurant_models.dart';
+import '../core/models/category.dart';
+import '../core/models/banner.dart';
+import 'popular_dish_data.dart';
+import 'auth_service.dart';
+
+class RestaurantApiService {
+  static String get apiBaseUrl {
+    // return AppConstants.baseUrl;
+    return AppConstants.baseUrl;
+  }
+
+  static String get restaurantsUrl => '$apiBaseUrl/restaurants';
+  static String get categoriesUrl => '$apiBaseUrl/categories';
+  static String get popularDishesUrl => '$apiBaseUrl/popular-dishes';
+  static String get bannersUrl => '$apiBaseUrl/banners';
+  static String get homeSectionsUrl => '$apiBaseUrl/home/sections';
+  static final Map<String, double> _cachedRestaurantRadius = {};
+
+  static Future<List<Map<String, dynamic>>> getHomeScreenSections() async {
+    if (kFrontendPreviewMode) {
+      return [];
+    }
+    try {
+      final response = await http.get(Uri.parse(homeSectionsUrl));
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final List<dynamic> data = jsonResponse['sections'] ?? [];
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching home screen sections: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await AuthService.getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  static Future<bool> submitRestaurantReview(String orderId, String restaurantId, double rating, String comment) async {
+    if (kFrontendPreviewMode) return true;
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/reviews/restaurant'),
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          'orderId': orderId,
+          'restaurantId': restaurantId,
+          'rating': rating,
+          'comment': comment,
+        }),
+      );
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error submitting review: $e');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> submitDualReview({
+    required String orderId,
+    required String restaurantId,
+    required double restaurantRating,
+    double? riderRating,
+    String? comment,
+    String? riderComment,
+  }) async {
+    if (kFrontendPreviewMode) return {'success': true, 'bonusPoints': 5};
+    try {
+      final combinedComment = [
+        if (comment != null && comment.trim().isNotEmpty) 'Restaurant: ${comment.trim()}',
+        if (riderComment != null && riderComment.trim().isNotEmpty) 'Rider: ${riderComment.trim()}'
+      ].join(' | ');
+
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/reviews'),
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          'orderId': orderId,
+          'restaurantId': restaurantId,
+          'restaurantRating': restaurantRating,
+          if (riderRating != null) 'riderRating': riderRating,
+          'comment': combinedComment.isNotEmpty ? combinedComment : (comment ?? ''),
+        }),
+      );
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final bonus = decoded is Map ? (decoded['bonusPoints'] ?? 5) : 5;
+        return {
+          'success': true,
+          'bonusPoints': bonus,
+          'message': decoded is Map ? (decoded['message'] ?? 'Review submitted successfully!') : 'Review submitted successfully!',
+        };
+      }
+      return {'success': false, 'bonusPoints': 0};
+    } catch (e) {
+      debugPrint('Error submitting dual review: $e');
+      return {'success': false, 'bonusPoints': 0};
+    }
+  }
+
+  static Future<List<dynamic>> getRestaurantReviews(String restaurantId) async {
+    try {
+      final response = await http.get(Uri.parse('$apiBaseUrl/reviews/restaurant/$restaurantId'));
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is List) return decoded;
+        if (decoded is Map && decoded['reviews'] is List) return decoded['reviews'];
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching reviews: $e');
+      return [];
+    }
+  }
+
+  static Future<List<BannerModel>> getBanners({double? lat, double? lng, String? city}) async {
+    if (kFrontendPreviewMode) {
+      return _getMockBanners();
+    }
+    try {
+      final queryParams = <String, String>{};
+      if (lat != null && lng != null) {
+        queryParams['lat'] = lat.toString();
+        queryParams['lng'] = lng.toString();
+      }
+      if (city != null && city.trim().isNotEmpty) {
+        queryParams['city'] = city.trim();
+      }
+      final parsedUri = Uri.parse(bannersUrl);
+      final uri = queryParams.isNotEmpty
+          ? parsedUri.replace(queryParameters: {
+              ...parsedUri.queryParameters,
+              ...queryParams,
+            })
+          : parsedUri;
+      debugPrint('🎯 Fetching banners from: $uri');
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+      debugPrint('🎯 Banners response status: ${response.statusCode}');
+      debugPrint('🎯 Banners response body: ${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}');
+      
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        List<dynamic> data = [];
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map) {
+          if (decoded['banners'] is List) {
+            data = decoded['banners'];
+          } else if (decoded['data'] is List) {
+            data = decoded['data'];
+          } else if (decoded['items'] is List) {
+            data = decoded['items'];
+          }
+        }
+
+        debugPrint('🎯 Raw banner data count: ${data.length}');
+
+        final list = data
+            .map((json) {
+              if (json is Map<String, dynamic>) {
+                return BannerModel.fromJson(json);
+              } else if (json is Map) {
+                return BannerModel.fromJson(Map<String, dynamic>.from(json));
+              }
+              return null;
+            })
+            .whereType<BannerModel>()
+            .where((b) => b.imageUrl.isNotEmpty && b.isActive)
+            .toList();
+
+        // Sort banners by position ascending
+        list.sort((a, b) => a.position.compareTo(b.position));
+
+        debugPrint('🎯 Parsed banners: ${list.length}, URLs: ${list.map((b) => b.imageUrl).toList()}');
+
+        if (list.isNotEmpty) {
+          return list;
+        }
+        debugPrint('🎯 Banner list empty after filter!');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching banners: $e');
+    }
+    return [];
+  }
+
+
+  static List<BannerModel> _getMockBanners() {
+    return [
+      BannerModel(
+        id: 'b1',
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+        isActive: true,
+      ),
+      BannerModel(
+        id: 'b2',
+        imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
+        isActive: true,
+      ),
+    ];
+  }
+
+  static Future<List<Restaurant>> getRestaurants({
+    Map<String, String>? filters,
+    double? lat,
+    double? lng,
+    String? city,
+    String? address,
+  }) async {
+    if (kFrontendPreviewMode) {
+      final list = _getMockRestaurants();
+      if (filters != null && filters.containsKey('search')) {
+        final q = filters['search']!.toLowerCase();
+        return list.where((r) => r.name.toLowerCase().contains(q) || r.cuisine.toLowerCase().contains(q)).toList();
+      }
+      return list;
+    }
+    try {
+      var uri = Uri.parse('$restaurantsUrl/list');
+      final queryParams = <String, String>{'limit': '100'};
+      if (lat != null && lng != null) {
+        queryParams['lat'] = lat.toString();
+        queryParams['lng'] = lng.toString();
+      }
+      if (city != null && city.isNotEmpty) {
+        queryParams['city'] = city;
+      }
+      if (address != null && address.isNotEmpty) {
+        queryParams['address'] = address;
+      }
+      if (filters != null) {
+        queryParams.addAll(filters);
+      }
+      uri = uri.replace(queryParameters: queryParams);
+      
+      debugPrint('RESTAURANT_API_REQUEST\nGET ${uri.toString()}');
+      
+      http.Response response;
+      try {
+        response = await http.get(uri).timeout(const Duration(seconds: 35));
+      } catch (e) {
+        debugPrint('First fetch attempt failed ($e), retrying for Render cold start...');
+        await Future.delayed(const Duration(seconds: 2));
+        response = await http.get(uri).timeout(const Duration(seconds: 45));
+      }
+      
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        List<dynamic> restaurantsJson = [];
+        if (jsonResponse is List) {
+          restaurantsJson = jsonResponse;
+        } else if (jsonResponse is Map) {
+          restaurantsJson = jsonResponse['restaurants'] ?? jsonResponse['data'] ?? [];
+        }
+
+        // Ensure each restaurant has its accurate live geofence radius from details
+        await Future.wait(restaurantsJson.map((item) async {
+          if (item is Map) {
+            final rId = item['_id']?.toString() ?? item['id']?.toString() ?? item['slug']?.toString();
+            final hasRadius = item['geofenceRadius'] != null || item['deliveryRadius'] != null;
+            if (!hasRadius && rId != null && rId.isNotEmpty) {
+              try {
+                final detailUri = Uri.parse('$restaurantsUrl/details/$rId');
+                final dRes = await http.get(detailUri).timeout(const Duration(seconds: 4));
+                if (dRes.statusCode == 200) {
+                  final dJson = jsonDecode(dRes.body);
+                  final rData = dJson is Map ? (dJson['restaurant'] ?? dJson) : null;
+                  if (rData is Map && rData['geofenceRadius'] != null) {
+                    final r = _parseDouble(rData['geofenceRadius'], 10.0);
+                    item['geofenceRadius'] = r;
+                    item['deliveryRadius'] = r;
+                    _cachedRestaurantRadius[rId] = r;
+                  }
+                }
+              } catch (_) {}
+            } else if (hasRadius && rId != null) {
+              _cachedRestaurantRadius[rId] = _parseDouble(item['geofenceRadius'] ?? item['deliveryRadius'], 10.0);
+            }
+          }
+        }));
+
+        final list = restaurantsJson.map((json) => _fromJsonToRestaurant(json)).toList();
+        return list;
+      }
+    } catch (e) {
+      debugPrint('Error fetching restaurants: $e');
+    }
+    final mockList = _getMockRestaurants();
+    if (filters != null && filters.containsKey('search')) {
+      final q = filters['search']!.toLowerCase();
+      return mockList.where((r) => r.name.toLowerCase().contains(q) || r.cuisine.toLowerCase().contains(q)).toList();
+    }
+    return mockList;
+  }
+
+  static Future<Restaurant> getRestaurantDetails(String slug) async {
+    if (kFrontendPreviewMode) {
+      final list = _getMockRestaurants();
+      return list.firstWhere(
+        (r) => r.slug == slug || r.id == slug,
+        orElse: () => list.first,
+      );
+    }
+    try {
+      final response = await http.get(Uri.parse('$restaurantsUrl/details/$slug'));
+      debugPrint('API Response [getRestaurantDetails]: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final data = jsonResponse['restaurant'] ?? jsonResponse;
+        return _fromJsonToRestaurant(data);
+      } else {
+        throw Exception('Failed to load restaurant details');
+      }
+    } catch (e) {
+      debugPrint('Error fetching restaurant details: $e');
+      final list = _getMockRestaurants();
+      return list.firstWhere(
+        (r) => r.slug == slug || r.id == slug,
+        orElse: () => list.first,
+      );
+    }
+  }
+
+  static Future<List<MenuItem>> getRestaurantMenu(String identifier) async {
+    if (kFrontendPreviewMode) {
+      return _getMockMenuItems();
+    }
+    try {
+      var url = '$apiBaseUrl/menu/$identifier';
+      var response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) {
+        url = '$restaurantsUrl/menu/$identifier';
+        response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      }
+      debugPrint('API Response [getRestaurantMenu]: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        List<dynamic> menuJson = [];
+        if (jsonResponse is List) {
+          menuJson = jsonResponse;
+        } else if (jsonResponse is Map) {
+          if (jsonResponse['items'] is List) {
+            menuJson = jsonResponse['items'];
+          } else if (jsonResponse['products'] is List) {
+            menuJson = jsonResponse['products'];
+          } else if (jsonResponse['menu'] is List) {
+            menuJson = jsonResponse['menu'];
+          } else if (jsonResponse['menu'] is Map) {
+            final Map<String, dynamic> catMap = jsonResponse['menu'];
+            for (var items in catMap.values) {
+              if (items is List) {
+                menuJson.addAll(items);
+              }
+            }
+          } else if (jsonResponse['data'] is List) {
+            menuJson = jsonResponse['data'];
+          }
+        }
+        return menuJson.map((json) => _fromJsonToMenuItem(Map<String, dynamic>.from(json))).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching menu: $e');
+    }
+    return _getMockMenuItems();
+  }
+
+  static Future<List<Restaurant>> searchRestaurants(String query, {double? lat, double? lng}) async {
+    if (kFrontendPreviewMode) {
+      final q = query.toLowerCase();
+      return _getMockRestaurants().where((r) {
+        final rName = r.name.toLowerCase();
+        final rCuisine = r.cuisine.toLowerCase();
+        final matchMenu = r.menu.any((item) => item.name.toLowerCase().contains(q));
+        return rName.contains(q) || rCuisine.contains(q) || matchMenu;
+      }).toList();
+    }
+    try {
+      final encodedQuery = Uri.encodeComponent(query.trim());
+      String urlStr = '$restaurantsUrl/search?query=$encodedQuery&q=$encodedQuery';
+      if (lat != null && lng != null && lat != 0 && lng != 0) {
+        urlStr += '&lat=$lat&lng=$lng';
+      }
+      var response = await http.get(Uri.parse(urlStr)).timeout(const Duration(seconds: 12));
+      debugPrint('API Response [searchRestaurants]: ${response.statusCode}');
+      
+      if (response.statusCode != 200) {
+        final fallbackUrl = '$apiBaseUrl/search?query=$encodedQuery&q=$encodedQuery${(lat != null && lng != null && lat != 0 && lng != 0) ? '&lat=$lat&lng=$lng' : ''}';
+        response = await http.get(Uri.parse(fallbackUrl)).timeout(const Duration(seconds: 12));
+      }
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final dynamic rawList = (jsonResponse is Map)
+            ? (jsonResponse['restaurants'] ?? jsonResponse['results']?['restaurants'] ?? [])
+            : (jsonResponse is List ? jsonResponse : []);
+        if (rawList is List) {
+          return rawList.map((json) => _fromJsonToRestaurant(Map<String, dynamic>.from(json))).toList();
+        }
+      } else {
+        debugPrint('Search restaurants non-200: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error searching restaurants: $e');
+    }
+    return [];
+  }
+
+  static Future<List<String>> getSuggestions(String query) async {
+    if (kFrontendPreviewMode) {
+      final q = query.toLowerCase();
+      final allNames = [
+        ..._getMockRestaurants().map((r) => r.name),
+        ..._getMockMenuItems().map((m) => m.name),
+      ];
+      return allNames.where((n) => n.toLowerCase().contains(q)).toList();
+    }
+    try {
+      final encoded = Uri.encodeComponent(query.trim());
+      var response = await http.get(Uri.parse('$restaurantsUrl/suggestions?query=$encoded&q=$encoded')).timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) {
+        response = await http.get(Uri.parse('$apiBaseUrl/search/suggestions?query=$encoded&q=$encoded')).timeout(const Duration(seconds: 8));
+      }
+      debugPrint('API Response [getSuggestions]: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final dynamic suggestionsRaw = (jsonResponse is Map)
+            ? (jsonResponse['suggestions'] ?? jsonResponse['data'] ?? [])
+            : jsonResponse;
+        
+        if (suggestionsRaw is List) {
+          return suggestionsRaw.map((s) {
+            if (s is Map) {
+              return s['text']?.toString() ?? s['name']?.toString() ?? s['title']?.toString() ?? '';
+            }
+            return s?.toString() ?? '';
+          }).where((s) => s.trim().isNotEmpty).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching suggestions: $e');
+    }
+    return [];
+  }
+
+  static Future<List<Category>> getCategories() async {
+    if (kFrontendPreviewMode) {
+      return _getMockCategories();
+    }
+    try {
+      var response = await http.get(Uri.parse('$categoriesUrl/tree')).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) {
+        response = await http.get(Uri.parse('$categoriesUrl?type=main&isActive=true&userAppVisible=true')).timeout(const Duration(seconds: 15));
+      }
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final List<dynamic> data = jsonResponse is Map
+            ? (jsonResponse['data'] ?? jsonResponse['categories'] ?? [])
+            : (jsonResponse is List ? jsonResponse : []);
+
+        final list = data.where((e) => e != null && e is Map).map((item) {
+          final json = item as Map;
+          if (json['isActive'] == false || json['userAppVisible'] == false) {
+            return null;
+          }
+          String catTitle = '';
+          if (json['title'] != null && json['title'].toString().trim().isNotEmpty) {
+            catTitle = json['title'].toString().trim();
+          } else if (json['name'] != null) {
+            if (json['name'] is Map) {
+              catTitle = json['name']['en']?.toString() ?? json['name'].values.firstOrNull?.toString() ?? 'Category';
+            } else {
+              catTitle = json['name'].toString().trim();
+            }
+          }
+          final priceVal = _parseDouble(json['startingPrice'] ?? json['price'] ?? json['fromPrice'], 0.0);
+
+          String rawImg = (json['image'] ?? json['imageUrl'] ?? '').toString().trim();
+          if (rawImg.isEmpty || rawImg == 'null') {
+            final n = catTitle.toLowerCase();
+            if (n.contains('course') || n.contains('main') || n.contains('north indian') || n.contains('thali')) {
+              rawImg = 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400';
+            } else if (n.contains('pizza')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/categories/category_pizza_E7N648fSr6.png';
+            } else if (n.contains('burger')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/categories/category_burger__Jc6jUvwy.png';
+            } else if (n.contains('biryani')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/c5%20(1).png';
+            } else if (n.contains('chinese') || n.contains('noodle')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/categories/category_chinese_XVc494o0A.png';
+            } else if (n.contains('momo')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/c7%20(1).png';
+            } else if (n.contains('sandwich')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/c6%20(1).png';
+            } else if (n.contains('cake') || n.contains('sweet')) {
+              rawImg = 'https://ik.imagekit.io/ECDKART/categories/category_cake_VALLdDFpTj.png';
+            } else if (n.contains('beverage') || n.contains('drink')) {
+              rawImg = 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400';
+            } else {
+              rawImg = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400';
+            }
+          }
+
+          return Category(
+            id: json['_id']?.toString() ?? json['slug']?.toString() ?? '',
+            title: catTitle.isNotEmpty ? catTitle : 'Category',
+            image: rawImg,
+            startingPrice: priceVal,
+          );
+        }).whereType<Category>().toList();
+
+        // Deduplicate categories by title/id
+        final seen = <String>{};
+        final uniqueList = <Category>[];
+        for (final c in list) {
+          final key = c.title.trim().toLowerCase();
+          if (key.isNotEmpty && !seen.contains(key)) {
+            seen.add(key);
+            uniqueList.add(c);
+          }
+        }
+
+        if (uniqueList.isNotEmpty) return uniqueList;
+      }
+    } catch (e) {
+      debugPrint('Error fetching categories: $e');
+    }
+    return [];
+  }
+
+  static Future<List<PopularDish>> getPopularDishes({double? lat, double? lng}) async {
+    try {
+      String urlStr = popularDishesUrl;
+      if (lat != null && lng != null && lat != 0 && lng != 0) {
+        urlStr += (urlStr.contains('?') ? '&' : '?') + 'lat=$lat&lng=$lng';
+      }
+      final response = await http.get(Uri.parse(urlStr)).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final List<dynamic> data = jsonResponse is List
+            ? jsonResponse
+            : (jsonResponse['dishes'] ?? jsonResponse['products'] ?? jsonResponse['data'] ?? []);
+        final list = data.map((json) {
+          final rawPrice = _parseDouble(json['price'] ?? json['sellingPrice'] ?? json['basePrice'], 149.0);
+          final rawName = json['name'] is Map ? (json['name']['en']?.toString() ?? json['name'].values.first?.toString() ?? 'Dish') : (json['name']?.toString() ?? 'Dish');
+          final rawDesc = json['description'] is Map ? (json['description']['en']?.toString() ?? json['description'].values.first?.toString() ?? '') : (json['description']?.toString() ?? '');
+          final rawCat = json['category'] is Map ? (json['category']['name']?.toString() ?? 'General') : (json['category']?.toString() ?? 'General');
+
+          final rest = json['restaurant'];
+          String rId = '';
+          String rName = '';
+          if (rest is Map) {
+            rId = rest['_id']?.toString() ?? rest['id']?.toString() ?? '';
+            rName = rest['name']?.toString() ?? '';
+          } else if (rest != null) {
+            rId = rest.toString();
+          }
+
+          return PopularDish(
+            id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+            name: rawName,
+            slug: json['slug']?.toString() ?? '',
+            imageUrl: json['image']?.toString() ?? json['imageUrl']?.toString() ?? 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400',
+            category: rawCat,
+            price: rawPrice,
+            description: rawDesc,
+            isVeg: json['isVeg'] == true || json['foodType'] == 'veg',
+            rating: _parseDouble(json['rating'], 4.5),
+            restaurantId: rId,
+            restaurantName: rName,
+          );
+        }).toList();
+        if (list.isNotEmpty) return list;
+      }
+    } catch (e) {
+      debugPrint('Error fetching popular dishes: $e');
+    }
+    return [];
+  }
+
+  static Future<List<Restaurant>> getRecommendedRestaurants({
+    double? lat,
+    double? lng,
+    String? city,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (lat != null && lng != null) {
+        queryParams['lat'] = lat.toString();
+        queryParams['long'] = lng.toString();
+      }
+      if (city != null && city.isNotEmpty) {
+        queryParams['city'] = city;
+      }
+      final uri = Uri.parse('$apiBaseUrl/home/recommended').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> list = (decoded is Map)
+            ? (decoded['restaurants'] ?? decoded['data'] ?? [])
+            : (decoded is List ? decoded : []);
+        final parsed = list.map((json) {
+          if (json is Map<String, dynamic>) return _fromJsonToRestaurant(json);
+          if (json is Map) return _fromJsonToRestaurant(Map<String, dynamic>.from(json));
+          return null;
+        }).whereType<Restaurant>().toList();
+        if (parsed.isNotEmpty) return parsed;
+      }
+    } catch (e) {
+      debugPrint('Error fetching recommended restaurants: $e');
+    }
+    // Fallback to top-rated nearby restaurants
+    final fallbackList = await getRestaurants(lat: lat, lng: lng, city: city);
+    final sorted = List<Restaurant>.from(fallbackList);
+    sorted.sort((a, b) => b.rating.compareTo(a.rating));
+    return sorted;
+  }
+
+  static Future<List<Restaurant>> getRestaurantsByCategory(String slug) async {
+    if (kFrontendPreviewMode) {
+      return _getMockRestaurants();
+    }
+    try {
+      final response = await http.get(Uri.parse('$restaurantsUrl/by-category/$slug'));
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final List<dynamic> restaurantsJson = jsonResponse['restaurants'] ?? [];
+        return restaurantsJson.map((json) => _fromJsonToRestaurant(json)).toList();
+      } else {
+        throw Exception('Failed to load restaurants for category');
+      }
+    } catch (e) {
+      debugPrint('Error fetching restaurants by category: $e');
+      return [];
+    }
+  }
+
+  static Restaurant _fromJsonToRestaurant(Map<String, dynamic> json) {
+    List<MenuItem> menuItems = [];
+    if (json['menu'] != null && json['menu'] is List) {
+      menuItems = (json['menu'] as List).map((i) => _fromJsonToMenuItem(i)).toList();
+    }
+
+    String rName = 'Unknown Restaurant';
+    if (json['name'] != null) {
+      if (json['name'] is Map) {
+        rName = json['name']['en']?.toString() ?? json['name']['de']?.toString() ?? json['name'].values.first?.toString() ?? 'Unknown Restaurant';
+      } else {
+        rName = json['name'].toString();
+      }
+    }
+
+    double parsedRating = 0.0;
+    if (json['rating'] != null) {
+      if (json['rating'] is Map) {
+        parsedRating = _parseDouble(json['rating']['average'] ?? json['rating']['avgRating'] ?? json['adminRating'], 0.0);
+      } else {
+        parsedRating = _parseDouble(json['rating'], 0.0);
+      }
+    } else if (json['avgRating'] != null) {
+      parsedRating = _parseDouble(json['avgRating'], 0.0);
+    } else if (json['adminRating'] != null) {
+      parsedRating = _parseDouble(json['adminRating'], 0.0);
+    }
+
+    String parsedCuisine = '';
+    if (json['cuisine'] is List && (json['cuisine'] as List).isNotEmpty) {
+      parsedCuisine = (json['cuisine'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).join(', ');
+    } else if (json['cuisine'] is String && (json['cuisine'] as String).trim().isNotEmpty) {
+      parsedCuisine = json['cuisine'].toString().trim();
+    } else if (json['storeType'] != null && json['storeType'].toString().trim().isNotEmpty) {
+      parsedCuisine = json['storeType'].toString().trim();
+    }
+
+    if (parsedCuisine.isEmpty) {
+      final n = rName.toLowerCase();
+      if (n.contains('cafe')) {
+        parsedCuisine = 'Cafe, Fast Food, Beverages, Burger, Sandwich';
+      } else if (n.contains('momo')) {
+        parsedCuisine = 'Chinese, Momos, Fast Food';
+      } else if (n.contains('biryani')) {
+        parsedCuisine = 'Biryani, North Indian, Main Course';
+      } else if (n.contains('pizza') || n.contains('cheesey')) {
+        parsedCuisine = 'Pizza, Fast Food, Italian, Burger';
+      } else if (n.contains('naan') || n.contains('rasoi') || n.contains('dhaba') || n.contains('chulha') || n.contains('rajput') || n.contains('sohna') || n.contains('pandit')) {
+        parsedCuisine = 'North Indian, Main Course, Thali';
+      } else if (n.contains('cake') || n.contains('sweet') || n.contains('baker')) {
+        parsedCuisine = 'Cake, Bakery, Desserts';
+      } else {
+        parsedCuisine = 'North Indian, Fast Food, Chinese, Pizza, Burger, Biryani, Momos, Sandwich';
+      }
+    }
+
+    final rId = json['_id']?.toString() ?? json['id']?.toString() ?? '';
+    final distKm = _parseDouble(json['distanceKm'] ?? json['distance'] ?? json['distanceInKm'], 1.5);
+    final rawGeo = json['geofenceRadius'] ?? json['deliveryRadius'] ?? json['serviceRadius'] ?? _cachedRestaurantRadius[rId];
+    final double geoRadius = rawGeo != null ? _parseDouble(rawGeo, 25.0) : 25.0;
+
+    final bool rawActive = json['isActive'] != false &&
+        json['status'] != 'Inactive' &&
+        json['status'] != 'inactive' &&
+        json['isTemporarilyClosed'] != true;
+    final bool rawOnline = json['isOnline'] != false;
+    final bool isActuallyActive = rawActive && rawOnline;
+
+    final bool isWithinGeofence = json['isServiceable'] != null ? (json['isServiceable'] == true) : (distKm <= geoRadius);
+    final bool isServiceable = isActuallyActive && isWithinGeofence;
+
+    final String parsedAddress = json['address']?.toString() ?? [json['area'], json['city']].where((e) => e != null && e.toString().trim().isNotEmpty).join(', ');
+    final String parsedPhone = json['phone']?.toString() ?? json['contactNumber']?.toString() ?? '';
+    final String parsedEmail = json['email']?.toString() ?? '';
+    final double minOrderVal = _parseDouble(json['minOrderValue'], 0.0);
+    final int prepTimeMins = _parseInt(json['estimatedPreparationTime'] ?? json['prepTime'] ?? json['prepTimeMinutes'], 15);
+    final bool isPickup = json['isSelfPickupEnabled'] != null
+        ? (json['isSelfPickupEnabled'] == true)
+        : (json['deliveryType'] is List
+            ? (json['deliveryType'] as List).any((d) => d.toString().toLowerCase().contains('pickup') || d.toString().toLowerCase().contains('both'))
+            : true);
+    final String paymentMethodsStr = json['paymentMethods']?.toString() ?? 'Both';
+    final bool isOpenNow = json['isOpen'] != null ? (json['isOpen'] == true) : isActuallyActive;
+    final Map<String, dynamic> timingMap = json['timing'] is Map ? Map<String, dynamic>.from(json['timing'] as Map) : <String, dynamic>{};
+    final bool isTempClosed = json['isTemporarilyClosed'] == true;
+    final String busyReason = json['kitchenBusyReason']?.toString() ?? '';
+
+    final String coverOrLogo = (json['coverImage'] != null && json['coverImage'].toString().trim().isNotEmpty && json['coverImage'] != 'null')
+        ? json['coverImage'].toString().trim()
+        : ((json['logo'] != null && json['logo'].toString().trim().isNotEmpty && json['logo'] != 'null')
+            ? json['logo'].toString().trim()
+            : ((json['image'] != null && json['image'].toString().trim().isNotEmpty && json['image'] != 'null')
+                ? json['image'].toString().trim()
+                : ''));
+
+    return Restaurant(
+      id: rId,
+      slug: json['slug']?.toString() ?? '',
+      name: rName,
+      imageUrl: coverOrLogo,
+      rating: parsedRating,
+      reviewCount: _parseInt(json['totalReviews'] ?? json['ratingCount'] ?? json['reviewCount'] ?? json['orderCount'], 0),
+      distanceKm: distKm,
+      deliveryTimeMin: _parseInt(json['deliveryTimeMin'] ?? json['deliveryTime'] ?? json['prepTime'] ?? json['estimatedPreparationTime'], 25),
+      deliveryCharge: _parseDouble(json['deliveryCharge'] ?? json['shippingFee'], 0.0),
+      cuisine: parsedCuisine,
+      menu: menuItems,
+      isActive: isActuallyActive,
+      isOnline: isActuallyActive,
+      geofenceRadius: geoRadius,
+      isServiceable: isServiceable,
+      address: parsedAddress,
+      phone: parsedPhone,
+      email: parsedEmail,
+      minOrderValue: minOrderVal,
+      estimatedPreparationTime: prepTimeMins,
+      isSelfPickupEnabled: isPickup,
+      paymentMethods: paymentMethodsStr,
+      isOpen: isOpenNow,
+      timing: timingMap,
+      isTemporarilyClosed: isTempClosed,
+      kitchenBusyReason: busyReason,
+      isFeatured: json['isFeatured'] == true || json['isPromoted'] == true || json['isAd'] == true,
+      startingPrice: _parseDouble(json['startingPrice'] ?? json['lowestPrice'] ?? json['minPrice'], 0.0),
+      savingPercent: _parseInt(json['savingPercent'], 0),
+    );
+  }
+
+
+  static double _parseDouble(dynamic value, double defaultVal) {
+    if (value == null) return defaultVal;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      if (parsed != null) return parsed;
+      final match = RegExp(r'\d+(\.\d+)?').firstMatch(value);
+      if (match != null) {
+        return double.tryParse(match.group(0)!) ?? defaultVal;
+      }
+    }
+    return defaultVal;
+  }
+
+  static int _parseInt(dynamic value, int defaultVal) {
+    if (value == null) return defaultVal;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null) return parsed;
+      final match = RegExp(r'\d+').firstMatch(value);
+      if (match != null) {
+        return int.tryParse(match.group(0)!) ?? defaultVal;
+      }
+    }
+    return defaultVal;
+  }
+
+  static MenuItem _fromJsonToMenuItem(Map<String, dynamic> json) {
+    final rawPrice = _parseDouble(json['price'] ?? json['sellingPrice'] ?? json['basePrice'] ?? json['b2cPrice'], 0.0);
+    final rawMrp = _parseDouble(json['mrp'] ?? json['originalBasePrice'] ?? json['originalPrice'], rawPrice > 0 ? rawPrice : 0.0);
+    final rawDiscount = _parseDouble(json['discountPercent'], rawMrp > rawPrice ? ((rawMrp - rawPrice) / rawMrp * 100) : 0.0);
+    final isOut = json['outOfStock'] == true || json['available'] == false;
+
+    String pName = 'Item';
+    if (json['name'] != null) {
+      if (json['name'] is Map) {
+        pName = json['name']['en']?.toString() ?? json['name']['de']?.toString() ?? json['name'].values.first?.toString() ?? 'Item';
+      } else {
+        pName = json['name'].toString();
+      }
+    }
+
+    String pDesc = '';
+    if (json['description'] != null) {
+      if (json['description'] is Map) {
+        pDesc = json['description']['en']?.toString() ?? json['description']['de']?.toString() ?? json['description'].values.first?.toString() ?? '';
+      } else {
+        pDesc = json['description'].toString();
+      }
+    }
+
+    String pCategory = 'General';
+    if (json['category'] != null) {
+      if (json['category'] is Map) {
+        pCategory = json['category']['name'] is Map
+            ? (json['category']['name']['en']?.toString() ?? json['category']['name'].values.first?.toString() ?? 'General')
+            : (json['category']['name']?.toString() ?? json['category']['title']?.toString() ?? 'General');
+      } else {
+        pCategory = json['category'].toString();
+      }
+    }
+    final isHexId = pCategory.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(pCategory);
+    if (pCategory == 'General' || isHexId) {
+      if (json['categoryId'] is Map) {
+        final cMap = json['categoryId'];
+        pCategory = cMap['name'] is Map
+            ? (cMap['name']['en']?.toString() ?? cMap['name'].values.first?.toString() ?? pCategory)
+            : (cMap['name']?.toString() ?? cMap['title']?.toString() ?? pCategory);
+      } else if (json['categoryName'] != null && json['categoryName'].toString().trim().isNotEmpty) {
+        pCategory = json['categoryName'].toString().trim();
+      } else if (json['subcategory'] is Map && json['subcategory']['name'] != null) {
+        pCategory = json['subcategory']['name'].toString().trim();
+      } else if (json['subcategory'] != null && json['subcategory'].toString().trim().isNotEmpty) {
+        pCategory = json['subcategory'].toString().trim();
+      }
+    }
+
+    final String rawImg = (json['image'] ?? json['imageUrl'] ?? '').toString().trim();
+    final String itemImageUrl = (rawImg.isNotEmpty && rawImg != 'null') ? rawImg : '';
+
+    final String rId = json['restaurantId']?.toString() ??
+        (json['restaurant'] is Map ? json['restaurant']['_id']?.toString() : json['restaurant']?.toString()) ?? '';
+    final String rName = json['restaurantName']?.toString() ??
+        (json['restaurant'] is Map ? json['restaurant']['name']?.toString() : '') ?? '';
+    final String rSlug = json['restaurantSlug']?.toString() ??
+        (json['restaurant'] is Map ? json['restaurant']['slug']?.toString() : '') ?? '';
+
+    final String portionType = (json['portionType'] ?? 'none').toString();
+    Map<String, dynamic>? portions;
+    if (json['portions'] is Map && (json['portions'] as Map).isNotEmpty) {
+      portions = Map<String, dynamic>.from(json['portions']);
+    }
+
+    final List<Map<String, dynamic>> variations = [];
+    if (json['variations'] is List) {
+      for (var v in json['variations']) {
+        if (v is Map) variations.add(Map<String, dynamic>.from(v));
+      }
+    }
+
+    final List<Map<String, dynamic>> addOns = [];
+    final rawAddOns = json['addOns'] ?? json['addons'];
+    if (rawAddOns is List) {
+      for (var a in rawAddOns) {
+        if (a is Map) {
+          final n = a['name'];
+          final aName = n is Map ? (n['en']?.toString() ?? n.values.first?.toString() ?? '') : (n?.toString() ?? '');
+          final aPrice = _parseDouble(a['price'], 0.0);
+          if (aName.isNotEmpty) {
+            addOns.add({'name': aName, 'price': aPrice});
+          }
+        }
+      }
+    }
+
+    return MenuItem(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: pName,
+      imageUrl: itemImageUrl,
+      price: rawPrice,
+      originalPrice: rawMrp > rawPrice ? rawMrp : null,
+      comparisonTag: rawDiscount > 0 ? '${rawDiscount.toInt()}% OFF' : null,
+      category: pCategory,
+      rating: _parseDouble(json['rating'], 0.0),
+      isVeg: json['isVeg'] == true || json['isVegetarian'] == true || json['foodType'] == 'veg' || json['veg'] == true,
+      description: pDesc,
+      outOfStock: isOut,
+      preparationTime: _parseInt(json['preparationTime'], 15),
+      subcategory: json['subcategory'] is Map ? (json['subcategory']['name']?.toString() ?? '') : (json['subcategory']?.toString() ?? ''),
+      isFeatured: json['isFeatured'] == true,
+      adminPriceOverridden: json['adminPriceOverride']?['isOverridden'] == true,
+      portionType: portionType,
+      portions: portions,
+      variations: variations,
+      addOns: addOns,
+      restaurantId: rId,
+      restaurantName: rName,
+      restaurantSlug: rSlug,
+    );
+  }
+
+  /// Fetch dynamic recommended dishes shuffled and personalized
+  static Future<List<MenuItem>> getRecommendedDishes({double? lat, double? lng, String? city}) async {
+    try {
+      String urlStr = '$apiBaseUrl/home/recommended-dishes';
+      final queryParams = <String>[];
+      if (lat != null && lng != null && lat != 0 && lng != 0) {
+        queryParams.add('lat=$lat&lng=$lng');
+      }
+      if (city != null && city.trim().isNotEmpty) {
+        queryParams.add('city=${Uri.encodeComponent(city.trim())}');
+      }
+      if (queryParams.isNotEmpty) {
+        urlStr += '?${queryParams.join('&')}';
+      }
+      final headers = await _getHeaders();
+      final response = await http.get(Uri.parse(urlStr), headers: headers).timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final list = (decoded is Map ? decoded['dishes'] : decoded) as dynamic;
+        if (list is List) {
+          return list.map((item) => _fromJsonToMenuItem(Map<String, dynamic>.from(item))).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching recommended dishes: $e');
+    }
+    return [];
+  }
+
+  /// Fetch dynamic special dishes configured in CMS and shuffled
+  static Future<List<MenuItem>> getSpecialDishes({double? lat, double? lng, String? city}) async {
+    try {
+      String urlStr = '$apiBaseUrl/home/special-dishes';
+      final queryParams = <String>[];
+      if (lat != null && lng != null && lat != 0 && lng != 0) {
+        queryParams.add('lat=$lat&lng=$lng');
+      }
+      if (city != null && city.trim().isNotEmpty) {
+        queryParams.add('city=${Uri.encodeComponent(city.trim())}');
+      }
+      if (queryParams.isNotEmpty) {
+        urlStr += '?${queryParams.join('&')}';
+      }
+      final headers = await _getHeaders();
+      final response = await http.get(Uri.parse(urlStr), headers: headers).timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final list = (decoded is Map ? decoded['dishes'] : decoded) as dynamic;
+        if (list is List) {
+          return list.map((item) => _fromJsonToMenuItem(Map<String, dynamic>.from(item))).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching special dishes: $e');
+    }
+    return [];
+  }
+
+  static List<Restaurant> _getMockRestaurants() => [];
+  static List<MenuItem> _getMockMenuItems() => [];
+  static List<Category> _getMockCategories() => [];
+}

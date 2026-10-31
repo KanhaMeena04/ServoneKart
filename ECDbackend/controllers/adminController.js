@@ -1,0 +1,2427 @@
+const Order = require("../models/Order");
+const User = require("../models/User");
+const Restaurant = require("../models/Restaurant");
+const Rider = require("../models/Rider");
+const Product = require("../models/Product");
+const WalletTransaction = require("../models/WalletTransaction");
+const Notification = require("../models/Notification");
+const SupportChat = require("../models/SupportChat");
+const { admin, isInitialized } = require("../config/firebaseConfig");
+const socketService = require("../services/socketService");
+const { sendNotification } = require("../utils/notificationService");
+const { getPaginationParams } = require('../utils/pagination');
+const normalizeTranslation = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") return { en: value };
+  if (typeof value === "object") {
+    if (value.en) return value;
+    const fallback = value.de || value.ar;
+    if (fallback) return { ...value, en: fallback };
+  }
+  return null;
+};
+const ensureNameEn = (value, fallback) => {
+  const normalized = normalizeTranslation(value);
+  if (normalized && normalized.en) return { value: normalized, usedFallback: false };
+  if (fallback) return { value: { en: fallback }, usedFallback: true };
+  return { value: null, usedFallback: false };
+};
+const normalizeNamedList = (list) => {
+  if (!Array.isArray(list)) return list;
+  return list.map((item) => {
+    if (!item) return item;
+    if (typeof item.name === "string") {
+      return { ...item, name: { en: item.name } };
+    }
+    if (item.name && typeof item.name === "object" && !item.name.en) {
+      const fallback = item.name.de || item.name.ar;
+      if (fallback) return { ...item, name: { ...item.name, en: fallback } };
+    }
+    return item;
+  });
+};
+const safeString = (val, fallback = '') => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'object') {
+    return val.en || val.hi || val.name || val.title || (Object.values(val).find(v => typeof v === 'string') || fallback);
+  }
+  return String(val);
+};
+
+exports.getDashboard = async (req, res) => {
+  try {
+    const totalOrders = await Order.countDocuments({});
+    const inProgressStatuses = [
+      "placed",
+      "accepted",
+      "accepted_by_rider",
+      "preparation",
+      "ready",
+      "assigned",
+      "picked_up",
+      "arrived_restaurant",
+      "arrived_customer",
+    ];
+    const liveOrders = await Order.countDocuments({
+      status: { $in: inProgressStatuses },
+    });
+    const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
+    const totalRestaurants = await Restaurant.countDocuments({});
+    const totalRiders = await Rider.countDocuments({});
+    const revenueAgg = await Order.aggregate([
+      { $match: { status: { $ne: "cancelled" } } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $ifNull: ["$totalAmount", 0] } },
+        },
+      },
+    ]);
+    const totalEarnings =
+      revenueAgg[0] && revenueAgg[0].totalRevenue
+        ? revenueAgg[0].totalRevenue
+        : 0;
+    const commissionAgg = await Order.aggregate([
+      { $match: { status: { $ne: "cancelled" } } },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant",
+          foreignField: "_id",
+          as: "restaurant",
+        },
+      },
+      { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          totalAmount: { $ifNull: ["$totalAmount", 0] },
+          adminCommission: { $ifNull: ["$restaurant.adminCommission", 0] },
+        },
+      },
+      {
+        $project: {
+          commission: {
+            $multiply: ["$totalAmount", { $divide: ["$adminCommission", 100] }],
+          },
+        },
+      },
+      { $group: { _id: null, totalCommission: { $sum: "$commission" } } },
+    ]);
+    const totalCommission = commissionAgg[0]
+      ? commissionAgg[0].totalCommission
+      : 0;
+    const heatAgg = await Order.aggregate([
+      { $match: { status: { $in: inProgressStatuses } } },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant",
+          foreignField: "_id",
+          as: "restaurant",
+        },
+      },
+      { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+      { $group: { _id: "$restaurant.city", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 100 },
+    ]);
+    const heatmap = heatAgg.map((h) => ({
+      area: h._id || "Unknown",
+      activeOrders: h.count,
+    }));
+    const today = new Date();
+    const start = new Date();
+    start.setDate(today.getDate() - 29);
+    start.setHours(0, 0, 0, 0);
+    const salesAgg = await Order.aggregate([
+      { $match: { status: { $ne: "cancelled" }, createdAt: { $gte: start } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          revenue: { $sum: { $ifNull: ["$totalAmount", 0] } },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const salesSeries = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().split("T")[0];
+      const row = salesAgg.find((s) => s._id === key);
+      salesSeries.push({
+        date: key,
+        revenue: row ? row.revenue : 0,
+        orders: row ? row.orders : 0,
+      });
+    }
+    res.status(200).json({
+      totals: {
+        totalOrders,
+        liveOrders,
+        totalUsers,
+        totalRestaurants,
+        totalRiders,
+        totalEarnings,
+        totalCommission,
+      },
+      heatmap,
+      salesSeries,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getOrdersDashboard = async (req, res) => {
+  try {
+    const { period = "today", startDate, endDate, status: filterStatus, onlyAnalytics: rawOnlyAnalytics } = req.query;
+    const limit = parseInt(req.query.limit) || 100;
+    const onlyAnalytics = rawOnlyAnalytics === "true" || rawOnlyAnalytics === true;
+
+    let matchQuery = {};
+    const now = new Date();
+
+    if (period === "today" || period === "daily") {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      matchQuery.createdAt = { $gte: start, $lte: end };
+    } else if (period === "weekly") {
+      const start = new Date();
+      start.setDate(start.getDate() - 7);
+      start.setHours(0, 0, 0, 0);
+      matchQuery.createdAt = { $gte: start, $lte: now };
+    } else if (period === "monthly") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      start.setHours(0, 0, 0, 0);
+      matchQuery.createdAt = { $gte: start, $lte: now };
+    } else if (period === "yearly") {
+      const start = new Date(now.getFullYear(), 0, 1);
+      start.setHours(0, 0, 0, 0);
+      matchQuery.createdAt = { $gte: start, $lte: now };
+    } else if (period === "custom" && startDate && endDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      matchQuery.createdAt = { $gte: start, $lte: end };
+    } else if (period === "all") {
+      matchQuery = {};
+    }
+
+    const statusMap = {
+      pending: ['pending', 'placed'],
+      accepted: ['accepted'],
+      preparing: ['preparing', 'preparation'],
+      assigned: ['assigned', 'rider_assigned'],
+      ready: ['ready', 'ready_for_pickup'],
+      picked_up: ['picked_up', 'partner_picked', 'out_for_delivery', 'on_the_way', 'reached_restaurant', 'reached_store', 'delivery_arrived'],
+      cancelled: ['cancelled', 'failed'],
+      delivered: ['delivered', 'completed'],
+    };
+
+    const processingStatuses = [
+      ...statusMap.pending,
+      ...statusMap.accepted,
+      ...statusMap.preparing,
+      ...statusMap.assigned,
+      ...statusMap.ready,
+      ...statusMap.picked_up,
+    ];
+
+    // If 'today' or any filter yields 0 orders, check if DB has any orders and fallback to 'all' time so dashboard displays real data instead of blank 0s
+    let activePeriodLabel = period;
+    let periodTitle = "Today";
+    if (period === "weekly") periodTitle = "Weekly";
+    else if (period === "monthly") periodTitle = "Monthly";
+    else if (period === "yearly") periodTitle = "Yearly";
+    else if (period === "custom") periodTitle = "Selected Period";
+    else if (period === "all") periodTitle = "All Time";
+
+
+    // Single fast aggregation for period stats
+    const statsAgg = await Order.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: { $toLower: "$status" },
+          count: { $sum: 1 },
+          amount: { $sum: "$totalAmount" }
+        }
+      }
+    ]);
+
+    let totalCount = 0;
+    let totalRevenue = 0;
+    let completedCount = 0;
+    let cancelledCount = 0;
+    let processingCount = 0;
+    let newCount = 0;
+    let pendingCount = 0;
+    let acceptedCount = 0;
+    let preparingCount = 0;
+    let assignedCount = 0;
+    let readyCount = 0;
+    let pickedUpCount = 0;
+
+    statsAgg.forEach((g) => {
+      const st = g._id || '';
+      const c = g.count || 0;
+      const amt = g.amount || 0;
+      totalCount += c;
+      totalRevenue += amt;
+
+      if (statusMap.delivered.includes(st)) completedCount += c;
+      else if (statusMap.cancelled.includes(st)) cancelledCount += c;
+
+      if (processingStatuses.includes(st)) processingCount += c;
+
+      if (statusMap.pending.includes(st)) {
+        newCount += c;
+        pendingCount += c;
+      } else if (statusMap.accepted.includes(st)) {
+        acceptedCount += c;
+      } else if (statusMap.preparing.includes(st)) {
+        preparingCount += c;
+      } else if (statusMap.assigned.includes(st)) {
+        assignedCount += c;
+      } else if (statusMap.ready.includes(st)) {
+        readyCount += c;
+      } else if (statusMap.picked_up.includes(st)) {
+        pickedUpCount += c;
+      }
+    });
+
+    const statusCounts = {
+      all: totalCount,
+      pending: pendingCount,
+      accepted: acceptedCount,
+      preparing: preparingCount,
+      assigned: assignedCount,
+      ready: readyCount,
+      picked_up: pickedUpCount,
+      cancelled: cancelledCount,
+      delivered: completedCount,
+    };
+
+    // Live status counts strictly for the last 24 hours (for live recent order tabs)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const liveCountsAgg = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: twentyFourHoursAgo }
+        }
+      },
+      {
+        $group: {
+          _id: { $toLower: "$status" },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const liveStatusCounts = {
+      all: 0,
+      pending: 0,
+      accepted: 0,
+      preparing: 0,
+      assigned: 0,
+      ready: 0,
+      picked_up: 0,
+      cancelled: 0,
+      delivered: 0,
+    };
+
+    liveCountsAgg.forEach((g) => {
+      const st = g._id || '';
+      const c = g.count || 0;
+      liveStatusCounts.all += c;
+      if (statusMap.pending.includes(st)) liveStatusCounts.pending += c;
+      else if (statusMap.accepted.includes(st)) liveStatusCounts.accepted += c;
+      else if (statusMap.preparing.includes(st)) liveStatusCounts.preparing += c;
+      else if (statusMap.assigned.includes(st)) liveStatusCounts.assigned += c;
+      else if (statusMap.ready.includes(st)) liveStatusCounts.ready += c;
+      else if (statusMap.picked_up.includes(st)) liveStatusCounts.picked_up += c;
+      else if (statusMap.delivered.includes(st)) liveStatusCounts.delivered += c;
+      else if (statusMap.cancelled.includes(st)) liveStatusCounts.cancelled += c;
+    });
+
+    // Dynamic Timeline Aggregation for Graph Chart
+    let chartLabels = [];
+    let chartOrders = [];
+    let chartCompleted = [];
+    let chartCancelled = [];
+    let chartRevenue = [];
+
+    const timelineAggRaw = await Order.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          count: { $sum: 1 },
+          completed: {
+            $sum: {
+              $cond: [{ $in: [{ $toLower: "$status" }, statusMap.delivered] }, 1, 0]
+            }
+          },
+          cancelled: {
+            $sum: {
+              $cond: [{ $in: [{ $toLower: "$status" }, statusMap.cancelled] }, 1, 0]
+            }
+          },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 15 }
+    ]);
+
+    const timelineAgg = (timelineAggRaw || []).slice().reverse();
+
+    if (timelineAgg.length > 1) {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      chartLabels = timelineAgg.map((t) => {
+        const d = new Date(t._id);
+        if (!isNaN(d.getTime())) {
+          return `${d.getDate()} ${monthNames[d.getMonth()]}`;
+        }
+        return t._id;
+      });
+      chartOrders = timelineAgg.map((t) => t.count);
+      chartCompleted = timelineAgg.map((t) => t.completed);
+      chartCancelled = timelineAgg.map((t) => t.cancelled);
+      chartRevenue = timelineAgg.map((t) => Math.round(t.revenue || 0));
+    } else if (timelineAgg.length === 1) {
+      chartLabels = ["12 AM", "3 AM", "6 AM", "9 AM", "12 PM", "3 PM", "6 PM", "9 PM"];
+      chartOrders = new Array(8).fill(0);
+      chartCompleted = new Array(8).fill(0);
+      chartCancelled = new Array(8).fill(0);
+      chartRevenue = new Array(8).fill(0);
+
+      const dayOrders = await Order.find(matchQuery, "createdAt status totalAmount").lean();
+      dayOrders.forEach((o) => {
+        const h = new Date(o.createdAt).getHours();
+        const slot = Math.min(7, Math.floor(h / 3));
+        chartOrders[slot] += 1;
+        chartRevenue[slot] += Math.round(Number(o.totalAmount || 0));
+        const st = (o.status || '').toLowerCase();
+        if (statusMap.delivered.includes(st)) chartCompleted[slot] += 1;
+        if (statusMap.cancelled.includes(st)) chartCancelled[slot] += 1;
+      });
+    } else {
+      chartLabels = ["12 AM", "3 AM", "6 AM", "9 AM", "12 PM", "3 PM", "6 PM", "9 PM"];
+      chartOrders = [0, 0, 0, 0, 0, 0, 0, 0];
+      chartCompleted = [0, 0, 0, 0, 0, 0, 0, 0];
+      chartCancelled = [0, 0, 0, 0, 0, 0, 0, 0];
+      chartRevenue = [0, 0, 0, 0, 0, 0, 0, 0];
+    }
+
+    const stats = [
+      { label: `${periodTitle} Orders`, value: totalCount, type: 'today' },
+      { label: `${periodTitle} Completed Orders`, value: completedCount, type: 'completed' },
+      { label: `${periodTitle} Cancelled Orders`, value: cancelledCount, type: 'cancelled' },
+      { label: `${periodTitle} Processing Orders`, value: processingCount, type: 'processing' }
+    ];
+
+    const todayOrders = {
+      period: period,
+      periodTitle: periodTitle,
+      total: totalCount,
+      totalRevenue: totalRevenue,
+      completedPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+      breakdown: [
+        { label: 'New Orders', value: newCount },
+        { label: 'Processing Orders', value: processingCount },
+        { label: 'Cancelled Orders', value: cancelledCount }
+      ]
+    };
+
+    // Recent orders: strictly retrieve orders from the last 24 hours, sorted newest first
+    let recentQuery = {
+      createdAt: { $gte: twentyFourHoursAgo }
+    };
+    if (filterStatus && filterStatus !== 'all' && statusMap[filterStatus]) {
+      recentQuery.status = { $in: statusMap[filterStatus] };
+    }
+
+    const recentOrders = onlyAnalytics
+      ? []
+      : await Order.find(recentQuery)
+          .populate('customer', 'name firstName lastName mobile phone email customerId address')
+          .populate('user', 'name firstName lastName mobile phone email customerId address')
+          .populate('restaurant', 'name phone contactNumber address city restaurantId')
+          .populate('store', 'name phone contactNumber address city restaurantId')
+          .populate('rider', 'name mobile phone riderId vehicle')
+          .populate({ path: 'rider', populate: { path: 'user', select: 'name mobile' } })
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean();
+
+    const formattedRecentOrders = recentOrders.map(order => {
+      const rawStatus = (order.status || '').toLowerCase();
+      let normalizedStatus = 'pending';
+      if (statusMap.cancelled.includes(rawStatus)) normalizedStatus = 'cancelled';
+      else if (statusMap.delivered.includes(rawStatus)) normalizedStatus = 'delivered';
+      else if (statusMap.picked_up.includes(rawStatus)) normalizedStatus = 'picked_up';
+      else if (statusMap.ready.includes(rawStatus)) normalizedStatus = 'ready';
+      else if (statusMap.assigned.includes(rawStatus)) normalizedStatus = 'assigned';
+      else if (statusMap.preparing.includes(rawStatus)) normalizedStatus = 'preparing';
+      else if (statusMap.accepted.includes(rawStatus)) normalizedStatus = 'accepted';
+      else if (statusMap.pending.includes(rawStatus)) normalizedStatus = 'pending';
+
+      const statusType = normalizedStatus === 'cancelled' ? 'failed' :
+        normalizedStatus === 'delivered' ? 'completed' :
+        normalizedStatus === 'picked_up' ? 'picked_up' :
+        normalizedStatus === 'ready' ? 'ready' :
+        normalizedStatus === 'assigned' ? 'assigned' :
+        normalizedStatus === 'preparing' ? 'preparing' :
+        normalizedStatus === 'accepted' ? 'accepted' : 'processing';
+
+      const color = normalizedStatus === 'cancelled' ? 'text-rose-600' :
+        normalizedStatus === 'delivered' ? 'text-emerald-600' :
+        normalizedStatus === 'picked_up' ? 'text-indigo-600' :
+        normalizedStatus === 'ready' ? 'text-teal-600' :
+        normalizedStatus === 'assigned' ? 'text-blue-600' :
+        normalizedStatus === 'preparing' ? 'text-purple-600' :
+        normalizedStatus === 'accepted' ? 'text-sky-600' : 'text-amber-600';
+
+      const statusLabel = normalizedStatus === 'picked_up' ? 'Picked Up' :
+        normalizedStatus === 'pending' ? 'Pending' :
+        normalizedStatus === 'accepted' ? 'Accepted' :
+        normalizedStatus === 'preparing' ? 'Preparing' :
+        normalizedStatus === 'assigned' ? 'Assigned' :
+        normalizedStatus === 'ready' ? 'Ready' :
+        normalizedStatus === 'cancelled' ? 'Cancelled' :
+        normalizedStatus === 'delivered' ? 'Delivered' :
+        (order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).replace(/_/g, ' ') : 'Pending');
+
+      const restDoc = order.restaurant || order.store || null;
+      let restName = '';
+      if (restDoc && typeof restDoc === 'object') {
+        if (typeof restDoc.name === 'string') restName = restDoc.name;
+        else if (restDoc.name && typeof restDoc.name === 'object') {
+          restName = restDoc.name.en || restDoc.name.name || Object.values(restDoc.name).find(v => typeof v === 'string') || '';
+        }
+      }
+      if (!restName && order.restaurantName) restName = order.restaurantName;
+      if (!restName && order.storeName) restName = order.storeName;
+      if (!restName) restName = 'ECD Partner Restaurant';
+
+      const custDoc = order.customer || order.user || null;
+      let customerName = '';
+      if (custDoc && typeof custDoc === 'object') {
+        customerName = custDoc.name || [custDoc.firstName, custDoc.lastName].filter(Boolean).join(' ') || '';
+      }
+      if (!customerName && order.customerName) customerName = order.customerName;
+      if (!customerName && order.deliveryAddress?.name) customerName = order.deliveryAddress.name;
+      if (!customerName && custDoc?.mobile) customerName = `Customer (${custDoc.mobile.slice(-4)})`;
+      if (!customerName) customerName = 'Customer';
+
+      const cleanRestId = order.restaurantId || restDoc?.restaurantId || (restDoc?._id ? `RNT${restDoc._id.toString().slice(-3).toUpperCase()}` : 'RNT001');
+      const cleanCustId = order.customerId || custDoc?.customerId || (custDoc?._id ? `C${custDoc._id.toString().slice(-3).toUpperCase()}` : 'C001');
+      const cleanRiderId = order.riderId || order.rider?.riderId || (order.rider?._id ? `RDR${order.rider._id.toString().slice(-3).toUpperCase()}` : null);
+
+      const riderName = order.rider?.name || order.rider?.user?.name || order.riderName || null;
+      const riderPhone = order.rider?.mobile || order.rider?.phone || order.rider?.user?.mobile || order.riderPhone || null;
+
+      const orderCode = order.orderNumber || `#${order._id.toString().slice(-6).toUpperCase()}`;
+
+      return {
+        _id: order._id,
+        id: orderCode,
+        orderCode: orderCode,
+        orderNumber: order.orderNumber || orderCode,
+        status: statusLabel,
+        normalizedStatus,
+        rawStatus: order.status,
+        statusType,
+        color,
+        amount: `₹${Number(order.totalAmount || 0).toFixed(2)}`,
+        inrAmount: `₹${Number(order.totalAmount || 0).toFixed(2)}`,
+        totalAmount: Number(order.totalAmount || 0),
+        customer: order.customer ? { ...order.customer, name: customerName, customerId: cleanCustId } : null,
+        customerName,
+        customerId: cleanCustId,
+        customerPhone: order.customer?.mobile || order.customer?.phone || '',
+        restaurant: order.restaurant ? { ...order.restaurant, name: restName, restaurantId: cleanRestId } : null,
+        restaurantName: restName,
+        restaurantId: cleanRestId,
+        restaurantPhone: order.restaurant?.phone || order.restaurant?.contactNumber || '',
+        rider: riderName ? {
+          name: riderName,
+          riderId: cleanRiderId || 'RDR001',
+          mobile: riderPhone || '',
+          vehicle: order.rider?.vehicle || null
+        } : null,
+        riderName,
+        riderId: cleanRiderId,
+        riderPhone,
+        orderType: order.orderType || 'delivery',
+        paymentMethod: order.paymentMethod || 'COD',
+        paymentStatus: order.paymentStatus || 'pending',
+        deliveryAddress: order.deliveryAddress || null,
+        itemCount: Array.isArray(order.items) ? order.items.length : 1,
+        items: order.items || [],
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      };
+    });
+
+    const totalAllTimeOrders = await Order.countDocuments({});
+
+    res.status(200).json({
+      success: true,
+      stats,
+      todayOrders,
+      statusCounts,
+      liveStatusCounts,
+      totalAllTimeOrders,
+      chartData: {
+        labels: chartLabels,
+        orders: chartOrders,
+        completed: chartCompleted,
+        cancelled: chartCancelled,
+        revenue: chartRevenue,
+      },
+      recentOrders: formattedRecentOrders
+    });
+  } catch (error) {
+    console.error('Orders Dashboard error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getAdminLiveNotifications = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 15;
+    
+    // Check when admin last marked all notifications as read
+    let lastReadTime = 0;
+    try {
+      const User = require('../models/User');
+      if (req.user?._id) {
+        const adminUser = await User.findById(req.user._id).select('lastNotificationsReadAt').lean();
+        if (adminUser?.lastNotificationsReadAt) {
+          lastReadTime = new Date(adminUser.lastNotificationsReadAt).getTime();
+        }
+      }
+    } catch (_) {}
+
+    const orders = await Order.find({})
+      .populate('restaurant', 'name logo address')
+      .populate('customer', 'name mobile')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const orderNotifications = orders.map((order) => {
+      const restaurantName = (order.restaurant && order.restaurant.name) || order.restaurantName || 'Restaurant';
+      const customerName = (order.customer && order.customer.name) || order.customerName || 'Customer';
+
+      const rawCode = order.orderCode ? String(order.orderCode).replace('#', '') : order._id.toString().slice(-6);
+      const cleanCode = rawCode.toUpperCase();
+      const orderTypeBadge = order.orderType === 'self_pickup' ? 'Self Pickup' : 'Delivery';
+      const itemsCount = Array.isArray(order.items) ? order.items.length : 1;
+      const amountStr = `₹${Number(order.totalAmount || 0).toFixed(2)}`;
+      
+      const isDeliveredOrCancelled = ['delivered', 'cancelled'].includes(order.status);
+      const isPastReadTime = lastReadTime > 0 && new Date(order.createdAt).getTime() <= lastReadTime;
+      const isRead = isDeliveredOrCancelled || isPastReadTime;
+
+      return {
+        id: order._id.toString(),
+        orderId: order._id.toString(),
+        orderCode: `#${cleanCode}`,
+        restaurantName,
+        customerName,
+        title: `Order #${cleanCode} • ${restaurantName}`,
+        description: `${amountStr} • ${itemsCount} items • ${orderTypeBadge}`,
+        status: order.status,
+        orderType: order.orderType || 'delivery',
+        amount: Number(order.totalAmount || 0),
+        amountFormatted: amountStr,
+        createdAt: order.createdAt,
+        read: isRead,
+        type: 'order',
+      };
+    });
+
+    // Unread support chats for real-time admin alert
+    let supportNotifications = [];
+    let totalSupportUnread = 0;
+    try {
+      const unreadChats = await SupportChat.find({ unreadCountAdmin: { $gt: 0 } })
+        .sort({ lastMessageAt: -1 })
+        .limit(5)
+        .lean();
+
+      totalSupportUnread = unreadChats.reduce((sum, c) => sum + (c.unreadCountAdmin || 0), 0);
+
+      supportNotifications = unreadChats.map((c) => {
+        const isPastReadTime = lastReadTime > 0 && new Date(c.lastMessageAt || c.updatedAt).getTime() <= lastReadTime;
+        return {
+          id: `support_${c._id}`,
+          orderId: c.orderId || '',
+          orderCode: 'SUPPORT',
+          restaurantName: 'ECDKart Support',
+          customerName: c.userName || 'Customer',
+          title: `💬 Support: ${c.userName || 'Customer'}`,
+          description: c.lastMessage || 'New message received',
+          status: 'support',
+          orderType: 'support',
+          amount: 0,
+          amountFormatted: '',
+          createdAt: c.lastMessageAt || c.updatedAt,
+          read: isPastReadTime,
+          type: 'support',
+          conversationId: c._id.toString(),
+          linkUrl: '/support-chat',
+        };
+      });
+    } catch (_) {}
+
+    const combinedNotifications = [...supportNotifications, ...orderNotifications]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, limit);
+
+    const activeOrdersFilter = {
+      status: { $in: ['placed', 'accepted', 'preparation', 'ready', 'assigned', 'picked_up'] }
+    };
+    if (lastReadTime > 0) {
+      activeOrdersFilter.createdAt = { $gt: new Date(lastReadTime) };
+    }
+    const unreadOrdersCount = await Order.countDocuments(activeOrdersFilter);
+    const activeSupportUnread = supportNotifications.filter(s => !s.read).length;
+
+    res.status(200).json({
+      success: true,
+      unreadCount: unreadOrdersCount + activeSupportUnread,
+      supportUnreadCount: activeSupportUnread,
+      notifications: combinedNotifications,
+    });
+  } catch (error) {
+    console.error('Admin live notifications error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.markAllAdminNotificationsRead = async (req, res) => {
+  try {
+    const User = require('../models/User');
+    if (req.user?._id) {
+      await User.findByIdAndUpdate(req.user._id, { $set: { lastNotificationsReadAt: new Date() } });
+    }
+    // Also reset unreadCountAdmin on support chats
+    try {
+      const SupportChat = require('../models/SupportChat');
+      await SupportChat.updateMany({}, { $set: { unreadCountAdmin: 0 } });
+    } catch (_) {}
+
+    return res.status(200).json({ success: true, message: 'All live notifications marked as read' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.markAdminNotificationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id && id.startsWith('support_')) {
+      const chatId = id.replace('support_', '');
+      const SupportChat = require('../models/SupportChat');
+      await SupportChat.findByIdAndUpdate(chatId, { $set: { unreadCountAdmin: 0 } });
+    }
+    return res.status(200).json({ success: true, message: 'Notification marked as read' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.getRestaurantMenuAdmin = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const { status } = req.query;
+    const filter = { restaurant: restaurantId };
+    if (status === "pending") {
+      filter.$or = [
+        { isApproved: { $ne: true } },
+        { pendingUpdate: { $exists: true, $ne: null } },
+      ];
+    } else if (status === "approved") {
+      filter.isApproved = true;
+      filter.pendingUpdate = { $exists: false };
+    }
+    const products = await Product.find(filter)
+      .select("_id name description basePrice isApproved approvalNotes approvedAt pendingUpdate pendingUpdateAt restaurant category available isVeg image seasonal seasonTag variations addOns createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.approveRestaurantMenu = async (req, res) => {
+  try {
+    const targetId = req.params.id;
+    const { approved = true, notes } = req.body;
+    const approvalState =
+      typeof approved === "string" ? approved === "true" || approved === "1" : !!approved;
+    const product = await Product.findById(targetId);
+    if (product) {
+      if (product.pendingUpdate) {
+        if (approvalState) {
+          const pending = product.pendingUpdate;
+          if (pending.name !== undefined) {
+            product.name = normalizeTranslation(pending.name);
+          }
+          if (pending.description !== undefined) {
+            product.description = normalizeTranslation(pending.description);
+          }
+          if (pending.image !== undefined) product.image = pending.image;
+          if (pending.basePrice !== undefined) product.basePrice = pending.basePrice;
+          if (pending.isVeg !== undefined) product.isVeg = pending.isVeg;
+          if (pending.seasonal !== undefined) product.seasonal = pending.seasonal;
+          if (pending.seasonTag !== undefined) product.seasonTag = pending.seasonTag;
+          if (pending.category !== undefined) product.category = pending.category;
+          if (pending.variations !== undefined) {
+            let normalized = normalizeNamedList(pending.variations) || [];
+            if (Array.isArray(normalized)) {
+              normalized = normalized.filter((v) => {
+                if (!v || !v.name) return false;
+                const name = v.name;
+                if (typeof name === 'string' && !name.trim()) return false;
+                if (typeof name === 'object' && !name.en && !name.de && !name.ar) return false;
+                if (typeof v.price !== 'number' || v.price < 0) return false;
+                return true;
+              });
+            }
+            product.variations = normalized;
+          }
+          if (pending.addOns !== undefined) {
+            let normalized = normalizeNamedList(pending.addOns) || [];
+            if (Array.isArray(normalized)) {
+              normalized = normalized.filter((a) => {
+                if (!a || !a.name) return false;
+                const name = a.name;
+                if (typeof name === 'string' && !name.trim()) return false;
+                if (typeof name === 'object' && !name.en && !name.de && !name.ar) return false;
+                if (typeof a.price !== 'number' || a.price < 0) return false;
+                return true;
+              });
+            }
+            product.addOns = normalized;
+          }
+          product.isApproved = true;
+          product.approvedAt = new Date();
+        }
+        product.pendingUpdate = undefined;
+        product.pendingUpdateAt = undefined;
+        product.approvalNotes = notes || product.approvalNotes;
+      } else {
+        product.isApproved = approvalState;
+        product.approvalNotes = notes || product.approvalNotes;
+        product.approvedAt = approvalState ? new Date() : undefined;
+      }
+      if (approvalState) {
+        const nameResult = ensureNameEn(product.name, null);
+        if (!nameResult.value || !nameResult.value.en) {
+          return res.status(400).json({
+            message: "Cannot approve product without a valid name.en",
+            productId: product._id
+          });
+        }
+        product.name = nameResult.value;
+      }
+      await product.save();
+      return res.status(200).json({
+        message: `Menu item ${approvalState ? "approved" : "updated"}`,
+        product,
+      });
+    }
+    const restaurant = await Restaurant.findById(targetId);
+    if (!restaurant) {
+      return res
+        .status(404)
+        .json({ message: "Restaurant or menu item not found" });
+    }
+    const products = await Product.find({ restaurant: restaurant._id });
+    let modifiedCount = 0;
+    for (const item of products) {
+      if (item.pendingUpdate) {
+        if (approvalState) {
+          const pending = item.pendingUpdate;
+          if (pending.name !== undefined) {
+            item.name = normalizeTranslation(pending.name);
+          }
+          if (pending.description !== undefined) {
+            item.description = normalizeTranslation(pending.description);
+          }
+          if (pending.image !== undefined) item.image = pending.image;
+          if (pending.basePrice !== undefined) item.basePrice = pending.basePrice;
+          if (pending.isVeg !== undefined) item.isVeg = pending.isVeg;
+          if (pending.seasonal !== undefined) item.seasonal = pending.seasonal;
+          if (pending.seasonTag !== undefined) item.seasonTag = pending.seasonTag;
+          if (pending.category !== undefined) item.category = pending.category;
+          if (pending.variations !== undefined) {
+            let normalized = normalizeNamedList(pending.variations) || [];
+            if (Array.isArray(normalized)) {
+              normalized = normalized.filter((v) => {
+                if (!v || !v.name) return false;
+                const name = v.name;
+                if (typeof name === 'string' && !name.trim()) return false;
+                if (typeof name === 'object' && !name.en && !name.de && !name.ar) return false;
+                if (typeof v.price !== 'number' || v.price < 0) return false;
+                return true;
+              });
+            }
+            item.variations = normalized;
+          }
+          if (pending.addOns !== undefined) {
+            let normalized = normalizeNamedList(pending.addOns) || [];
+            if (Array.isArray(normalized)) {
+              normalized = normalized.filter((a) => {
+                if (!a || !a.name) return false;
+                const name = a.name;
+                if (typeof name === 'string' && !name.trim()) return false;
+                if (typeof name === 'object' && !name.en && !name.de && !name.ar) return false;
+                if (typeof a.price !== 'number' || a.price < 0) return false;
+                return true;
+              });
+            }
+            item.addOns = normalized;
+          }
+          item.isApproved = true;
+          item.approvedAt = new Date();
+        }
+        if (approvalState) {
+          const nameResult = ensureNameEn(item.name, null);
+          if (!nameResult.value || !nameResult.value.en) {
+            console.warn(`Skipping approval for product ${item._id} - missing name.en`);
+            continue;
+          }
+          item.name = nameResult.value;
+        }
+        item.pendingUpdate = undefined;
+        item.pendingUpdateAt = undefined;
+        item.approvalNotes = notes || item.approvalNotes;
+        await item.save();
+        modifiedCount += 1;
+        continue;
+      }
+      if (!item.isApproved && approvalState) {
+        const nameResult = ensureNameEn(item.name, null);
+        if (!nameResult.value || !nameResult.value.en) {
+          console.warn(`Skipping approval for product ${item._id} - missing name.en`);
+          continue;
+        }
+        item.name = nameResult.value;
+        item.isApproved = true;
+        item.approvedAt = new Date();
+        item.approvalNotes = notes || item.approvalNotes;
+        await item.save();
+        modifiedCount += 1;
+      } else if (!item.isApproved && !approvalState && notes) {
+        item.approvalNotes = notes || item.approvalNotes;
+        await item.save();
+        modifiedCount += 1;
+      }
+    }
+    restaurant.menuApproved = approvalState;
+    restaurant.menuApprovedAt = approvalState ? new Date() : undefined;
+    restaurant.menuApprovalNotes = notes || restaurant.menuApprovalNotes;
+    await restaurant.save();
+    res.status(200).json({
+      message: `Restaurant menu ${approvalState ? "approved" : "updated"}`,
+      modifiedCount,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.approveProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { approved = true, notes } = req.body;
+    const approvalState =
+      typeof approved === "string" ? approved === "true" || approved === "1" : !!approved;
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (product.pendingUpdate) {
+      if (approvalState) {
+        const pending = product.pendingUpdate;
+        if (pending.name !== undefined) {
+          product.name = normalizeTranslation(pending.name);
+        }
+        if (pending.description !== undefined) {
+          product.description = normalizeTranslation(pending.description);
+        }
+        if (pending.image !== undefined) product.image = pending.image;
+        if (pending.basePrice !== undefined) product.basePrice = pending.basePrice;
+        if (pending.isVeg !== undefined) product.isVeg = pending.isVeg;
+        if (pending.seasonal !== undefined) product.seasonal = pending.seasonal;
+        if (pending.seasonTag !== undefined) product.seasonTag = pending.seasonTag;
+        if (pending.category !== undefined) product.category = pending.category;
+        if (pending.variations !== undefined) {
+          product.variations = normalizeNamedList(pending.variations);
+        }
+        if (pending.addOns !== undefined) {
+          product.addOns = normalizeNamedList(pending.addOns);
+        }
+        product.isApproved = true;
+        product.approvedAt = new Date();
+      }
+      product.pendingUpdate = undefined;
+      product.pendingUpdateAt = undefined;
+      product.approvalNotes = notes || product.approvalNotes;
+    } else {
+      product.isApproved = approvalState;
+      product.approvalNotes = notes || product.approvalNotes;
+      product.approvedAt = approvalState ? new Date() : undefined;
+    }
+    if (approvalState) {
+      const nameResult = ensureNameEn(product.name, null);
+      if (!nameResult.value || !nameResult.value.en) {
+        return res.status(400).json({
+          message: "Cannot approve product without a valid name.en",
+          productId: product._id
+        });
+      }
+      product.name = nameResult.value;
+    }
+    await product.save();
+    res.status(200).json({ message: `Product ${approvalState ? "approved" : "updated"}`, product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.rejectProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { notes } = req.body;
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    product.isRejected = true;
+    product.rejectedAt = new Date();
+    product.isApproved = false;
+    product.approvalNotes = notes || product.approvalNotes;
+    if (product.pendingUpdate) {
+      product.pendingUpdate = undefined;
+      product.pendingUpdateAt = undefined;
+    }
+    await product.save();
+    res.status(200).json({ message: "Product rejected", product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.updateMenuItemAdmin = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const updates = { ...req.body };
+    if (req.file) {
+      updates.image = require("../utils/upload").getFileUrl(req.file);
+    }
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (updates.name !== undefined) {
+      product.name =
+        typeof updates.name === "string"
+          ? { ...product.name, en: updates.name }
+          : updates.name;
+    }
+    if (updates.description !== undefined) {
+      product.description =
+        typeof updates.description === "string"
+          ? { ...product.description, en: updates.description }
+          : updates.description;
+    }
+    if (updates.basePrice !== undefined)
+      product.basePrice = Number(updates.basePrice);
+    if (updates.available !== undefined)
+      product.available =
+        updates.available === "true"
+          ? true
+          : updates.available === "false"
+            ? false
+            : !!updates.available;
+    if (updates.isVeg !== undefined)
+      product.isVeg =
+        updates.isVeg === "true"
+          ? true
+          : updates.isVeg === "false"
+            ? false
+            : !!updates.isVeg;
+    if (updates.seasonal !== undefined)
+      product.seasonal =
+        updates.seasonal === "true"
+          ? true
+          : updates.seasonal === "false"
+            ? false
+            : !!updates.seasonal;
+    if (updates.seasonTag !== undefined) product.seasonTag = updates.seasonTag;
+    if (updates.variations !== undefined) product.variations = updates.variations;
+    if (updates.addOns !== undefined) product.addOns = updates.addOns;
+    if (updates.category !== undefined) product.category = updates.category;
+    if (updates.isApproved !== undefined) {
+      const approvalState =
+        typeof updates.isApproved === "string"
+          ? updates.isApproved === "true" || updates.isApproved === "1"
+          : !!updates.isApproved;
+      product.isApproved = approvalState;
+      product.approvedAt = approvalState ? new Date() : undefined;
+    }
+    if (updates.approvalNotes !== undefined) {
+      product.approvalNotes = updates.approvalNotes;
+    }
+    if (product.pendingUpdate) {
+      product.pendingUpdate = undefined;
+      product.pendingUpdateAt = undefined;
+    }
+    await product.save();
+    res.status(200).json({ message: "Menu item updated", product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.deleteMenuItemAdmin = async (req, res) => {
+  try {
+    const deleted = await Product.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Menu item not found" });
+    }
+    const Restaurant = require("../models/Restaurant");
+    await Restaurant.findByIdAndUpdate(
+      deleted.restaurant,
+      { $pull: { product: deleted._id } },
+      { new: true }
+    );
+    res.status(200).json({ message: "Menu item deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getAllPendingMenuItems = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, restaurantId, sortBy = "createdAt" } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const filter = {
+      isRejected: { $ne: true }, // Keep rejected out of pending
+      $or: [
+        { isApproved: { $ne: true } },
+        { pendingUpdate: { $exists: true, $ne: null } },
+      ],
+    };
+    if (restaurantId) filter.restaurant = restaurantId;
+    const total = await Product.countDocuments(filter);
+    const products = await Product.find(filter)
+      .populate("restaurant", "name city owner")
+      .populate("category", "name")
+      .select("_id name description basePrice isApproved approvalNotes pendingUpdate pendingUpdateAt restaurant category available isVeg image variations addOns createdAt")
+      .sort({ [sortBy]: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+    const formatted = products.map((p) => ({
+      _id: p._id,
+      name: p.name?.en || p.name,
+      description: p.description,
+      price: p.basePrice,
+      isApproved: !!p.isApproved,
+      approvalNotes: p.approvalNotes || "",
+      pendingUpdate: p.pendingUpdate || null,
+      pendingUpdateAt: p.pendingUpdateAt || null,
+      restaurant: {
+        _id: p.restaurant?._id,
+        name: p.restaurant?.name?.en || p.restaurant?.name || "Unknown",
+        city: p.restaurant?.city,
+        owner: p.restaurant?.owner,
+      },
+      category: {
+        _id: p.category?._id,
+        name: p.category?.name || "Uncategorized",
+      },
+      available: p.available,
+      isVeg: p.isVeg,
+      image: p.image,
+      variations: p.variations || [],
+      addOns: p.addOns || [],
+      createdAt: p.createdAt,
+    }));
+    res.status(200).json({
+      items: formatted,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(total / parseInt(limit)),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getPendingMenusByRestaurant = async (req, res) => {
+  try {
+    const { status = "pending" } = req.query;
+    const filter = status === "pending"
+      ? {
+        isRejected: { $ne: true }, // Keep rejected out of pending
+        $or: [
+          { isApproved: { $ne: true } },
+          { pendingUpdate: { $exists: true, $ne: null } },
+        ],
+      }
+      : { isApproved: true, pendingUpdate: { $exists: false } };
+    const pendingByRestaurant = await Product.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant",
+          foreignField: "_id",
+          as: "restaurantData",
+        },
+      },
+      { $unwind: { path: "$restaurantData", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$restaurant",
+          restaurantName: { $first: "$restaurantData.name" },
+          restaurantCity: { $first: "$restaurantData.city" },
+          restaurant_owner: { $first: "$restaurantData.owner" },
+          pendingCount: { $sum: 1 },
+          totalCount: { $sum: 1 },
+          items: {
+            $push: {
+              _id: "$_id",
+              name: "$name",
+              description: "$description",
+              price: "$basePrice",
+              isApproved: "$isApproved",
+              isVeg: "$isVeg",
+              image: "$image",
+              variations: "$variations",
+              addOns: "$addOns",
+              pendingUpdate: "$pendingUpdate",
+              pendingUpdateAt: "$pendingUpdateAt",
+              createdAt: "$createdAt",
+            },
+          },
+        },
+      },
+      { $sort: { pendingCount: -1 } },
+    ]);
+    const formatted = pendingByRestaurant.map((group) => ({
+      _id: group._id,
+      restaurantName: group.restaurantName?.en || group.restaurantName || "Unknown",
+      restaurantCity: group.restaurantCity,
+      restaurant_owner: group.restaurant_owner,
+      pendingCount: group.pendingCount,
+      items: group.items.map((item) => ({
+        ...item,
+        name: item.name?.en || item.name,
+      })),
+    }));
+    res.status(200).json({
+      restaurants: formatted,
+      total: formatted.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getMenuApprovalStats = async (req, res) => {
+  try {
+    const totalPending = await Product.countDocuments({
+      isRejected: { $ne: true },
+      $or: [
+        { isApproved: { $ne: true } },
+        { pendingUpdate: { $exists: true, $ne: null } },
+      ],
+    });
+    const totalApproved = await Product.countDocuments({
+      isApproved: true,
+      $or: [
+        { pendingUpdate: { $exists: false } },
+        { pendingUpdate: null },
+      ],
+    });
+    const totalMenu = totalPending + totalApproved;
+    const restaurantsWithPending = await Product.distinct("restaurant", {
+      isApproved: { $ne: true },
+      isRejected: { $ne: true }
+    });
+    const restaurantsApprovedAll = await Restaurant.find({
+      menuApproved: true,
+    }).select("_id name");
+    res.status(200).json({
+      totalMenuItems: totalMenu,
+      pendingApproval: totalPending,
+      approved: totalApproved,
+      pendingPercentage: totalMenu > 0 ? Math.round((totalPending / totalMenu) * 100) : 0,
+      restaurantsWithPending: restaurantsWithPending.length,
+      restaurantsFullyApproved: restaurantsApprovedAll.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getAllUsers = async (req, res) => {
+  try {
+    const { page, limit, skip } = getPaginationParams(req, 20);
+    const role = req.query.role || "customer";
+    const search = (req.query.search || "").trim();
+
+    const andConditions = [];
+
+    if (role === "customer" || role === "user") {
+      andConditions.push({
+        $or: [
+          { role: { $in: ["customer", "user"] } },
+          { role: { $exists: false } },
+          { role: null },
+          { role: "" }
+        ]
+      });
+    } else if (role && role !== "all") {
+      andConditions.push({ role });
+    }
+
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const cleanDigits = search.replace(/\D/g, "");
+
+      const searchConditions = [
+        { name: { $regex: escaped, $options: "i" } },
+        { firstName: { $regex: escaped, $options: "i" } },
+        { lastName: { $regex: escaped, $options: "i" } },
+        { email: { $regex: escaped, $options: "i" } },
+        { mobile: { $regex: escaped, $options: "i" } },
+        { phone: { $regex: escaped, $options: "i" } },
+      ];
+
+      // Support multi-word name search (e.g., "John Doe" matching firstName + lastName)
+      const parts = search.split(/\s+/).filter(Boolean);
+      if (parts.length > 1) {
+        searchConditions.push({
+          $and: parts.map(p => {
+            const pEsc = p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return {
+              $or: [
+                { name: { $regex: pEsc, $options: "i" } },
+                { firstName: { $regex: pEsc, $options: "i" } },
+                { lastName: { $regex: pEsc, $options: "i" } },
+                { email: { $regex: pEsc, $options: "i" } }
+              ]
+            };
+          })
+        });
+      }
+
+      // Support phone numbers with/without country code, spaces, formatting, or stored as numbers
+      if (cleanDigits.length >= 4) {
+        const last10 = cleanDigits.slice(-10);
+        searchConditions.push(
+          { mobile: { $regex: last10 } },
+          { phone: { $regex: last10 } },
+          { mobile: cleanDigits },
+          { phone: cleanDigits },
+          { mobile: last10 },
+          { phone: last10 },
+          { mobile: `+91${last10}` },
+          { phone: `+91${last10}` },
+          { mobile: `+${cleanDigits}` },
+          { phone: `+${cleanDigits}` },
+          { mobile: `91${last10}` },
+          { phone: `91${last10}` },
+          { mobile: `0${last10}` },
+          { phone: `0${last10}` }
+        );
+
+        const numVal = Number(cleanDigits);
+        const last10Num = Number(last10);
+        if (!isNaN(numVal)) {
+          searchConditions.push({ mobile: numVal }, { phone: numVal });
+        }
+        if (!isNaN(last10Num)) {
+          searchConditions.push({ mobile: last10Num }, { phone: last10Num });
+        }
+      }
+
+      andConditions.push({ $or: searchConditions });
+    }
+
+    const query = andConditions.length > 0 ? { $and: andConditions } : {};
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select("-password")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const formattedUsers = users.map((u) => {
+      const userObj = u.toObject();
+      let fName = (userObj.firstName || "").trim();
+      let lName = (userObj.lastName || "").trim();
+      let fullName = (userObj.name || "").trim();
+      const mobileNum = (userObj.mobile || userObj.phone || "").toString();
+
+      if (fName === "User" || fName === "-") fName = "";
+      if (lName === "User" || lName === "-") lName = "";
+      if (fullName === "User" || fullName === "-") fullName = "";
+
+      if (!fullName && (fName || lName)) {
+        fullName = `${fName} ${lName}`.trim();
+      }
+      if (!fullName && mobileNum) {
+        fullName = `Customer ${mobileNum.slice(-4)}`;
+      }
+      if (!fullName) {
+        fullName = `Customer ${userObj._id.toString().slice(-4).toUpperCase()}`;
+      }
+
+      const isCodBlocked = userObj.isCodBlocked === true || userObj.codActive === false;
+      const loginType = userObj.loginType || userObj.type || (mobileNum ? "Mobile App" : "Web");
+
+      return {
+        ...userObj,
+        customerId: userObj.customerId || 'C001',
+        isCodBlocked,
+        codActive: !isCodBlocked,
+        firstName: fName,
+        lastName: lName,
+        name: fullName,
+        type: loginType,
+        wallet: `₹${(userObj.walletBalance || userObj.wallet || 0).toFixed(2)}`,
+        walletBalance: userObj.walletBalance || userObj.wallet || 0,
+        registeredAt: userObj.registeredAt || userObj.createdAt,
+        registeredAtFormatted: userObj.createdAt ? new Date(userObj.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "short" }) : "N/A",
+        createdAtFormatted: userObj.createdAt ? new Date(userObj.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "short" }) : "N/A",
+      };
+    });
+
+    res.status(200).json({
+      users: formattedUsers,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const userObj = user.toObject();
+    let fName = (userObj.firstName || "").trim();
+    let lName = (userObj.lastName || "").trim();
+    let fullName = (userObj.name || "").trim();
+
+    if ((!fName && !lName) || fName === "User") {
+      if (fullName && fullName !== "User") {
+        const parts = fullName.split(" ");
+        fName = parts[0] || "";
+        lName = parts.slice(1).join(" ") || "";
+      }
+    }
+    if (!fullName || fullName === "User") {
+      if (fName && fName !== "User") {
+        fullName = `${fName} ${lName}`.trim();
+      } else {
+        fullName = "User";
+      }
+    }
+
+    const isCodBlocked = userObj.isCodBlocked === true || userObj.codActive === false;
+    res.status(200).json({
+      ...userObj,
+      isCodBlocked,
+      codActive: !isCodBlocked,
+      firstName: fName,
+      lastName: lName || "-",
+      name: fullName,
+      wallet: `₹${(userObj.walletBalance || 0).toFixed(2)}`,
+      walletBalance: userObj.walletBalance || 0,
+      registeredAt: userObj.registeredAt || userObj.createdAt,
+      registeredAtFormatted: userObj.createdAt ? new Date(userObj.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "short" }) : "",
+      createdAtFormatted: userObj.createdAt ? new Date(userObj.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "short" }) : "",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.blockUser = async (req, res) => {
+  try {
+    const { action, reason } = req.body; // action = 'block' | 'unblock'
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (action === "block") {
+      user.isBlocked = true;
+      user.blockedAt = new Date();
+      user.blockReason = reason || "";
+      await user.save();
+      return res.status(200).json({ message: "User blocked", user });
+    } else if (action === "unblock") {
+      user.isBlocked = false;
+      user.blockedAt = undefined;
+      user.blockReason = "";
+      await user.save();
+      return res.status(200).json({ message: "User unblocked", user });
+    } else {
+      return res.status(400).json({ message: "Invalid action" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.toggleUserCOD = async (req, res) => {
+  try {
+    const { active, isCodBlocked, block } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let blocked = false;
+    if (typeof isCodBlocked !== 'undefined') {
+      blocked = !!isCodBlocked;
+    } else if (typeof block !== 'undefined') {
+      blocked = !!block;
+    } else if (typeof active !== 'undefined') {
+      blocked = !active;
+    }
+
+    user.isCodBlocked = blocked;
+    user.codActive = !blocked;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `COD ${blocked ? 'blocked' : 'unblocked'} successfully`,
+      user: {
+        ...user.toObject(),
+        isCodBlocked: blocked,
+        codActive: !blocked
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.adjustWallet = async (req, res) => {
+  try {
+    const { amount, type = "credit", note } = req.body;
+    const adjustType = type || "credit";
+    if (!amount || !["credit", "debit"].includes(adjustType))
+      return res.status(400).json({ message: "Invalid payload: valid amount and type (credit/debit) required" });
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const amt = Number(amount);
+    if (isNaN(amt) || amt <= 0)
+      return res.status(400).json({ message: "Amount must be a positive number" });
+
+    user.walletBalance = user.walletBalance || 0;
+    if (adjustType === "debit" && user.walletBalance < amt)
+      return res
+        .status(400)
+        .json({ message: "Insufficient user wallet balance" });
+    user.walletBalance =
+      adjustType === "credit" ? user.walletBalance + amt : user.walletBalance - amt;
+    await user.save();
+    try {
+      await WalletTransaction.create({
+        user: user._id,
+        amount: adjustType === "credit" ? amt : -amt,
+        type: adjustType === "credit" ? "credit" : "debit",
+        description: note || `Admin ${adjustType} adjustment`,
+      });
+    } catch (txErr) {
+      console.error("WalletTransaction creation err:", txErr.message);
+    }
+    try {
+      await sendNotification(
+        user._id,
+        "Wallet Updated",
+        `Your wallet has been ${adjustType === "credit" ? "credited" : "debited"} by ₹${amt}`
+      );
+    } catch (e) { }
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Wallet updated successfully",
+        balance: user.walletBalance,
+        walletBalance: user.walletBalance,
+        wallet: `₹${user.walletBalance.toFixed(2)}`
+      });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getRevenueReport = async (req, res) => {
+  try {
+    const { period = "day", from, to, format = "json" } = req.query;
+    const match = { status: { $ne: "cancelled" } };
+    if (from) match.createdAt = { $gte: new Date(from) };
+    if (to)
+      match.createdAt = match.createdAt
+        ? { ...match.createdAt, $lte: new Date(to) }
+        : { $lte: new Date(to) };
+    let groupId = null;
+    if (period === "month")
+      groupId = { $dateToString: { format: "%Y-%m", date: "$createdAt" } };
+    else if (period === "week")
+      groupId = { $dateToString: { format: "%Y-%U", date: "$createdAt" } };
+    else
+      groupId = { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } };
+    const agg = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: groupId,
+          revenue: { $sum: { $ifNull: ["$totalAmount", 0] } },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    if (format === "csv") {
+      let csv = "period,revenue,orders\n";
+      agg.forEach((r) => {
+        csv += `${r._id},${(r.revenue || 0).toFixed(2)},${r.orders}\n`;
+      });
+      res.header("Content-Type", "text/csv");
+      return res.send(csv);
+    }
+    res.status(200).json({ aggregation: agg });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getCommissionReport = async (req, res) => {
+  try {
+    const {
+      period = "day",
+      restaurantId,
+      from,
+      to,
+      format = "json",
+    } = req.query;
+    const match = { status: { $ne: "cancelled" } };
+    if (restaurantId)
+      match.restaurant = require("mongoose").Types.ObjectId(restaurantId);
+    if (from) match.createdAt = { $gte: new Date(from) };
+    if (to)
+      match.createdAt = match.createdAt
+        ? { ...match.createdAt, $lte: new Date(to) }
+        : { $lte: new Date(to) };
+    let groupId = null;
+    if (period === "month")
+      groupId = { $dateToString: { format: "%Y-%m", date: "$createdAt" } };
+    else if (period === "week")
+      groupId = { $dateToString: { format: "%Y-%U", date: "$createdAt" } };
+    else
+      groupId = { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } };
+    const agg = await Order.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant",
+          foreignField: "_id",
+          as: "restaurant",
+        },
+      },
+      { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          amount: { $ifNull: ["$totalAmount", 0] },
+          commissionRate: { $ifNull: ["$restaurant.adminCommission", 0] },
+          createdAt: 1,
+        },
+      },
+      {
+        $project: {
+          commission: {
+            $multiply: ["$amount", { $divide: ["$commissionRate", 100] }],
+          },
+          amount: 1,
+          createdAt: 1,
+        },
+      },
+      {
+        $group: {
+          _id: groupId,
+          totalCommission: { $sum: { $ifNull: ["$commission", 0] } },
+          revenue: { $sum: { $ifNull: ["$amount", 0] } },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    if (format === "csv") {
+      let csv = "period,totalCommission,revenue,orders\n";
+      agg.forEach((r) => {
+        csv += `${r._id},${(r.totalCommission || 0).toFixed(2)},${(
+          r.revenue || 0
+        ).toFixed(2)},${r.orders}\n`;
+      });
+      res.header("Content-Type", "text/csv");
+      return res.send(csv);
+    }
+    res.status(200).json({ aggregation: agg });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getCancellationReport = async (req, res) => {
+  try {
+    const {
+      from,
+      to,
+      groupBy = "reason",
+      format = "json",
+      limit = 100,
+    } = req.query;
+    const match = { status: "cancelled" };
+    if (from) match.updatedAt = { $gte: new Date(from) };
+    if (to)
+      match.updatedAt = match.updatedAt
+        ? { ...match.updatedAt, $lte: new Date(to) }
+        : { $lte: new Date(to) };
+    const totalCancels = await Order.countDocuments(match);
+    let agg = [];
+    if (groupBy === "reason") {
+      agg = await Order.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: { $ifNull: ["$cancellationReason", "Unknown"] },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: Number(limit) },
+      ]);
+      agg = agg.map((r) => ({
+        reason: r._id,
+        count: r.count,
+        percent: totalCancels
+          ? ((r.count / totalCancels) * 100).toFixed(2)
+          : "0.00",
+      }));
+      if (format === "csv") {
+        let csv = "reason,count,percent\n";
+        agg.forEach((r) => {
+          csv += `${r.reason},${r.count},${r.percent}\n`;
+        });
+        res.header("Content-Type", "text/csv");
+        return res.send(csv);
+      }
+      return res.status(200).json({ totalCancels, breakdown: agg });
+    }
+    if (groupBy === "restaurant") {
+      agg = await Order.aggregate([
+        { $match: match },
+        { $group: { _id: "$restaurant", count: { $sum: 1 } } },
+        {
+          $lookup: {
+            from: "restaurants",
+            localField: "_id",
+            foreignField: "_id",
+            as: "restaurant",
+          },
+        },
+        { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            restaurantId: "$_id",
+            name: { $ifNull: ["$restaurant.name.en", "$restaurant.name"] },
+            count: 1,
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: Number(limit) },
+      ]);
+      agg = agg.map((r) => ({
+        restaurantId: r.restaurantId,
+        name: r.name || "Unknown",
+        count: r.count,
+        percent: totalCancels
+          ? ((r.count / totalCancels) * 100).toFixed(2)
+          : "0.00",
+      }));
+      if (format === "csv") {
+        let csv = "restaurantId,name,count,percent\n";
+        agg.forEach((r) => {
+          csv += `${r.restaurantId},"${(r.name || "").replace(/"/g, '""')}",${r.count
+            },${r.percent}\n`;
+        });
+        res.header("Content-Type", "text/csv");
+        return res.send(csv);
+      }
+      return res.status(200).json({ totalCancels, breakdown: agg });
+    }
+    if (groupBy === "rider") {
+      agg = await Order.aggregate([
+        { $match: match },
+        { $group: { _id: "$rider", count: { $sum: 1 } } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "rider",
+          },
+        },
+        { $unwind: { path: "$rider", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            riderId: "$_id",
+            name: "$rider.name",
+            mobile: "$rider.mobile",
+            count: 1,
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: Number(limit) },
+      ]);
+      agg = agg.map((r) => ({
+        riderId: r.riderId,
+        name: r.name || "",
+        mobile: r.mobile || "",
+        count: r.count,
+        percent: totalCancels
+          ? ((r.count / totalCancels) * 100).toFixed(2)
+          : "0.00",
+      }));
+      if (format === "csv") {
+        let csv = "riderId,name,mobile,count,percent\n";
+        agg.forEach((r) => {
+          csv += `${r.riderId},"${(r.name || "").replace(/"/g, '""')}",${r.mobile || ""
+            },${r.count},${r.percent}\n`;
+        });
+        res.header("Content-Type", "text/csv");
+        return res.send(csv);
+      }
+      return res.status(200).json({ totalCancels, breakdown: agg });
+    }
+    if (groupBy === "day") {
+      agg = await Order.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+      if (format === "csv") {
+        let csv = "date,count,percent\n";
+        agg.forEach((r) => {
+          csv += `${r._id},${r.count},${totalCancels ? ((r.count / totalCancels) * 100).toFixed(2) : "0.00"
+            }\n`;
+        });
+        res.header("Content-Type", "text/csv");
+        return res.send(csv);
+      }
+      return res
+        .status(200)
+        .json({
+          totalCancels,
+          breakdown: agg.map((r) => ({
+            date: r._id,
+            count: r.count,
+            percent: totalCancels
+              ? ((r.count / totalCancels) * 100).toFixed(2)
+              : "0.00",
+          })),
+        });
+    }
+    return res.status(400).json({ message: "Invalid groupBy parameter" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getOrderSuccessRatio = async (req, res) => {
+  try {
+    const {
+      from,
+      to,
+      period = "day",
+      restaurantId,
+      riderId,
+      format = "json",
+    } = req.query;
+    const match = {};
+    if (restaurantId)
+      match.restaurant = require("mongoose").Types.ObjectId(restaurantId);
+    if (riderId) match.rider = require("mongoose").Types.ObjectId(riderId);
+    if (from) match.createdAt = { $gte: new Date(from) };
+    if (to)
+      match.createdAt = match.createdAt
+        ? { ...match.createdAt, $lte: new Date(to) }
+        : { $lte: new Date(to) };
+    let groupId = null;
+    if (period === "month")
+      groupId = { $dateToString: { format: "%Y-%m", date: "$createdAt" } };
+    else if (period === "week")
+      groupId = { $dateToString: { format: "%Y-%U", date: "$createdAt" } };
+    else
+      groupId = { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } };
+    const agg = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: groupId,
+          totalOrders: { $sum: 1 },
+          delivered: {
+            $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const result = agg.map((r) => ({
+      period: r._id,
+      totalOrders: r.totalOrders,
+      delivered: r.delivered,
+      successRatio: r.totalOrders
+        ? ((r.delivered / r.totalOrders) * 100).toFixed(2)
+        : "0.00",
+    }));
+    if (format === "csv") {
+      let csv = "period,totalOrders,delivered,successRatio\n";
+      result.forEach((r) => {
+        csv += `${r.period},${r.totalOrders},${r.delivered},${r.successRatio}\n`;
+      });
+      res.header("Content-Type", "text/csv");
+      return res.send(csv);
+    }
+    res.status(200).json({ aggregation: result });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getPendingVerificationRestaurants = async (req, res) => {
+  try {
+    const { page, limit, skip } = getPaginationParams(req, 10);
+    const query = { verificationStatus: 'pending' };
+    const total = await Restaurant.countDocuments(query);
+    const restaurants = await Restaurant.find(query)
+      .select('_id name email mobile address city owner createdAt documents verificationStatus')
+      .populate('owner', 'name email mobile')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+    const formatted = restaurants.map((r) => ({
+      _id: r._id,
+      name: r.name?.en || r.name || 'N/A',
+      email: r.email,
+      mobile: r.mobile,
+      address: r.address?.en || r.address || 'N/A',
+      city: r.city,
+      owner: r.owner,
+      createdAt: r.createdAt,
+      documents: r.documents || {},
+      verificationStatus: r.verificationStatus,
+    }));
+    res.status(200).json({
+      restaurants: formatted,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// Get Admin Commission Details
+exports.getAdminCommissionDetails = async (req, res) => {
+  try {
+    const AdminCommissionWallet = require('../models/AdminCommissionWallet');
+    const wallet = await AdminCommissionWallet.getInstance();
+    
+    res.status(200).json({
+      success: true,
+      commission: {
+        currentBalance: wallet.balance,
+        totalCommission: wallet.totalCommission,
+        totalPaidOut: wallet.totalPaidOut,
+        lastPayoutAt: wallet.lastPayoutAt,
+        lastPayoutAmount: wallet.lastPayoutAmount,
+        nextPayoutDate: wallet.nextPayoutDate,
+        commissionFromRestaurants: wallet.commissionFromRestaurants,
+        commissionFromDelivery: wallet.commissionFromDelivery,
+        lastUpdated: wallet.lastUpdated
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Manual Admin Payout (Triggered by Admin, not automatic)
+exports.processAdminPayout = async (req, res) => {
+  try {
+    const AdminCommissionWallet = require('../models/AdminCommissionWallet');
+    const PaymentTransaction = require('../models/PaymentTransaction');
+    const paymentService = require('../services/paymentService');
+
+    const wallet = await AdminCommissionWallet.getInstance();
+
+    if (!wallet.balance || wallet.balance === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending commission to payout'
+      });
+    }
+
+    const payoutAmount = wallet.balance;
+
+    // Process the payout (same logic as automatic Sunday payout)
+    wallet.totalPaidOut += payoutAmount;
+    wallet.lastPayoutAmount = payoutAmount;
+    wallet.lastPayoutAt = new Date();
+    wallet.balance = 0;
+
+    // Set next payout target date (optional, can be next week or manual)
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 7);
+    wallet.nextPayoutDate = nextDate;
+
+    await wallet.save();
+
+    // Create audit trail
+    await PaymentTransaction.create({
+      type: 'admin_commission_payout',
+      amount: payoutAmount,
+      note: `Manual admin commission payout of ₹${payoutAmount}`,
+      status: 'completed',
+      processedBy: req.user._id,
+      processedAt: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Admin payout of ₹${payoutAmount} processed successfully`,
+      payout: {
+        amount: payoutAmount,
+        paidOutAmount: wallet.totalPaidOut,
+        remainingBalance: wallet.balance,
+        payoutAt: wallet.lastPayoutAt,
+        nextPayoutDate: wallet.nextPayoutDate
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+};
+
+// Manual Restaurant Payout (Individual)
+exports.processRestaurantPayout = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const RestaurantWallet = require('../models/RestaurantWallet');
+    const PaymentTransaction = require('../models/PaymentTransaction');
+
+    const wallet = await RestaurantWallet.findOne({ restaurant: restaurantId });
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant wallet not found'
+      });
+    }
+
+    if (!wallet.balance || wallet.balance === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending balance to payout'
+      });
+    }
+
+    const payoutAmount = wallet.balance;
+
+    // Process payout
+    wallet.totalPaidOut += payoutAmount;
+    wallet.lastPayoutAmount = payoutAmount;
+    wallet.lastPayoutAt = new Date();
+    wallet.balance = 0;
+
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 7);
+    wallet.nextPayoutDate = nextDate;
+
+    await wallet.save();
+
+    // Create transaction record
+    await PaymentTransaction.create({
+      type: 'restaurant_manual_payout',
+      restaurant: restaurantId,
+      amount: payoutAmount,
+      note: `Manual restaurant payout of ₹${payoutAmount}`,
+      status: 'completed',
+      processedBy: req.user._id,
+      processedAt: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Restaurant payout of ₹${payoutAmount} processed successfully`,
+      payout: {
+        amount: payoutAmount,
+        totalPaidOut: wallet.totalPaidOut,
+        remainingBalance: 0,
+        payoutAt: wallet.lastPayoutAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Manual Rider Payout (Individual)
+exports.processRiderPayout = async (req, res) => {
+  try {
+    const { riderId } = req.params;
+    const RiderWallet = require('../models/RiderWallet');
+    const PaymentTransaction = require('../models/PaymentTransaction');
+
+    const wallet = await RiderWallet.findOne({ rider: riderId });
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rider wallet not found'
+      });
+    }
+
+    if (!wallet.balance || wallet.balance === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending balance to payout'
+      });
+    }
+
+    const payoutAmount = wallet.balance;
+
+    // Process payout
+    wallet.totalPayouts += 1;
+    wallet.totalEarningsPaidOut = (wallet.totalEarningsPaidOut || 0) + payoutAmount;
+    wallet.lastPayoutAmount = payoutAmount;
+    wallet.lastPayoutAt = new Date();
+    wallet.balance = 0;
+
+    await wallet.save();
+
+    // Create transaction record
+    await PaymentTransaction.create({
+      type: 'rider_manual_payout',
+      rider: riderId,
+      amount: payoutAmount,
+      note: `Manual rider payout of ₹${payoutAmount}`,
+      status: 'completed',
+      processedBy: req.user._id,
+      processedAt: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Rider payout of ₹${payoutAmount} processed successfully`,
+      payout: {
+        amount: payoutAmount,
+        totalPaidOut: wallet.totalEarningsPaidOut,
+        remainingBalance: 0,
+        payoutAt: wallet.lastPayoutAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+exports.sendCustomPush = async (req, res) => {
+  try {
+    const { sendTo, title, message } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Notification title is required' });
+    }
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Notification message is required' });
+    }
+
+    const trimmedTitle = title.trim();
+    const trimmedMessage = message.trim();
+    const targetGroup = (sendTo || 'all').toLowerCase();
+
+    let userQuery = {};
+    if (targetGroup === 'customers' || targetGroup === 'users') {
+      userQuery = { role: { $in: ['customer', 'user'] } };
+    } else if (targetGroup === 'riders' || targetGroup === 'driver') {
+      userQuery = { role: { $in: ['rider', 'driver'] } };
+    } else if (targetGroup === 'restaurants' || targetGroup === 'vendor') {
+      userQuery = { role: { $in: ['restaurant_owner', 'vendor'] } };
+    } else if (targetGroup === 'android') {
+      userQuery = { $or: [{ platform: 'android' }, { deviceType: 'android' }, { role: { $in: ['customer', 'user'] } }] };
+    } else if (targetGroup === 'ios') {
+      userQuery = { $or: [{ platform: 'ios' }, { deviceType: 'ios' }, { role: { $in: ['customer', 'user'] } }] };
+    } else {
+      userQuery = {};
+    }
+
+    const users = await User.find(userQuery).select('_id fcmToken name role email mobile phone');
+
+    let successCount = 0;
+    const notificationDocs = [];
+    const fcmTokens = [];
+
+    for (const u of users) {
+      notificationDocs.push({
+        user: u._id,
+        title: trimmedTitle,
+        message: trimmedMessage,
+        type: 'general',
+        data: {
+          type: 'general',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+        isRead: false,
+      });
+
+      try {
+        socketService.emitToUser(u._id.toString(), 'notification:new', {
+          title: trimmedTitle,
+          message: trimmedMessage,
+          data: { type: 'general' },
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } catch (err) {
+        // ignore socket emit error
+      }
+
+      if (u.fcmToken && typeof u.fcmToken === 'string' && u.fcmToken.trim().length > 10) {
+        fcmTokens.push(u.fcmToken.trim());
+      }
+      successCount++;
+    }
+
+    if (notificationDocs.length > 0) {
+      await Notification.insertMany(notificationDocs).catch(err => console.error('insertMany notifications notice:', err.message));
+    }
+
+    if (isInitialized && admin && fcmTokens.length > 0) {
+      const uniqueTokens = [...new Set(fcmTokens)];
+      const chunkSize = 500;
+      for (let i = 0; i < uniqueTokens.length; i += chunkSize) {
+        const batchTokens = uniqueTokens.slice(i, i + chunkSize);
+        try {
+          await admin.messaging().sendEachForMulticast({
+            tokens: batchTokens,
+            notification: {
+              title: trimmedTitle,
+              body: trimmedMessage,
+            },
+            data: {
+              title: trimmedTitle,
+              body: trimmedMessage,
+              type: 'general',
+              click_action: 'FLUTTER_NOTIFICATION_CLICK',
+            },
+            android: {
+              priority: 'high',
+              notification: {
+                title: trimmedTitle,
+                body: trimmedMessage,
+                channelId: 'high_importance_channel',
+                sound: 'default',
+                priority: 'high',
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: {
+                    title: trimmedTitle,
+                    body: trimmedMessage,
+                  },
+                  sound: 'default',
+                  badge: 1,
+                },
+              },
+            },
+          });
+        } catch (fcmErr) {
+          console.warn('FCM multicast notice:', fcmErr.message);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Push notification sent to ${successCount} users successfully!`,
+      count: successCount,
+      fcmCount: fcmTokens.length
+    });
+  } catch (error) {
+    console.error('Error in sendCustomPush:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Reset/Clear all financial stats, archive current metrics to FinancialResetHistory, and restart fresh data
+exports.resetFinancialData = async (req, res) => {
+  try {
+    const Order = require('../models/Order');
+    const FinancialResetHistory = require('../models/FinancialResetHistory');
+    const AdminCommissionWallet = require('../models/AdminCommissionWallet');
+    const RiderWallet = require('../models/RiderWallet');
+    const RestaurantWallet = require('../models/RestaurantWallet');
+
+    // 1. Find previous reset record to know the start of the period being reset
+    const lastReset = await FinancialResetHistory.findOne({}).sort({ resetAt: -1 }).lean();
+    const lastResetAt = lastReset ? new Date(lastReset.resetAt) : null;
+
+    // 2. Aggregate current metrics since last reset (or all time if first reset)
+    const deliveredMatch = { status: "delivered" };
+    if (lastResetAt) {
+      deliveredMatch.createdAt = { $gte: lastResetAt };
+    }
+
+    const earningsAgg = await Order.aggregate([
+      { $match: deliveredMatch },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: { $ifNull: ["$totalAmount", 0] } },
+          totalCommission: { $sum: { $ifNull: ["$adminCommission", 0] } },
+          totalRestaurantCommission: {
+            $sum: { $ifNull: ["$restaurantCommission", { $ifNull: ["$restaurantShare", 0] }] },
+          },
+          totalDeliveryCommission: {
+            $sum: { $ifNull: ["$riderEarning", { $ifNull: ["$driverEarnings", 0] }] },
+          },
+          ordersDelivered: { $sum: 1 }
+        }
+      }
+    ]);
+    const currentTotals = earningsAgg[0] || {};
+
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
+    const todayEffectiveStart = (lastResetAt && lastResetAt > startToday) ? lastResetAt : startToday;
+    const todayAgg = await Order.aggregate([
+      { $match: { createdAt: { $gte: todayEffectiveStart } } },
+      { $group: { _id: null, todayEarnings: { $sum: { $ifNull: ["$totalAmount", 0] } } } }
+    ]);
+    const currentTodayEarnings = todayAgg[0]?.todayEarnings || 0;
+
+    const ordersTotalMatch = lastResetAt ? { createdAt: { $gte: lastResetAt } } : {};
+    const totalOrdersCount = await Order.countDocuments(ordersTotalMatch);
+    const cancelledCount = await Order.countDocuments({ ...ordersTotalMatch, status: "cancelled" });
+    const failedCount = await Order.countDocuments({ ...ordersTotalMatch, status: "failed" });
+
+    // 3. Create the archive record in FinancialResetHistory
+    const resetAt = new Date();
+    const historyRecord = await FinancialResetHistory.create({
+      resetAt,
+      resetBy: {
+        id: req.user?._id,
+        name: req.user?.name || req.user?.ownerName || 'Super Admin',
+        email: req.user?.email || 'admin@ecdkart.com'
+      },
+      previousPeriodStart: lastResetAt,
+      periodEnd: resetAt,
+      metrics: {
+        totalEarnings: Number(Number(currentTotals.totalEarnings || 0).toFixed(2)),
+        todayEarnings: Number(Number(currentTodayEarnings || 0).toFixed(2)),
+        totalCommission: Number(Number(currentTotals.totalCommission || 0).toFixed(2)),
+        totalRestaurantCommission: Number(Number(currentTotals.totalRestaurantCommission || 0).toFixed(2)),
+        totalDeliveryCommission: Number(Number(currentTotals.totalDeliveryCommission || 0).toFixed(2)),
+        ordersDelivered: Number(currentTotals.ordersDelivered || 0),
+        ordersTotal: totalOrdersCount,
+        ordersCancelled: cancelledCount,
+        ordersFailed: failedCount
+      },
+      note: req.body?.note || 'Financial stats reset to ₹0 via Admin Dashboard'
+    });
+
+    // 4. Reset wallet balances
+    await AdminCommissionWallet.updateMany({}, {
+      $set: {
+        balance: 0,
+        totalCommission: 0,
+        totalPaidOut: 0,
+        lastPayoutAmount: 0,
+        commissionFromRestaurants: 0,
+        commissionFromDelivery: 0,
+        lastUpdated: resetAt
+      }
+    }).catch(() => {});
+
+    await RiderWallet.updateMany({}, {
+      $set: {
+        cashInHand: 0,
+        totalEarnings: 0,
+        availableBalance: 0,
+        totalPayouts: 0,
+        lastUpdated: resetAt
+      }
+    }).catch(() => {});
+
+    await RestaurantWallet.updateMany({}, {
+      $set: {
+        balance: 0,
+        totalEarnings: 0,
+        totalPaidOut: 0,
+        pendingAmount: 0,
+        lastUpdated: resetAt
+      }
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: "Financial statistics have been successfully reset to ₹0.00. Previous metrics have been archived to Reset History.",
+      resetAt,
+      historyRecord
+    });
+  } catch (error) {
+    console.error("Error in resetFinancialData:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get all financial reset history records
+exports.getFinancialResetHistory = async (req, res) => {
+  try {
+    const FinancialResetHistory = require('../models/FinancialResetHistory');
+    const history = await FinancialResetHistory.find({}).sort({ resetAt: -1 }).limit(100).lean();
+    return res.status(200).json({
+      success: true,
+      count: history.length,
+      data: history
+    });
+  } catch (error) {
+    console.error("Error in getFinancialResetHistory:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

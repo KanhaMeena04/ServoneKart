@@ -1,0 +1,152 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../../utils/utils';
+import toast from 'react-hot-toast';
+
+const useAdminAuth = () => {
+  const { login: setAuth, setLoading: setGlobalLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const login = async (emailOrMobile, password) => {
+    setLoading(true);
+    setGlobalLoading(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/api/auth/login`,
+        {
+          loginId: emailOrMobile,
+          email: emailOrMobile,
+          mobile: emailOrMobile,
+          password,
+          pin: password
+        },
+        { withCredentials: true }
+      );
+
+      const { user, token } = res.data;
+
+      if (!user || !user.role) {
+        throw new Error("Invalid login response");
+      }
+
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+
+      // Persist user
+      setAuth(user, token);
+
+      toast.success("Login successful");
+      setSuccess(true);
+      return user;
+
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed";
+      setError(message);
+      toast.error(message);
+      return null;
+    } finally {
+      setLoading(false);
+      setGlobalLoading(false);
+    }
+  };
+
+  return { login, loading, error, success };
+};
+
+
+
+const useChangePassword = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  const navigate = useNavigate();
+  const changePassword = async (oldPassword, newPassword) => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/api/admin/change-password`, {
+        oldPassword,
+        newPassword
+      }, {
+        headers: {
+          'Authorization': `Bearer YOUR_AUTH_TOKEN`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 200 || response.data.success) {
+        setSuccess(true);
+           navigate('/dashboard');
+
+
+      } else {
+        setError(response.data.message || 'An unknown error occurred.');
+      }
+      
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        setError(err.response.data.message || `API Error: ${err.response.status}`);
+      } else {
+        setError('Network or system error.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { changePassword, isLoading, error, success };
+};
+
+export const authAPI = {
+  logout: () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (e) {
+      console.warn('Failed to clear auth storage', e);
+    }
+  },
+  getCurrentUser: () => {
+    try {
+      const user = localStorage.getItem('user');
+      return user ? JSON.parse(user) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+  isAuthenticated: () => {
+    try {
+      return !!localStorage.getItem('token');
+    } catch (e) {
+      return false;
+    }
+  },
+  getToken: () => {
+    try {
+      return localStorage.getItem('token');
+    } catch (e) {
+      return null;
+    }
+  }
+};
+
+export {
+  useAdminAuth,
+  useChangePassword
+};
+
+// };

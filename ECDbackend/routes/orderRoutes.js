@@ -1,0 +1,154 @@
+const express = require("express");
+const router = express.Router();
+const rateLimit = require("express-rate-limit");
+const {
+  protect,
+  customer,
+  restaurantOwner,
+  rider,
+  admin,
+} = require("../middleware/authMiddleware");
+const { checkServiceAvailability } = require("../middleware/checkServiceAvailability");
+const {
+  validatePlaceOrder,
+  validateOrderStatus,
+  validateCancelOrder,
+  validateRateRider,
+  handleValidationErrors,
+} = require("../middleware/validateOrder");
+const placeOrderLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // 20 orders per minute max
+  message: "Too many orders placed. Please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.user?.role === "admin", // Skip for admins
+});
+const generalOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per 15 minutes
+  message: "Too many requests. Please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const {
+  placeOrder,
+  getRestaurantOrders,
+  getRestaurantOrderDetails,
+  getPendingOrdersForRestaurant,
+  getCompletedOrdersForRestaurant,
+  updateOrderStatus,
+  markOrderReady,
+  riderPickupOrder,
+  riderCompleteOrder,
+  getMyOrders,
+  getOrderDetails,
+  getOrderDetailsCustomer,   // ✅ NEW
+  getOrderDetailsRestaurant, // ✅ NEW
+  getOrderDetailsRider,      // ✅ NEW
+  trackOrder,
+  reorder,
+  reportIssue,
+  getAllOrdersAdmin,
+  getOrderDetailsAdmin,
+  adminAssignRider,
+  adminUpdateStatus,
+  adminCancelOrder,
+  getFailedOrdersAdmin,
+  ownerRejectOrder,
+  ownerCancelOrder,
+  ownerDelayOrder,
+  riderArrivedRestaurant,
+  riderArrivedCustomer,
+  riderCollectCash,
+  adminRetryPayment,
+  adminResolveFailedOrder,
+  customerCancelOrder,       
+  getOrderTimeline,        
+  rateRider,                 
+  resendOTP,                
+  resendPickupOTPByRestaurant,
+  searchRidersForOrder,
+  verifySelfPickup,
+  getOrdersForRestaurantById,
+  prepareOrderVendor,
+  readyOrderVendor,
+  verifyPickupVendor,
+  completePickupVendor,
+  cancelOrderVendor,
+  deleteOrderVendor,
+  sendPickupOtpVendor,
+  notifyCustomerArrived,
+  failOrderCustomer,
+  verifySelfPickupOTP,
+  rateCustomer,
+} = require("../controllers/orderController");
+const { getMyActiveOrder } = require("../controllers/riderController");
+const { calculateDeliveryFee } = require("../controllers/paymentSystemController");
+
+router.post("/calculate-fee", calculateDeliveryFee);
+router.post("/calculate-delivery-fee", calculateDeliveryFee);
+router.get("/tracking/:id", protect, trackOrder);
+router.get("/:id/tracking", protect, trackOrder);
+
+router.post("/place", protect, checkServiceAvailability, validatePlaceOrder, handleValidationErrors, placeOrderLimiter, placeOrder);
+router.get("/my-orders", protect, generalOrderLimiter, getMyOrders);
+router.get("/driver/my-orders", protect, rider, getMyActiveOrder);
+router.put("/driver/update-status", protect, rider, updateOrderStatus);
+
+// Vendor Order Routes
+router.post("/restaurant/prepare/:orderId", protect, prepareOrderVendor);
+router.post("/restaurant/ready/:orderId", protect, readyOrderVendor);
+router.post("/restaurant/verify-pickup/:orderId", protect, verifyPickupVendor);
+router.post("/restaurant/complete-pickup/:orderId", protect, completePickupVendor);
+router.post("/restaurant/cancel/:orderId", protect, cancelOrderVendor);
+router.post("/restaurant/delete/:orderId", protect, deleteOrderVendor);
+router.delete("/restaurant/delete/:orderId", protect, deleteOrderVendor);
+router.post("/restaurant/send-pickup-otp/:orderId", protect, sendPickupOtpVendor);
+
+router.get("/:id/details", protect, generalOrderLimiter, getOrderDetails);
+router.get("/:id", protect, generalOrderLimiter, getOrderDetails);
+router.get("/:id/customer", protect, customer, generalOrderLimiter, getOrderDetailsCustomer); // ✅ Explicit customer route
+router.post("/:id/im-here", protect, customer, notifyCustomerArrived); // ✅ Customer "I'm Here" button
+router.post("/:id/customer-arrived", protect, customer, notifyCustomerArrived);
+router.post("/:id/cancel", protect, customer, validateCancelOrder, handleValidationErrors, generalOrderLimiter, customerCancelOrder);
+router.post("/:id/fail", protect, failOrderCustomer);
+router.get("/:id/timeline", protect, generalOrderLimiter, getOrderTimeline);
+router.post("/:id/rate-rider", protect, customer, validateRateRider, handleValidationErrors, generalOrderLimiter, rateRider);
+router.post("/:id/rate-customer", protect, rateCustomer);
+router.post("/:id/resend-otp", protect, generalOrderLimiter, resendOTP);
+router.get("/restaurant", protect, restaurantOwner, getRestaurantOrders);
+router.get("/restaurant/:id/details", protect, restaurantOwner, getRestaurantOrderDetails);
+router.get("/restaurant/:id", protect, getOrdersForRestaurantById);
+router.get("/restaurant/pending", protect, restaurantOwner, getPendingOrdersForRestaurant);
+router.get("/restaurant/completed", protect, restaurantOwner, getCompletedOrdersForRestaurant);
+const canUpdateOrderStatus = (req, res, next) => {
+  if (req.user && ['restaurant_owner', 'rider', 'driver', 'admin'].includes(req.user.role)) {
+    return next();
+  }
+  return res.status(403).json({ message: 'Access Denied: Only Restaurant Owners, Riders, or Admins can update order status' });
+};
+
+router.put("/:id/status", protect, canUpdateOrderStatus, updateOrderStatus);
+router.put("/:id/ready", protect, restaurantOwner, markOrderReady);
+router.post("/:id/pickup-otp", protect, restaurantOwner, resendPickupOTPByRestaurant);
+router.post("/:id/verify-self-pickup", protect, verifySelfPickupOTP);
+router.post("/:id/verify-pickup-otp", protect, verifySelfPickupOTP);
+router.post("/:id/search-riders", protect, restaurantOwner, searchRidersForOrder);
+router.put('/:id/reject', protect, restaurantOwner, ownerRejectOrder);
+router.put('/:id/owner-cancel', protect, restaurantOwner, ownerCancelOrder);
+router.put('/:id/delay', protect, restaurantOwner, ownerDelayOrder);
+router.get("/:id/rider", protect, rider, generalOrderLimiter, getOrderDetailsRider); // ✅ Explicit rider route
+router.get("/:id/track", protect, trackOrder);
+router.post("/:id/reorder", protect, reorder);
+router.post("/:id/report", protect, reportIssue);
+router.get("/admin/all", protect, admin, getAllOrdersAdmin);
+router.get("/admin/failed", protect, admin, getFailedOrdersAdmin);
+router.get("/admin/:id", protect, admin, getOrderDetailsAdmin);
+router.put("/admin/:id/assign", protect, admin, adminAssignRider);
+router.put("/admin/:id/status", protect, admin, adminUpdateStatus);
+router.put("/admin/:id/cancel", protect, admin, adminCancelOrder);
+router.post('/admin/:id/retry-payment', protect, admin, adminRetryPayment);
+router.put('/admin/:id/resolve', protect, admin, adminResolveFailedOrder);
+module.exports = router;
+

@@ -1,0 +1,1675 @@
+const mongoose = require("mongoose");
+const Category = require("../models/Category");
+const Product = require("../models/Product");
+const Restaurant = require("../models/Restaurant");
+const User = require("../models/User");
+const { getNextRestaurantId } = require("../utils/idGenerator");
+const { formatProductForUser } = require("../utils/responseFormatter");
+const { getFileUrl } = require("../utils/upload");
+const { uploadToImageKit } = require("../utils/imagekit");
+const { normalizePortionsAndVariations, normalizeAddOns } = require("../utils/portionHelper");
+const parseIfString = (value) => {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
+};
+const normalizeTranslation = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") return { en: value };
+  if (typeof value === "object") {
+    if (value.en) return value;
+    const fallback = value.de || value.ar;
+    if (fallback) return { ...value, en: fallback };
+  }
+  return null;
+};
+const normalizeNamedList = (list) => {
+  if (!Array.isArray(list)) return list;
+  return list.map((item) => {
+    if (!item) return item;
+    if (typeof item.name === "string") {
+      return { ...item, name: { en: item.name } };
+    }
+    if (item.name && typeof item.name === "object" && !item.name.en) {
+      const fallback = item.name.de || item.name.ar;
+      if (fallback) return { ...item, name: { ...item.name, en: fallback } };
+    }
+    return item;
+  });
+};
+const getOwnerRestaurant = async (userId) => {
+  const restaurant = await Restaurant.findOne({ owner: userId });
+  if (!restaurant) {
+    throw new Error("Restaurant not found for this user");
+  }
+  if (!restaurant.restaurantApproved) {
+    throw new Error("Your restaurant is not approved yet.");
+  }
+  return restaurant;
+};
+exports.addCategory = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const file = req.files && req.files.image ? req.files.image[0] : null;
+    const image = file
+      ? require("../utils/upload").getFileUrl(file)
+      : req.body.image;
+    const restaurant = await getOwnerRestaurant(req.user._id);
+    const normalizedName = normalizeTranslation(name);
+    if (!normalizedName || !normalizedName.en) {
+      return res.status(400).json({ message: "Category name is required" });
+    }
+    const category = await Category.create({
+      restaurant: restaurant._id,
+      name: normalizedName,
+      image,
+    });
+    res.status(201).json({ 
+      message: "Category added successfully",
+      category
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+exports.addFoodItem = async (req, res) => {
+  try {
+    const file = req.files && req.files.image ? req.files.image[0] : null;
+    const {
+      categoryId,
+      subcategoryId,
+      name,
+      description,
+      basePrice,
+      mrp,
+      sellingPrice,
+      b2cMrp,
+      b2cSellingPrice,
+      b2bPrice,
+      b2bSellingPrice,
+      foodType,
+      isVeg,
+      preparationTime,
+      variations,
+      addOns,
+    } = req.body;
+    const image = file ? getFileUrl(file) : req.body.image;
+    const parsedVariations = parseIfString(variations);
+    const parsedAddOns = parseIfString(addOns);
+    if (req.files && req.files.addOnImages && Array.isArray(parsedAddOns)) {
+      req.files.addOnImages.forEach((fileItem, index) => {
+        if (parsedAddOns[index]) {
+          parsedAddOns[index].image = getFileUrl(fileItem);
+        }
+      });
+    }
+    const restaurant = await getOwnerRestaurant(req.user._id);
+
+    // Validate main category from Category Master or create/resolve if string provided
+    let category = null;
+    if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
+      category = await Category.findById(categoryId);
+    }
+    if (!category && (req.body.category || categoryId)) {
+      const catClean = String(req.body.category || categoryId).trim();
+      if (catClean && catClean !== "null" && catClean !== "undefined") {
+        category = await Category.findOne({
+          $or: [
+            { name: { $regex: `^${catClean}$`, $options: 'i' } },
+            { slug: catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }
+          ]
+        });
+        if (!category) {
+          const newSlug = catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+          category = await Category.create({
+            name: catClean,
+            slug: newSlug,
+            type: "main",
+            isActive: true,
+            userAppVisible: true,
+            restaurantAppVisible: true
+          }).catch(() => null);
+        }
+      }
+    }
+    if (!category) {
+      category = await Category.findOne({ name: { $regex: '^Main Course$', $options: 'i' } }) || await Category.findOne({ isMaster: true }) || await Category.findOne({});
+    }
+    if (!category) {
+      category = await Category.create({ name: 'Main Course', slug: 'main-course', isActive: true, isMaster: true }).catch(() => null);
+    }
+    if (!category) {
+      return res.status(400).json({ message: "Category ID is required" });
+    }
+
+    // Validate subcategory if provided
+    let validSubcategory = null;
+    if (subcategoryId) {
+      validSubcategory = await Category.findById(subcategoryId);
+      if (!validSubcategory || validSubcategory.isActive === false) {
+        return res.status(404).json({ message: "Subcategory not found or inactive" });
+      }
+      if (validSubcategory.parentCategoryId && validSubcategory.parentCategoryId.toString() !== category._id.toString()) {
+        return res.status(400).json({ message: "Selected subcategory does not belong to selected category." });
+      }
+    }
+
+    const normalizedName = normalizeTranslation(name);
+    if (!normalizedName || !normalizedName.en) {
+      return res.status(400).json({ message: "Product name is required" });
+    }
+
+    // Calculate B2C and B2B pricing with portions
+    const norm = normalizePortionsAndVariations({
+      ...req.body,
+      variations: parsedVariations || variations,
+      addOns: parsedAddOns || addOns,
+      sellingPrice: b2cSellingPrice ?? sellingPrice ?? basePrice,
+      mrp: b2cMrp ?? mrp,
+      b2bPrice: b2bSellingPrice ?? b2bPrice,
+    });
+
+    const finalB2cSelling = Number(norm.sellingPrice ?? 0);
+    const finalB2cMrp = Number(norm.mrp ?? finalB2cSelling);
+    const finalB2bSelling = Number(norm.b2bPrice ?? finalB2cSelling);
+
+    if (finalB2cSelling < 0 || finalB2cMrp < 0 || finalB2bSelling < 0) {
+      return res.status(400).json({ message: "Prices cannot be negative" });
+    }
+
+    const b2cDiscount = finalB2cMrp > 0 ? Math.max(0, Math.round(((finalB2cMrp - finalB2cSelling) / finalB2cMrp) * 100 * 100) / 100) : 0;
+    const b2bDiscount = finalB2cMrp > 0 ? Math.max(0, Math.round(((finalB2cMrp - finalB2bSelling) / finalB2cMrp) * 100 * 100) / 100) : 0;
+
+    const pricingObj = {
+      b2c: {
+        mrp: finalB2cMrp,
+        sellingPrice: finalB2cSelling,
+        discountPercent: b2cDiscount
+      },
+      b2b: {
+        sellingPrice: finalB2bSelling,
+        discountPercent: b2bDiscount
+      }
+    };
+
+    const resolvedFoodType = foodType || (isVeg === false || isVeg === "false" ? "non-veg" : "veg");
+
+    const normalizedVariations = norm.variations || [];
+    const normalizedAddOns = norm.addOns || [];
+
+    const shouldAutoApprove = Boolean(
+      restaurant.autoApproveMenu ||
+      restaurant.menuApprovalRequired === false ||
+      (req.user && req.user.role === 'admin')
+    );
+
+    let finalImage = file ? getFileUrl(file) : (req.body.image || req.body.imageUrl || req.body.photo || "");
+    if (finalImage && typeof finalImage === "string" && !finalImage.includes("ik.imagekit.io")) {
+      try {
+        const up = await uploadToImageKit(finalImage, `menu_${restaurant._id}_${Date.now()}.jpg`, '/menu', normalizedName?.en);
+        if (up) finalImage = up;
+      } catch (e) {
+        console.warn('[ImageKit addFoodItem notice]:', e.message);
+      }
+    }
+
+    const product = await Product.create({
+      restaurant: restaurant._id,
+      category: category._id,
+      categoryId: category._id,
+      subcategoryId: validSubcategory ? validSubcategory._id : null,
+      subcategory: validSubcategory ? validSubcategory.name : "",
+      name: normalizedName,
+      description: normalizeTranslation(description),
+      basePrice: finalB2cSelling,
+      mrp: finalB2cMrp,
+      sellingPrice: finalB2cSelling,
+      b2bPrice: finalB2bSelling,
+      pricing: pricingObj,
+      foodType: resolvedFoodType,
+      isVeg: resolvedFoodType === "veg",
+      preparationTime: Number(preparationTime || 15),
+      image: finalImage,
+      portionType: norm.portionType || 'none',
+      portions: norm.portions || null,
+      variations: normalizedVariations,
+      addOns: normalizedAddOns,
+      approvalStatus: shouldAutoApprove ? "approved" : "pending",
+      isApproved: shouldAutoApprove,
+      isPublished: shouldAutoApprove,
+      approvedAt: shouldAutoApprove ? new Date() : undefined,
+    });
+
+    await Restaurant.findByIdAndUpdate(
+      restaurant._id,
+      { $addToSet: { product: product._id } },
+      { new: true }
+    );
+
+    const AuditLog = require("../models/AuditLog");
+    await AuditLog.log({
+      entity: "Product",
+      entityId: product._id,
+      action: "MENU_ITEM_CREATED",
+      userId: req.user._id,
+      userRole: "restaurant_owner",
+      reason: `Restaurant submitted menu item '${product.name?.en || product.name}' for approval`,
+    });
+
+    res.status(201).json({ 
+      message: "Food Item added successfully. Awaiting admin approval.",
+      product,
+      status: "pending_approval"
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+exports.getMenu = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const isObjId = restaurantId && mongoose.Types.ObjectId.isValid(restaurantId);
+    const cleanMobile = (restaurantId || "").toString().replace(/\D/g, "");
+
+    let ownerUser = null;
+    if (cleanMobile && cleanMobile.length >= 7) {
+      ownerUser = await User.findOne({ mobile: cleanMobile });
+    }
+
+    let restaurant = null;
+    if (isObjId) {
+      restaurant = await Restaurant.findById(restaurantId);
+    }
+    if (!restaurant && req.user) {
+      if (req.user.restaurant && mongoose.Types.ObjectId.isValid(req.user.restaurant)) {
+        restaurant = await Restaurant.findById(req.user.restaurant);
+      }
+      if (!restaurant) {
+        restaurant = await Restaurant.findOne({ owner: req.user._id });
+      }
+      if (!restaurant && (req.user.mobile || req.user.phone || req.user.email)) {
+        const uPhone = (req.user.mobile || req.user.phone || "").toString().replace(/\D/g, "");
+        const uPhone10 = uPhone.slice(-10);
+        restaurant = await Restaurant.findOne({
+          $or: [
+            { owner: req.user._id },
+            { email: req.user.email },
+            ...(uPhone10 ? [
+              { contactNumber: { $regex: uPhone10 } },
+              { phone: { $regex: uPhone10 } }
+            ] : [])
+          ]
+        });
+      }
+    }
+    if (!restaurant && restaurantId && restaurantId !== "me" && restaurantId !== "default") {
+      restaurant = await Restaurant.findOne({
+        $or: [
+          ...(isObjId ? [{ _id: restaurantId }] : []),
+          { restaurantId: restaurantId },
+          { slug: restaurantId },
+          { contactNumber: restaurantId },
+          { email: restaurantId },
+          ...(cleanMobile ? [{ contactNumber: cleanMobile }, { contactNumber: { $regex: cleanMobile } }, { phone: cleanMobile }] : []),
+          ...(ownerUser ? [{ owner: ownerUser._id }] : [])
+        ]
+      });
+    }
+
+    if (!restaurant) {
+      // Prioritize restaurant that already has products or menu items
+      restaurant = await Restaurant.findOne({
+        $or: [
+          { "product.0": { $exists: true } },
+          { "menu.0": { $exists: true } }
+        ]
+      }).sort({ updatedAt: -1 });
+    }
+
+    if (!restaurant) {
+      restaurant = await Restaurant.findOne({}).sort({ createdAt: -1 });
+    }
+
+    if (!restaurant) {
+      // If still no restaurant, create a default active one
+      restaurant = await Restaurant.create({
+        name: { en: "Gyani Ji dhabha" },
+        restaurantId: await getNextRestaurantId(),
+        contactNumber: "8085270415",
+        phone: "8085270415",
+        restaurantApproved: true,
+        isActive: true,
+      });
+    }
+
+    // Initial migration: ONLY if restaurant has ZERO products in Product collection
+    // and has legacy items in restaurant.menu
+    const existingProdCount = await Product.countDocuments({ restaurant: restaurant._id });
+    if (existingProdCount === 0 && Array.isArray(restaurant.menu) && restaurant.menu.length > 0) {
+      let defaultCat = await Category.findOne({ isMaster: true }) || await Category.findOne({});
+      if (!defaultCat) {
+        defaultCat = await Category.create({ name: "Main Course", slug: "main-course", isActive: true, isMaster: true }).catch(() => null);
+      }
+
+      const newProductDocs = [];
+      for (let idx = 0; idx < restaurant.menu.length; idx++) {
+        const m = restaurant.menu[idx];
+        if (!m) continue;
+        const mName = typeof m.name === 'object' ? (m.name?.en || Object.values(m.name)[0] || '') : (m.name || `Item ${idx + 1}`);
+        const itemPrice = Number(m.price || m.basePrice || 0);
+        const rawFoodType = (m.foodType || (m.isVeg ? 'veg' : 'non-veg')).toString().toLowerCase();
+        const itemFoodType = rawFoodType.includes('egg') ? 'egg' : (rawFoodType.includes('non') ? 'non-veg' : 'veg');
+
+        let itemCat = defaultCat;
+        if (m.category && typeof m.category === 'string') {
+          const catClean = m.category.trim();
+          let foundCat = await Category.findOne({
+            $or: [
+              { name: { $regex: `^${catClean}$`, $options: 'i' } },
+              { slug: catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }
+            ]
+          });
+          if (!foundCat) {
+            const newSlug = catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+            foundCat = await Category.create({
+              name: catClean,
+              slug: newSlug,
+              type: 'main',
+              isActive: true,
+              userAppVisible: true,
+              restaurantAppVisible: true
+            }).catch(() => null);
+          }
+          if (foundCat) itemCat = foundCat;
+        }
+
+        const isAppr = m.isApproved === true || (m.isApproved === undefined && Boolean(restaurant.restaurantApproved));
+        const apprStatus = m.approvalStatus || (isAppr ? "approved" : "pending");
+
+        try {
+          const createdProd = await Product.create({
+            restaurant: restaurant._id,
+            category: itemCat._id,
+            categoryId: itemCat._id,
+            name: { en: mName },
+            description: { en: m.description || "" },
+            image: m.image || "",
+            basePrice: itemPrice,
+            sellingPrice: itemPrice,
+            mrp: Number(m.mrp || itemPrice),
+            pricing: {
+              b2c: { mrp: Number(m.mrp || itemPrice), sellingPrice: itemPrice, discountPercent: 0 },
+              b2b: { sellingPrice: itemPrice, discountPercent: 0 }
+            },
+            isVeg: itemFoodType === 'veg',
+            foodType: itemFoodType,
+            available: m.isAvailable !== false,
+            isApproved: isAppr,
+            approvalStatus: apprStatus,
+            isPublished: isAppr,
+            variations: m.variants || m.variations || [],
+            addOns: m.addOns || []
+          });
+          newProductDocs.push(createdProd._id);
+        } catch (e) {}
+      }
+      if (newProductDocs.length > 0) {
+        await Restaurant.findByIdAndUpdate(restaurant._id, { $addToSet: { product: { $each: newProductDocs } } });
+      }
+    }
+
+    const isVendorOrAdmin = req.query.includePending === "true" ||
+      Boolean(req.user && (req.user.role === "admin" || (restaurant.owner && req.user._id && restaurant.owner.toString() === req.user._id.toString())));
+
+    const validProductObjIds = Array.isArray(restaurant.product)
+      ? restaurant.product.filter(id => mongoose.Types.ObjectId.isValid(id))
+      : [];
+
+    const queryFilter = {
+      $or: [
+        { restaurant: restaurant._id },
+        { restaurant: restaurant._id.toString() },
+        ...(validProductObjIds.length > 0 ? [{ _id: { $in: validProductObjIds } }] : [])
+      ]
+    };
+
+    if (!isVendorOrAdmin) {
+      // User App Public View: Strictly approved and non-rejected items only
+      queryFilter.isApproved = true;
+      queryFilter.approvalStatus = { $ne: "rejected" };
+      queryFilter.isRejected = { $ne: true };
+    }
+
+    // Fetch products for restaurant
+    let products = await Product.find(queryFilter)
+      .populate("category", "name slug isActive userAppVisible")
+      .populate("categoryId", "name slug isActive userAppVisible")
+      .populate("subcategoryId", "name slug isActive userAppVisible")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Check if authenticated user is authorized for B2B pricing
+    const isB2BUser = req.user && (req.user.userType === "b2b" || req.user.userType === "corporate" || req.user.role === "b2b");
+
+    const items = [];
+    const menu = {};
+    const menuByCategoryId = {};
+
+    products.forEach((p) => {
+      const catObj = p.categoryId || p.category;
+      const catName = catObj ? (typeof catObj === 'string' ? catObj : (catObj.name?.en || catObj.name || "Main Course")) : "Main Course";
+      const subcatObj = p.subcategoryId;
+
+      const b2cSelling = p.pricing?.b2c?.sellingPrice ?? p.sellingPrice ?? p.basePrice ?? 0;
+      const b2cMrp = p.pricing?.b2c?.mrp ?? p.mrp ?? b2cSelling;
+      const b2bSelling = p.b2bPrice ?? p.pricing?.b2b?.sellingPrice ?? b2cSelling;
+
+      const rawName = p.name;
+      const itemName = typeof rawName === 'object' ? (rawName?.en || Object.values(rawName)[0] || '') : (rawName || '');
+
+      const rawDesc = p.description;
+      const itemDesc = typeof rawDesc === 'object' ? (rawDesc?.en || Object.values(rawDesc)[0] || '') : (rawDesc || '');
+
+      const formattedItem = {
+        _id: p._id.toString(),
+        id: p._id.toString(),
+        categoryId: catObj && typeof catObj === 'object' ? catObj._id : null,
+        subcategoryId: subcatObj && typeof subcatObj === 'object' ? subcatObj._id : null,
+        name: itemName,
+        description: itemDesc,
+        image: p.image || "",
+        basePrice: p.basePrice ?? b2cSelling,
+        b2cPrice: b2cSelling,
+        sellingPrice: b2cSelling,
+        b2bPrice: b2bSelling,
+        mrp: b2cMrp,
+        foodType: p.foodType || (p.isVeg ? "veg" : "non-veg"),
+        isVeg: p.isVeg !== false,
+        preparationTime: p.preparationTime || 15,
+        portionType: p.portionType || 'none',
+        portions: p.portions || null,
+        variations: p.variations || [],
+        variants: p.variations || [],
+        flavors: p.variations || [],
+        addOns: p.addOns || [],
+        available: p.available !== false,
+        isAvailable: p.available !== false,
+        approvalStatus: p.approvalStatus || (p.isApproved ? "approved" : (p.isRejected ? "rejected" : "pending")),
+        isApproved: Boolean(p.isApproved),
+        isPublished: Boolean(p.isPublished),
+        isRejected: Boolean(p.isRejected),
+        rejectionReason: p.rejectionReason || "",
+        changeRequest: p.changeRequest || "",
+        category: catObj && typeof catObj === 'object' ? {
+          id: catObj._id,
+          _id: catObj._id,
+          name: catName,
+          slug: catObj.slug
+        } : { name: catName },
+        subcategory: subcatObj && typeof subcatObj === 'object' ? {
+          id: subcatObj._id,
+          _id: subcatObj._id,
+          name: typeof subcatObj.name === 'object' ? (subcatObj.name?.en || Object.values(subcatObj.name)[0] || '') : (subcatObj.name || ''),
+          slug: subcatObj.slug
+        } : null,
+        restaurant: {
+          id: restaurant._id,
+          _id: restaurant._id,
+          name: typeof restaurant.name === 'object' ? (restaurant.name?.en || Object.values(restaurant.name)[0] || '') : (restaurant.name || '')
+        }
+      };
+
+      if (isB2BUser || isVendorOrAdmin) {
+        formattedItem.b2bPrice = b2bSelling;
+        formattedItem.pricing = {
+          b2c: { mrp: b2cMrp, sellingPrice: b2cSelling },
+          b2b: { sellingPrice: b2bSelling }
+        };
+      } else {
+        formattedItem.pricing = {
+          b2c: { mrp: b2cMrp, sellingPrice: b2cSelling }
+        };
+      }
+
+      items.push(formattedItem);
+
+      if (!menu[catName]) menu[catName] = [];
+      menu[catName].push(formattedItem);
+
+      if (catObj && catObj._id) {
+        const categoryKey = catObj._id.toString();
+        if (!menuByCategoryId[categoryKey]) {
+          menuByCategoryId[categoryKey] = {
+            category: {
+              _id: catObj._id,
+              id: catObj._id,
+              name: catName,
+              image: catObj.image,
+            },
+            items: [],
+          };
+        }
+        menuByCategoryId[categoryKey].items.push(formattedItem);
+      }
+    });
+
+    // Fallback & Auto-Sync: If no products exist yet in Product collection, sync items from restaurant.menu
+    if (items.length === 0 && Array.isArray(restaurant.menu) && restaurant.menu.length > 0) {
+      let defaultCat = await Category.findOne({ isMaster: true });
+      if (!defaultCat) defaultCat = await Category.findOne({});
+      if (!defaultCat) {
+        defaultCat = await Category.create({ name: "Main Course", slug: "main-course", isActive: true, isMaster: true }).catch(() => null);
+      }
+
+      for (let idx = 0; idx < restaurant.menu.length; idx++) {
+        const m = restaurant.menu[idx];
+        const mName = m.name || (typeof m === 'string' ? m : `Item ${idx + 1}`);
+        const itemPrice = Number(m.price || m.basePrice || 0);
+        const catName = m.category || "Main Course";
+        const isAppr = Boolean(restaurant.restaurantApproved);
+        const apprStatus = isAppr ? "approved" : "pending";
+
+        let itemCat = defaultCat;
+        if (catName && typeof catName === 'string') {
+          const catClean = catName.trim();
+          let foundCat = await Category.findOne({
+            $or: [
+              { name: { $regex: `^${catClean}$`, $options: 'i' } },
+              { slug: catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }
+            ]
+          });
+          if (!foundCat) {
+            const newSlug = catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+            foundCat = await Category.create({
+              name: catClean,
+              slug: newSlug,
+              type: 'main',
+              isActive: true,
+              userAppVisible: true,
+              restaurantAppVisible: true
+            }).catch(() => null);
+          }
+          if (foundCat) itemCat = foundCat;
+        }
+
+        let createdProd = null;
+        try {
+          createdProd = await Product.create({
+            restaurant: restaurant._id,
+            category: itemCat._id,
+            categoryId: itemCat._id,
+            name: { en: mName },
+            description: { en: m.description || "" },
+            image: m.image || "",
+            basePrice: itemPrice,
+            sellingPrice: itemPrice,
+            mrp: Number(m.mrp || itemPrice),
+            pricing: {
+              b2c: { mrp: Number(m.mrp || itemPrice), sellingPrice: itemPrice, discountPercent: 0 },
+              b2b: { sellingPrice: itemPrice, discountPercent: 0 }
+            },
+            isVeg: m.isVeg !== false,
+            foodType: m.foodType ? m.foodType.toLowerCase() : (m.isVeg !== false ? "veg" : "non-veg"),
+            available: m.isAvailable !== false,
+            isApproved: isAppr,
+            approvalStatus: apprStatus,
+            isPublished: isAppr,
+          });
+          await Restaurant.findByIdAndUpdate(restaurant._id, { $addToSet: { product: createdProd._id } });
+        } catch (e) {
+          // Ignore duplicate or validation err
+        }
+
+        const formattedItem = {
+          _id: createdProd?._id ? createdProd._id.toString() : (m._id ? m._id.toString() : `onboard_item_${idx}`),
+          id: createdProd?._id ? createdProd._id.toString() : (m._id ? m._id.toString() : `onboard_item_${idx}`),
+          name: mName,
+          description: m.description || "",
+          image: m.image || "",
+          basePrice: itemPrice,
+          b2cPrice: itemPrice,
+          sellingPrice: itemPrice,
+          mrp: Number(m.mrp || itemPrice),
+          foodType: m.foodType || (m.isVeg ? "veg" : "non-veg"),
+          isVeg: m.isVeg !== false,
+          preparationTime: 15,
+          variations: m.variants || [],
+          flavors: m.variants || [],
+          addOns: m.addOns || [],
+          available: m.isAvailable !== false,
+          isAvailable: m.isAvailable !== false,
+          approvalStatus: apprStatus,
+          isApproved: isAppr,
+          isPublished: isAppr,
+          category: { name: catName },
+          restaurant: {
+            id: restaurant._id,
+            _id: restaurant._id,
+            name: restaurant.name?.en || restaurant.name || ""
+          }
+        };
+        items.push(formattedItem);
+        if (!menu[catName]) menu[catName] = [];
+        menu[catName].push(formattedItem);
+      }
+    }
+
+    res.json({
+      success: true,
+      count: items.length,
+      data: items,
+      items: items,
+      menu,
+      menuByCategoryId,
+      restaurant: {
+        _id: restaurant._id,
+        id: restaurant._id,
+        name: restaurant.name?.en || restaurant.name || ""
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.bulkUpdateProducts = async (req, res) => {
+  try {
+    const { updates } = req.body;
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ message: "No updates provided" });
+    }
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
+    if (!restaurant)
+      return res.status(404).json({ message: "Restaurant not found" });
+    const results = [];
+    let hasPendingUpdates = false;
+    for (const u of updates) {
+      if (!u.productId) {
+        results.push({ productId: null, status: "invalid_payload" });
+        continue;
+      }
+      const product = await Product.findOne({
+        _id: u.productId,
+        restaurant: restaurant._id,
+      });
+      if (!product) {
+        results.push({ productId: u.productId, status: "not_found" });
+        continue;
+      }
+      if (u.available !== undefined) {
+        product.available =
+          u.available === "true"
+            ? true
+            : u.available === "false"
+              ? false
+              : !!u.available;
+      }
+      const pendingFields = [
+        "basePrice",
+        "seasonal",
+        "seasonTag",
+        "name",
+        "description",
+        "addOns",
+        "variations",
+        "image",
+        "category",
+        "isVeg",
+      ];
+      if (product.isApproved) {
+        const pendingUpdate = { ...(product.pendingUpdate || {}) };
+        pendingFields.forEach((field) => {
+          if (u[field] !== undefined) {
+            if (field === "name") {
+              const normalized = normalizeTranslation(u.name);
+              if (normalized && normalized.en) {
+                pendingUpdate.name = normalized;
+              }
+            } else if (field === "description") {
+              const normalized = normalizeTranslation(u.description);
+              if (normalized) {
+                pendingUpdate.description = normalized;
+              }
+            } else if (field === "variations") {
+              let normalizedVars = normalizeNamedList(u.variations) || [];
+              if (Array.isArray(normalizedVars)) {
+                normalizedVars = normalizedVars.filter((variation) => {
+                  if (!variation) return false;
+                  const varName = variation.name;
+                  if (!varName) return false;
+                  if (typeof varName === 'string' && !varName.trim()) return false;
+                  if (typeof varName === 'object' && !varName.en && !varName.de && !varName.ar) return false;
+                  if (typeof variation.price !== 'number' || variation.price < 0) return false;
+                  return true;
+                });
+              }
+              pendingUpdate.variations = normalizedVars;
+            } else if (field === "addOns") {
+              let normalizedAddOns = normalizeNamedList(u.addOns) || [];
+              if (Array.isArray(normalizedAddOns)) {
+                normalizedAddOns = normalizedAddOns.filter((addOn) => {
+                  if (!addOn) return false;
+                  const addOnName = addOn.name;
+                  if (!addOnName) return false;
+                  if (typeof addOnName === 'string' && !addOnName.trim()) return false;
+                  if (typeof addOnName === 'object' && !addOnName.en && !addOnName.de && !addOnName.ar) return false;
+                  if (typeof addOn.price !== 'number' || addOn.price < 0) return false;
+                  return true;
+                });
+              }
+              pendingUpdate.addOns = normalizedAddOns;
+            } else {
+              pendingUpdate[field] = u[field];
+            }
+          }
+        });
+        if (Object.keys(pendingUpdate).length > 0) {
+          product.pendingUpdate = pendingUpdate;
+          product.pendingUpdateAt = new Date();
+          hasPendingUpdates = true;
+        }
+        await product.save();
+        results.push({ productId: product._id, status: "pending_approval" });
+      } else {
+        pendingFields.forEach((field) => {
+          if (u[field] === undefined) return;
+          if (field === "name") {
+            const normalized = normalizeTranslation(u.name);
+            if (!normalized || !normalized.en) return;
+            product.name = normalized;
+          } else if (field === "description") {
+            product.description = normalizeTranslation(u.description);
+          } else if (field === "variations") {
+            let normalizedVars = normalizeNamedList(u.variations) || [];
+            if (Array.isArray(normalizedVars)) {
+              normalizedVars = normalizedVars.filter((variation) => {
+                if (!variation) return false;
+                const varName = variation.name;
+                if (!varName) return false;
+                if (typeof varName === 'string' && !varName.trim()) return false;
+                if (typeof varName === 'object' && !varName.en && !varName.de && !varName.ar) return false;
+                if (typeof variation.price !== 'number' || variation.price < 0) return false;
+                return true;
+              });
+            }
+            product.variations = normalizedVars;
+          } else if (field === "addOns") {
+            let normalizedAddOns = normalizeNamedList(u.addOns) || [];
+            if (Array.isArray(normalizedAddOns)) {
+              normalizedAddOns = normalizedAddOns.filter((addOn) => {
+                if (!addOn) return false;
+                const addOnName = addOn.name;
+                if (!addOnName) return false;
+                if (typeof addOnName === 'string' && !addOnName.trim()) return false;
+                if (typeof addOnName === 'object' && !addOnName.en && !addOnName.de && !addOnName.ar) return false;
+                if (typeof addOn.price !== 'number' || addOn.price < 0) return false;
+                return true;
+              });
+            }
+            product.addOns = normalizedAddOns;
+          } else {
+            product[field] = u[field];
+          }
+        });
+        await product.save();
+        results.push({ productId: product._id, status: "updated" });
+      }
+    }
+    res.status(200).json({ message: "Bulk update completed", results });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.toggleProductAvailability = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { available } = req.body;
+    const isAdmin = req.user && req.user.role === 'admin';
+
+    let restaurant = null;
+    let product = null;
+
+    if (isAdmin) {
+      if (mongoose.Types.ObjectId.isValid(productId)) {
+        product = await Product.findById(productId);
+      }
+      if (product && product.restaurant) {
+        restaurant = await Restaurant.findById(product.restaurant);
+      }
+    } else {
+      restaurant = await Restaurant.findOne({ owner: req.user._id });
+      if (!restaurant)
+        return res.status(404).json({ message: "Restaurant not found" });
+      if (mongoose.Types.ObjectId.isValid(productId)) {
+        product = await Product.findOne({
+          _id: productId,
+          restaurant: restaurant._id,
+        });
+      }
+    }
+
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    const isAvail = available === "true" || available === true;
+    product.available = isAvail;
+    product.isAvailable = isAvail;
+    await product.save();
+
+    // Also sync to restaurant embedded menu if present
+    if (restaurant && Array.isArray(restaurant.menu)) {
+      const prodName = typeof product.name === 'object' ? (product.name.en || Object.values(product.name)[0] || '') : (product.name || '');
+      await Restaurant.updateOne(
+        { _id: restaurant._id, $or: [{ "menu._id": product._id }, { "menu.name": prodName }] },
+        { $set: { "menu.$.isAvailable": isAvail } }
+      ).catch(() => {});
+    }
+
+    res.status(200).json({ message: "Product availability updated", product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.bulkUpdatePrices = async (req, res) => {
+  try {
+    const { updates, percentage, productIds } = req.body;
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
+    if (!restaurant)
+      return res.status(404).json({ message: "Restaurant not found" });
+    const results = [];
+    let hasPendingUpdates = false;
+    if (Array.isArray(updates) && updates.length > 0) {
+      for (const u of updates) {
+        if (!u.productId || typeof u.newPrice !== "number") {
+          results.push({
+            productId: u.productId || null,
+            status: "invalid_payload",
+          });
+          continue;
+        }
+        const product = await Product.findOne({
+          _id: u.productId,
+          restaurant: restaurant._id,
+        });
+        if (!product) {
+          results.push({ productId: u.productId, status: "not_found" });
+          continue;
+        }
+        if (product.isApproved) {
+          const pendingUpdate = { ...(product.pendingUpdate || {}) };
+          pendingUpdate.basePrice = u.newPrice;
+          product.pendingUpdate = pendingUpdate;
+          product.pendingUpdateAt = new Date();
+          await product.save();
+          hasPendingUpdates = true;
+          results.push({ productId: product._id, status: "pending_approval" });
+        } else {
+          product.basePrice = u.newPrice;
+          await product.save();
+          results.push({ productId: product._id, status: "price_updated" });
+        }
+      }
+      return res.status(200).json({ message: "Bulk prices updated", results });
+    }
+    if (typeof percentage === "number") {
+      const query = { restaurant: restaurant._id };
+      if (Array.isArray(productIds) && productIds.length > 0)
+        query._id = { $in: productIds };
+      const products = await Product.find(query);
+      for (const p of products) {
+        const nextPrice =
+          Math.round(p.basePrice * (1 + percentage / 100) * 100) / 100;
+        if (p.isApproved) {
+          const pendingUpdate = { ...(p.pendingUpdate || {}) };
+          pendingUpdate.basePrice = nextPrice;
+          p.pendingUpdate = pendingUpdate;
+          p.pendingUpdateAt = new Date();
+          await p.save();
+          hasPendingUpdates = true;
+          results.push({ productId: p._id, newPrice: nextPrice, status: "pending_approval" });
+        } else {
+          p.basePrice = nextPrice;
+          await p.save();
+          results.push({ productId: p._id, newPrice: p.basePrice });
+        }
+      }
+      return res
+        .status(200)
+        .json({ message: "Bulk percentage price update applied", results });
+    }
+    res
+      .status(400)
+      .json({
+        message: "Invalid payload. Provide either updates or percentage.",
+      });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.editProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    let restaurant = null;
+    let product = null;
+
+    const isAdmin = req.user && req.user.role === 'admin';
+
+    if (isAdmin) {
+      product = await Product.findById(productId);
+      if (product && product.restaurant) {
+        restaurant = await Restaurant.findById(product.restaurant);
+      }
+    } else {
+      restaurant = await Restaurant.findOne({ owner: req.user._id });
+      if (restaurant) {
+        product = await Product.findOne({
+          _id: productId,
+          restaurant: restaurant._id,
+        });
+      }
+    }
+
+    if (!product) return res.status(404).json({ message: "Product or restaurant not found" });
+
+    const file = req.files && req.files.image ? req.files.image[0] : null;
+    const updates = { ...req.body };
+    if (file) updates.image = getFileUrl(file);
+    if (updates.image && typeof updates.image === 'string' && !updates.image.includes('ik.imagekit.io')) {
+      try {
+        const up = await uploadToImageKit(updates.image, `menu_${product._id}_${Date.now()}.jpg`, '/menu', product.name?.en || updates.name);
+        if (up) updates.image = up;
+      } catch (e) {
+        console.warn('[ImageKit Edit Product Notice]:', e.message);
+      }
+    }
+    if (updates.variations !== undefined) {
+      updates.variations = parseIfString(updates.variations);
+    }
+    if (updates.addOns !== undefined) {
+      updates.addOns = parseIfString(updates.addOns);
+    }
+    if (req.files && req.files.addOnImages && Array.isArray(updates.addOns)) {
+      req.files.addOnImages.forEach((fileItem, index) => {
+        if (updates.addOns[index]) {
+          updates.addOns[index].image = getFileUrl(fileItem);
+        }
+      });
+    }
+
+    const allowed = [
+      "basePrice",
+      "sellingPrice",
+      "mrp",
+      "b2cSellingPrice",
+      "b2cMrp",
+      "b2bPrice",
+      "b2bSellingPrice",
+      "foodType",
+      "isVeg",
+      "name",
+      "description",
+      "image",
+      "portionType",
+      "portions",
+      "variations",
+      "addOns",
+      "seasonal",
+      "seasonTag",
+      "available",
+      "category",
+      "categoryId",
+      "subcategoryId",
+      "preparationTime",
+    ];
+
+    let hasPendingUpdate = false;
+
+    if (isAdmin || !product.isApproved) {
+      // If portion / variant info updated, normalize first
+      if (updates.portionType !== undefined || updates.portions !== undefined || updates.variations !== undefined || updates.variants !== undefined) {
+        const norm = normalizePortionsAndVariations({
+          ...product.toObject(),
+          ...updates,
+          variations: updates.variations !== undefined ? updates.variations : product.variations,
+          addOns: updates.addOns !== undefined ? updates.addOns : product.addOns,
+        });
+        product.portionType = norm.portionType;
+        product.portions = norm.portions;
+        product.variations = norm.variations;
+        if (norm.addOns && norm.addOns.length > 0) {
+          product.addOns = norm.addOns;
+        }
+        if (norm.sellingPrice > 0) {
+          product.sellingPrice = norm.sellingPrice;
+          product.basePrice = norm.sellingPrice;
+          product.mrp = norm.mrp;
+          product.b2bPrice = norm.b2bPrice;
+          if (!product.pricing) product.pricing = { b2c: {}, b2b: {} };
+          product.pricing.b2c = {
+            mrp: norm.mrp,
+            sellingPrice: norm.sellingPrice,
+            discountPercent: norm.mrp > norm.sellingPrice ? Math.round(((norm.mrp - norm.sellingPrice) / norm.mrp) * 100) : 0,
+          };
+          product.pricing.b2b = {
+            sellingPrice: norm.b2bPrice,
+            discountPercent: 0,
+          };
+        }
+      }
+
+      // Direct update for Admin or unapproved product
+      for (const field of allowed) {
+        if (updates[field] === undefined) continue;
+        if (field === "name") {
+          const normalized = normalizeTranslation(updates.name);
+          if (normalized && normalized.en) product.name = normalized;
+        } else if (field === "description") {
+          product.description = normalizeTranslation(updates.description);
+        } else if (field === "portionType") {
+          product.portionType = updates.portionType;
+        } else if (field === "portions") {
+          product.portions = updates.portions;
+        } else if (field === "variations") {
+          // Handled above in norm
+        } else if (field === "addOns") {
+          product.addOns = normalizeAddOns(updates.addOns);
+        } else if (field === "sellingPrice" || field === "basePrice" || field === "b2cSellingPrice") {
+          const val = Number(updates[field]);
+          product.basePrice = val;
+          product.sellingPrice = val;
+          if (!product.pricing) product.pricing = { b2c: {}, b2b: {} };
+          product.pricing.b2c.sellingPrice = val;
+        } else if (field === "mrp" || field === "b2cMrp") {
+          const val = Number(updates[field]);
+          product.mrp = val;
+          if (!product.pricing) product.pricing = { b2c: {}, b2b: {} };
+          product.pricing.b2c.mrp = val;
+        } else if (field === "b2bPrice" || field === "b2bSellingPrice") {
+          const val = Number(updates[field]);
+          product.b2bPrice = val;
+          if (!product.pricing) product.pricing = { b2c: {}, b2b: {} };
+          product.pricing.b2b.sellingPrice = val;
+        } else if (field === "category" || field === "categoryId") {
+          const catVal = updates[field];
+          if (catVal && mongoose.Types.ObjectId.isValid(catVal)) {
+            product.category = catVal;
+            product.categoryId = catVal;
+          } else if (typeof catVal === "string" && catVal.trim().length > 0) {
+            const catClean = catVal.trim();
+            let foundCat = await Category.findOne({
+              $or: [
+                { name: { $regex: `^${catClean}$`, $options: 'i' } },
+                { slug: catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }
+              ]
+            });
+            if (!foundCat) {
+              const newSlug = catClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+              foundCat = await Category.create({
+                name: catClean,
+                slug: newSlug,
+                type: 'main',
+                isActive: true,
+                userAppVisible: true,
+                restaurantAppVisible: true
+              }).catch(() => null);
+            }
+            if (foundCat) {
+              product.category = foundCat._id;
+              product.categoryId = foundCat._id;
+            }
+          }
+        } else if (field === "foodType" || field === "isVeg") {
+          const rawFt = (updates.foodType || (updates.isVeg ? "veg" : "non-veg")).toString().toLowerCase();
+          const ft = rawFt.includes("egg") ? "egg" : (rawFt.includes("non") ? "non-veg" : "veg");
+          product.foodType = ft;
+          product.isVeg = ft === "veg";
+        } else if (field === "available") {
+          product.available = updates.available === "true" || updates.available === true;
+          product.isAvailable = product.available;
+        } else {
+          product[field] = updates[field];
+        }
+      }
+
+      if (isAdmin) {
+        product.isApproved = true;
+        product.approvalStatus = "approved";
+        product.isPublished = true;
+        product.isRejected = false;
+        product.pendingUpdate = undefined;
+      }
+    } else {
+      // Non-admin owner updating an approved item -> queue in pendingUpdate
+      if (updates.available !== undefined) {
+        product.available =
+          updates.available === "true"
+            ? true
+            : updates.available === "false"
+              ? false
+              : !!updates.available;
+        product.isAvailable = product.available;
+      }
+      const pendingUpdate = { ...(product.pendingUpdate || {}) };
+      const pendingFields = allowed.filter((field) => field !== "available");
+      pendingFields.forEach((field) => {
+        if (updates[field] !== undefined) {
+          if (field === "name") {
+            const normalized = normalizeTranslation(updates.name);
+            if (normalized && normalized.en) {
+              pendingUpdate.name = normalized;
+            }
+          } else if (field === "description") {
+            const normalized = normalizeTranslation(updates.description);
+            if (normalized) {
+              pendingUpdate.description = normalized;
+            }
+          } else if (field === "variations") {
+            pendingUpdate.variations = normalizeNamedList(updates.variations);
+          } else if (field === "addOns") {
+            pendingUpdate.addOns = normalizeNamedList(updates.addOns);
+          } else {
+            pendingUpdate[field] = updates[field];
+          }
+        }
+      });
+      if (Object.keys(pendingUpdate).length > 0) {
+        product.pendingUpdate = pendingUpdate;
+        product.pendingUpdateAt = new Date();
+        hasPendingUpdate = true;
+      }
+    }
+
+    await product.save();
+
+    // Sync to Restaurant embedded menu array if present
+    if (restaurant && Array.isArray(restaurant.menu)) {
+      const prodName = typeof product.name === 'object' ? (product.name.en || Object.values(product.name)[0] || '') : (product.name || '');
+      await Restaurant.updateOne(
+        { _id: restaurant._id, "menu.name": prodName },
+        {
+          $set: {
+            "menu.$.price": product.sellingPrice || product.basePrice,
+            "menu.$.basePrice": product.basePrice,
+            "menu.$.image": product.image,
+            "menu.$.isAvailable": product.available,
+            "menu.$.isApproved": product.isApproved,
+            "menu.$.approvalStatus": product.approvalStatus
+          }
+        }
+      ).catch(() => {});
+    }
+
+    if (hasPendingUpdate) {
+      return res.status(200).json({ 
+        message: "Product updated and sent for admin approval. Current menu unaffected.",
+        product,
+        status: "pending_approval"
+      });
+    }
+    res.status(200).json({ message: "Product updated successfully", product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.deleteProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const isAdmin = req.user && req.user.role === 'admin';
+
+    let restaurant = null;
+    let product = null;
+
+    if (mongoose.Types.ObjectId.isValid(productId)) {
+      product = await Product.findById(productId);
+    }
+    if (product && product.restaurant) {
+      restaurant = await Restaurant.findById(product.restaurant);
+    }
+    if (!restaurant && isAdmin) {
+      restaurant = await Restaurant.findOne({
+        $or: [
+          { "menu._id": productId },
+          { product: productId }
+        ]
+      });
+    } else if (!restaurant && req.user) {
+      restaurant = await Restaurant.findOne({ owner: req.user._id });
+    }
+
+    if (!product && !restaurant) {
+      return res.status(404).json({ message: "Product or restaurant not found" });
+    }
+
+    const restId = restaurant ? restaurant._id : (product ? product.restaurant : null);
+    const prodName = product
+      ? (typeof product.name === 'object' ? (product.name.en || Object.values(product.name)[0] || '') : (product.name || ''))
+      : '';
+    const cleanProdName = prodName ? prodName.toString().trim().toLowerCase() : '';
+
+    // 1. Delete from Product collection
+    if (product) {
+      await Product.findByIdAndDelete(product._id);
+    } else if (mongoose.Types.ObjectId.isValid(productId)) {
+      await Product.findByIdAndDelete(productId);
+    }
+
+    // 2. Clean up from Restaurant embedded menu and product arrays
+    const restQuery = restId
+      ? { _id: restId }
+      : {
+          $or: [
+            { product: productId },
+            { "menu._id": productId }
+          ]
+        };
+
+    const targetRestaurants = await Restaurant.find(restQuery);
+    for (const r of targetRestaurants) {
+      let modified = false;
+      if (Array.isArray(r.product)) {
+        const prevLen = r.product.length;
+        r.product = r.product.filter(pId => pId && pId.toString() !== productId.toString());
+        if (r.product.length !== prevLen) modified = true;
+      }
+      if (Array.isArray(r.menu)) {
+        const prevLen = r.menu.length;
+        r.menu = r.menu.filter(m => {
+          if (!m) return false;
+          if (m._id && m._id.toString() === productId.toString()) return false;
+          const mName = typeof m.name === 'object' ? (m.name?.en || Object.values(m.name)[0] || '') : (m.name || '');
+          if (cleanProdName && mName && mName.toString().trim().toLowerCase() === cleanProdName) return false;
+          return true;
+        });
+        if (r.menu.length !== prevLen) modified = true;
+      }
+      if (modified) {
+        r.markModified('product');
+        r.markModified('menu');
+        await r.save();
+      }
+    }
+
+    res.status(200).json({ success: true, message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("deleteProduct error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.bulkDeleteProducts = async (req, res) => {
+  try {
+    const { productIds, restaurantId } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: "No product IDs provided for deletion" });
+    }
+
+    const validIds = productIds.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length === 0) {
+      return res.status(400).json({ success: false, message: "Invalid product IDs" });
+    }
+
+    const idSet = new Set(validIds.map(id => id.toString()));
+
+    // 1. Fetch products before deletion to collect names and restaurant links
+    const prods = await Product.find({ _id: { $in: validIds } }).lean();
+    const nameSet = new Set();
+    const relatedRestIds = new Set();
+
+    if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
+      relatedRestIds.add(restaurantId.toString());
+    }
+
+    prods.forEach(p => {
+      const raw = typeof p.name === 'object' ? (p.name?.en || Object.values(p.name)[0]) : p.name;
+      if (raw) nameSet.add(raw.toString().trim().toLowerCase());
+      if (p.restaurant) relatedRestIds.add(p.restaurant.toString());
+    });
+
+    // 2. Delete products from Product collection
+    await Product.deleteMany({ _id: { $in: validIds } });
+
+    // 3. Clean up from Restaurant documents (both product array and embedded menu array)
+    const restQuery = relatedRestIds.size > 0
+      ? {
+          $or: [
+            { _id: { $in: Array.from(relatedRestIds) } },
+            { product: { $in: validIds } },
+            { "menu._id": { $in: validIds } }
+          ]
+        }
+      : {
+          $or: [
+            { product: { $in: validIds } },
+            { "menu._id": { $in: validIds } }
+          ]
+        };
+
+    const targetRestaurants = await Restaurant.find(restQuery);
+    for (const r of targetRestaurants) {
+      let modified = false;
+      if (Array.isArray(r.product)) {
+        const prevLen = r.product.length;
+        r.product = r.product.filter(pId => pId && !idSet.has(pId.toString()));
+        if (r.product.length !== prevLen) modified = true;
+      }
+      if (Array.isArray(r.menu)) {
+        const prevLen = r.menu.length;
+        r.menu = r.menu.filter(m => {
+          if (!m) return false;
+          if (m._id && idSet.has(m._id.toString())) return false;
+          const mName = typeof m.name === 'object' ? (m.name?.en || Object.values(m.name)[0] || '') : (m.name || '');
+          if (mName && nameSet.has(mName.toString().trim().toLowerCase())) return false;
+          return true;
+        });
+        if (r.menu.length !== prevLen) modified = true;
+      }
+      if (modified) {
+        r.markModified('product');
+        r.markModified('menu');
+        await r.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${validIds.length} menu items`,
+      count: validIds.length
+    });
+  } catch (error) {
+    console.error("bulkDeleteProducts error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.editCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
+    if (!restaurant)
+      return res.status(404).json({ message: "Restaurant not found" });
+    const category = await Category.findOne({
+      _id: categoryId,
+      restaurant: restaurant._id,
+    });
+    if (!category)
+      return res
+        .status(404)
+        .json({ message: "Category not found or not yours" });
+    const file = req.file; // optional
+    const { name } = req.body;
+    const image = file
+      ? require("../utils/upload").getFileUrl(file)
+      : req.body.image;
+    if (name !== undefined) {
+      const normalizedName = normalizeTranslation(name);
+      if (!normalizedName || !normalizedName.en) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+      category.name = normalizedName;
+    }
+    if (image !== undefined) category.image = image;
+    await category.save();
+    res.status(200).json({ message: "Category updated", category });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.deleteCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+    const isAdmin = req.user && req.user.role === 'admin';
+    let restaurant = null;
+
+    if (isAdmin) {
+      const category = await Category.findById(categoryId);
+      if (!category) return res.status(404).json({ message: "Category not found" });
+      restaurant = category.restaurant ? await Restaurant.findById(category.restaurant) : null;
+    } else {
+      restaurant = await Restaurant.findOne({ owner: req.user._id });
+      if (!restaurant) return res.status(404).json({ message: "Restaurant not found" });
+    }
+
+    const restQuery = restaurant ? { restaurant: restaurant._id } : {};
+    const existingProducts = await Product.findOne({
+      category: categoryId,
+      ...restQuery,
+    });
+    if (existingProducts)
+      return res
+        .status(400)
+        .json({ message: "Category has products. Remove them first." });
+    await Category.findByIdAndDelete(categoryId);
+    res.status(200).json({ success: true, message: "Category deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getSeasonalMenu = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const { tag } = req.query;
+    const query = { restaurant: restaurantId, seasonal: true, available: true };
+    if (tag) query.seasonTag = tag;
+    const products = await Product.find(query);
+    res.status(200).json({ products });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Bulk Upload Menu Items (JSON array or CSV parsed items)
+exports.bulkUploadMenuItems = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const items = req.body.items || req.body.menuItems || req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: "Please provide a valid array of menu items" });
+    }
+
+    let restaurant = null;
+    if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
+      restaurant = await Restaurant.findById(restaurantId);
+    }
+    if (!restaurant && restaurantId && restaurantId !== "undefined" && restaurantId !== "me") {
+      restaurant = await Restaurant.findOne({
+        $or: [
+          { restaurantId },
+          { slug: restaurantId },
+          { contactNumber: restaurantId },
+          { phone: restaurantId },
+          { email: restaurantId }
+        ]
+      });
+    }
+    if (!restaurant && req.user) {
+      if (req.user.restaurant && mongoose.Types.ObjectId.isValid(req.user.restaurant)) {
+        restaurant = await Restaurant.findById(req.user.restaurant);
+      }
+      if (!restaurant) {
+        restaurant = await Restaurant.findOne({ owner: req.user._id });
+      }
+    }
+
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: "Restaurant not found for menu creation" });
+    }
+
+    const isAdmin = req.user && req.user.role === 'admin';
+    const shouldAutoApprove = isAdmin || Boolean(restaurant.autoApproveMenu || restaurant.restaurantApproved !== false);
+
+    let defaultCat = await Category.findOne({ name: { $regex: '^Main Course$', $options: 'i' } }) || await Category.findOne({ isMaster: true });
+    if (!defaultCat) {
+      defaultCat = await Category.create({ name: "Main Course", slug: "main-course", isActive: true, isMaster: true }).catch(() => null);
+    }
+    if (!defaultCat) defaultCat = await Category.findOne({});
+
+    const createdProducts = [];
+    const savedMenuItems = [];
+
+    for (let idx = 0; idx < items.length; idx++) {
+      try {
+        const item = items[idx];
+        const norm = normalizePortionsAndVariations(item);
+        const nameStr = (item.name?.en || item.name || item.dishName || item.dish_name || item['dish name'] || item.itemName || item.item_name || item['item name'] || `Bulk Item ${idx + 1}`).trim();
+        const descStr = (item.description?.en || item.description || item.desc || "").trim();
+        const catNameStr = (item.category || item.categoryName || item['category name'] || "Main Course").trim();
+
+        // Support all variations of base price / selling price / MRP / B2B price
+        const basePriceNum = Number(
+          item.basePrice ??
+          item['base price'] ??
+          item['base_price'] ??
+          item.baseprice ??
+          norm.basePrice ??
+          norm.sellingPrice ??
+          item.price ??
+          item.sellingPrice ??
+          0
+        );
+
+        const sellingPriceNum = Number(
+          item.sellingPrice ??
+          item['selling price'] ??
+          item['selling_price'] ??
+          item.sellingprice ??
+          norm.sellingPrice ??
+          basePriceNum
+        );
+
+        const mrpNum = Number(
+          item.mrp ??
+          item['mrp'] ??
+          item.b2cMrp ??
+          item['b2c mrp'] ??
+          norm.mrp ??
+          Math.max(sellingPriceNum, basePriceNum)
+        );
+
+        const b2bNum = Number(
+          item.b2bPrice ??
+          item['b2b price'] ??
+          item['b2b_price'] ??
+          item.b2bprice ??
+          item.b2bSellingPrice ??
+          norm.b2bPrice ??
+          basePriceNum
+        );
+
+        const rawFoodType = (item.foodType || item.foodtype || item['food type'] || (item.isVeg !== false ? 'veg' : 'non-veg')).toString().toLowerCase();
+        const foodTypeStr = rawFoodType.includes('egg') ? 'egg' : (rawFoodType.includes('non') ? 'non-veg' : 'veg');
+
+        const rawImg = item.image || item.imageUrl || item.image_url || item.photo || item.photoUrl || item.photo_url || item.dishPhoto || item.dish_photo || item["image url"] || item["dish photo"] || item["photo url"] || item.picture || item.pic || item.img || item.imgUrl || item.url || item.link || "";
+        let itemImgStr = (typeof rawImg === 'string' && rawImg.trim()) ? rawImg.trim() : "";
+        if (itemImgStr) {
+          if (!itemImgStr.includes('ik.imagekit.io')) {
+            try {
+              const up = await uploadToImageKit(itemImgStr, `menu_${restaurant._id}_${Date.now()}_${idx}.jpg`, '/menu', nameStr);
+              if (up) itemImgStr = up;
+            } catch (e) {
+              console.warn('[ImageKit Menu Upload Notice]:', e.message);
+            }
+          }
+        }
+
+        let categoryObj = null;
+        if (item.categoryId && mongoose.Types.ObjectId.isValid(item.categoryId)) {
+          categoryObj = await Category.findById(item.categoryId);
+        }
+        if (!categoryObj && catNameStr) {
+          categoryObj = await Category.findOne({
+            $or: [
+              { name: { $regex: `^${catNameStr}$`, $options: 'i' } },
+              { slug: catNameStr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }
+            ]
+          });
+          if (!categoryObj) {
+            const newSlug = catNameStr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+            categoryObj = await Category.create({
+              name: catNameStr,
+              slug: newSlug,
+              type: 'main',
+              isActive: true,
+              userAppVisible: true,
+              restaurantAppVisible: true
+            }).catch(err => {
+              console.error('Error auto-creating category in bulkUploadMenuItems:', err);
+              return null;
+            });
+          }
+        }
+        if (!categoryObj) categoryObj = defaultCat;
+
+        const product = await Product.create({
+          restaurant: restaurant._id,
+          category: categoryObj?._id || defaultCat?._id,
+          categoryId: categoryObj?._id || defaultCat?._id,
+          name: { en: nameStr },
+          description: { en: descStr },
+          image: itemImgStr,
+          basePrice: basePriceNum,
+          sellingPrice: sellingPriceNum,
+          mrp: mrpNum,
+          b2bPrice: b2bNum,
+          pricing: {
+            b2c: { mrp: mrpNum, sellingPrice: sellingPriceNum, discountPercent: mrpNum > 0 ? Math.max(0, Math.round(((mrpNum - sellingPriceNum) / mrpNum) * 100)) : 0 },
+            b2b: { sellingPrice: b2bNum, discountPercent: mrpNum > 0 ? Math.max(0, Math.round(((mrpNum - b2bNum) / mrpNum) * 100)) : 0 }
+          },
+          foodType: foodTypeStr,
+          isVeg: foodTypeStr === 'veg',
+          available: item.outOfStock !== true && item.available !== false,
+          preparationTime: Number(item.preparationTime || item.prepTime || 15),
+          portionType: norm.portionType,
+          portions: norm.portions,
+          variations: norm.variations,
+          addOns: norm.addOns,
+          approvalStatus: shouldAutoApprove ? "approved" : "pending",
+          isApproved: shouldAutoApprove,
+          isPublished: shouldAutoApprove,
+          approvedAt: shouldAutoApprove ? new Date() : undefined
+        });
+
+        createdProducts.push(product);
+        savedMenuItems.push({
+          _id: product._id,
+          name: nameStr,
+          category: categoryObj?.name || catNameStr || "Main Course",
+          price: basePriceNum,
+          basePrice: basePriceNum,
+          sellingPrice: sellingPriceNum,
+          mrp: mrpNum,
+          b2bPrice: b2bNum,
+          foodType: foodTypeStr,
+          isVeg: foodTypeStr === 'veg',
+          description: descStr,
+          image: itemImgStr,
+          portionType: norm.portionType,
+          portions: norm.portions,
+          variants: norm.variations,
+          variations: norm.variations,
+          addOns: norm.addOns,
+          isAvailable: item.outOfStock !== true && item.available !== false,
+          isApproved: shouldAutoApprove,
+          approvalStatus: shouldAutoApprove ? "approved" : "pending"
+        });
+      } catch (itemErr) {
+        console.error(`Error processing bulk menu item at index ${idx}:`, itemErr.message);
+      }
+    }
+
+    if (createdProducts.length > 0) {
+      await Restaurant.findByIdAndUpdate(restaurant._id, {
+        $addToSet: { product: { $each: createdProducts.map(p => p._id) } },
+        $push: { menu: { $each: savedMenuItems } }
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `Successfully uploaded ${createdProducts.length} menu items! ${shouldAutoApprove ? 'All items auto-approved.' : 'Items submitted for admin approval.'}`,
+      count: createdProducts.length,
+      items: createdProducts
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+

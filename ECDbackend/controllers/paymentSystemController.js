@@ -1,0 +1,429 @@
+
+const {
+  processCODDelivery,
+  processOnlineDelivery,
+  riderDepositCash,
+  setRiderCashLimit,
+  processWeeklyPayouts,
+  calculateDeliveryCharges
+} = require('../services/paymentService');
+const RiderWallet = require('../models/RiderWallet');
+const RestaurantWallet = require('../models/RestaurantWallet');
+const PaymentTransaction = require('../models/PaymentTransaction');
+const Order = require('../models/Order');
+const Rider = require('../models/Rider');
+const Restaurant = require('../models/Restaurant');
+exports.confirmCODCollection = async (req, res) => {
+  try {
+    const { orderId, amountCollected } = req.body;
+    const riderId = req.user._id; // from auth middleware
+    if (!orderId) return res.status(400).json({ success: false, message: 'orderId is required' });
+    const order = await Order.findById(orderId).populate('rider');
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    if (!order.rider || order.rider.user.toString() !== riderId.toString()) {
+      const rider = await Rider.findOne({ user: riderId });
+      if (!rider || order.rider._id.toString() !== rider._id.toString()) {
+        return res.status(403).json({ success: false, message: 'Not your order' });
+      }
+    }
+    if (order.paymentMethod !== 'cod') {
+      return res.status(400).json({ success: false, message: 'This is not a COD order' });
+    }
+    if (order.status !== 'delivered') {
+      return res.status(400).json({ success: false, message: 'Order must be delivered first' });
+    }
+    const result = await processCODDelivery(orderId);
+    if (result.riderFrozen) {
+      return res.status(200).json({
+        success: true,
+        message: '⚠️ COD collected but your account is now FROZEN. Please deposit cash to activate your account.',
+        data: result
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: 'COD collection confirmed',
+      data: result
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.getRiderWallet = async (req, res) => {
+  try {
+    const rider = await Rider.findOne({ user: req.user._id });
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+    let wallet = await RiderWallet.findOne({ rider: rider._id });
+    if (!wallet) wallet = await RiderWallet.create({ rider: rider._id });
+    const recentTransactions = await PaymentTransaction.find({ rider: rider._id })
+      .sort({ createdAt: -1 })
+      .limit(20);
+    return res.status(200).json({
+      success: true,
+      data: {
+        wallet: {
+          cashInHand: wallet.cashInHand,
+          cashLimit: wallet.cashLimit,
+          availableBalance: Number(wallet.availableBalance || 0),
+          totalEarnings: Number(wallet.totalEarnings || 0),
+          isFrozen: wallet.isFrozen,
+          frozenReason: wallet.frozenReason,
+          frozenAt: wallet.frozenAt,
+          lastPayoutAt: wallet.lastPayoutAt,
+          lastDepositAt: wallet.lastDepositAt,
+        },
+        warning: wallet.isFrozen
+          ? `🚫 Account frozen! You have ₹${wallet.cashInHand} cash. Please deposit to admin to re-activate.`
+          : wallet.cashInHand >= wallet.cashLimit * 0.8
+          ? `⚠️ You have ₹${wallet.cashInHand}/${wallet.cashLimit} cash. Near limit!`
+          : null,
+        recentTransactions
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.getRiderWalletByAdmin = async (req, res) => {
+  try {
+    const { riderId } = req.params;
+    let wallet = await RiderWallet.findOne({ rider: riderId }).populate('rider');
+    if (!wallet) wallet = await RiderWallet.create({ rider: riderId });
+    const transactions = await PaymentTransaction.find({ rider: riderId })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .populate('order', 'totalAmount paymentMethod status');
+    return res.status(200).json({ success: true, data: { wallet, transactions } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.riderDepositCash = async (req, res) => {
+  try {
+    const { riderId, amount } = req.body;
+    if (!riderId || !amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'riderId and positive amount required' });
+    }
+    const result = await riderDepositCash(riderId, parseFloat(amount), req.user._id);
+    return res.status(200).json({
+      success: true,
+      message: result.unfrozen
+        ? '✅ Cash deposited and rider account UNFROZEN'
+        : `Cash deposited. Rider still has ₹${result.riderWallet.cashInHand} in hand (limit: ₹${result.riderWallet.cashLimit})`,
+      data: result
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.setRiderCashLimit = async (req, res) => {
+  try {
+    const { riderId, cashLimit } = req.body;
+    if (!riderId || !cashLimit || cashLimit <= 0) {
+      return res.status(400).json({ success: false, message: 'riderId and cashLimit required' });
+    }
+    const result = await setRiderCashLimit(riderId, parseFloat(cashLimit), req.user._id);
+    return res.status(200).json({ success: true, message: 'Cash limit updated', data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.getFrozenRiders = async (req, res) => {
+  try {
+    const frozenWallets = await RiderWallet.find({ isFrozen: true })
+      .populate({ path: 'rider', populate: { path: 'user', select: 'firstName lastName email mobile' } });
+    return res.status(200).json({
+      success: true,
+      count: frozenWallets.length,
+      data: frozenWallets.map(w => ({
+        riderId: w.rider._id,
+        riderName: w.rider.user ? `${w.rider.user.firstName} ${w.rider.user.lastName}` : 'N/A',
+        cashInHand: w.cashInHand,
+        cashLimit: w.cashLimit,
+        frozenAt: w.frozenAt,
+        frozenReason: w.frozenReason,
+        walletId: w._id
+      }))
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.getRestaurantWallet = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
+    if (!restaurant) return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    let wallet = await RestaurantWallet.findOne({ restaurant: restaurant._id });
+    if (!wallet) wallet = await RestaurantWallet.create({ restaurant: restaurant._id });
+    const transactions = await PaymentTransaction.find({ restaurant: restaurant._id })
+      .sort({ createdAt: -1 })
+      .limit(30)
+      .populate('order', 'totalAmount paymentMethod createdAt');
+    return res.status(200).json({
+      success: true,
+      data: {
+        wallet: {
+          balance: wallet.balance,
+          pendingAmount: wallet.pendingAmount,
+          totalEarnings: wallet.totalEarnings,
+          totalPaidOut: wallet.totalPaidOut,
+          lastPayoutAt: wallet.lastPayoutAt,
+          lastPayoutAmount: wallet.lastPayoutAmount,
+          nextPayoutDate: wallet.nextPayoutDate,
+        },
+        transactions
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.getRestaurantWalletByAdmin = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    let wallet = await RestaurantWallet.findOne({ restaurant: restaurantId });
+    if (!wallet) wallet = await RestaurantWallet.create({ restaurant: restaurantId });
+    const transactions = await PaymentTransaction.find({ restaurant: restaurantId })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .populate('order', 'totalAmount paymentMethod createdAt status');
+    return res.status(200).json({ success: true, data: { wallet, transactions } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.getAdminSummary = async (req, res) => {
+  try {
+    const [totalCOD, totalOnline, totalCommission, totalPaidOut, frozenCount, pendingPayouts] = await Promise.all([
+      PaymentTransaction.aggregate([
+        { $match: { type: 'cod_collected' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      PaymentTransaction.aggregate([
+        { $match: { type: { $in: ['online_payment', 'wallet_payment'] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      PaymentTransaction.aggregate([
+        { $match: { type: 'restaurant_commission' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      PaymentTransaction.aggregate([
+        { $match: { type: { $in: ['restaurant_weekly_payout', 'rider_weekly_payout'] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      RiderWallet.countDocuments({ isFrozen: true }),
+      RestaurantWallet.aggregate([{ $group: { _id: null, total: { $sum: '$balance' } } }]),
+    ]);
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalCODCollected: totalCOD[0]?.total || 0,
+        totalOnlinePayments: totalOnline[0]?.total || 0,
+        totalCommissionEarned: totalCommission[0]?.total || 0,
+        totalPaidOut: totalPaidOut[0]?.total || 0,
+        frozenRidersCount: frozenCount,
+        pendingRestaurantPayouts: pendingPayouts[0]?.total || 0,
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+exports.triggerWeeklyPayout = async (req, res) => {
+  try {
+    const results = await processWeeklyPayouts();
+    return res.status(200).json({
+      success: true,
+      message: `Payout complete: ${results.restaurants.length} restaurants, ${results.riders.length} riders`,
+      data: results
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.getAllTransactions = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, type } = req.query;
+    const skip = (page - 1) * limit;
+    const filter = type ? { type } : {};
+    const [transactions, total] = await Promise.all([
+      PaymentTransaction.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('order', 'totalAmount paymentMethod status')
+        .populate('rider', 'user')
+        .populate('restaurant', 'name'),
+      PaymentTransaction.countDocuments(filter)
+    ]);
+    return res.status(200).json({
+      success: true,
+      data: { transactions, total, page: parseInt(page), pages: Math.ceil(total / limit) }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+// ─── GET ALL RESTAURANT WALLETS ──────────────────────────────
+exports.getAllRestaurantWallets = async (req, res) => {
+  try {
+    const restaurants = await Restaurant.find({ isActive: true })
+      .select('name email phoneNumber')
+      .lean();
+    
+    const restaurantWallets = await Promise.all(
+      restaurants.map(async (restaurant) => {
+        const wallet = await RestaurantWallet.findOne({ restaurant: restaurant._id }).lean();
+        return {
+          _id: restaurant._id,
+          name: restaurant.name,
+          email: restaurant.email,
+          phoneNumber: restaurant.phoneNumber,
+          wallet: wallet || { balance: 0, totalEarnings: 0 }
+        };
+      })
+    );
+    
+    return res.status(200).json({
+      success: true,
+      data: restaurantWallets
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── GET ALL RIDER WALLETS ──────────────────────────────
+exports.getAllRiderWallets = async (req, res) => {
+  try {
+    const riders = await Rider.find({ isActive: true })
+      .populate('user', 'firstName lastName phoneNumber email')
+      .select('user totalDeliveries averageRating')
+      .lean();
+    
+    const riderWallets = await Promise.all(
+      riders.map(async (rider) => {
+        const wallet = await RiderWallet.findOne({ rider: rider._id }).lean();
+        return {
+          _id: rider._id,
+          name: rider.user?.firstName + ' ' + (rider.user?.lastName || ''),
+          phoneNumber: rider.user?.phoneNumber,
+          email: rider.user?.email,
+          totalDeliveries: rider.totalDeliveries || 0,
+          averageRating: rider.averageRating || 0,
+          wallet: wallet || { balance: 0, totalLifetimeEarnings: 0 }
+        };
+      })
+    );
+    
+    return res.status(200).json({
+      success: true,
+      data: riderWallets
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.calculateDeliveryFee = async (req, res) => {
+  try {
+    const {
+      distanceKm,
+      distance,
+      userLocation,
+      restaurantLocation,
+      restaurantId,
+      lat,
+      lng,
+      latitude,
+      longitude,
+      orderType,
+      isSelfPickup
+    } = req.body || {};
+
+    const isPickup = orderType === 'self_pickup' || orderType === 'pickup' || orderType === 'takeaway' || isSelfPickup === true;
+    if (isPickup) {
+      return res.status(200).json({
+        success: true,
+        deliveryFee: 0,
+        deliveryCharge: 0,
+        fee: 0,
+        distanceKm: 0,
+        isSelfPickup: true,
+        data: { totalDeliveryFee: 0, baseDeliveryFee: 0, surcharge: 0 }
+      });
+    }
+
+    let dist = parseFloat(distanceKm || distance) || 0;
+
+    // Check if coordinates provided via restaurantId & user lat/lng
+    const userLat = parseFloat(lat ?? latitude ?? userLocation?.latitude ?? userLocation?.lat);
+    const userLng = parseFloat(lng ?? longitude ?? userLocation?.longitude ?? userLocation?.lng);
+
+    if (!dist && restaurantId && !isNaN(userLat) && !isNaN(userLng)) {
+      try {
+        const restaurant = await Restaurant.findById(restaurantId).select('location baseDeliveryFee perKmCharge maxDeliveryFee adminOverride');
+        if (restaurant && restaurant.location?.coordinates && restaurant.location.coordinates.length === 2) {
+          const [rLon, rLat] = restaurant.location.coordinates;
+          const R = 6371;
+          const dLat = (userLat - rLat) * Math.PI / 180;
+          const dLon = (userLng - rLon) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(rLat * Math.PI / 180) * Math.cos(userLat * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          dist = Math.round(R * c * 100) / 100;
+        }
+      } catch (_) {}
+    } else if (!dist && userLocation && restaurantLocation) {
+      const lat1 = userLocation.latitude || userLocation.lat;
+      const lon1 = userLocation.longitude || userLocation.lng;
+      const lat2 = restaurantLocation.latitude || restaurantLocation.lat;
+      const lon2 = restaurantLocation.longitude || restaurantLocation.lng;
+      if (lat1 && lon1 && lat2 && lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        dist = Math.round(R * c * 100) / 100;
+      }
+    }
+
+    // Dynamic Delivery Fee from Central Admin Setting
+    let finalFee = 40;
+    try {
+      const AdminSetting = require('../models/AdminSetting');
+      const adminSetting = await AdminSetting.getSettings();
+      if (adminSetting?.deliveryFeeConfig?.enabled === false) {
+        finalFee = 0;
+      } else {
+        const { calculateSlabDeliveryFee } = require('../services/priceCalculator');
+        const slabResult = calculateSlabDeliveryFee(dist, adminSetting.deliveryFeeConfig);
+        finalFee = slabResult.fee;
+      }
+    } catch (_) {
+      const charges = calculateDeliveryCharges(dist);
+      finalFee = charges.totalDeliveryFee || 40;
+    }
+
+    return res.status(200).json({
+      success: true,
+      deliveryCharge: finalFee,
+      deliveryFee: finalFee,
+      fee: finalFee,
+      distanceKm: dist,
+      isSelfPickup: false,
+      data: {
+        totalDeliveryFee: finalFee,
+        deliveryFee: finalFee,
+        distanceKm: dist
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

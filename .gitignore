@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production / Build artifacts
+build/
+dist/
+out/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android build & caches
+**/android/.gradle/
+**/android/app/build/
+**/android/local.properties
+**/.gradle/
+**/.kotlin/
+**/.cxx/
+**/reports/
+
+# iOS build & caches
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+
+# Environment files & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!*.env.example
+
+# Android signing keys & local config
+key.properties
+local.properties
+*.keystore
+*.jks
+
+# Service accounts & keys
+**/serviceAccountKey.json
+**/firebase-service-account.json
+
+# Logs & temp
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml

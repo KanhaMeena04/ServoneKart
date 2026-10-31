@@ -1,0 +1,426 @@
+
+const { isRestaurantOpenNow, formatTimeToAmPm } = require("./restaurantAvailability");
+
+const formatTimingForDisplay = (timing) => {
+  if (!timing || typeof timing !== "object") return {};
+  const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const formatted = {};
+  for (const day of days) {
+    const d = timing[day];
+    if (!d || d.isClosed === true || d.isOpen === false || d.open === "Closed" || d.close === "Closed") {
+      formatted[day] = {
+        open: "Closed",
+        close: "Closed",
+        isOpen: false,
+        isClosed: true,
+        display: "Closed All Day",
+      };
+    } else {
+      const openAmPm = formatTimeToAmPm(d.open || "10:00");
+      const closeAmPm = formatTimeToAmPm(d.close || "22:00");
+      formatted[day] = {
+        open: openAmPm,
+        close: closeAmPm,
+        rawOpen: d.open || "10:00",
+        rawClose: d.close || "22:00",
+        isOpen: true,
+        isClosed: false,
+        display: `${openAmPm} - ${closeAmPm} (IST)`,
+      };
+    }
+  }
+  return formatted;
+};
+
+const normalizeRatingOutput = (rating) => {
+  if (rating && typeof rating === "object") {
+    const average = typeof rating.average === "number" ? rating.average : (Number(rating.average) || 0);
+    const count = typeof rating.count === "number" ? rating.count : (Number(rating.count) || 0);
+    return {
+      average,
+      count,
+      breakdown: rating.breakdown || { five: 0, four: 0, three: 0, two: 0, one: 0 },
+      lastRatedAt: rating.lastRatedAt || null,
+    };
+  }
+  const average = typeof rating === "number" ? rating : (Number(rating) || 0);
+  return {
+    average,
+    count: average > 0 ? 1 : 0,
+    breakdown: { five: 0, four: 0, three: 0, two: 0, one: 0 },
+    lastRatedAt: null,
+  };
+};
+const getRatingCount = (rating) => {
+  if (rating && typeof rating === "object" && typeof rating.count === "number") {
+    return rating.count;
+  }
+  return 0;
+};
+exports.formatRestaurantForUser = (restaurant, userLat = null, userLng = null) => {
+  if (!restaurant) return null;
+  const isOverridden = restaurant.adminOverride && restaurant.adminOverride.isOverridden;
+  
+  let dist = restaurant.distanceKm !== undefined ? Number(restaurant.distanceKm) : 1.5;
+  if (userLat != null && userLng != null && restaurant.location?.coordinates?.length === 2) {
+    const [rLng, rLat] = restaurant.location.coordinates;
+    if (rLat && rLng) {
+      const R = 6371;
+      const dLat = (rLat - userLat) * (Math.PI / 180);
+      const dLon = (rLng - userLng) * (Math.PI / 180);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(userLat * (Math.PI / 180)) * Math.cos(rLat * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      dist = Math.round(R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))) * 10) / 10;
+    }
+  }
+
+  const prepTime = restaurant.estimatedPreparationTime || restaurant.prepTime || 15;
+  const computedDeliveryMin = prepTime + Math.round(dist * 3);
+  const deliveryTime = isOverridden && restaurant.adminOverride.deliveryTime !== undefined 
+      ? restaurant.adminOverride.deliveryTime 
+      : (restaurant.deliveryTime || computedDeliveryMin);
+
+  const cleanName = (typeof restaurant.name === 'object' && restaurant.name !== null)
+    ? (restaurant.name.en || Object.values(restaurant.name)[0] || 'Restaurant')
+    : (restaurant.name || 'Restaurant');
+
+  return {
+    _id: restaurant._id,
+    id: restaurant._id,
+    name: cleanName,
+    description: restaurant.description,
+    restaurantType: restaurant.restaurantType,
+    image: restaurant.image,
+    bannerImage: restaurant.bannerImage,
+    restaurantImages: restaurant.restaurantImages || [],
+    cuisine: restaurant.cuisine || ["North Indian", "Fast Food"],
+    rating: normalizeRatingOutput(restaurant.rating ?? restaurant.avgRating ?? restaurant.adminRating ?? 0),
+    ratingCount: getRatingCount(restaurant.rating),
+    address: restaurant.address,
+    city: restaurant.city,
+    area: restaurant.area,
+    phone: restaurant.phone || restaurant.contactNumber,
+    contactNumber: restaurant.contactNumber,
+    email: restaurant.email || (restaurant.owner && typeof restaurant.owner === 'object' ? restaurant.owner.email : '') || '',
+    distanceKm: dist,
+    distance: dist,
+    deliveryTime: deliveryTime,
+    deliveryTimeMin: typeof deliveryTime === 'number' ? deliveryTime : computedDeliveryMin,
+    deliveryTimeFormatted: `${Math.max(15, computedDeliveryMin - 5)}-${computedDeliveryMin + 5} mins`,
+    deliveryType: restaurant.deliveryType || ['Home Delivery', 'Pickup', 'Both'],
+    isSelfPickupEnabled: restaurant.isSelfPickupEnabled !== undefined 
+      ? Boolean(restaurant.isSelfPickupEnabled) 
+      : (Array.isArray(restaurant.deliveryType) ? restaurant.deliveryType.some(d => String(d).toLowerCase().includes("pickup") || String(d).toLowerCase().includes("both")) : true),
+    paymentMethods: restaurant.paymentMethods || 'Both',
+    isFreeDelivery: restaurant.isFreeDelivery,
+    minOrderValue: restaurant.minOrderValue || 0,
+    estimatedPreparationTime: prepTime,
+    isActive: isOverridden && restaurant.adminOverride.isActive !== undefined ? restaurant.adminOverride.isActive : restaurant.isActive,
+    isOnline: isOverridden && restaurant.adminOverride.isOnline !== undefined ? restaurant.adminOverride.isOnline : (restaurant.isOnline !== undefined ? restaurant.isOnline : true),
+    isFeatured: isOverridden && restaurant.adminOverride.isFeatured !== undefined ? restaurant.adminOverride.isFeatured : (restaurant.isFeatured || false),
+    isTemporarilyClosed: restaurant.isTemporarilyClosed || false,
+    isOpen: isRestaurantOpenNow(restaurant),
+    restaurantApproved: restaurant.restaurantApproved !== false,
+    menuApproved: restaurant.menuApproved !== false,
+    verificationStatus: restaurant.verificationStatus || 'verified',
+    geofenceRadius: Number(restaurant.geofenceRadius ?? restaurant.deliveryRadius ?? restaurant.serviceRadius ?? 5) || 5,
+    deliveryRadius: Number(restaurant.geofenceRadius ?? restaurant.deliveryRadius ?? restaurant.serviceRadius ?? 5) || 5,
+    serviceRadius: Number(restaurant.geofenceRadius ?? restaurant.deliveryRadius ?? restaurant.serviceRadius ?? 5) || 5,
+    location: restaurant.location,
+    latitude: restaurant.location?.coordinates?.[1] ?? restaurant.lat ?? restaurant.latitude,
+    longitude: restaurant.location?.coordinates?.[0] ?? restaurant.lng ?? restaurant.longitude,
+    isServiceable: dist <= (Number(restaurant.geofenceRadius ?? restaurant.deliveryRadius ?? restaurant.serviceRadius ?? 5) || 5),
+    timing: restaurant.timing,
+    timingFormatted: formatTimingForDisplay(restaurant.timing),
+    offers: restaurant.offers || []
+  };
+};
+exports.formatRestaurantForList = (restaurant) => {
+  if (!restaurant) return null;
+  const formatted = exports.formatRestaurantForUser(restaurant);
+  return formatted;
+};
+exports.formatRestaurantForAdmin = (restaurant) => {
+  if (!restaurant) return null;
+  const isOverridden = restaurant.adminOverride && restaurant.adminOverride.isOverridden;
+  const rawName = restaurant.name || restaurant.restaurantName || restaurant.title || '';
+  let realName = '';
+  if (typeof rawName === 'object' && rawName !== null) {
+    realName = rawName.en || Object.values(rawName).find(v => typeof v === 'string' && v.trim()) || '';
+  } else if (typeof rawName === 'string') {
+    realName = rawName.trim();
+  }
+  if (!realName) realName = 'Restaurant';
+
+  const realImage = restaurant.logo || restaurant.image || restaurant.bannerImage || '';
+  const realPhone = restaurant.phone || restaurant.contactNumber || (restaurant.owner && typeof restaurant.owner === 'object' ? restaurant.owner.mobile : '');
+  const realCuisine = (restaurant.categories && restaurant.categories.length > 0) ? restaurant.categories : (restaurant.cuisine || []);
+  const ownerName = restaurant.ownerName || ((restaurant.owner && typeof restaurant.owner === 'object' && restaurant.owner.name) ? restaurant.owner.name : `${realName} Owner`);
+  const ownerEmail = restaurant.ownerEmail || ((restaurant.owner && typeof restaurant.owner === 'object' && restaurant.owner.email) ? restaurant.owner.email : (restaurant.email || (realPhone ? `${realPhone.replace(/[^0-9]/g, '')}@ecdkart.com` : '')));
+  const ownerMobile = restaurant.ownerMobile || ((restaurant.owner && typeof restaurant.owner === 'object' && restaurant.owner.mobile) ? restaurant.owner.mobile : realPhone);
+
+  return {
+    _id: restaurant._id,
+    id: restaurant._id,
+    restaurantId: restaurant.restaurantId || (restaurant._id ? `RNT${restaurant._id.toString().slice(-3).toUpperCase()}` : 'RNT001'),
+    name: realName,
+    description: restaurant.description || '',
+    restaurantType: restaurant.storeType || restaurant.restaurantType || 'restaurant',
+    image: realImage,
+    logo: realImage,
+    bannerImage: restaurant.bannerImage || realImage,
+    restaurantImages: restaurant.restaurantImages || [],
+    cuisine: realCuisine,
+    categories: restaurant.categories || realCuisine,
+    brand: restaurant.brand || realName,
+    owner: restaurant.owner,
+    ownerName: ownerName,
+    ownerEmail: ownerEmail,
+    ownerMobile: (restaurant.owner && typeof restaurant.owner === 'object' ? restaurant.owner.mobile : '') || realPhone,
+    ownerPin: realPin,
+    pin: realPin,
+    restaurantKey: restaurant.restaurantKey || realPin,
+    rating: normalizeRatingOutput(restaurant.rating ?? restaurant.avgRating ?? restaurant.adminRating ?? 0),
+    address: restaurant.address || 'Selected from map',
+    city: restaurant.city || 'Sohna',
+    area: restaurant.area || '',
+    email: restaurant.email || (restaurant.owner ? restaurant.owner.email : '') || '',
+    phone: realPhone,
+    contactNumber: realPhone,
+    contact: realPhone,
+    deliveryTime: restaurant.deliveryTime || 30,
+    deliveryType: restaurant.deliveryType || ['Home Delivery', 'Pickup', 'Both'],
+    isSelfPickupEnabled: restaurant.isSelfPickupEnabled !== undefined 
+      ? Boolean(restaurant.isSelfPickupEnabled) 
+      : (Array.isArray(restaurant.deliveryType) ? restaurant.deliveryType.some(d => String(d).toLowerCase().includes("pickup") || String(d).toLowerCase().includes("both")) : true),
+    paymentMethods: restaurant.paymentMethods || 'Both',
+    isActive: restaurant.isActive !== undefined ? restaurant.isActive : true,
+    isOnline: restaurant.isOnline !== undefined ? restaurant.isOnline : true,
+    isFeatured: restaurant.featured || restaurant.isFeatured || false,
+    adminOverride: restaurant.adminOverride || { isOverridden: false },
+    restaurantApproved: restaurant.restaurantApproved !== undefined ? restaurant.restaurantApproved : true,
+    menuApproved: restaurant.menuApproved !== undefined ? restaurant.menuApproved : true,
+    isTemporarilyClosed: restaurant.isTemporarilyClosed || false,
+    packagingCharge: restaurant.packagingCharge || 0,
+    adminCommission: restaurant.adminCommission || 10,
+    isFreeDelivery: restaurant.isFreeDelivery || false,
+    freeDeliveryContribution: restaurant.freeDeliveryContribution || 0,
+    minOrderValue: restaurant.minOrderValue || 0,
+    geofenceRadius: restaurant.geofenceRadius || 5,
+    deliveringZones: restaurant.zoneIds || restaurant.deliveringZones || [],
+    location: restaurant.location,
+    estimatedPreparationTime: restaurant.estimatedPreparationTime || 15,
+    timing: restaurant.timing || {},
+    timingFormatted: formatTimingForDisplay(restaurant.timing),
+    documents: restaurant.documents || (restaurant.accountDetail ? { accountDetail: { number: restaurant.upi || 'Verified', file: restaurant.accountDetail } } : {}),
+    verificationStatus: restaurant.verificationStatus || 'verified',
+    bankDetails: restaurant.bankDetails || (restaurant.upi ? { upi: restaurant.upi, accountNumber: restaurant.upi } : {}),
+    taxConfig: restaurant.taxConfig || {},
+    offers: restaurant.offers || [],
+    totalOrders: restaurant.orderCount || restaurant.totalOrders || 0,
+    orderCount: restaurant.orderCount || restaurant.totalOrders || 0,
+    totalEarnings: restaurant.codEarnings || restaurant.totalEarnings || 0,
+    walletBalance: restaurant.walletBalance || 0,
+    codBalance: restaurant.codBalance || 0,
+    codEarnings: restaurant.codEarnings || 0,
+    upi: restaurant.upi || '',
+    accountDetail: restaurant.accountDetail || '',
+    menu: restaurant.menu || [],
+    totalDeliveries: restaurant.totalDeliveries || 0,
+    successfulOrders: restaurant.successfulOrders || restaurant.orderCount || 0,
+    averageOrderValue: restaurant.averageOrderValue || 0,
+    createdAt: restaurant.createdAt,
+    updatedAt: restaurant.updatedAt,
+  };
+};
+exports.formatProductForUser = (product) => {
+  if (!product) return null;
+  const isOverridden = product.adminPriceOverride && (product.adminPriceOverride.isOverridden || product.adminPriceOverride.enabled);
+  const effectiveBasePrice = isOverridden && product.adminPriceOverride.basePrice !== undefined ? product.adminPriceOverride.basePrice : product.basePrice;
+  const effectiveMrp = isOverridden && product.adminPriceOverride.mrp !== undefined ? product.adminPriceOverride.mrp : (product.mrp || effectiveBasePrice);
+  const effectiveDiscountPercent = isOverridden && product.adminPriceOverride.discountPercent !== undefined ? product.adminPriceOverride.discountPercent : (product.discountPercent || 0);
+  const effectiveDiscountAmount = isOverridden && product.adminPriceOverride.discountAmount !== undefined ? product.adminPriceOverride.discountAmount : (product.discountAmount || 0);
+  const effectiveOfferPrice = isOverridden && product.adminPriceOverride.offerPrice !== undefined ? product.adminPriceOverride.offerPrice : product.offerPrice;
+
+  return {
+    _id: product._id,
+    restaurant: product.restaurant,
+    category: product.category,
+    name: product.name,
+    description: product.description,
+    image: product.image,
+    price: effectiveBasePrice,
+    basePrice: effectiveBasePrice,
+    originalBasePrice: product.basePrice,
+    mrp: effectiveMrp,
+    discountPercent: effectiveDiscountPercent,
+    discountAmount: effectiveDiscountAmount,
+    offerPrice: effectiveOfferPrice,
+    sellingPrice: effectiveBasePrice,
+    isVeg: product.isVeg,
+    foodType: product.foodType || (product.isVeg ? 'veg' : 'non-veg'),
+    b2bPrice: product.b2bPrice,
+    pricing: product.pricing || null,
+    available: product.available && !product.outOfStock,
+    outOfStock: product.outOfStock || false,
+    preparationTime: product.preparationTime || 15,
+    subcategory: product.subcategory || '',
+    isFeatured: product.isFeatured || false,
+    portionType: product.portionType || 'none',
+    portions: product.portions || null,
+    variations: product.variations || [],
+    addOns: product.addOns || [],
+    seasonal: product.seasonal || false,
+    seasonTag: product.seasonTag,
+    adminPriceOverride: product.adminPriceOverride || { isOverridden: false },
+  };
+};
+exports.formatOrderForCustomer = (order) => {
+  if (!order) return null;
+  const ordNumber = order.orderNumber || (order._id ? `ORD${String(order._id).slice(-4).toUpperCase()}` : "ORD001");
+  const tot = Number(order.totalAmount || 0);
+  const payAmt = Number(order.payableAmount || tot);
+  const pkgFee = Number(order.packagingFee || order.packaging || 0);
+  const delFee = Number(typeof order.deliveryFee === 'number' ? order.deliveryFee : (order.deliveryCharge || 0));
+  const pltFee = Number(order.platformFee || 0);
+  const itmTot = Number(order.itemTotal || 0);
+  const tx = Number(order.tax || 0);
+  const dsc = Number(order.discount || 0);
+  const tp = Number(order.tip || 0);
+
+  return {
+    _id: order._id,
+    orderNumber: ordNumber,
+    orderId: ordNumber,
+    customerId: order.customerId || (order.customer && order.customer.customerId) || (order.customer?._id ? `C${order.customer._id.toString().slice(-3).toUpperCase()}` : "C001"),
+    restaurantId: order.restaurantId || (order.restaurant && order.restaurant.restaurantId) || (order.restaurant?._id ? `RNT${order.restaurant._id.toString().slice(-3).toUpperCase()}` : "RNT001"),
+    riderId: order.riderId || (order.rider && order.rider.riderId) || null,
+    status: order.status,
+    restaurant: order.restaurant,
+    items: order.items,
+    totalAmount: tot,
+    amount: tot,
+    total: tot,
+    payableAmount: payAmt,
+    inrAmount: `₹${tot.toFixed(2)}`,
+    itemTotal: itmTot,
+    tax: tx,
+    packagingFee: pkgFee,
+    packaging: pkgFee,
+    deliveryFee: delFee,
+    deliveryCharge: delFee,
+    platformFee: pltFee,
+    discount: dsc,
+    tip: tp,
+    bill: {
+      itemTotal: itmTot,
+      tax: tx,
+      packagingFee: pkgFee,
+      packaging: pkgFee,
+      deliveryFee: delFee,
+      deliveryCharge: delFee,
+      platformFee: pltFee,
+      discount: dsc,
+      tip: tp,
+      totalAmount: tot,
+      amount: tot,
+      total: tot,
+      payableAmount: payAmt,
+      toPay: tot,
+      inrAmount: `₹${tot.toFixed(2)}`
+    },
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    deliveryAddress: order.deliveryAddress,
+    estimatedDeliveryTime: order.estimatedDeliveryTime,
+    createdAt: order.createdAt,
+    timeline: order.timeline,
+    rider: order.rider,
+    riderName: order.riderName,
+    riderPhone: order.riderPhone,
+    isRated: order.isRated,
+    rewardPoints: order.rewardPoints || 0,
+    rewardAmount: order.rewardAmount || 0,
+    rewardPointsCredited: Boolean(order.rewardPointsCredited),
+  };
+};
+exports.formatWalletTransaction = (transaction) => {
+  if (!transaction) return null;
+  return {
+    _id: transaction._id,
+    amount: transaction.amount,
+    type: transaction.type,
+    description: transaction.description,
+    orderId: transaction.orderId,
+    createdAt: transaction.createdAt,
+  };
+};
+exports.formatRiderForAdmin = (rider) => {
+  if (!rider) return null;
+  return {
+    _id: rider._id,
+    riderId: rider.riderId || 'RDR001',
+    user: rider.user,
+    rating: rider.rating,
+    address: rider.address,
+    workCity: rider.workCity,
+    workZone: rider.workZone,
+    vehicle: rider.vehicle,
+    documents: rider.documents,
+    bankDetails: rider.bankDetails,
+    isOnline: rider.isOnline,
+    isAvailable: rider.isAvailable,
+    breakMode: rider.breakMode,
+    verificationStatus: rider.verificationStatus,
+    riderVerified: rider.riderVerified,
+    totalEarnings: rider.totalEarnings,
+    currentBalance: rider.currentBalance,
+    totalOrders: rider.totalOrders,
+    totalDeliveries: rider.totalDeliveries,
+    createdAt: rider.createdAt,
+    updatedAt: rider.updatedAt,
+  };
+};
+exports.formatCityForUser = (city) => {
+  if (!city) return null;
+  return {
+    _id: city._id,
+    name: city.name,
+    isActive: city.isActive,
+    zones: (city.zones || []).map(zone => ({
+      _id: zone._id,
+      name: zone.name,
+      isActive: zone.isActive,
+      polygon: zone.polygon,
+    })),
+  };
+};
+const sendError = (res, status, message, details = null) => {
+  return res.status(status).json({
+    success: false,
+    message: message || "An error occurred",
+    ...(details ? { details } : {})
+  });
+};
+
+const sendSuccess = (res, status = 200, message = "Success", data = null) => {
+  return res.status(status).json({
+    success: true,
+    message,
+    ...(data ? (typeof data === 'object' && !Array.isArray(data) ? { ...data, data } : { data }) : {})
+  });
+};
+
+module.exports = {
+  sendError,
+  sendSuccess,
+  formatRestaurantForUser: exports.formatRestaurantForUser,
+  formatRestaurantForList: exports.formatRestaurantForList,
+  formatRestaurantForAdmin: exports.formatRestaurantForAdmin,
+  formatProductForUser: exports.formatProductForUser,
+  formatOrderForCustomer: exports.formatOrderForCustomer,
+  formatWalletTransaction: exports.formatWalletTransaction,
+  formatRiderForAdmin: exports.formatRiderForAdmin,
+  formatCityForUser: exports.formatCityForUser,
+};

@@ -1,0 +1,222 @@
+
+const logger = require('./logger');
+const validTransitions = {
+  "pending": ["placed", "failed", "cancelled"],
+  "placed": ["accepted", "cancelled"],
+  "accepted": ["preparing", "ready", "assigned", "reached_restaurant", "reached_store", "picked_up", "out_for_delivery", "on_the_way", "cancelled"],
+  "preparing": ["ready", "picked_up", "out_for_delivery", "on_the_way", "cancelled"],
+  "ready": ["assigned", "reached_restaurant", "reached_store", "picked_up", "out_for_delivery", "on_the_way", "customer_arrived", "delivered", "completed", "cancelled"],
+  "ready_for_pickup": ["assigned", "reached_restaurant", "reached_store", "picked_up", "out_for_delivery", "on_the_way", "delivered", "completed", "cancelled"],
+  "customer_arrived": ["delivered", "completed", "cancelled"],
+  "assigned": ["reached_restaurant", "reached_store", "picked_up", "out_for_delivery", "on_the_way", "delivered", "completed", "cancelled"],
+  "rider_assigned": ["reached_restaurant", "reached_store", "picked_up", "out_for_delivery", "on_the_way", "delivered", "completed", "cancelled"],
+  "reached_restaurant": ["picked_up", "out_for_delivery", "on_the_way", "reached_customer_location", "delivery_arrived", "delivered", "completed", "cancelled"],
+  "reached_store": ["picked_up", "out_for_delivery", "on_the_way", "reached_customer_location", "delivery_arrived", "delivered", "completed", "cancelled"],
+  "picked_up": ["out_for_delivery", "on_the_way", "reached_customer_location", "delivery_arrived", "delivered", "completed", "cancelled"],
+  "partner_picked": ["out_for_delivery", "on_the_way", "reached_customer_location", "delivery_arrived", "delivered", "completed", "cancelled"],
+  "out_for_delivery": ["on_the_way", "reached_customer_location", "delivery_arrived", "delivered", "completed", "cancelled"],
+  "on_the_way": ["out_for_delivery", "reached_customer_location", "delivery_arrived", "delivered", "completed", "cancelled"],
+  "reached_customer_location": ["delivered", "completed", "cancelled"],
+  "delivery_arrived": ["delivered", "completed", "cancelled"],
+  "delivered": ["completed"],
+  "completed": [],
+  "failed": [],
+  "cancelled": [],
+};
+const allStatuses = Object.keys(validTransitions);
+const ORDER_STATES = {
+  PLACED: 'placed',
+  ACCEPTED: 'accepted',
+  PREPARING: 'preparing',
+  READY: 'ready',
+  CUSTOMER_ARRIVED: 'customer_arrived',
+  ASSIGNED: 'assigned',
+  REACHED_RESTAURANT: 'reached_restaurant',
+  PICKED_UP: 'picked_up',
+  DELIVERY_ARRIVED: 'delivery_arrived',
+  DELIVERED: 'delivered',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
+};
+const DELIVERY_STATES = {
+  ASSIGNED: 'assigned',
+  PICKED_UP: 'picked_up',
+  DELIVERY_ARRIVED: 'delivery_arrived',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled'
+};
+const VALID_ORDER_TRANSITIONS = {
+  [ORDER_STATES.PLACED]: [
+    ORDER_STATES.ACCEPTED,
+    ORDER_STATES.CANCELLED
+  ],
+  [ORDER_STATES.ACCEPTED]: [
+    ORDER_STATES.PREPARING,
+    ORDER_STATES.CANCELLED
+  ],
+  [ORDER_STATES.PREPARING]: [
+    ORDER_STATES.READY,
+    ORDER_STATES.CANCELLED
+  ],
+  [ORDER_STATES.READY]: [
+    ORDER_STATES.ASSIGNED,
+    ORDER_STATES.CANCELLED
+  ],
+  [ORDER_STATES.ASSIGNED]: [
+    ORDER_STATES.PICKED_UP,
+    ORDER_STATES.CANCELLED // Rare, e.g. accident
+  ],
+  [ORDER_STATES.DELIVERED]: [
+    ORDER_STATES.ISSUE_REPORTED
+  ],
+  [ORDER_STATES.CANCELLED]: [],
+  [ORDER_STATES.FAILED]: [
+    ORDER_STATES.PLACED
+  ],
+  [ORDER_STATES.ISSUE_REPORTED]: []
+};
+const VALID_DELIVERY_TRANSITIONS = {
+  [DELIVERY_STATES.PENDING]: [
+    DELIVERY_STATES.SEARCHING,
+    DELIVERY_STATES.CANCELLED
+  ],
+  [DELIVERY_STATES.SEARCHING]: [
+    DELIVERY_STATES.ASSIGNED,
+    DELIVERY_STATES.PENDING, // Rider rejected/timeout, back to pending/searching
+    DELIVERY_STATES.CANCELLED
+  ],
+  [DELIVERY_STATES.ASSIGNED]: [
+    DELIVERY_STATES.ARRIVED_PICKUP,
+    DELIVERY_STATES.SEARCHING, // Rider unassigned/cancelled
+    DELIVERY_STATES.CANCELLED
+  ],
+  [DELIVERY_STATES.ARRIVED_PICKUP]: [
+    DELIVERY_STATES.PICKED_UP,
+    DELIVERY_STATES.CANCELLED
+  ],
+  [DELIVERY_STATES.PICKED_UP]: [
+    DELIVERY_STATES.ARRIVED_DROP,
+    DELIVERY_STATES.CANCELLED
+  ],
+  [DELIVERY_STATES.ARRIVED_DROP]: [
+    DELIVERY_STATES.DELIVERED,
+    DELIVERY_STATES.CANCELLED
+  ],
+  [DELIVERY_STATES.DELIVERED]: [],
+  [DELIVERY_STATES.CANCELLED]: []
+};
+const ORDER_STATUS_HIERARCHY = {
+  "pending": 1,
+  "placed": 2,
+  "accepted": 3,
+  "preparing": 4,
+  "ready": 5,
+  "ready_for_pickup": 5,
+  "assigned": 6,
+  "rider_assigned": 6,
+  "reached_restaurant": 7,
+  "reached_store": 7,
+  "picked_up": 8,
+  "partner_picked": 8,
+  "out_for_delivery": 9,
+  "on_the_way": 9,
+  "reached_customer_location": 10,
+  "delivery_arrived": 10,
+  "delivered": 11,
+  "completed": 12,
+  "cancelled": 99,
+  "failed": 99
+};
+
+const validateOrderState = (currentState, newState, isAdmin = false) => {
+  if (isAdmin) {
+    if (currentState === ORDER_STATES.CANCELLED && newState !== ORDER_STATES.CANCELLED) {
+      return { valid: false, error: 'Cannot change status of cancelled order' };
+    }
+    return { valid: true, error: null };
+  }
+  if (currentState === newState) return { valid: true, error: null };
+
+  const currentLevel = ORDER_STATUS_HIERARCHY[currentState] || 0;
+  const newLevel = ORDER_STATUS_HIERARCHY[newState] || 0;
+
+  // If the order has already progressed past the requested newState (and neither is cancelled/failed)
+  if (currentLevel > 0 && newLevel > 0 && currentLevel > newLevel && currentState !== 'cancelled' && currentState !== 'failed') {
+    return {
+      valid: false,
+      isAlreadyAdvanced: true,
+      error: `Order status '${currentState}' is already ahead of requested status '${newState}'`
+    };
+  }
+
+  const allowed = validTransitions[currentState] || [];
+  if (!allowed.includes(newState)) {
+    return {
+      valid: false,
+      error: `Invalid Order Status transition from '${currentState}' to '${newState}'. Allowed: ${allowed.join(', ') || 'none'}`
+    };
+  }
+  return { valid: true, error: null };
+};
+const validateDeliveryState = (currentState, newState) => {
+  if (currentState === newState) return { valid: true, error: null };
+  const allowed = VALID_DELIVERY_TRANSITIONS[currentState] || [];
+  if (!allowed.includes(newState)) {
+    return {
+      valid: false,
+      error: `Invalid Delivery Status transition from '${currentState}' to '${newState}'. Allowed: ${allowed.join(', ') || 'none'}`
+    };
+  }
+  return { valid: true, error: null };
+};
+const validateRestaurantAcceptance = (order) => {
+  if (order.status !== ORDER_STATES.PLACED) {
+    return { valid: false, error: `Order must be in 'placed' status to accept. Current status: '${order.status}'. ${order.status === 'pending' ? 'Waiting for customer payment.' : ''}` };
+  }
+  if (order.paymentMethod === 'online' && order.paymentStatus !== 'paid') {
+    return { valid: false, error: 'Cannot accept order with unpaid online payment' };
+  }
+  return { valid: true, error: null };
+};
+const validateRestaurantMarkReady = (order) => {
+  const allowed = [ORDER_STATES.PREPARING, ORDER_STATES.ACCEPTED, ORDER_STATES.PLACED, 'in_kitchen'];
+  if (!allowed.includes(order.status)) {
+    return { valid: false, error: `Order must be active to mark ready. Current: ${order.status}` };
+  }
+  return { valid: true, error: null };
+};
+const validateRiderPickup = (order, riderId) => {
+  if (!order.rider || order.rider.toString() !== riderId.toString()) {
+    return { valid: false, error: 'Order not assigned to you' };
+  }
+  const pickupAllowedStatuses = ['assigned', 'reached_restaurant', 'ready', 'preparing', 'accepted'];
+  if (!pickupAllowedStatuses.includes(order.status)) {
+    return { valid: false, error: `Order must be in assigned or reached_restaurant status to pick up. Current: ${order.status}` };
+  }
+  return { valid: true, error: null };
+};
+const validateRiderDelivery = (order, riderId) => {
+  if (!order.rider || order.rider.toString() !== riderId.toString()) {
+    return { valid: false, error: 'Order not assigned to you' };
+  }
+  const allowed = ["delivery_arrived", "out_for_delivery", "picked_up", "on_the_way", "reached_customer_location", "assigned"];
+  if (!allowed.includes(order.status)) {
+    return { valid: false, error: `Cannot deliver order from status: ${order.status}` };
+  }
+  return { valid: true, error: null };
+};
+const canBeCancelled = (currentState) => {
+  return [ORDER_STATES.PLACED, ORDER_STATES.ACCEPTED, ORDER_STATES.PREPARING].includes(currentState);
+};
+module.exports = {
+  ORDER_STATES,
+  DELIVERY_STATES,
+  validTransitions,
+  validateOrderState,
+  validateDeliveryState,
+  validateRestaurantAcceptance,
+  validateRestaurantMarkReady,
+  validateRiderPickup,
+  validateRiderDelivery,
+  canBeCancelled
+};

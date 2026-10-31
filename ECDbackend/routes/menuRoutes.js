@@ -1,0 +1,75 @@
+const express = require("express");
+const router = express.Router();
+const { protect, optionalAuth, restaurantOwner } = require("../middleware/authMiddleware");
+const {
+  addCategory,
+  addFoodItem,
+  getMenu,
+  bulkUpdateProducts,
+  toggleProductAvailability,
+  bulkUpdatePrices,
+  editCategory,
+  deleteCategory,
+  editProduct,
+  deleteProduct,
+  bulkDeleteProducts,
+  getSeasonalMenu,
+  bulkUploadMenuItems,
+} = require("../controllers/menuController");
+const { upload } = require("../utils/upload");
+router.post("/items/bulk-delete", protect, bulkDeleteProducts);
+router.delete("/items/bulk", protect, bulkDeleteProducts);
+router.get("/", optionalAuth, getMenu);
+router.get("/me", optionalAuth, getMenu);
+router.get("/vendor/:restaurantId", optionalAuth, getMenu);
+router.get("/:restaurantId", optionalAuth, getMenu);
+router.post("/bulk-upload", protect, bulkUploadMenuItems);
+router.post("/:restaurantId/bulk-upload", protect, bulkUploadMenuItems);
+router.post(
+  "/category",
+  protect,
+  restaurantOwner,
+  upload.single("image"),
+  addCategory
+);
+router.post(
+  "/item",
+  protect,
+  restaurantOwner,
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "addOnImages", maxCount: 20 },
+  ]),
+  addFoodItem
+);
+router.put(
+  "/category/:id",
+  protect,
+  restaurantOwner,
+  upload.single("image"),
+  editCategory
+);
+router.delete("/category/:id", protect, restaurantOwner, deleteCategory);
+router.put(
+  "/item/:id",
+  protect,
+  restaurantOwner,
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "addOnImages", maxCount: 20 },
+  ]),
+  editProduct
+);
+router.delete("/item/:id", protect, restaurantOwner, deleteProduct);
+router.put("/bulk/items", protect, restaurantOwner, bulkUpdateProducts);
+router.put(
+  "/item/:id/availability",
+  protect,
+  restaurantOwner,
+  toggleProductAvailability
+);
+router.put("/bulk/prices", protect, restaurantOwner, bulkUpdatePrices);
+const { submitCategoryRequest } = require("../controllers/categoryRequestController");
+router.post("/category-request", protect, restaurantOwner, submitCategoryRequest);
+router.get("/seasonal/:restaurantId", getSeasonalMenu);
+module.exports = router;
