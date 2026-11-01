@@ -3,7 +3,7 @@ import { Plus, Minus, Star, Clock } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const ProductCard = ({ product }) => {
-  const { getItemQuantity, addToCart, updateQuantity } = useCart();
+  const { getItemQuantity, addToCart, updateQuantity, setSelectedProductForDetail } = useCart();
   const quantity = getItemQuantity(product._id);
 
   const price = Number(product.price) || 0;
@@ -14,7 +14,6 @@ const ProductCard = ({ product }) => {
   // Placeholder images for grocery categories if image is null or placeholder
   const getProductImage = () => {
     if (product.image && product.image.startsWith('http')) return product.image;
-    // High-resolution realistic grocery imagery fallback
     const nameLower = product.name?.toLowerCase() || '';
     if (nameLower.includes('milk') || nameLower.includes('amul')) {
       return 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&q=80';
@@ -56,8 +55,12 @@ const ProductCard = ({ product }) => {
         </div>
       </div>
 
-      {/* Image Container */}
-      <div className="relative w-full h-36 flex items-center justify-center p-2 mb-2 bg-gray-50/50 rounded-xl group-hover:bg-blue-50/20 transition">
+      {/* Clickable Image Container */}
+      <div 
+        onClick={() => setSelectedProductForDetail(product)}
+        className="relative w-full h-36 flex items-center justify-center p-2 mb-2 bg-gray-50/50 rounded-xl group-hover:bg-blue-50/20 transition cursor-pointer"
+        title="View product details"
+      >
         <img
           src={getProductImage()}
           alt={product.name}
@@ -74,8 +77,12 @@ const ProductCard = ({ product }) => {
             {product.weight || product.unit || '1 unit'}
           </div>
 
-          {/* Product Name */}
-          <h4 className="text-xs font-bold text-gray-900 line-clamp-2 leading-snug mb-1.5 group-hover:text-brand-600 transition" title={product.name}>
+          {/* Product Name (Clickable) */}
+          <h4 
+            onClick={() => setSelectedProductForDetail(product)}
+            className="text-xs font-bold text-gray-900 line-clamp-2 leading-snug mb-1.5 group-hover:text-brand-600 transition cursor-pointer" 
+            title={product.name}
+          >
             {product.name}
           </h4>
 
@@ -142,4 +149,3 @@ const ProductCard = ({ product }) => {
 };
 
 export default ProductCard;
-

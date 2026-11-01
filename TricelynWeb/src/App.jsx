@@ -10,6 +10,8 @@ import CartDrawer from './components/CartDrawer';
 import LocationModal from './components/LocationModal';
 import AuthModal from './components/AuthModal';
 import SupportWidget from './components/SupportWidget';
+import ProductDetailModal from './components/ProductDetailModal';
+import ActiveOrderBanner from './components/ActiveOrderBanner';
 
 import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
@@ -62,6 +64,12 @@ function App() {
 
               {/* Global Phone OTP Authentication Modal */}
               <AuthModal />
+
+              {/* Global Product Detail Modal */}
+              <ProductDetailModal />
+
+              {/* Global Floating Active Order Banner */}
+              <ActiveOrderBanner />
 
               {/* Global Floating 24/7 Support Chat Widget */}
               <SupportWidget />

@@ -22,8 +22,11 @@ export const CartProvider = ({ children }) => {
     }
   });
 
+  const [riderTip, setRiderTip] = useState(0);
+  const [activeOrderId, setActiveOrderId] = useState(() => localStorage.getItem('tricelyn_active_order') || null);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [couponError, setCouponError] = useState(null);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState(null);
 
   // Save to local storage on change
   useEffect(() => {
@@ -37,6 +40,14 @@ export const CartProvider = ({ children }) => {
       localStorage.removeItem('tricelyn_coupon');
     }
   }, [coupon]);
+
+  useEffect(() => {
+    if (activeOrderId) {
+      localStorage.setItem('tricelyn_active_order', activeOrderId);
+    } else {
+      localStorage.removeItem('tricelyn_active_order');
+    }
+  }, [activeOrderId]);
 
   const addToCart = (product, quantity = 1, variant = null) => {
     setItems((prevItems) => {
@@ -73,6 +84,7 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => {
     setItems([]);
     setCoupon(null);
+    setRiderTip(0);
     localStorage.removeItem('tricelyn_cart');
     localStorage.removeItem('tricelyn_coupon');
   };
@@ -117,7 +129,7 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryFee + platformFee);
+  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryFee + platformFee + riderTip);
 
   const applyCoupon = async (code) => {
     setCouponError(null);
@@ -147,7 +159,6 @@ export const CartProvider = ({ children }) => {
         return { success: false, message: res.data?.message || 'Invalid coupon code' };
       }
     } catch (err) {
-      // Fallback
       setCouponError(err.response?.data?.message || 'Invalid or expired coupon');
       return { success: false, message: err.response?.data?.message || 'Invalid coupon' };
     }
@@ -173,6 +184,10 @@ export const CartProvider = ({ children }) => {
         totalSavings,
         deliveryFee,
         platformFee,
+        riderTip,
+        setRiderTip,
+        activeOrderId,
+        setActiveOrderId,
         coupon,
         couponDiscount,
         couponError,
@@ -181,6 +196,8 @@ export const CartProvider = ({ children }) => {
         grandTotal,
         isCartDrawerOpen,
         setIsCartDrawerOpen,
+        selectedProductForDetail,
+        setSelectedProductForDetail,
       }}
     >
       {children}
@@ -189,4 +206,3 @@ export const CartProvider = ({ children }) => {
 };
 
 export const useCart = () => useContext(CartContext);
-

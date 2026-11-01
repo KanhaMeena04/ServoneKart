@@ -11,7 +11,8 @@ import {
   Clock, 
   AlertCircle,
   Tag,
-  Lock
+  Lock,
+  HeartHandshake
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +22,20 @@ import PaymentModal from '../components/PaymentModal';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { items, itemCount, subtotal, deliveryFee, platformFee, coupon, couponDiscount, grandTotal, clearCart } = useCart();
+  const { 
+    items, 
+    itemCount, 
+    subtotal, 
+    deliveryFee, 
+    platformFee, 
+    riderTip, 
+    setRiderTip, 
+    setActiveOrderId,
+    coupon, 
+    couponDiscount, 
+    grandTotal, 
+    clearCart 
+  } = useCart();
   const { user, isAuthenticated, setIsAuthModalOpen } = useAuth();
   const { selectedLocation } = useLocation();
 
@@ -98,6 +112,7 @@ const CheckoutPage = () => {
       couponCode: coupon?.code || undefined,
       discountAmount: couponDiscount || 0,
       deliveryFee: deliveryFee,
+      riderTip: riderTip,
       totalAmount: grandTotal,
       subtotal: subtotal,
       deliveryNotes: instructions,
@@ -118,12 +133,14 @@ const CheckoutPage = () => {
 
       const orderId = response.data?.order?._id || response.data?.data?._id || ('TRIC-' + Math.floor(100000 + Math.random() * 900000));
       
+      setActiveOrderId(orderId);
       clearCart();
       setIsPaymentModalOpen(false);
       navigate(`/order-success/${orderId}`);
     } catch (err) {
       console.error('Order placement fallback:', err);
       const fallbackOrderId = 'TRIC-' + Math.floor(100000 + Math.random() * 900000);
+      setActiveOrderId(fallbackOrderId);
       clearCart();
       setIsPaymentModalOpen(false);
       navigate(`/order-success/${fallbackOrderId}`);
@@ -154,7 +171,7 @@ const CheckoutPage = () => {
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Left Column: Delivery Address & Payment (8 cols) */}
+        {/* Left Column: Delivery Address, Tip & Payment (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
           
           {/* 1. Delivery Address Card */}
@@ -259,20 +276,55 @@ const CheckoutPage = () => {
             </div>
           </div>
 
-          {/* 2. Payment Method Card */}
+          {/* 2. Delivery Partner Tip Card (Quick-Commerce Standard) */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center font-bold">
+                <HeartHandshake className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-gray-900">Tip Your Delivery Partner</h3>
+                <p className="text-[11px] text-gray-500">100% of tips go directly to your rider in Indore</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              {[
+                { label: 'No Tip', value: 0 },
+                { label: '₹10', value: 10 },
+                { label: '₹20', value: 20 },
+                { label: '₹30', value: 30 },
+                { label: '₹50', value: 50 },
+              ].map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setRiderTip(t.value)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition ${
+                    riderTip === t.value
+                      ? 'bg-pink-600 text-white shadow-sm'
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Payment Method Card */}
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2.5 border-b border-gray-100 pb-3">
               <div className="w-8 h-8 rounded-full bg-green-50 text-accent-greenDark flex items-center justify-center font-bold">
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-extrabold text-gray-900">2. Select Payment Method</h3>
+                <h3 className="text-sm font-extrabold text-gray-900">3. Select Payment Method</h3>
                 <p className="text-[11px] text-gray-500">100% Secure & encrypted transaction</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Cash On Delivery Option */}
               <label
                 className={`p-4 rounded-2xl border-2 cursor-pointer transition flex items-start gap-3.5 ${
                   paymentMethod === 'cod'
@@ -296,7 +348,6 @@ const CheckoutPage = () => {
                 </div>
               </label>
 
-              {/* Online Payment Option */}
               <label
                 className={`p-4 rounded-2xl border-2 cursor-pointer transition flex items-start gap-3.5 ${
                   paymentMethod === 'online'
@@ -372,6 +423,13 @@ const CheckoutPage = () => {
                 <span>Platform Fee</span>
                 <span className="font-semibold text-gray-900">₹{platformFee}</span>
               </div>
+
+              {riderTip > 0 && (
+                <div className="flex justify-between text-pink-600 font-semibold">
+                  <span>Delivery Partner Tip</span>
+                  <span>₹{riderTip}</span>
+                </div>
+              )}
 
               <div className="border-t border-gray-100 pt-3 flex justify-between text-sm font-black text-gray-900">
                 <span>To Pay</span>
