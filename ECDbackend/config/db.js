@@ -18,7 +18,7 @@ const connectDB = async () => {
   };
 
   try {
-    console.log('📡 [MongoDB] Connecting to ECDKART-TEST Atlas using environment configuration...');
+    console.log('📡 [MongoDB] Connecting to database using environment configuration...');
 
     const conn = await mongoose.connect(mongoUri, connectionOptions);
 
@@ -300,7 +300,7 @@ async function reconcileOrderCustomerAndRestaurantNames() {
       }
     }
     if (updatedCount > 0) {
-      console.log(`✅ Auto-reconciled customer & restaurant names for ${updatedCount} orders in MongoDB Atlas`);
+      console.log(`✅ Auto-reconciled customer & restaurant names for ${updatedCount} orders in database`);
     }
   } catch (err) {
     console.warn('⚠️ Order reconciliation warning:', err.message);
