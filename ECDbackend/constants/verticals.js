@@ -94,3 +94,4 @@ module.exports = {
   BUSINESS_TYPES,
   VERTICAL_METADATA
 };
+

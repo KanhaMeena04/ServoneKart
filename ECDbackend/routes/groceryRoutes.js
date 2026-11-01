@@ -242,3 +242,4 @@ router.put('/inventory/update', protect, async (req, res) => {
 });
 
 module.exports = router;
+

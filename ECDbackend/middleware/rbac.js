@@ -78,3 +78,4 @@ const checkPermission = (requiredPermission, vertical = null) => {
 module.exports = {
   checkPermission
 };
+

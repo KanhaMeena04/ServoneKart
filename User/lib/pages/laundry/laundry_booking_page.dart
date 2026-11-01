@@ -12,34 +12,60 @@ class LaundryBookingPage extends StatefulWidget {
 }
 
 class _LaundryBookingPageState extends State<LaundryBookingPage> {
-  bool _isLoading = true;
-  List<dynamic> _services = [];
   String _selectedServiceId = 'wash_and_iron';
-  int _estimatedClothes = 10;
-  final _addressCtrl = TextEditingController(text: 'Indore, MP');
+  int _estimatedClothes = 12;
+  String _selectedPickupSlot = 'Today (04:00 PM - 07:00 PM)';
+  String _selectedDeliverySlot = 'Day After (48 hrs)';
+  final _addressCtrl = TextEditingController(text: 'Vijay Nagar, Indore, MP');
+  bool _isBooking = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchServices();
-  }
+  final List<Map<String, dynamic>> _laundryPlans = [
+    {
+      'id': 'wash_and_fold',
+      'title': 'Wash & Fold',
+      'priceRate': '₹49 / kg',
+      'pricePerKg': 49,
+      'turnaround': '24-36 hrs',
+      'icon': Icons.local_laundry_service_rounded,
+      'tag': 'Popular for Daily Wear',
+    },
+    {
+      'id': 'wash_and_iron',
+      'title': 'Wash & Steam Iron',
+      'priceRate': '₹79 / kg',
+      'pricePerKg': 79,
+      'turnaround': '36-48 hrs',
+      'icon': Icons.iron_rounded,
+      'tag': 'Best for Office & Shirts',
+    },
+    {
+      'id': 'steam_iron',
+      'title': 'Steam Iron Only',
+      'priceRate': '₹15 / piece',
+      'pricePerKg': 45,
+      'turnaround': '24 hrs Express',
+      'icon': Icons.dry_cleaning_rounded,
+      'tag': 'Crisp Wrinkle-Free',
+    },
+    {
+      'id': 'dry_clean',
+      'title': 'Delicate Dry Clean',
+      'priceRate': '₹120 / piece',
+      'pricePerKg': 120,
+      'turnaround': '48-72 hrs',
+      'icon': Icons.checkroom_rounded,
+      'tag': 'Suits, Sarees & Blazers',
+    },
+  ];
 
-  Future<void> _fetchServices() async {
-    setState(() => _isLoading = true);
-    try {
-      final res = await http.get(Uri.parse('${AppConstants.baseUrl}/laundry/services'));
-      if (res.statusCode == 200) {
-        final d = json.decode(res.body);
-        if (d['success'] == true) _services = d['data'] ?? [];
-      }
-    } catch (e) {
-      debugPrint('Error: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  double _calculateEstimate() {
+    final plan = _laundryPlans.firstWhere((p) => p['id'] == _selectedServiceId, orElse: () => _laundryPlans[1]);
+    final estKg = (_estimatedClothes / 3).clamp(1.0, 50.0);
+    return estKg * (plan['pricePerKg'] as num).toDouble();
   }
 
   Future<void> _bookLaundry() async {
+    setState(() => _isBooking = true);
     try {
       final token = await AuthService.getToken();
       final res = await http.post(
@@ -51,120 +77,309 @@ class _LaundryBookingPageState extends State<LaundryBookingPage> {
         body: json.encode({
           'serviceType': _selectedServiceId,
           'clothesCount': _estimatedClothes,
-          'estimatedWeightKg': (_estimatedClothes / 3).round(),
-          'pickupSlot': DateTime.now().add(const Duration(hours: 3)).toIso8601String(),
-          'deliverySlot': DateTime.now().add(const Duration(days: 2)).toIso8601String(),
+          'pickupSlot': _selectedPickupSlot,
+          'deliverySlot': _selectedDeliverySlot,
           'pickupAddress': {'addressLine': _addressCtrl.text.trim()},
           'paymentMethod': 'cod'
         }),
       );
 
-      if (res.statusCode == 201 || res.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Laundry pickup scheduled! Our rider will bring laundry bags.'),
-            backgroundColor: Color(0xFF0D9488),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Color(0xFF0D9488), size: 28),
+                SizedBox(width: 10),
+                Text('Laundry Scheduled!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Our Indore pickup partner will arrive with fresh laundry bags to weigh and tag your clothes.',
+                    style: TextStyle(fontSize: 12.5, color: Colors.black87)),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFF0FDFA), borderRadius: BorderRadius.circular(12)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Pickup: $_selectedPickupSlot', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0D9488))),
+                      const SizedBox(height: 4),
+                      Text('Delivery: $_selectedDeliverySlot', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F766E))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       debugPrint('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final estTotal = _calculateEstimate();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0D9488),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ECDKART Laundry & Dry Clean', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text('Doorstep wash, steam iron & delicate care in Indore', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('ECDKART Laundry & Dry Clean', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Doorstep Fabric Care in Indore • Weight Based', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
-        backgroundColor: const Color(0xFF0D9488),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0D9488)))
-          : SingleChildScrollView(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner
+            Container(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF0D9488).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: const Row(
                 children: [
-                  const Text('Select Fabric Care Service', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  ..._services.map((s) {
-                    final isSelected = s['id'] == _selectedServiceId;
-                    return Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(color: isSelected ? const Color(0xFF0D9488) : const Color(0xFFE2E8F0), width: isSelected ? 2 : 1),
-                      ),
-                      child: ListTile(
-                        onTap: () => setState(() => _selectedServiceId = s['id']),
-                        leading: Radio<String>(
-                          value: s['id'],
-                          groupValue: _selectedServiceId,
-                          activeColor: const Color(0xFF0D9488),
-                          onChanged: (val) => setState(() => _selectedServiceId = val!),
-                        ),
-                        title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text(s['description'] ?? '', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                        trailing: Text(
-                          '₹${s['pricePerUnit']}/${s['unitType']}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D9488), fontSize: 14),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-
-                  const SizedBox(height: 16),
-                  const Text('Approximate Number of Clothes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  Slider(
-                    value: _estimatedClothes.toDouble(),
-                    min: 5,
-                    max: 40,
-                    divisions: 7,
-                    activeColor: const Color(0xFF0D9488),
-                    label: '$_estimatedClothes clothes',
-                    onChanged: (val) => setState(() => _estimatedClothes = val.round()),
-                  ),
-
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _addressCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Pickup & Delivery Address in Indore',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _bookLaundry,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0D9488),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('Schedule Doorstep Laundry Pickup', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Icon(Icons.bubble_chart_rounded, color: Colors.white, size: 36),
+                  SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Eco-Friendly Steam & Wash', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                        SizedBox(height: 3),
+                        Text('Germ-free sanitization • Anti-bacterial wash • Individual customer cycle',
+                            style: TextStyle(color: Colors.white70, fontSize: 11)),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 18),
+
+            const Text('Choose Fabric Care Plan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+
+            // Plan Cards
+            ..._laundryPlans.map((plan) {
+              final isSel = plan['id'] == _selectedServiceId;
+              return InkWell(
+                onTap: () => setState(() => _selectedServiceId = plan['id']),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isSel ? const Color(0xFF0D9488).withOpacity(0.08) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isSel ? const Color(0xFF0D9488) : const Color(0xFFE2E8F0), width: isSel ? 1.5 : 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isSel ? const Color(0xFF0D9488) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(plan['icon'] as IconData, color: isSel ? Colors.white : const Color(0xFF0D9488), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(plan['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(color: const Color(0xFFCCFBF1), borderRadius: BorderRadius.circular(6)),
+                                  child: Text(plan['tag'], style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF0F766E))),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text('Estimated turnaround: ${plan['turnaround']}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                      Text(plan['priceRate'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0D9488))),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+
+            // Clothes Count Estimator
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Estimated Clothes Count', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          Text('Weight will be confirmed live by rider bag', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF0D9488)),
+                            onPressed: () {
+                              if (_estimatedClothes > 3) setState(() => _estimatedClothes -= 3);
+                            },
+                          ),
+                          Text('$_estimatedClothes pcs', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF0D9488)),
+                            onPressed: () {
+                              setState(() => _estimatedClothes += 3);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Estimated Cost (~4 kg)', style: TextStyle(color: Colors.black54, fontSize: 12.5)),
+                      Text('₹${estTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0D9488))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Pickup & Delivery Slots
+            const Text('Pickup & Delivery Slots', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('PICKUP', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        SizedBox(height: 4),
+                        Text('Today', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('4:00 PM - 7:00 PM', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('DELIVERY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        SizedBox(height: 4),
+                        Text('Day After', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('10:00 AM - 1:00 PM', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            TextField(
+              controller: _addressCtrl,
+              decoration: InputDecoration(
+                labelText: 'Pickup Address in Indore',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+              ),
+            ),
+            const SizedBox(height: 22),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isBooking ? null : _bookLaundry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 2,
+                ),
+                child: _isBooking
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Schedule Doorstep Laundry Pickup', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

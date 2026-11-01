@@ -311,19 +311,23 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       ),
                     ),
 
-                  if (restaurant['name'] != null) ...[
+                  if (restaurant['name'] != null || _isCourier) ...[
                     _buildSection(
-                      title: 'MERCHANT PARTNER',
+                      title: _isCourier ? 'SENDER PICKUP POINT' : 'MERCHANT PARTNER',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildDetailRow(Icons.storefront, 'Restaurant/Store', restaurant['name']),
+                          _buildDetailRow(
+                            _isCourier ? Icons.person_pin_circle_rounded : Icons.storefront,
+                            _isCourier ? 'Sender / Contact' : 'Restaurant/Store',
+                            _isCourier ? (_currentOrder['senderName'] ?? restaurant['name'] ?? 'Indore Sender') : restaurant['name'],
+                          ),
                           if ((_currentOrder['restaurantId'] ?? restaurant['restaurantId']) != null) ...[
                             const SizedBox(height: 12),
-                            _buildDetailRow(Icons.confirmation_number_outlined, 'Restaurant ID', '#${_currentOrder['restaurantId'] ?? restaurant['restaurantId']}'),
+                            _buildDetailRow(Icons.confirmation_number_outlined, 'Partner ID', '#${_currentOrder['restaurantId'] ?? restaurant['restaurantId']}'),
                           ],
                           const SizedBox(height: 12),
-                          _buildDetailRow(Icons.pin_drop_outlined, 'Store Location', restaurant['address'] ?? 'N/A'),
+                          _buildDetailRow(Icons.pin_drop_outlined, 'Pickup Location', restaurant['address'] ?? _currentOrder['pickupAddress']?['addressLine'] ?? 'Indore, MP'),
                         ],
                       ),
                     ),
@@ -357,41 +361,56 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Order Items List
-                  _buildSection(
-                    title: 'ORDER ITEMS',
-                    child: Column(
-                      children: [
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: items.length,
-                          separatorBuilder: (_, _) => const Divider(height: 16),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            final qty = item['qty'] ?? item['quantity'] ?? 1;
-                            final price = item['price'] ?? 0;
-                            final name = item['name'] ?? 'Item';
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${qty}x $name',
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  // Order Items List or Parcel Information
+                  if (_isCourier)
+                    _buildSection(
+                      title: 'PARCEL DETAILS',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailRow(Icons.category_outlined, 'Parcel Type', _currentOrder['parcelType'] ?? _currentOrder['parcelDetails']?['parcelType'] ?? 'General Parcel'),
+                          const SizedBox(height: 12),
+                          _buildDetailRow(Icons.scale_outlined, 'Estimated Weight', '${_currentOrder['weightKg'] ?? _currentOrder['parcelDetails']?['weightKg'] ?? 1.0} kg'),
+                          const SizedBox(height: 12),
+                          _buildDetailRow(Icons.note_alt_outlined, 'Special Notes', _currentOrder['deliveryInstructions'] ?? 'Handle with care'),
+                        ],
+                      ),
+                    )
+                  else
+                    _buildSection(
+                      title: 'ORDER ITEMS',
+                      child: Column(
+                        children: [
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            separatorBuilder: (_, _) => const Divider(height: 16),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              final qty = item['qty'] ?? item['quantity'] ?? 1;
+                              final price = item['price'] ?? 0;
+                              final name = item['name'] ?? 'Item';
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${qty}x $name',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  '₹${(price * qty).toStringAsFixed(1)}',
-                                  style: TextStyle(color: Colors.grey[700], fontSize: 14, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
+                                  Text(
+                                    '₹${(price * qty).toStringAsFixed(1)}',
+                                    style: TextStyle(color: Colors.grey[700], fontSize: 14, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
                   const SizedBox(height: 16),
 

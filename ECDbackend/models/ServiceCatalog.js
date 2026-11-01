@@ -75,3 +75,4 @@ const serviceCatalogSchema = new mongoose.Schema({
 serviceCatalogSchema.index({ category: 1, position: 1 });
 
 module.exports = mongoose.model('ServiceCatalog', serviceCatalogSchema);
+

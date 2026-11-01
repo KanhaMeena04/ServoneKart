@@ -410,3 +410,4 @@ router.get('/:vertical/orders', protect, admin, async (req, res) => {
 });
 
 module.exports = router;
+

@@ -1498,6 +1498,288 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  
+  void _openPartnerOperationalSheet(String label, Color accentColor) {
+    if (label.contains('Stock') || label.contains('Price') || label.contains('Inventory')) {
+      _showStockToggleSheet(accentColor);
+    } else if (label.contains('Prescription') || label.contains('Rx') || label.contains('Medicine')) {
+      _showRxReviewSheet(accentColor);
+    } else if (label.contains('Booking') || label.contains('Quotation') || label.contains('OTP')) {
+      _showTechnicianJobSheet(accentColor);
+    } else {
+      _showGenericQueueSheet(label, accentColor);
+    }
+  }
+
+  void _showStockToggleSheet(Color accentColor) {
+    List<Map<String, dynamic>> items = [
+      {'name': 'Fresh Toned Milk 500ml', 'inStock': true, 'price': '₹27'},
+      {'name': 'Shudh Chakki Atta 5kg', 'inStock': true, 'price': '₹245'},
+      {'name': 'Farm Fresh Potatoes 1kg', 'inStock': false, 'price': '₹28'},
+      {'name': 'Red Onions (Pyaaz) 1kg', 'inStock': true, 'price': '₹38'},
+      {'name': 'English Oven Bread 400g', 'inStock': true, 'price': '₹50'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.inventory_2_rounded, color: accentColor),
+                      const SizedBox(width: 8),
+                      Text('Quick Stock Switcher', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              Text('Toggle out-of-stock items so Indore customers do not order unavailable products:',
+                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
+              const SizedBox(height: 12),
+              ...items.map((item) {
+                return SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(item['name'], style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: Text(item['price'], style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)),
+                  value: item['inStock'] as bool,
+                  activeColor: accentColor,
+                  onChanged: (val) {
+                    setSheetState(() => item['inStock'] = val);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${item['name']} is now ${val ? "IN STOCK" : "OUT OF STOCK"} on Indore App'),
+                        backgroundColor: val ? Colors.green[700] : Colors.redAccent,
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRxReviewSheet(Color accentColor) {
+    final billCtrl = TextEditingController(text: '340');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.receipt_long_rounded, color: accentColor),
+                const SizedBox(width: 8),
+                Text('Prescription Review Queue', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_pin, color: Colors.redAccent),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Patient: Ramesh Sharma (Vijay Nagar)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('Doctor: Dr. K.K. Verma • 3 medicines detected', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: billCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Total Calculated Bill Amount (₹)',
+                prefixText: '₹ ',
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('Reject Slip'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Prescription approved! Bill sent to customer for one-tap checkout.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('Approve & Bill'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTechnicianJobSheet(Color accentColor) {
+    final otpCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.handyman_rounded, color: accentColor),
+                const SizedBox(width: 8),
+                Text('Scheduled Appointments', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('AC Deep Cleaning & Gas Check', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text('Customer: Sunita Joshi • Scheme No 54, Vijay Nagar', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
+                  const SizedBox(height: 4),
+                  Text('Time: Today, 02:00 PM - 04:00 PM • Inspection Fee: ₹99', style: GoogleFonts.poppins(fontSize: 11, color: Colors.blue[800], fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: otpCtrl,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              decoration: InputDecoration(
+                labelText: 'Enter Customer 4-Digit Completion OTP',
+                counterText: '',
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Job closed successfully! Customer OTP verified.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Verify OTP & Mark Job Completed'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGenericQueueSheet(String label, Color accentColor) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Operational orders and queue items are in sync with ECDKART central backend.',
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.white),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPartnerVerticalActionBanner() {
     String title;
     String subtitle;
@@ -1613,15 +1895,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: InkWell(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${a['label']} workspace active'),
-                          backgroundColor: accentColor,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onTap: () => _openPartnerOperationalSheet(a['label'].toString(), accentColor),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

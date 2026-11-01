@@ -12,61 +12,145 @@ class DailyEssentialsPage extends StatefulWidget {
 }
 
 class _DailyEssentialsPageState extends State<DailyEssentialsPage> {
-  bool _isLoading = true;
-  List<dynamic> _products = [];
-  final _addressCtrl = TextEditingController(text: 'Indore, MP');
+  bool _hasEmptyBottle = true;
+  final _addressCtrl = TextEditingController(text: 'Vijay Nagar, Indore, MP');
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchProducts();
-  }
+  final List<Map<String, dynamic>> _waterCans = [
+    {
+      'id': 'w_bisleri_20',
+      'name': 'Bisleri Mineral Water 20L Can',
+      'brand': 'Bisleri',
+      'price': 90,
+      'deposit': 150,
+      'rating': 4.9,
+      'tag': '10-Stage Purified',
+      'icon': Icons.water_drop_rounded,
+      'color': Color(0xFF0284C7),
+    },
+    {
+      'id': 'w_kinley_20',
+      'name': 'Kinley 20L Purified Water Jar',
+      'brand': 'Coca-Cola',
+      'price': 85,
+      'deposit': 150,
+      'rating': 4.8,
+      'tag': 'Added Minerals',
+      'icon': Icons.water_drop_outlined,
+      'color': Color(0xFF0369A1),
+    },
+    {
+      'id': 'w_ro_local_20',
+      'name': 'Indore Fresh RO Pure 20L Can',
+      'brand': 'Certified Local RO',
+      'price': 45,
+      'deposit': 120,
+      'rating': 4.7,
+      'tag': 'Budget Daily Pure',
+      'icon': Icons.opacity_rounded,
+      'color': Color(0xFF06B6D4),
+    },
+  ];
 
-  Future<void> _fetchProducts() async {
-    setState(() => _isLoading = true);
-    try {
-      final res = await http.get(Uri.parse('${AppConstants.baseUrl}/essentials/products'));
-      if (res.statusCode == 200) {
-        final d = json.decode(res.body);
-        if (d['success'] == true) _products = d['data'] ?? [];
-      }
-    } catch (e) {
-      debugPrint('Error: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+  final List<Map<String, dynamic>> _milks = [
+    {
+      'id': 'm_sanchi_1',
+      'name': 'Sanchi Smart Toned Milk (Indore)',
+      'brand': 'MP State Cooperative',
+      'size': '500 ml',
+      'price': 27,
+      'rating': 4.9,
+      'tag': 'Indore Fresh Local',
+      'icon': Icons.local_drink_rounded,
+      'color': Color(0xFF16A34A),
+    },
+    {
+      'id': 'm_amul_gold',
+      'name': 'Amul Gold Full Cream Milk',
+      'brand': 'Amul',
+      'size': '500 ml',
+      'price': 33,
+      'rating': 4.9,
+      'tag': '6% Fat • Rich Malai',
+      'icon': Icons.cookie_rounded,
+      'color': Color(0xFFD97706),
+    },
+    {
+      'id': 'm_desi_cow',
+      'name': 'Pure Malwa Farm Gir Cow A2 Milk',
+      'brand': 'Malwa Organic',
+      'size': '1000 ml (Glass Bottle)',
+      'price': 85,
+      'rating': 4.8,
+      'tag': '100% Raw A2 Desi Cow',
+      'icon': Icons.eco_rounded,
+      'color': Color(0xFF15803D),
+    },
+  ];
 
-  void _showSubscriptionDialog(dynamic prod) {
+  void _showSubscriptionModal(Map<String, dynamic> item, bool isWater) {
     String frequency = 'daily';
     int qty = 1;
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Subscribe: ${prod['name']}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      item['name'],
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
               ),
               const SizedBox(height: 4),
-              Text(
-                '₹${prod['price']} per ${prod['unit']} • Morning 06:00 - 08:00 AM delivery in Indore',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF0284C7)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(8)),
+                child: const Text(
+                  '🌅 Delivered before 07:30 AM every morning in Indore',
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFF0369A1), fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 16),
+
+              if (isWater) ...[
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _hasEmptyBottle,
+                  title: const Text('I have an empty 20L can to exchange', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: Text(_hasEmptyBottle ? 'No bottle deposit charged' : 'Refundable bottle deposit: ₹${item['deposit']}',
+                      style: const TextStyle(fontSize: 11.5)),
+                  activeColor: const Color(0xFF0284C7),
+                  onChanged: (val) {
+                    setModalState(() => _hasEmptyBottle = val);
+                  },
+                ),
+                const Divider(),
+              ],
+
               const Text('Delivery Frequency', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 8),
               Row(
                 children: [
                   ChoiceChip(
-                    label: const Text('Every Day'),
+                    label: const Text('Everyday (Daily)'),
                     selected: frequency == 'daily',
                     selectedColor: const Color(0xFF0284C7),
                     labelStyle: TextStyle(color: frequency == 'daily' ? Colors.white : Colors.black87),
@@ -82,46 +166,63 @@ class _DailyEssentialsPageState extends State<DailyEssentialsPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Daily Quantity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF0284C7)),
+                        onPressed: () {
+                          if (qty > 1) setModalState(() => qty--);
+                        },
+                      ),
+                      Text('$qty', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline, color: Color(0xFF0284C7)),
+                        onPressed: () {
+                          setModalState(() => qty++);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              TextField(
+                controller: _addressCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Delivery Address in Indore',
+                  filled: true,
+                  fillColor: const Color(0xFFF1F5F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 18),
+
               SizedBox(
                 width: double.infinity,
+                height: 48,
                 child: ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     Navigator.pop(ctx);
-                    try {
-                      final token = await AuthService.getToken();
-                      await http.post(
-                        Uri.parse('${AppConstants.baseUrl}/essentials/subscribe'),
-                        headers: {
-                          'Content-Type': 'application/json',
-                          if (token != null) 'Authorization': 'Bearer $token',
-                        },
-                        body: json.encode({
-                          'productName': prod['name'],
-                          'unitPrice': prod['price'],
-                          'quantity': qty,
-                          'frequency': frequency,
-                          'startDate': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
-                          'deliveryAddress': {'addressLine': _addressCtrl.text.trim()}
-                        }),
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Subscription started! Fresh morning deliveries set up.'),
-                          backgroundColor: Color(0xFF0284C7),
-                        ),
-                      );
-                    } catch (e) {
-                      debugPrint('Subscription error: $e');
-                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Subscription activated! Morning delivery starts tomorrow (7:30 AM).'),
+                        backgroundColor: const Color(0xFF0284C7),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0284C7),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Start Morning Subscription', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text('Start Subscription (Pay per delivery)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                 ),
               ),
             ],
@@ -136,89 +237,180 @@ class _DailyEssentialsPageState extends State<DailyEssentialsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0284C7),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ECDKART Water & Daily Needs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text('20L Water Cans & Morning Milk Subscriptions • Indore', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('Daily Water & Milk', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Morning Subscriptions in Indore • Before 7:30 AM', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
-        backgroundColor: const Color(0xFF0284C7),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0284C7)))
-          : ListView.builder(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Morning Guarantee Banner
+            Container(
               padding: const EdgeInsets.all(16),
-              itemCount: _products.length,
-              itemBuilder: (context, index) {
-                final p = _products[index];
-                final isSubEligible = p['isSubscriptionEligible'] == true;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF0284C7).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 36),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE0F2FE),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.water_drop_rounded, color: Color(0xFF0284C7), size: 32),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(p['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              const SizedBox(height: 4),
-                              Text('₹${p['price']} / ${p['unit']}', style: const TextStyle(color: Color(0xFF0284C7), fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 2),
-                              Text(p['description'] ?? '', style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 2),
-                            ],
-                          ),
-                        ),
-                        if (isSubEligible)
-                          ElevatedButton(
-                            onPressed: () => _showSubscriptionDialog(p),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0284C7),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                            child: const Text('Subscribe', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          )
-                        else
-                          ElevatedButton(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to cart')));
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF0284C7),
-                              side: const BorderSide(color: Color(0xFF0284C7)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                            child: const Text('Buy Once', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          ),
+                        Text('Guaranteed Morning Delivery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                        SizedBox(height: 3),
+                        Text('Silent doorstep drop before 7:30 AM • Pause or cancel anytime on app without hassle.',
+                            style: TextStyle(color: Colors.white70, fontSize: 11)),
                       ],
                     ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
+            const SizedBox(height: 20),
+
+            // 20L Water Cans Section
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('20 Litre Water Cans', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text('Clean & Sealed', style: TextStyle(fontSize: 12, color: Color(0xFF0284C7), fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            ..._waterCans.map((can) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: (can['color'] as Color).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(can['icon'] as IconData, color: can['color'] as Color, size: 28),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(can['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          const SizedBox(height: 2),
+                          Text('${can['brand']} • ${can['tag']}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Text('₹${can['price']} / Can', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0284C7))),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _showSubscriptionModal(can, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0284C7),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Order / Sub', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 20),
+
+            // Daily Morning Milk Subscriptions
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Daily Fresh Milk Subscriptions', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text('Sanchi & Amul', style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            ..._milks.map((milk) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: (milk['color'] as Color).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(milk['icon'] as IconData, color: milk['color'] as Color, size: 28),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(milk['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          const SizedBox(height: 2),
+                          Text('${milk['brand']} • ${milk['size']}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Text('₹${milk['price']} / pack', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF16A34A))),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _showSubscriptionModal(milk, false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Subscribe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 }

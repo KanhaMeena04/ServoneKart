@@ -75,3 +75,4 @@ serviceProviderSchema.pre('save', async function(next) {
 });
 
 module.exports = mongoose.model('ServiceProvider', serviceProviderSchema);
+
