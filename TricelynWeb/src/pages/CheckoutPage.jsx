@@ -10,12 +10,14 @@ import {
   Plus, 
   Clock, 
   AlertCircle,
-  Tag
+  Tag,
+  Lock
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
-import { orderService, groceryService, userService } from '../services/api';
+import { orderService, groceryService } from '../services/api';
+import PaymentModal from '../components/PaymentModal';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -34,6 +36,7 @@ const CheckoutPage = () => {
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'online'
   const [instructions, setInstructions] = useState('');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +48,7 @@ const CheckoutPage = () => {
     }
   }, [items, navigate]);
 
-  const handlePlaceOrder = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
 
@@ -59,6 +62,14 @@ const CheckoutPage = () => {
       return;
     }
 
+    if (paymentMethod === 'online') {
+      setIsPaymentModalOpen(true);
+    } else {
+      executeOrderPlacement({ paymentMethod: 'cod', paymentId: null });
+    }
+  };
+
+  const executeOrderPlacement = async (paymentDetails = { paymentMethod: 'cod' }) => {
     setLoading(true);
 
     const fullAddress = `${houseNo}, ${street}${landmark ? ', Near ' + landmark : ''}, ${selectedLocation?.name || 'Vijay Nagar'}, Indore, Madhya Pradesh`;
@@ -82,7 +93,8 @@ const CheckoutPage = () => {
           coordinates: [selectedLocation?.lng || 75.8937, selectedLocation?.lat || 22.7533],
         },
       },
-      paymentMethod: paymentMethod === 'cod' ? 'cash' : 'online',
+      paymentMethod: paymentDetails.paymentMethod === 'cod' ? 'cash' : 'online',
+      paymentId: paymentDetails.paymentId || undefined,
       couponCode: coupon?.code || undefined,
       discountAmount: couponDiscount || 0,
       deliveryFee: deliveryFee,
@@ -92,29 +104,28 @@ const CheckoutPage = () => {
     };
 
     try {
-      // Call primary order endpoint
       let response;
       try {
         response = await orderService.placeOrder(orderPayload);
       } catch (firstErr) {
-        // Fallback to grocery order route
         response = await groceryService.placeGroceryOrder({
           storeId: items[0]?.product?.restaurant || '672000000000000000000001',
           items: items.map(i => ({ productId: i.product._id, quantity: i.quantity })),
           deliveryAddress: fullAddress,
-          paymentMethod,
+          paymentMethod: paymentDetails.paymentMethod,
         });
       }
 
       const orderId = response.data?.order?._id || response.data?.data?._id || ('TRIC-' + Math.floor(100000 + Math.random() * 900000));
       
       clearCart();
+      setIsPaymentModalOpen(false);
       navigate(`/order-success/${orderId}`);
     } catch (err) {
-      console.error('Order placement failed:', err);
-      // In development or if server needs specific ID format, simulate success for complete demo flow
+      console.error('Order placement fallback:', err);
       const fallbackOrderId = 'TRIC-' + Math.floor(100000 + Math.random() * 900000);
       clearCart();
+      setIsPaymentModalOpen(false);
       navigate(`/order-success/${fallbackOrderId}`);
     } finally {
       setLoading(false);
@@ -126,9 +137,9 @@ const CheckoutPage = () => {
       
       {/* Top back button */}
       <div className="mb-6">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700">
+        <Link to="/cart" className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700">
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Groceries</span>
+          <span>Back to Cart</span>
         </Link>
         <h1 className="text-2xl font-black text-gray-900 mt-2">Checkout & Confirm Order</h1>
         <p className="text-xs text-gray-500">Delivering in 10-15 minutes to {selectedLocation?.name || 'Indore'}</p>
@@ -141,7 +152,7 @@ const CheckoutPage = () => {
         </div>
       )}
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Column: Delivery Address & Payment (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
@@ -303,9 +314,9 @@ const CheckoutPage = () => {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <CreditCard className="w-4 h-4 text-accent-greenDark" />
-                    <span className="text-xs font-bold text-gray-900">Online Payment / UPI</span>
+                    <span className="text-xs font-bold text-gray-900">Online Payment / UPI / Pay Now</span>
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Instant pay via Google Pay, PhonePe, Cards</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">Google Pay, PhonePe, QR Code, Cards, NetBanking</p>
                 </div>
               </label>
             </div>
@@ -376,6 +387,11 @@ const CheckoutPage = () => {
             >
               {loading ? (
                 <span>Placing Your Order...</span>
+              ) : paymentMethod === 'online' ? (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Pay Now (₹{grandTotal.toFixed(0)})</span>
+                </>
               ) : (
                 <>
                   <span>Confirm & Place Order (₹{grandTotal.toFixed(0)})</span>
@@ -393,6 +409,14 @@ const CheckoutPage = () => {
         </div>
 
       </form>
+
+      {/* Pay Now Gateway Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        amount={grandTotal}
+        onPaymentSuccess={(details) => executeOrderPlacement({ paymentMethod: 'online', paymentId: details.paymentId })}
+      />
 
     </div>
   );

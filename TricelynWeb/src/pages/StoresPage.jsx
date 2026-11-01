@@ -137,3 +137,4 @@ const StoresPage = () => {
 };
 
 export default StoresPage;
+

@@ -72,3 +72,4 @@ const CategoriesOverviewPage = () => {
 };
 
 export default CategoriesOverviewPage;
+

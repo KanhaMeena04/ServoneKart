@@ -9,16 +9,19 @@ import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import LocationModal from './components/LocationModal';
 import AuthModal from './components/AuthModal';
+import SupportWidget from './components/SupportWidget';
 
 import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
 import CategoriesOverviewPage from './pages/CategoriesOverviewPage';
 import StoresPage from './pages/StoresPage';
+import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import AccountOrdersPage from './pages/AccountOrdersPage';
+import SupportPage from './pages/SupportPage';
 
 function App() {
   return (
@@ -26,7 +29,7 @@ function App() {
       <AuthProvider>
         <LocationProvider>
           <CartProvider>
-            <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased">
+            <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased relative">
               {/* Sticky Header with Logo, Indore Location, Search & Cart */}
               <Header />
 
@@ -38,6 +41,7 @@ function App() {
                   <Route path="/categories" element={<CategoriesOverviewPage />} />
                   <Route path="/stores" element={<StoresPage />} />
                   <Route path="/store/:storeId" element={<StoresPage />} />
+                  <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
                   <Route path="/track/:orderId" element={<OrderTrackingPage />} />
@@ -45,6 +49,7 @@ function App() {
                   <Route path="/account" element={<AccountOrdersPage />} />
                   <Route path="/account/orders" element={<AccountOrdersPage />} />
                   <Route path="/account/addresses" element={<AccountOrdersPage />} />
+                  <Route path="/support" element={<SupportPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
@@ -57,6 +62,9 @@ function App() {
 
               {/* Global Phone OTP Authentication Modal */}
               <AuthModal />
+
+              {/* Global Floating 24/7 Support Chat Widget */}
+              <SupportWidget />
 
               {/* Tricelyn Footer */}
               <Footer />

@@ -110,11 +110,10 @@ const Footer = () => {
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Customer Care</h4>
             <ul className="space-y-2 text-xs text-gray-400">
-              <li><a href="#" className="hover:text-blue-400 transition">Help & FAQs</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition">Contact Support</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition">Shipping & Delivery Policy</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition">Return & Refund Terms</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition">Privacy Policy</a></li>
+              <li><Link to="/support" className="hover:text-blue-400 transition">Help & FAQs</Link></li>
+              <li><Link to="/support" className="hover:text-blue-400 transition">Contact Support</Link></li>
+              <li><Link to="/support" className="hover:text-blue-400 transition">Shipping & Delivery Policy</Link></li>
+              <li><Link to="/support" className="hover:text-blue-400 transition">Return & Refund Terms</Link></li>
             </ul>
           </div>
 
@@ -169,3 +168,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
