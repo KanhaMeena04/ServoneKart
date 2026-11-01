@@ -1,0 +1,71 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { LocationProvider } from './context/LocationContext';
+import { CartProvider } from './context/CartContext';
+
+import Header from './components/Header';
+import Footer from './components/Footer';
+import CartDrawer from './components/CartDrawer';
+import LocationModal from './components/LocationModal';
+import AuthModal from './components/AuthModal';
+
+import HomePage from './pages/HomePage';
+import CategoryPage from './pages/CategoryPage';
+import CategoriesOverviewPage from './pages/CategoriesOverviewPage';
+import StoresPage from './pages/StoresPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
+import OrderTrackingPage from './pages/OrderTrackingPage';
+import SearchResultsPage from './pages/SearchResultsPage';
+import AccountOrdersPage from './pages/AccountOrdersPage';
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <LocationProvider>
+          <CartProvider>
+            <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased">
+              {/* Sticky Header with Logo, Indore Location, Search & Cart */}
+              <Header />
+
+              {/* Main Routing Content */}
+              <main className="flex-1">
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/category/:slug" element={<CategoryPage />} />
+                  <Route path="/categories" element={<CategoriesOverviewPage />} />
+                  <Route path="/stores" element={<StoresPage />} />
+                  <Route path="/store/:storeId" element={<StoresPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+                  <Route path="/track/:orderId" element={<OrderTrackingPage />} />
+                  <Route path="/search" element={<SearchResultsPage />} />
+                  <Route path="/account" element={<AccountOrdersPage />} />
+                  <Route path="/account/orders" element={<AccountOrdersPage />} />
+                  <Route path="/account/addresses" element={<AccountOrdersPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+
+              {/* Global Slide-Over Cart Drawer */}
+              <CartDrawer />
+
+              {/* Global Delivery Location Modal */}
+              <LocationModal />
+
+              {/* Global Phone OTP Authentication Modal */}
+              <AuthModal />
+
+              {/* Tricelyn Footer */}
+              <Footer />
+            </div>
+          </CartProvider>
+        </LocationProvider>
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default App;

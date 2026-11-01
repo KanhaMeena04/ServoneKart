@@ -379,9 +379,14 @@ exports.placeOrder = async (req, res) => {
       return sendError(res, 400, "Cart is empty");
     }
 
-    const restaurantId = cart.restaurant || (cart.items[0] && cart.items[0].restaurant);
+    let restaurantId = cart.restaurant || (cart.items[0] && cart.items[0].restaurant) || req.body.restaurant || req.body.storeId;
     if (!restaurantId) {
-      return sendError(res, 400, "Restaurant ID is required");
+      const defaultStore = await Restaurant.findOne({ isActive: true });
+      if (defaultStore) {
+        restaurantId = defaultStore._id;
+      } else {
+        return sendError(res, 400, "Restaurant ID is required");
+      }
     }
 
     let deliveryAddress = null;
