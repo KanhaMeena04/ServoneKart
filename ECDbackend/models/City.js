@@ -8,7 +8,13 @@ const deliveryChargeSchema = new mongoose.Schema({
 const zoneSchema = new mongoose.Schema({
   _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
   name: { type: String, required: true },
-  isActive: { type: Boolean, default: true },
+  supportedVerticals: [{
+      type: String,
+      enum: ['food', 'grocery', 'home_services', 'medicine', 'courier', 'laundry', 'gifts_bakery', 'essentials'],
+      default: 'food'
+    }],
+    verticalConfigs: { type: Object, default: {} },
+    isActive: { type: Boolean, default: true },
   deliveryCharges: [deliveryChargeSchema],
   polygon: {
     type: { type: String, enum: ['Polygon','MultiPolygon'], default: 'Polygon' },

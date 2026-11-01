@@ -1095,6 +1095,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                         color: Colors.black87,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    _buildVerticalBadge(Map<String, dynamic>.from(activeOrder)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -2123,16 +2125,25 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
-                        "Order #$displayOrd",
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              "Order #$displayOrd",
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildVerticalBadge(order),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     _buildStatusBadge(order['deliveryStatus'] ?? 'PENDING'),
                   ],
                 );
@@ -2280,6 +2291,88 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+    Widget _buildVerticalBadge(Map<String, dynamic> order) {
+    String vertical = (order['vertical'] ?? '').toString().toLowerCase();
+    if (vertical.isEmpty) {
+      if (order['parcelDetails'] != null) {
+        vertical = 'courier';
+      } else if (order['laundryDetails'] != null) {
+        vertical = 'laundry';
+      } else if (order['prescriptionUrl'] != null) {
+        vertical = 'pharmacy';
+      } else {
+        vertical = 'food';
+      }
+    }
+
+    Color bgColor;
+    Color textColor;
+    IconData icon;
+    String label;
+
+    switch (vertical) {
+      case 'grocery':
+        bgColor = const Color(0xFFE8F5E9);
+        textColor = const Color(0xFF2E7D32);
+        icon = Icons.shopping_basket_rounded;
+        label = 'GROCERY';
+        break;
+      case 'courier':
+        bgColor = const Color(0xFFF3E8FF);
+        textColor = const Color(0xFF7E22CE);
+        icon = Icons.local_shipping_rounded;
+        label = 'COURIER';
+        break;
+      case 'pharmacy':
+      case 'medicine':
+        bgColor = const Color(0xFFFCE7F3);
+        textColor = const Color(0xFFBE185D);
+        icon = Icons.local_pharmacy_rounded;
+        label = 'MEDICINE';
+        break;
+      case 'laundry':
+        bgColor = const Color(0xFFCFFAFE);
+        textColor = const Color(0xFF0E7490);
+        icon = Icons.local_laundry_service_rounded;
+        label = 'LAUNDRY';
+        break;
+      case 'essentials':
+        bgColor = const Color(0xFFE0F2FE);
+        textColor = const Color(0xFF0369A1);
+        icon = Icons.water_drop_rounded;
+        label = 'ESSENTIALS';
+        break;
+      default:
+        bgColor = const Color(0xFFFFF3E0);
+        textColor = const Color(0xFFE65100);
+        icon = Icons.restaurant_rounded;
+        label = 'FOOD';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: textColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
           ),
         ],
       ),

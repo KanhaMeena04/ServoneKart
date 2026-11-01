@@ -4,6 +4,7 @@ const Banner = require("../models/Banner");
 const Order = require("../models/Order");
 const Cuisine = require("../models/Cuisine"); // From Admin CMS
 const Review = require("../models/Review");
+const { VERTICAL_METADATA } = require("../constants/verticals");
 const { formatRestaurantForUser } = require("../utils/responseFormatter");
 const toRadians = (value) => (value * Math.PI) / 180;
 const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
@@ -425,6 +426,7 @@ exports.getHomeData = async (req, res) => {
       userLong: lng,
     });
     res.status(200).json({
+      services: Object.values(VERTICAL_METADATA),
       banners,
       categories: cuisines, // Pizza, Chicken, Burgers, Cakes
       sections: {

@@ -345,6 +345,40 @@ app.use('/api/training', trainingRoutes);
 app.use('/api/v1/training', trainingRoutes);
 
 
+// === ECDKART Multi-Service Super App Routes ===
+const adminWorkspaceRoutes = require('./routes/adminWorkspaceRoutes');
+const adminRoleRoutes = require('./routes/adminRoleRoutes');
+const groceryRoutes = require('./routes/groceryRoutes');
+const courierRoutes = require('./routes/courierRoutes');
+const homeServicesRoutes = require('./routes/homeServicesRoutes');
+const pharmacyRoutes = require('./routes/pharmacyRoutes');
+const laundryRoutes = require('./routes/laundryRoutes');
+const essentialsRoutes = require('./routes/essentialsRoutes');
+
+app.use('/api/admin/workspaces', adminWorkspaceRoutes);
+app.use('/api/v1/admin/workspaces', adminWorkspaceRoutes);
+
+app.use('/api/admin/roles-permissions', adminRoleRoutes);
+app.use('/api/v1/admin/roles-permissions', adminRoleRoutes);
+
+app.use('/api/grocery', groceryRoutes);
+app.use('/api/v1/grocery', groceryRoutes);
+
+app.use('/api/courier', courierRoutes);
+app.use('/api/v1/courier', courierRoutes);
+
+app.use('/api/home-services', homeServicesRoutes);
+app.use('/api/v1/home-services', homeServicesRoutes);
+
+app.use('/api/pharmacy', pharmacyRoutes);
+app.use('/api/v1/pharmacy', pharmacyRoutes);
+
+app.use('/api/laundry', laundryRoutes);
+app.use('/api/v1/laundry', laundryRoutes);
+
+app.use('/api/essentials', essentialsRoutes);
+app.use('/api/v1/essentials', essentialsRoutes);
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/health', (req, res) => {
   const mongoose = require('mongoose');

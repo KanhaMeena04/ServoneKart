@@ -4,6 +4,14 @@ import AppLayout from "../layouts/AppLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import AddFilterSubCategory from "../filter/pages/AddFilterSubCategory";
 const Dashboard = lazy(() => import("../dashboard/Dashboard"));
+const GroceryWorkspace = lazy(() => import("../pages/workspaces/GroceryWorkspace"));
+const HomeServicesWorkspace = lazy(() => import("../pages/workspaces/HomeServicesWorkspace"));
+const MedicineWorkspace = lazy(() => import("../pages/workspaces/MedicineWorkspace"));
+const CourierWorkspace = lazy(() => import("../pages/workspaces/CourierWorkspace"));
+const LaundryWorkspace = lazy(() => import("../pages/workspaces/LaundryWorkspace"));
+const GiftsWorkspace = lazy(() => import("../pages/workspaces/GiftsWorkspace"));
+const EssentialsWorkspace = lazy(() => import("../pages/workspaces/EssentialsWorkspace"));
+const RolePermissionMatrix = lazy(() => import("../roles/pages/RolePermissionMatrix"));
 const ChangePasswordForm = lazy(() => import("../pages/ChangePassword"));
 const NewOrder = lazy(() => import("../orders/pages/NewOrder"));
 const ProcessingOrders=lazy(()=>import("../orders/pages/ProcessingOrders"))
@@ -178,6 +186,14 @@ const AdminRoutes = () => {
 				   }
 				 >
 				 <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin/grocery/dashboard" element={<GroceryWorkspace />} />
+          <Route path="/admin/home-services/dashboard" element={<HomeServicesWorkspace />} />
+          <Route path="/admin/medicine/dashboard" element={<MedicineWorkspace />} />
+          <Route path="/admin/courier/dashboard" element={<CourierWorkspace />} />
+          <Route path="/admin/laundry/dashboard" element={<LaundryWorkspace />} />
+          <Route path="/admin/gifts/dashboard" element={<GiftsWorkspace />} />
+          <Route path="/admin/essentials/dashboard" element={<EssentialsWorkspace />} />
+          <Route path="/admin/roles/matrix" element={<RolePermissionMatrix />} />
 				 <Route path="/change-password" element={<ChangePasswordForm />} />
 				 <Route path="/new-order" element={<NewOrder />} />
 				 <Route path="/processing-order" element={<ProcessingOrders />} />

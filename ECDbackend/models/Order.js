@@ -65,6 +65,38 @@ const orderSchema = new mongoose.Schema(
     payableAmount: { type: Number },
     roundOff: { type: Number, default: 0 },
     driverEarnings: { type: Number, default: 0 },
+    vertical: {
+      type: String,
+      enum: ['food', 'grocery', 'medicine', 'courier', 'laundry', 'gifts_bakery', 'essentials'],
+      default: 'food',
+      index: true,
+    },
+    prescriptionUrl: { type: String },
+    prescriptionVerification: {
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      pharmacistNotes: { type: String },
+      verifiedBy: { type: String },
+      verifiedAt: { type: Date }
+    },
+    parcelDetails: {
+      parcelType: { type: String },
+      weightKg: { type: Number },
+      lengthCm: { type: Number },
+      widthCm: { type: Number },
+      heightCm: { type: Number },
+      pickupAddress: { type: Object },
+      dropAddress: { type: Object },
+      deliveryInstructions: { type: String },
+      estimatedValue: { type: Number }
+    },
+    laundryDetails: {
+      serviceType: { type: String },
+      clothesCount: { type: Number },
+      weightKg: { type: Number },
+      pickupSlot: { type: Date },
+      deliverySlot: { type: Date }
+    },
+    fulfilmentGroup: { type: String },
     orderType: {
       type: String,
       enum: ["delivery", "self_pickup", "pickup"],

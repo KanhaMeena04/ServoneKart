@@ -9,7 +9,21 @@ const roleSchema = new mongoose.Schema({
   },
   accountType: {
     type: String,
-    enum: ['Admin', 'Restaurant Admin', 'Rider Manager', 'Support'],
+    enum: [
+      'Super Admin',
+      'Admin',
+      'Food Manager',
+      'Grocery Manager',
+      'Home Services Manager',
+      'Pharmacy Manager',
+      'Courier Manager',
+      'Laundry Manager',
+      'Finance Manager',
+      'Rider Manager',
+      'Restaurant Admin',
+      'Support',
+      'Operations Manager'
+    ],
     default: 'Admin'
   },
   description: {
@@ -18,6 +32,14 @@ const roleSchema = new mongoose.Schema({
   },
   permissions: [{
     type: String
+  }],
+  allowedVerticals: [{
+    type: String,
+    default: 'all'
+  }],
+  allowedCities: [{
+    type: String,
+    default: 'all'
   }],
   isSystemDefault: {
     type: Boolean,

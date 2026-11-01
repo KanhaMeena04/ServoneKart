@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { VERTICALS } = require("../constants/verticals");
 
 const categorySchema = new mongoose.Schema(
   {
@@ -11,6 +12,12 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    vertical: {
+      type: String,
+      enum: Object.values(VERTICALS),
+      default: VERTICALS.FOOD,
+      index: true,
     },
     type: {
       type: String,
@@ -114,6 +121,7 @@ const categorySchema = new mongoose.Schema(
 );
 
 // Indexes
+categorySchema.index({ vertical: 1, position: 1 });
 categorySchema.index({ type: 1, position: 1 });
 categorySchema.index({ parentCategoryId: 1, position: 1 });
 categorySchema.index({ slug: 1 });

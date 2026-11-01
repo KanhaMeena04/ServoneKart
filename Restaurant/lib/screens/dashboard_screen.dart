@@ -49,6 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _currentMonth = 'Current Month';
   bool _isLoadingOrders = false;
   String _restaurantId = '';
+  String _businessType = 'restaurant';
 
   @override
   void initState() {
@@ -151,7 +152,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (resolvedName.isNotEmpty && resolvedName != 'null') {
                 _restaurantName = resolvedName;
                 prefs.setString('restaurantName', resolvedName);
-              } else if (_restaurantName == 'Loading...') {
+              }
+              final rawBType = data['businessType'] ?? data['restaurant']?['businessType'] ?? data['vertical'] ?? prefs.getString('businessType') ?? 'restaurant';
+              _businessType = rawBType.toString();
+              prefs.setString('businessType', _businessType); else if (_restaurantName == 'Loading...') {
                 _restaurantName = storedName.isNotEmpty ? storedName : 'My Restaurant';
               }
               _isOnline = data['isActive'] ?? data['restaurant']?['isActive'] ?? true;
@@ -1298,7 +1302,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 // Earnings Card Banner
                 _buildEarningsCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                _buildPartnerVerticalActionBanner(),
+                const SizedBox(height: 4),
 
                 // Order Type Selector (Delivery / Pick-up)
                 _buildOrderTypeTabs(),
@@ -1419,6 +1425,237 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Header Section matching Reference Image 1 with generated gourmet background image & safe error handling
+  
+  Widget _buildPartnerTypeBadge() {
+    Color bg;
+    Color text;
+    IconData icon;
+    String label;
+
+    switch (_businessType.toLowerCase()) {
+      case 'grocery_store':
+      case 'grocery':
+        bg = const Color(0xFFE8F5E9);
+        text = const Color(0xFF2E7D32);
+        icon = Icons.shopping_basket_rounded;
+        label = 'Grocery Partner';
+        break;
+      case 'pharmacy':
+        bg = const Color(0xFFFCE7F3);
+        text = const Color(0xFFBE185D);
+        icon = Icons.local_pharmacy_rounded;
+        label = 'Pharmacy Partner (Rx)';
+        break;
+      case 'home_service_provider':
+      case 'home_services':
+        bg = const Color(0xFFEFF6FF);
+        text = const Color(0xFF1D4ED8);
+        icon = Icons.handyman_rounded;
+        label = 'Home Service Partner';
+        break;
+      case 'laundry':
+        bg = const Color(0xFFECFEFF);
+        text = const Color(0xFF0E7490);
+        icon = Icons.local_laundry_service_rounded;
+        label = 'Laundry Partner';
+        break;
+      case 'dairy_milk':
+      case 'water_supplier':
+      case 'essentials':
+        bg = const Color(0xFFF0F9FF);
+        text = const Color(0xFF0369A1);
+        icon = Icons.water_drop_rounded;
+        label = 'Essentials Partner';
+        break;
+      default:
+        bg = const Color(0xFFFFF3E0);
+        text = const Color(0xFFE65100);
+        icon = Icons.restaurant_rounded;
+        label = 'Restaurant Partner';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: text),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: text,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPartnerVerticalActionBanner() {
+    String title;
+    String subtitle;
+    List<Map<String, dynamic>> actions;
+    Color accentColor;
+
+    switch (_businessType.toLowerCase()) {
+      case 'grocery_store':
+      case 'grocery':
+        title = 'Grocery & Mart Operations';
+        subtitle = 'Manage live stock, weights & rapid fulfilment';
+        accentColor = const Color(0xFF10B981);
+        actions = [
+          {'label': 'Live Stock Status', 'icon': Icons.inventory_2_rounded},
+          {'label': 'Price & Weight List', 'icon': Icons.scale_rounded},
+          {'label': 'Out of Stock Items', 'icon': Icons.remove_shopping_cart_rounded},
+        ];
+        break;
+      case 'pharmacy':
+        title = 'Pharmacy & Prescription Hub';
+        subtitle = 'Review doctor prescriptions & Schedule H compliance';
+        accentColor = const Color(0xFFEC4899);
+        actions = [
+          {'label': 'Pending Rx Prescriptions', 'icon': Icons.receipt_long_rounded},
+          {'label': 'Medicine Catalog', 'icon': Icons.medication_rounded},
+          {'label': 'Dispense Verification', 'icon': Icons.verified_user_rounded},
+        ];
+        break;
+      case 'home_service_provider':
+      case 'home_services':
+        title = 'Technician & Home Services Desk';
+        subtitle = 'Appointments, quotations and completion OTPs';
+        accentColor = const Color(0xFF3B82F6);
+        actions = [
+          {'label': 'Scheduled Bookings', 'icon': Icons.calendar_today_rounded},
+          {'label': 'Send Quotation', 'icon': Icons.request_quote_rounded},
+          {'label': 'Job Completion OTP', 'icon': Icons.pin_rounded},
+        ];
+        break;
+      case 'laundry':
+        title = 'Laundry & Dry Clean Station';
+        subtitle = 'Track washing, steam iron & packaging queue';
+        accentColor = const Color(0xFF06B6D4);
+        actions = [
+          {'label': 'Washing Queue', 'icon': Icons.wash_rounded},
+          {'label': 'Iron & Folded', 'icon': Icons.iron_rounded},
+          {'label': 'Ready for Dispatch', 'icon': Icons.local_shipping_rounded},
+        ];
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accentColor.withOpacity(0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.hub_rounded, color: accentColor, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: actions.map((a) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${a['label']} workspace active'),
+                          backgroundColor: accentColor,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: accentColor.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(a['icon'] as IconData, size: 13, color: accentColor),
+                          const SizedBox(width: 5),
+                          Text(
+                            a['label'].toString(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeaderSection() {
     return Container(
       decoration: BoxDecoration(
@@ -1488,6 +1725,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           color: Colors.black,
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      _buildPartnerTypeBadge(),
                       GestureDetector(
                         onTap: () {
                           setState(() => _currentBottomNavIndex = 3); // Switch to Profile

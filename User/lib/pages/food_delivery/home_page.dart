@@ -37,6 +37,8 @@ import '../cart/cart_page.dart';
 import '../wishlist/wishlist_tab.dart';
 import '../profile/unserviceable_location_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
+import '../../routes/app_routes.dart';
 
 class HomePage extends StatefulWidget {
   final int initialIndex;
@@ -1230,6 +1232,11 @@ class _HomeTabState extends State<_HomeTab> {
                   const SizedBox(height: 6),
                 ],
               ),
+            ),
+
+            // ── 1.5 Super App Services Grid (Indore Hyperlocal Ecosystem) ──
+            SliverToBoxAdapter(
+              child: _SuperAppServicesSection(isDark: isDark),
             ),
 
             // ── 2. Sticky Category Header Section ("Swipe krne par categorise upar reh jaye") ──
@@ -4357,3 +4364,262 @@ class _SliverCategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 
+
+
+// ─────────────────────────────────────────────
+// Super App Multi-Service Grid Widget
+// ─────────────────────────────────────────────
+class _SuperAppServicesSection extends StatelessWidget {
+  final bool isDark;
+
+  const _SuperAppServicesSection({super.key, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final services = [
+      _ServiceItem(
+        title: 'Food Delivery',
+        subtitle: 'Top Indore Cafes',
+        badge: 'Popular',
+        icon: Icons.restaurant_rounded,
+        gradient: const [Color(0xFFFF5722), Color(0xFFFF8A65)],
+        onTap: () {},
+      ),
+      _ServiceItem(
+        title: 'Grocery & Mart',
+        subtitle: '10-20 Min Delivery',
+        badge: 'Instant',
+        icon: Icons.shopping_basket_rounded,
+        gradient: const [Color(0xFF10B981), Color(0xFF34D399)],
+        onTap: () => context.push(AppRoutes.grocery),
+      ),
+      _ServiceItem(
+        title: 'Home Services',
+        subtitle: 'AC, Plumber, Clean',
+        badge: 'Verified',
+        icon: Icons.home_repair_service_rounded,
+        gradient: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+        onTap: () => context.push(AppRoutes.homeServices),
+      ),
+      _ServiceItem(
+        title: 'Pharmacy',
+        subtitle: 'Medicines & Health',
+        badge: 'Rx Valid',
+        icon: Icons.local_pharmacy_rounded,
+        gradient: const [Color(0xFFEC4899), Color(0xFFF472B6)],
+        onTap: () => context.push(AppRoutes.pharmacy),
+      ),
+      _ServiceItem(
+        title: 'Courier & Parcel',
+        subtitle: 'Pick & Drop',
+        badge: 'OTP Safe',
+        icon: Icons.local_shipping_rounded,
+        gradient: const [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+        onTap: () => context.push(AppRoutes.courier),
+      ),
+      _ServiceItem(
+        title: 'Laundry',
+        subtitle: 'Wash, Iron, Fold',
+        badge: 'Doorstep',
+        icon: Icons.local_laundry_service_rounded,
+        gradient: const [Color(0xFF06B6D4), Color(0xFF67E8F9)],
+        onTap: () => context.push(AppRoutes.laundry),
+      ),
+      _ServiceItem(
+        title: 'Essentials',
+        subtitle: 'Milk & Water Cans',
+        badge: 'Daily',
+        icon: Icons.water_drop_rounded,
+        gradient: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
+        onTap: () => context.push(AppRoutes.essentials),
+      ),
+      _ServiceItem(
+        title: 'Bakery & Gifts',
+        subtitle: 'Cakes & Flowers',
+        badge: 'Special',
+        icon: Icons.cake_rounded,
+        gradient: const [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+        onTap: () => context.push(AppRoutes.grocery),
+      ),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF248C70).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.grid_view_rounded, color: Color(0xFF248C70), size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ECDKART Services',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      'Indore All-in-One Local Marketplace',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF248C70),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'INDORE LIVE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: services.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 8,
+              mainAxisExtent: 84,
+            ),
+            itemBuilder: (context, index) {
+              final item = services[index];
+              return InkWell(
+                onTap: item.onTap,
+                borderRadius: BorderRadius.circular(14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: item.gradient,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: item.gradient[0].withValues(alpha: 0.28),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Icon(item.icon, color: Colors.white, size: 24),
+                        ),
+                        if (item.badge != null)
+                          Positioned(
+                            top: -3,
+                            right: -3,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F172A),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.white, width: 0.8),
+                              ),
+                              child: Text(
+                                item.badge!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      item.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white70 : const Color(0xFF1E293B),
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ServiceItem {
+  final String title;
+  final String subtitle;
+  final String? badge;
+  final IconData icon;
+  final List<Color> gradient;
+  final VoidCallback onTap;
+
+  _ServiceItem({
+    required this.title,
+    required this.subtitle,
+    this.badge,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
+}

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:ecdkart_app/pages/auth/otp_page.dart';
-import 'package:ecdkart_app/pages/auth/verify_google_phone_page.dart';
-import 'package:ecdkart_app/pages/auth/register_page.dart';
-import 'package:ecdkart_app/pages/category_product/category_products.dart';
 import 'package:go_router/go_router.dart';
-import '../pages/food_delivery/restaurant_detail_screen.dart';
-import '../core/models/restaurant_models.dart';
-import '../pages/splash_screen/splash_page.dart';
-import '../pages/onboarding/onboarding_page.dart';
-import '../pages/auth/login_page.dart';
+import '../pages/auth/otp_page.dart';
+import '../pages/auth/verify_google_phone_page.dart';
+import '../pages/auth/register_page.dart';
+import '../pages/category_product/category_products.dart';
 import '../pages/food_delivery/home_page.dart';
-import '../pages/category_selection/categories_page.dart';
+import '../pages/food_delivery/restaurant_detail_screen.dart';
+import '../pages/category_selection/category_selection_page.dart';
+import '../pages/splash_screen/splash_screen.dart';
+import '../pages/onboarding/onboarding_screen.dart';
+import '../pages/auth/login_page.dart';
 import '../pages/cart/cart_page.dart';
+import '../pages/checkout/checkout_page.dart';
 import '../pages/order/checkout_page.dart';
 import '../pages/order/orders_page.dart';
 import '../pages/order/order_details_page.dart';
@@ -21,6 +21,12 @@ import '../pages/profile/unserviceable_location_page.dart';
 import '../pages/checkout/map_address_picker_page.dart';
 import '../pages/order/contact_support_page.dart';
 import '../pages/wishlist/wishlist_tab.dart';
+import '../pages/grocery/grocery_page.dart';
+import '../pages/home_services/home_services_page.dart';
+import '../pages/courier/courier_booking_page.dart';
+import '../pages/pharmacy/pharmacy_page.dart';
+import '../pages/laundry/laundry_booking_page.dart';
+import '../pages/essentials/essentials_page.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -46,6 +52,14 @@ class AppRoutes {
   static const String search = '/search';
   static const String location = '/location';
 
+  // Super App Multi-Service Routes
+  static const String grocery = '/grocery';
+  static const String homeServices = '/home-services';
+  static const String courier = '/courier';
+  static const String pharmacy = '/pharmacy';
+  static const String laundry = '/laundry';
+  static const String essentials = '/essentials';
+
   static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
   static final router = GoRouter(
@@ -54,11 +68,11 @@ class AppRoutes {
     routes: [
       GoRoute(
         path: splash,
-        builder: (context, state) => const SplashPage(),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: onboarding,
-        builder: (context, state) => const OnboardingPage(),
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: locationSetup,
@@ -82,58 +96,54 @@ class AppRoutes {
       ),
       GoRoute(
         path: otpPage,
-        builder: (context, state) => const OtpPage(),
+        builder: (context, state) {
+          final phone = state.extra as String? ?? '';
+          return OtpPage(phoneNumber: phone);
+        },
       ),
       GoRoute(
         path: verifyGooglePhone,
-        builder: (context, state) {
-          final googleUser = state.extra as Map<String, dynamic>? ?? {};
-          return VerifyGooglePhonePage(googleUser: googleUser);
-        },
+        builder: (context, state) => const VerifyGooglePhonePage(),
       ),
       GoRoute(
         path: restaurantDetail,
         builder: (context, state) {
-          if (state.extra is Restaurant) {
-            return RestaurantDetailScreen(restaurant: state.extra as Restaurant);
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return RestaurantDetailScreen(restaurant: extra);
           }
-          final slug = state.uri.queryParameters['slug'] ?? state.uri.queryParameters['id'] ?? '';
-          return RestaurantDetailScreen(slug: slug.isNotEmpty ? slug : null);
+          final slug = state.uri.queryParameters['slug'] ?? '';
+          return RestaurantDetailScreen(slug: slug);
         },
       ),
       GoRoute(
         path: '$restaurantDetail/:slug',
         builder: (context, state) {
-          if (state.extra is Restaurant) {
-            return RestaurantDetailScreen(restaurant: state.extra as Restaurant);
-          }
           final slug = state.pathParameters['slug'] ?? '';
-          return RestaurantDetailScreen(slug: slug.isNotEmpty ? slug : null);
+          return RestaurantDetailScreen(slug: slug);
         },
       ),
       GoRoute(
         path: '/restaurant-detail',
         builder: (context, state) {
-          if (state.extra is Restaurant) {
-            return RestaurantDetailScreen(restaurant: state.extra as Restaurant);
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return RestaurantDetailScreen(restaurant: extra);
           }
-          final slug = state.uri.queryParameters['slug'] ?? state.uri.queryParameters['id'] ?? '';
-          return RestaurantDetailScreen(slug: slug.isNotEmpty ? slug : null);
+          final slug = state.uri.queryParameters['slug'] ?? '';
+          return RestaurantDetailScreen(slug: slug);
         },
       ),
       GoRoute(
         path: '/restaurant-detail/:slug',
         builder: (context, state) {
-          if (state.extra is Restaurant) {
-            return RestaurantDetailScreen(restaurant: state.extra as Restaurant);
-          }
           final slug = state.pathParameters['slug'] ?? '';
-          return RestaurantDetailScreen(slug: slug.isNotEmpty ? slug : null);
+          return RestaurantDetailScreen(slug: slug);
         },
       ),
       GoRoute(
         path: categoryProduct,
-        builder: (context, state) => const CategoryProducts(cat: ''),
+        builder: (context, state) => const CategoryProductsPage(),
       ),
       GoRoute(
         path: home,
@@ -141,15 +151,8 @@ class AppRoutes {
       ),
       GoRoute(
         path: categories,
-        builder: (context, state) => const CategoriesPage(),
+        builder: (context, state) => const CategorySelectionPage(),
       ),
-      // GoRoute(
-      //   path: '$productDetail/:id',
-      //   builder: (context, state) {
-      //     final id = state.pathParameters['id'] ?? '';
-      //     return ProductDetailPage(productId: id);
-      //   },
-      // ),
       GoRoute(
         path: cart,
         builder: (context, state) => const CartPage(),
@@ -194,6 +197,32 @@ class AppRoutes {
           final orderId = state.uri.queryParameters['orderId'];
           return ContactSupportPage(orderId: orderId);
         },
+      ),
+
+      // Super App Multi-Service Routes
+      GoRoute(
+        path: grocery,
+        builder: (context, state) => const GroceryPage(),
+      ),
+      GoRoute(
+        path: homeServices,
+        builder: (context, state) => const HomeServicesPage(),
+      ),
+      GoRoute(
+        path: courier,
+        builder: (context, state) => const CourierBookingPage(),
+      ),
+      GoRoute(
+        path: pharmacy,
+        builder: (context, state) => const PharmacyPage(),
+      ),
+      GoRoute(
+        path: laundry,
+        builder: (context, state) => const LaundryBookingPage(),
+      ),
+      GoRoute(
+        path: essentials,
+        builder: (context, state) => const DailyEssentialsPage(),
       ),
     ],
   );

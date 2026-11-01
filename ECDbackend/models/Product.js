@@ -6,6 +6,31 @@ const productSchema = new mongoose.Schema(
       ref: "Restaurant",
       required: true,
     },
+    vertical: {
+      type: String,
+      enum: ['food', 'grocery', 'medicine', 'laundry', 'gifts_bakery', 'essentials'],
+      default: 'food',
+      index: true,
+    },
+    sku: { type: String, index: true },
+    barcode: { type: String },
+    weight: { type: String },
+    unit: { type: String, default: 'piece' },
+    stockQuantity: { type: Number, default: 100 },
+    lowStockThreshold: { type: Number, default: 10 },
+    inStock: { type: Boolean, default: true },
+    prescriptionRequired: { type: Boolean, default: false },
+    variants: [
+      {
+        name: { type: String },
+        sku: { type: String },
+        price: { type: Number },
+        mrp: { type: Number },
+        stockQuantity: { type: Number, default: 50 },
+        unit: { type: String },
+        inStock: { type: Boolean, default: true },
+      }
+    ],
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

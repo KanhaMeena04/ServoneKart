@@ -23,6 +23,18 @@ const restaurantSchema = new mongoose.Schema(
     name: { type: mongoose.Schema.Types.Mixed },
     description: { type: mongoose.Schema.Types.Mixed },
     restaurantType: { type: String },
+    businessType: {
+      type: String,
+      enum: ['restaurant', 'grocery_store', 'pharmacy', 'laundry', 'home_service_provider', 'bakery_gifts', 'water_dairy_supplier'],
+      default: 'restaurant',
+      index: true
+    },
+    vertical: {
+      type: String,
+      enum: ['food', 'grocery', 'home_services', 'medicine', 'courier', 'laundry', 'gifts_bakery', 'essentials'],
+      default: 'food',
+      index: true
+    },
     image: { type: String },
     logo: { type: String },
     profilePic: { type: String },

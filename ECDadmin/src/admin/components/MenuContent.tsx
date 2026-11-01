@@ -58,6 +58,20 @@ export interface MenuItemType {
 
 export const menuItems: MenuItemType[] = [
   { text: 'Dashboard', icon: <HomeRounded />, path: '/dashboard', permission: 'Dashboard' },
+  {
+    text: 'Category Workspaces',
+    icon: <Storefront />,
+    permission: 'Dashboard',
+    children: [
+      { text: '🛒 Grocery Tower', path: '/admin/grocery/dashboard' },
+      { text: '🔧 Home Services', path: '/admin/home-services/dashboard' },
+      { text: '💊 Medicine & Pharmacy', path: '/admin/medicine/dashboard' },
+      { text: '📦 Courier & Drop', path: '/admin/courier/dashboard' },
+      { text: '🧺 Laundry Care', path: '/admin/laundry/dashboard' },
+      { text: '🎁 Gifts & Bakery', path: '/admin/gifts/dashboard' },
+      { text: '💧 Daily Essentials', path: '/admin/essentials/dashboard' },
+    ]
+  },
   { text: 'Live Orders', icon: <Assignment />, path: '/order-dashboard', permission: 'Order' },
   { text: 'Live Map', icon: <Map />, path: '/eagles-view', permission: 'Order' },
   { text: 'Customers', icon: <People />, path: '/user-management', permission: 'User' },
@@ -176,7 +190,15 @@ export const menuItems: MenuItemType[] = [
     ]
   },
 
-  { text: 'Roles & Permissions', icon: <Security />, path: '/role', permission: 'RuleEngine' },
+  {
+    text: 'Roles & Permissions',
+    icon: <Security />,
+    permission: 'RuleEngine',
+    children: [
+      { text: 'Staff Roles', path: '/role' },
+      { text: 'RBAC Permission Matrix', path: '/admin/roles/matrix' },
+    ]
+  },
   { text: 'Audit Logs', icon: <ReceiptLong />, path: '/audit-logs', permission: 'SiteSettings' },
   { text: 'Chat Support', icon: <SupportAgent sx={{ color: '#248C70' }} />, path: '/support-chat', badge: 'LIVE' },
   { text: 'Emergency Controls', icon: <Warning />, path: '/emergency-controls', permission: 'RuleEngine' },
