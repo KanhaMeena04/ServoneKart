@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
+import '../cart/cart_page.dart';
 
 class GroceryPage extends StatefulWidget {
   const GroceryPage({super.key});
@@ -864,11 +865,10 @@ class _GroceryPageState extends State<GroceryPage> {
                     const Spacer(),
                     ElevatedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Proceeding to checkout with $totalItems items (₹${_cartTotal.toStringAsFixed(0)})'),
-                            backgroundColor: const Color(0xFF15803D),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CartPage(),
                           ),
                         );
                       },

@@ -16,6 +16,8 @@ const AdminLogin = () => {
     if (!success) return;
     if (user && user.role === 'admin') {
       navigate('/dashboard');
+    } else if (user && (user.role === 'restaurant_owner' || user.role === 'vendor')) {
+      navigate('/vendor/portal');
     } else {
       navigate('/');
     }
@@ -27,6 +29,8 @@ const AdminLogin = () => {
     if (!loggedUser) return;
     if (loggedUser.role === "admin") {
       navigate("/dashboard");
+    } else if (loggedUser.role === "restaurant_owner" || loggedUser.role === "vendor") {
+      navigate("/vendor/portal");
     } else {
       navigate("/");
     }

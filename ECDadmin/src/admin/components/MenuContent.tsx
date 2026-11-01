@@ -82,6 +82,7 @@ export const menuItems: MenuItemType[] = [
     permission: 'Restaurant',
     children: [
       { text: 'Vendor Control Tower', path: '/vendors' },
+      { text: 'Web Vendor Portal', path: '/vendor/portal' },
       { text: 'All Restaurants & Marts', path: '/restaurants' },
       { text: 'Pending Approval', path: '/pending-restaurants' },
       { text: 'Approved Partners', path: '/approve-restaurant' },

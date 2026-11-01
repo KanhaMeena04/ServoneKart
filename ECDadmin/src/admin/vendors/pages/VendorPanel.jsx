@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -64,6 +65,7 @@ const VERTICAL_TABS = [
 ];
 
 const VendorPanel = () => {
+  const navigate = useNavigate();
   const {
     vendors,
     stats,
@@ -487,6 +489,18 @@ const VendorPanel = () => {
                             }}
                           >
                             Review KYC
+                          </Button>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => navigate(`/vendor/portal/${vendor._id}`)}
+                            sx={{
+                              fontSize: "0.75rem",
+                              textTransform: "none",
+                              backgroundColor: "#2563EB",
+                            }}
+                          >
+                            Web Portal
                           </Button>
                         </Box>
                       </TableCell>

@@ -14,6 +14,7 @@ const EssentialsWorkspace = lazy(() => import("../pages/workspaces/EssentialsWor
 const RolePermissionMatrix = lazy(() => import("../roles/pages/RolePermissionMatrix"));
 const ChangePasswordForm = lazy(() => import("../pages/ChangePassword"));
 const VendorPanel = lazy(() => import("../vendors/pages/VendorPanel"));
+const WebVendorPortal = lazy(() => import("../vendors/pages/WebVendorPortal"));
 const NewOrder = lazy(() => import("../orders/pages/NewOrder"));
 const ProcessingOrders=lazy(()=>import("../orders/pages/ProcessingOrders"))
 const PickUpOrders =lazy(()=>import("../orders/pages/PickUpOrders"))
@@ -181,7 +182,7 @@ const AdminRoutes = () => {
 
 				 <Route
 				   element={
-					 <ProtectedRoute role="admin">
+					 <ProtectedRoute role={["admin", "restaurant_owner", "vendor"]}>
 					   <AppLayout />
 				    </ProtectedRoute>
 				   }
@@ -211,6 +212,9 @@ const AdminRoutes = () => {
 
 				 <Route path="/vendors" element={<VendorPanel />} />
 				 <Route path="/vendor-panel" element={<VendorPanel />} />
+				 <Route path="/vendor/portal" element={<WebVendorPortal />} />
+				 <Route path="/vendor/portal/:id" element={<WebVendorPortal />} />
+				 <Route path="/vendor/dashboard" element={<WebVendorPortal />} />
 				 <Route path="/restaurants" element={<RestaurantsList />} />
 				 <Route path="/restaurant-dashboard/:id" element={<RestaurantDashboard/>} />
 				 <Route path="/edit-restaurant/:id" element={<EditRestaurant/>} />

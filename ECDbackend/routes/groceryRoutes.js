@@ -64,7 +64,9 @@ router.get('/products', async (req, res) => {
         { vertical: VERTICALS.GROCERY },
         { vertical: VERTICALS.ESSENTIALS }
       ],
-      isDeleted: { $ne: true }
+      isDeleted: { $ne: true },
+      isApproved: { $ne: false },
+      approvalStatus: { $in: ['approved', undefined] }
     };
 
     if (storeId) query.restaurant = storeId;

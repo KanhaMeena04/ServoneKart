@@ -3346,9 +3346,7 @@ exports.vendorAddMenuItem = async (req, res) => {
 
     const shouldAutoApprove = Boolean(
       (req.user && req.user.role === 'admin') ||
-      restaurantDoc.restaurantApproved !== false ||
-      restaurantDoc.autoApproveMenu ||
-      restaurantDoc.menuApprovalRequired === false
+      restaurantDoc.autoApproveMenu === true
     );
 
     const rawImage = image || req.body.imageUrl || req.body.photo || req.body.dishPhoto || "";
@@ -3498,9 +3496,7 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
 
     const isApprovedByRest = Boolean(
       (req.user && req.user.role === 'admin') ||
-      restaurantDoc.restaurantApproved !== false ||
-      restaurantDoc.autoApproveMenu ||
-      restaurantDoc.menuAutoApproval
+      restaurantDoc.autoApproveMenu === true
     );
 
     for (const item of items) {

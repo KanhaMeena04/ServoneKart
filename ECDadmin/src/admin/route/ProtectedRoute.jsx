@@ -10,9 +10,15 @@ const ProtectedRoute = ({ role, children }) => {
     if (!loading) {
       if (!isAuthenticated) {
         navigate("/", { replace: true });
-        
-      } else if (role && user?.role !== role) {
-        navigate("/", { replace: true });
+      } else if (role) {
+        const allowedRoles = Array.isArray(role) ? role : [role];
+        const hasAccess =
+          user?.role === "admin" ||
+          allowedRoles.includes(user?.role) ||
+          allowedRoles.includes("all");
+        if (!hasAccess) {
+          navigate("/", { replace: true });
+        }
       }
     }
   }, [loading, isAuthenticated, role, user, navigate]);
