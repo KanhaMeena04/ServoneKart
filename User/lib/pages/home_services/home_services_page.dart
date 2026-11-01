@@ -17,81 +17,6 @@ class _HomeServicesPageState extends State<HomeServicesPage> {
   List<dynamic> _services = [];
   String _selectedCategory = 'ac_repair';
 
-  final List<Map<String, dynamic>> _quickServices = [
-    {
-      'id': 'hs_ac_1',
-      'title': 'AC Deep Cleaning & Filter Wash',
-      'category': 'ac_repair',
-      'inspectionCharge': 99,
-      'warrantyDays': 30,
-      'duration': '45 mins',
-      'rating': 4.8,
-      'bookings': '1.2k+ in Indore',
-      'icon': Icons.ac_unit_rounded,
-      'color': Color(0xFF0284C7),
-    },
-    {
-      'id': 'hs_ac_2',
-      'title': 'AC Gas Leak Check & Refill',
-      'category': 'ac_repair',
-      'inspectionCharge': 149,
-      'warrantyDays': 60,
-      'duration': '60 mins',
-      'rating': 4.9,
-      'bookings': '850+ in Indore',
-      'icon': Icons.severe_cold_rounded,
-      'color': Color(0xFF0369A1),
-    },
-    {
-      'id': 'hs_elec_1',
-      'title': 'Fan & Switchboard Repair',
-      'category': 'electrician',
-      'inspectionCharge': 99,
-      'warrantyDays': 30,
-      'duration': '30 mins',
-      'rating': 4.7,
-      'bookings': '2.1k+ in Indore',
-      'icon': Icons.electrical_services_rounded,
-      'color': Color(0xFFD97706),
-    },
-    {
-      'id': 'hs_plumb_1',
-      'title': 'Tap Leakage & Pipe Blockage',
-      'category': 'plumber',
-      'inspectionCharge': 99,
-      'warrantyDays': 30,
-      'duration': '40 mins',
-      'rating': 4.8,
-      'bookings': '1.8k+ in Indore',
-      'icon': Icons.plumbing_rounded,
-      'color': Color(0xFF2563EB),
-    },
-    {
-      'id': 'hs_clean_1',
-      'title': 'Bathroom Deep Cleaning & Stain Removal',
-      'category': 'cleaning',
-      'inspectionCharge': 199,
-      'warrantyDays': 15,
-      'duration': '90 mins',
-      'rating': 4.9,
-      'bookings': '950+ in Indore',
-      'icon': Icons.cleaning_services_rounded,
-      'color': Color(0xFF16A34A),
-    },
-    {
-      'id': 'hs_app_1',
-      'title': 'RO Water Purifier Filter Service',
-      'category': 'appliance',
-      'inspectionCharge': 149,
-      'warrantyDays': 30,
-      'duration': '45 mins',
-      'rating': 4.8,
-      'bookings': '1.4k+ in Indore',
-      'icon': Icons.water_drop_rounded,
-      'color': Color(0xFF06B6D4),
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -101,37 +26,53 @@ class _HomeServicesPageState extends State<HomeServicesPage> {
   Future<void> _fetchCategoriesAndServices() async {
     setState(() => _isLoading = true);
     try {
+      // 1. Fetch Dynamic Categories from Admin DB
       final catRes = await http.get(Uri.parse('${AppConstants.baseUrl}/home-services/categories'));
       if (catRes.statusCode == 200) {
         final catData = json.decode(catRes.body);
-        if (catData['success'] == true) {
-          _categories = catData['data'] ?? [];
+        if (catData['success'] == true && catData['data'] is List) {
+          _categories = catData['data'];
+          if (_categories.isNotEmpty && !_categories.any((c) => c['id'] == _selectedCategory)) {
+            _selectedCategory = _categories[0]['id'];
+          }
         }
       }
 
+      // 2. Fetch Dynamic Catalog Services from Admin DB
       final servRes = await http.get(Uri.parse('${AppConstants.baseUrl}/home-services/services?category=$_selectedCategory'));
       if (servRes.statusCode == 200) {
         final servData = json.decode(servRes.body);
-        if (servData['success'] == true && (servData['data'] as List).isNotEmpty) {
+        if (servData['success'] == true && servData['data'] is List) {
           _services = servData['data'];
-        } else {
-          _services = _quickServices;
         }
-      } else {
-        _services = _quickServices;
       }
     } catch (e) {
-      debugPrint('Error: $e');
-      _services = _quickServices;
+      debugPrint('Error fetching home services: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _onSelectCategory(String catId) {
+  void _onSelectCategory(String catId) async {
     setState(() {
       _selectedCategory = catId;
+      _isLoading = true;
     });
+    try {
+      final servRes = await http.get(Uri.parse('${AppConstants.baseUrl}/home-services/services?category=$catId'));
+      if (servRes.statusCode == 200) {
+        final servData = json.decode(servRes.body);
+        if (servData['success'] == true && servData['data'] is List) {
+          setState(() {
+            _services = servData['data'];
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching category services: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _showBookingSheet(dynamic service) {
@@ -317,11 +258,6 @@ class _HomeServicesPageState extends State<HomeServicesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _services.where((s) {
-      if (_selectedCategory == 'all') return true;
-      return (s['category'] ?? '').toString() == _selectedCategory;
-    }).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -335,169 +271,182 @@ class _HomeServicesPageState extends State<HomeServicesPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('ECDKART Home Services', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text('Verified Technicians in Indore • 30 Days Warranty', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('Verified Technicians • Managed live from Admin Tower', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Trust & Quality Banner
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1D4ED8), Color(0xFF2563EB)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: const Color(0xFF2563EB).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.verified_user_rounded, color: Colors.white, size: 28),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '100% Verified Indore Technicians',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+          : RefreshIndicator(
+              onRefresh: _fetchCategoriesAndServices,
+              color: const Color(0xFF2563EB),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Trust & Quality Banner
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1D4ED8), Color(0xFF2563EB)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: const Color(0xFF2563EB).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.verified_user_rounded, color: Colors.white, size: 28),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  '100% Verified Indore Technicians',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildTrustPill(Icons.shield_outlined, '30 Days\nWarranty'),
+                              _buildTrustPill(Icons.currency_rupee_rounded, 'Fixed ₹99\nInspection'),
+                              _buildTrustPill(Icons.security_rounded, 'Background\nChecked'),
+                              _buildTrustPill(Icons.pin_rounded, 'OTP Job\nClosure'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Dynamic Service Category Selector Pills from Admin
+                    if (_categories.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _categories.map((c) {
+                              final catId = (c['id'] ?? c['_id']).toString();
+                              final label = (c['name'] ?? 'Category').toString();
+                              return _buildCategoryPill(catId, label, Icons.handyman_rounded);
+                            }).toList(),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildTrustPill(Icons.shield_outlined, '30 Days\nWarranty'),
-                      _buildTrustPill(Icons.currency_rupee_rounded, 'Fixed ₹99\nInspection'),
-                      _buildTrustPill(Icons.security_rounded, 'Background\nChecked'),
-                      _buildTrustPill(Icons.pin_rounded, 'OTP Job\nClosure'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: 16),
 
-            // Service Category Selector Pills
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildCategoryPill('ac_repair', 'AC Repair', Icons.ac_unit_rounded),
-                    _buildCategoryPill('electrician', 'Electrician', Icons.electrical_services_rounded),
-                    _buildCategoryPill('plumber', 'Plumber', Icons.plumbing_rounded),
-                    _buildCategoryPill('cleaning', 'Cleaning', Icons.cleaning_services_rounded),
-                    _buildCategoryPill('appliance', 'Appliance & RO', Icons.water_drop_rounded),
+                    // Section Title
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Available Services (${_services.length})',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey[900]),
+                          ),
+                          const Text('4.8 ★ Rated', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Dynamic Services Cards List from Database
+                    _services.isEmpty
+                        ? Container(
+                            padding: const EdgeInsets.all(32),
+                            alignment: Alignment.center,
+                            child: const Text('No services found in this category.\nAdmin can add new service items in the Admin Panel.',
+                                textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _services.length,
+                            itemBuilder: (context, index) {
+                              final s = _services[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+                                  ],
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2563EB).withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(Icons.handyman_rounded, color: Color(0xFF2563EB), size: 28),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            s['title'] ?? 'Service',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Text('★ 4.8', style: TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold, fontSize: 11)),
+                                              const SizedBox(width: 6),
+                                              Text('• ${s['durationMinutes'] ?? 45} mins', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                              const SizedBox(width: 6),
+                                              Text('• ${s['warrantyDays'] ?? 30}d warranty', style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Inspection Charge: ₹${s['inspectionCharge'] ?? 99}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => _showBookingSheet(s),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF2563EB),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      child: const Text('Book', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
-            // Section Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Available Services in Indore',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey[900]),
-                  ),
-                  const Text('4.8 ★ Rated', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 12)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Services Cards List
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: filtered.isNotEmpty ? filtered.length : _quickServices.length,
-              itemBuilder: (context, index) {
-                final s = filtered.isNotEmpty ? filtered[index] : _quickServices[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(s['icon'] ?? Icons.handyman_rounded, color: const Color(0xFF2563EB), size: 28),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              s['title'] ?? 'Service',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text('★ ${s['rating'] ?? 4.8}', style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold, fontSize: 11)),
-                                const SizedBox(width: 6),
-                                Text('• ${s['duration'] ?? '45 mins'}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                const SizedBox(width: 6),
-                                Text('• ${s['warrantyDays'] ?? 30}d warranty', style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Inspection Charge: ₹${s['inspectionCharge'] ?? 99}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => _showBookingSheet(s),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('Book', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
     );
   }
 

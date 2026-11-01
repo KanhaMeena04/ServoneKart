@@ -46,55 +46,64 @@ router.get('/products', async (req, res) => {
     let products = await Product.find(query).populate('restaurant', 'name rating address').lean();
 
     if (products.length === 0) {
-      // Return Indore essential preset options
       const presetEssentials = [
         {
-          _id: 'water_20l_bisleri',
           name: 'Bisleri 20 Litre Mineral Water Can',
           price: 90,
           mrp: 100,
           unit: 'can',
-          image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500',
+          vertical: VERTICALS.ESSENTIALS,
+          stockQuantity: 200,
+          inStock: true,
           description: 'Sealed & sanitized 20 Litre pure drinking water jar with doorstep exchange.',
           isSubscriptionEligible: true
         },
         {
-          _id: 'sanchi_taaza_milk',
-          name: 'Sanchi Taaza Toned Milk (500ml Pouch)',
+          name: 'Kinley 20L Purified Water Jar',
+          price: 85,
+          mrp: 95,
+          unit: 'can',
+          vertical: VERTICALS.ESSENTIALS,
+          stockQuantity: 150,
+          inStock: true,
+          description: 'Pure drinking water with added minerals.',
+          isSubscriptionEligible: true
+        },
+        {
+          name: 'Indore Fresh RO Pure 20L Can',
+          price: 45,
+          mrp: 60,
+          unit: 'can',
+          vertical: VERTICALS.ESSENTIALS,
+          stockQuantity: 300,
+          inStock: true,
+          description: 'Budget daily pure RO water jar with doorstep delivery in Indore.',
+          isSubscriptionEligible: true
+        },
+        {
+          name: 'Sanchi Smart Toned Milk (Indore)',
           price: 27,
           mrp: 27,
-          unit: 'pouch',
-          image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500',
+          unit: '500 ml pouch',
+          vertical: VERTICALS.ESSENTIALS,
+          stockQuantity: 400,
+          inStock: true,
           description: 'Fresh pasteurized toned milk delivered fresh every morning before 7:00 AM.',
           isSubscriptionEligible: true
         },
         {
-          _id: 'amul_gold_milk',
-          name: 'Amul Gold Full Cream Milk (500ml Pouch)',
+          name: 'Amul Gold Full Cream Milk',
           price: 34,
           mrp: 34,
-          unit: 'pouch',
-          image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500',
+          unit: '500 ml pouch',
+          vertical: VERTICALS.ESSENTIALS,
+          stockQuantity: 250,
+          inStock: true,
           description: 'Fresh rich full cream pasteurized milk, ideal for tea, coffee, and sweets.',
           isSubscriptionEligible: true
-        },
-        {
-          _id: 'pedigree_adult_dog',
-          name: 'Pedigree Adult Dog Food Chicken & Veg (1.2 kg)',
-          price: 360,
-          mrp: 400,
-          unit: 'pack',
-          image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=500',
-          description: 'Complete and balanced nutrition for adult dogs with high quality protein.',
-          isSubscriptionEligible: false
         }
       ];
-
-      return res.status(200).json({
-        success: true,
-        count: presetEssentials.length,
-        data: presetEssentials
-      });
+      products = await Product.insertMany(presetEssentials);
     }
 
     return res.status(200).json({

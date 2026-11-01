@@ -14,55 +14,8 @@ class PharmacyPage extends StatefulWidget {
 class _PharmacyPageState extends State<PharmacyPage> {
   bool _isLoading = true;
   List<dynamic> _stores = [];
+  List<dynamic> _otcProducts = [];
   bool _hasPrescriptionUploaded = false;
-
-  final List<Map<String, dynamic>> _otcProducts = [
-    {
-      'name': 'Dolo 650mg Paracetamol Tablets',
-      'brand': 'Micro Labs',
-      'pack': '15 Tablets',
-      'price': 30,
-      'mrp': 34,
-      'rxRequired': false,
-      'icon': Icons.medication_rounded,
-    },
-    {
-      'name': 'Vicks Vaporub Balm Relief',
-      'brand': 'P&G Health',
-      'pack': '50 ml Jar',
-      'price': 145,
-      'mrp': 160,
-      'rxRequired': false,
-      'icon': Icons.healing_rounded,
-    },
-    {
-      'name': 'Becosules Z Multivitamin Capsules',
-      'brand': 'Pfizer',
-      'pack': '20 Capsules',
-      'price': 48,
-      'mrp': 55,
-      'rxRequired': false,
-      'icon': Icons.health_and_safety_rounded,
-    },
-    {
-      'name': 'Dettol Antiseptic Liquid Disinfectant',
-      'brand': 'Reckitt',
-      'pack': '250 ml',
-      'price': 120,
-      'mrp': 135,
-      'rxRequired': false,
-      'icon': Icons.sanitizer_rounded,
-    },
-    {
-      'name': 'Volini Pain Relief Spray',
-      'brand': 'Sun Pharma',
-      'pack': '55 g Spray',
-      'price': 175,
-      'mrp': 199,
-      'rxRequired': false,
-      'icon': Icons.clean_hands_rounded,
-    },
-  ];
 
   @override
   void initState() {
@@ -73,13 +26,23 @@ class _PharmacyPageState extends State<PharmacyPage> {
   Future<void> _fetchPharmacyData() async {
     setState(() => _isLoading = true);
     try {
+      // 1. Fetch Dynamic Indore Pharmacies from Admin DB
       final storeRes = await http.get(Uri.parse('${AppConstants.baseUrl}/pharmacy/stores?city=Indore'));
       if (storeRes.statusCode == 200) {
         final d = json.decode(storeRes.body);
-        if (d['success'] == true) _stores = d['data'] ?? [];
+        if (d['success'] == true && d['data'] is List) _stores = d['data'];
+      }
+
+      // 2. Fetch Dynamic OTC Medicines from Admin DB
+      final prodRes = await http.get(Uri.parse('${AppConstants.baseUrl}/pharmacy/products?prescriptionRequired=false'));
+      if (prodRes.statusCode == 200) {
+        final d = json.decode(prodRes.body);
+        if (d['success'] == true && d['data'] is List) {
+          _otcProducts = d['data'];
+        }
       }
     } catch (e) {
-      debugPrint('Error: $e');
+      debugPrint('Error fetching pharmacy data: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -236,174 +199,227 @@ class _PharmacyPageState extends State<PharmacyPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('ECDKART Pharmacy', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text('100% Genuine Medicines • Indore Express 30m', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('100% Genuine Medicines • Managed live by Admin', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Prominent Prescription Upload Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: const Color(0xFFDC2626).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-                        child: const Icon(Icons.medical_information_rounded, color: Colors.white, size: 24),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Have a Doctor’s Prescription?',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFDC2626)))
+          : RefreshIndicator(
+              onRefresh: _fetchPharmacyData,
+              color: const Color(0xFFDC2626),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Prominent Prescription Upload Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: const Color(0xFFDC2626).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Upload your doctor’s slip. Our registered pharmacist in Indore will review and dispense your order safely.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: ElevatedButton.icon(
-                      onPressed: _showPrescriptionUploadDialog,
-                      icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                      label: const Text('Upload Doctor Slip (Photo / PDF)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFFDC2626),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Schedule H Compliance Alert
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFECACA)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.shield_outlined, size: 20, color: Color(0xFFDC2626)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'As per Govt. of India regulations, Schedule H & X prescription medicines cannot be sold without a valid doctor prescription.',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF991B1B)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // OTC Wellness Products
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Daily OTC Essentials (No Rx Needed)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                Text('Instant 20 mins', style: TextStyle(fontSize: 11.5, color: Colors.green[700], fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _otcProducts.length,
-              itemBuilder: (context, index) {
-                final p = _otcProducts[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDC2626).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(p['icon'] as IconData, color: const Color(0xFFDC2626), size: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            const SizedBox(height: 2),
-                            Text('${p['brand']} • ${p['pack']}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text('₹${p['price']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                const SizedBox(width: 6),
-                                Text('₹${p['mrp']}', style: const TextStyle(fontSize: 10.5, color: Colors.grey, decoration: TextDecoration.lineThrough)),
-                              ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                                child: const Icon(Icons.medical_information_rounded, color: Colors.white, size: 24),
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Have a Doctor’s Prescription?',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Upload your doctor’s slip. Our registered pharmacist in Indore will review and dispense your order safely.',
+                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 44,
+                            child: ElevatedButton.icon(
+                              onPressed: _showPrescriptionUploadDialog,
+                              icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                              label: const Text('Upload Doctor Slip (Photo / PDF)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFFDC2626),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Added ${p['name']} to pharmacy cart')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDC2626),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Schedule H Compliance Alert
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFECACA)),
                       ),
-                    ],
-                  ),
-                );
-              },
+                      child: const Row(
+                        children: [
+                          Icon(Icons.shield_outlined, size: 20, color: Color(0xFFDC2626)),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'As per Govt. of India regulations, Schedule H & X prescription medicines cannot be sold without a valid doctor prescription.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF991B1B)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Dynamic OTC Wellness Products from Database
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Daily OTC Essentials (${_otcProducts.length})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        Text('Instant 20 mins', style: TextStyle(fontSize: 11.5, color: Colors.green[700], fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    _otcProducts.isEmpty
+                        ? Container(
+                            padding: const EdgeInsets.all(24),
+                            alignment: Alignment.center,
+                            child: const Text('No OTC products found in database.\nAdmin can add medicines via Admin Control Tower.',
+                                textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _otcProducts.length,
+                            itemBuilder: (context, index) {
+                              final p = _otcProducts[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFDC2626).withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.medication_rounded, color: Color(0xFFDC2626), size: 24),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(p['name'] ?? 'Medicine', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          const SizedBox(height: 2),
+                                          Text('${p['brand'] ?? 'Pharma'} • ${p['unit'] ?? p['pack'] ?? '1 pack'}',
+                                              style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Text('₹${p['price'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                              if (p['mrp'] != null && p['mrp'] > (p['price'] ?? 0)) ...[
+                                                const SizedBox(width: 6),
+                                                Text('₹${p['mrp']}', style: const TextStyle(fontSize: 10.5, color: Colors.grey, decoration: TextDecoration.lineThrough)),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Added ${p['name']} to pharmacy cart')),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFDC2626),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+
+                    const SizedBox(height: 20),
+                    // Licensed Pharmacies List from Admin
+                    const Text('Licensed Partner Pharmacies in Indore', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+
+                    _stores.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text('Partner pharmacies verified by Indore Drug Controller.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          )
+                        : Column(
+                            children: _stores.map((s) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.local_pharmacy_rounded, color: Color(0xFFDC2626)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(s['name'] ?? 'Chemist', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          Text(s['address'] ?? 'Indore, MP', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                    const Text('Certified', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

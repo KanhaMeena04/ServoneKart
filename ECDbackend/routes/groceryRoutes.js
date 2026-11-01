@@ -12,6 +12,153 @@ const { VERTICALS, BUSINESS_TYPES } = require('../constants/verticals');
  * GET /api/grocery/stores
  * Get list of active grocery stores in Indore
  */
+
+/**
+ * GET /api/grocery/categories
+ * Dynamic categories from Category model
+ */
+router.get('/categories', async (req, res) => {
+  try {
+    let categories = await Category.find({
+      $or: [
+        { vertical: VERTICALS.GROCERY },
+        { type: 'grocery' },
+        { name: { $regex: /grocery|vegetable|fruit|dairy|staple|snack|beverage|cleaning/i } }
+      ],
+      isActive: { $ne: false }
+    }).select('name image slug position').sort({ position: 1 }).lean();
+
+    if (!categories || categories.length === 0) {
+      // Seed default dynamic categories into Category collection for Indore
+      const defaultCategories = [
+        { name: 'All', slug: 'all', vertical: VERTICALS.GROCERY, position: 1, isActive: true },
+        { name: 'Vegetables & Fruits', slug: 'vegetables-fruits', vertical: VERTICALS.GROCERY, position: 2, isActive: true },
+        { name: 'Dairy & Breakfast', slug: 'dairy-breakfast', vertical: VERTICALS.GROCERY, position: 3, isActive: true },
+        { name: 'Munchies & Snacks', slug: 'munchies-snacks', vertical: VERTICALS.GROCERY, position: 4, isActive: true },
+        { name: 'Cold Drinks & Juices', slug: 'drinks-juices', vertical: VERTICALS.GROCERY, position: 5, isActive: true },
+        { name: 'Atta, Rice & Dal', slug: 'atta-rice-dal', vertical: VERTICALS.GROCERY, position: 6, isActive: true },
+        { name: 'Cleaning & Household', slug: 'cleaning-household', vertical: VERTICALS.GROCERY, position: 7, isActive: true }
+      ];
+      categories = await Category.insertMany(defaultCategories);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/grocery/products
+ * Dynamic grocery products from Product model
+ */
+router.get('/products', async (req, res) => {
+  try {
+    const { category, search, storeId } = req.query;
+    const query = {
+      $or: [
+        { vertical: VERTICALS.GROCERY },
+        { vertical: VERTICALS.ESSENTIALS }
+      ],
+      isDeleted: { $ne: true }
+    };
+
+    if (storeId) query.restaurant = storeId;
+    if (search) query.name = { $regex: search, $options: 'i' };
+
+    let products = await Product.find(query)
+      .populate('category', 'name slug')
+      .populate('restaurant', 'name rating address')
+      .limit(50)
+      .lean();
+
+    if (!products || products.length === 0) {
+      // Seed dynamic initial catalog into Product collection
+      const seedProducts = [
+        {
+          name: 'Amul Taaza Fresh Toned Milk',
+          price: 27,
+          mrp: 28,
+          weight: '500 ml',
+          unit: 'pouch',
+          vertical: VERTICALS.GROCERY,
+          stockQuantity: 100,
+          inStock: true,
+          description: 'Pasteurized toned milk'
+        },
+        {
+          name: 'Aashirvaad Shudh Chakki Atta',
+          price: 245,
+          mrp: 280,
+          weight: '5 kg',
+          unit: 'bag',
+          vertical: VERTICALS.GROCERY,
+          stockQuantity: 50,
+          inStock: true,
+          description: '100% whole wheat flour'
+        },
+        {
+          name: 'Fresh Malwa Farm Potatoes',
+          price: 28,
+          mrp: 35,
+          weight: '1 kg',
+          unit: 'kg',
+          vertical: VERTICALS.GROCERY,
+          stockQuantity: 200,
+          inStock: true,
+          description: 'Farm fresh potato crop'
+        },
+        {
+          name: 'Fresh Red Onion (Pyaaz)',
+          price: 38,
+          mrp: 48,
+          weight: '1 kg',
+          unit: 'kg',
+          vertical: VERTICALS.GROCERY,
+          stockQuantity: 150,
+          inStock: true,
+          description: 'Crisp Indian red onions'
+        },
+        {
+          name: 'English Oven Whole Wheat Bread',
+          price: 50,
+          mrp: 55,
+          weight: '400 g',
+          unit: 'loaf',
+          vertical: VERTICALS.GROCERY,
+          stockQuantity: 40,
+          inStock: true,
+          description: 'Fresh sliced brown bread'
+        },
+        {
+          name: 'Thums Up Charged Carbonated Drink',
+          price: 40,
+          mrp: 40,
+          weight: '750 ml',
+          unit: 'bottle',
+          vertical: VERTICALS.GROCERY,
+          stockQuantity: 80,
+          inStock: true,
+          description: 'Refreshing cold soft drink'
+        }
+      ];
+      products = await Product.insertMany(seedProducts);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/stores', async (req, res) => {
   try {
     const { city = 'Indore', lat, lng, search } = req.query;

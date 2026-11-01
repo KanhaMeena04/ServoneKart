@@ -55,7 +55,73 @@ router.get('/products', async (req, res) => {
     if (search) query.name = { $regex: search, $options: 'i' };
     if (prescriptionRequired !== undefined) query.prescriptionRequired = prescriptionRequired === 'true';
 
-    const products = await Product.find(query).populate('restaurant', 'name address rating').lean();
+        let products = await Product.find(query).populate('restaurant', 'name address rating').lean();
+
+    if (!products || products.length === 0) {
+      const defaultMedicines = [
+        {
+          name: 'Dolo 650mg Paracetamol Tablets',
+          brand: 'Micro Labs',
+          price: 30,
+          mrp: 34,
+          unit: '15 Tablets',
+          vertical: VERTICALS.MEDICINE,
+          prescriptionRequired: false,
+          stockQuantity: 150,
+          inStock: true,
+          description: 'Effective fever and mild to moderate pain relief'
+        },
+        {
+          name: 'Vicks Vaporub Balm Relief (50ml)',
+          brand: 'P&G Health',
+          price: 145,
+          mrp: 160,
+          unit: '50 ml Jar',
+          vertical: VERTICALS.MEDICINE,
+          prescriptionRequired: false,
+          stockQuantity: 80,
+          inStock: true,
+          description: 'Fast relief from cold, cough and body ache'
+        },
+        {
+          name: 'Becosules Z Multivitamin Capsules',
+          brand: 'Pfizer',
+          price: 48,
+          mrp: 55,
+          unit: '20 Capsules',
+          vertical: VERTICALS.MEDICINE,
+          prescriptionRequired: false,
+          stockQuantity: 120,
+          inStock: true,
+          description: 'B-Complex with Vitamin C & Zinc for daily immunity'
+        },
+        {
+          name: 'Dettol Antiseptic Liquid (250ml)',
+          brand: 'Reckitt',
+          price: 120,
+          mrp: 135,
+          unit: '250 ml Bottle',
+          vertical: VERTICALS.MEDICINE,
+          prescriptionRequired: false,
+          stockQuantity: 90,
+          inStock: true,
+          description: 'First aid antiseptic liquid for wound care'
+        },
+        {
+          name: 'Volini Pain Relief Spray (55g)',
+          brand: 'Sun Pharma',
+          price: 175,
+          mrp: 199,
+          unit: '55 g Spray',
+          vertical: VERTICALS.MEDICINE,
+          prescriptionRequired: false,
+          stockQuantity: 60,
+          inStock: true,
+          description: 'Instant spray for joint, back and muscle pain'
+        }
+      ];
+      products = await Product.insertMany(defaultMedicines);
+    }
 
     return res.status(200).json({
       success: true,
