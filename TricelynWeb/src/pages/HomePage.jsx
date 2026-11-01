@@ -24,14 +24,27 @@ const HomePage = () => {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Fallback visual theme styling palette for dynamic categories
+  const categoryPalettes = [
+    { img: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200&q=80', bg: 'bg-emerald-50' },
+    { img: 'https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?w=200&q=80', bg: 'bg-blue-50' },
+    { img: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200&q=80', bg: 'bg-amber-50' },
+    { img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&q=80', bg: 'bg-orange-50' },
+    { img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=200&q=80', bg: 'bg-pink-50' },
+    { img: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=200&q=80', bg: 'bg-indigo-50' },
+    { img: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=200&q=80', bg: 'bg-yellow-50' },
+    { img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200&q=80', bg: 'bg-cyan-50' },
+  ];
+
   useEffect(() => {
     const loadHomeData = async () => {
       try {
         setLoading(true);
-        const [catsRes, prodsRes, storesRes] = await Promise.allSettled([
+        const [catsRes, prodsRes, storesRes, bannersRes] = await Promise.allSettled([
           groceryService.getCategories(),
           groceryService.getProducts(),
           groceryService.getStores({ city: 'Indore' }),
+          marketingService.getBanners(),
         ]);
 
         if (catsRes.status === 'fulfilled' && catsRes.value.data?.data) {
@@ -45,6 +58,13 @@ const HomePage = () => {
         if (storesRes.status === 'fulfilled' && storesRes.value.data?.data) {
           setStores(storesRes.value.data.data);
         }
+
+        if (bannersRes.status === 'fulfilled') {
+          const bList = bannersRes.value.data?.banners || bannersRes.value.data?.data || [];
+          if (Array.isArray(bList) && bList.length > 0) {
+            setBanners(bList);
+          }
+        }
       } catch (err) {
         console.error('Error fetching home data:', err);
       } finally {
@@ -55,24 +75,30 @@ const HomePage = () => {
     loadHomeData();
   }, []);
 
-  // Curated category items with imagery for Shop by Category grid (matches image 1 & 2)
-  const categoryTiles = [
-    { name: 'Fruits & Vegetables', slug: 'vegetables-fruits', img: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200&q=80', bg: 'bg-emerald-50' },
-    { name: 'Dairy & Breakfast', slug: 'dairy-breakfast', img: 'https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?w=200&q=80', bg: 'bg-blue-50' },
-    { name: 'Snacks & Beverages', slug: 'munchies-snacks', img: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200&q=80', bg: 'bg-amber-50' },
-    { name: 'Atta, Rice & Dal', slug: 'atta-rice-dal', img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&q=80', bg: 'bg-orange-50' },
-    { name: 'Personal Care', slug: 'personal-care', img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=200&q=80', bg: 'bg-pink-50' },
-    { name: 'Household Essentials', slug: 'cleaning-household', img: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=200&q=80', bg: 'bg-indigo-50' },
-    { name: 'Pet Care', slug: 'pet-care', img: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=200&q=80', bg: 'bg-yellow-50' },
-    { name: 'Baby Care', slug: 'baby-care', img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200&q=80', bg: 'bg-cyan-50' },
-  ];
+  // 100% Dynamic Categories mapped from MongoDB / Admin Panel
+  const dynamicCategoryTiles = categories.length > 0 
+    ? categories.map((cat, idx) => ({
+        name: cat.name,
+        slug: cat.slug || cat._id,
+        img: cat.image || categoryPalettes[idx % categoryPalettes.length].img,
+        bg: categoryPalettes[idx % categoryPalettes.length].bg,
+      }))
+    : [
+        { name: 'Fruits & Vegetables', slug: 'vegetables-fruits', img: categoryPalettes[0].img, bg: categoryPalettes[0].bg },
+        { name: 'Dairy & Breakfast', slug: 'dairy-breakfast', img: categoryPalettes[1].img, bg: categoryPalettes[1].bg },
+        { name: 'Snacks & Beverages', slug: 'munchies-snacks', img: categoryPalettes[2].img, bg: categoryPalettes[2].bg },
+        { name: 'Atta, Rice & Dal', slug: 'atta-rice-dal', img: categoryPalettes[3].img, bg: categoryPalettes[3].bg },
+        { name: 'Personal Care', slug: 'personal-care', img: categoryPalettes[4].img, bg: categoryPalettes[4].bg },
+        { name: 'Household Essentials', slug: 'cleaning-household', img: categoryPalettes[5].img, bg: categoryPalettes[5].bg },
+        { name: 'Pet Care', slug: 'pet-care', img: categoryPalettes[6].img, bg: categoryPalettes[6].bg },
+        { name: 'Baby Care', slug: 'baby-care', img: categoryPalettes[7].img, bg: categoryPalettes[7].bg },
+      ];
 
   return (
     <div className="space-y-10 pb-16">
       
       {/* 1. Tricelyn Blue Hero Section (Matches Reference Image 1) */}
       <section className="bg-gradient-to-r from-[#0052cc] via-[#0066FF] to-[#0a3875] text-white overflow-hidden relative rounded-b-3xl shadow-lg">
-        {/* Abstract background shapes */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none transform translate-x-20 -translate-y-20" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -167,7 +193,7 @@ const HomePage = () => {
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
 
-        {/* 2. Shop by Category (Matches Image 1 & 2) */}
+        {/* 2. Shop by Category (100% Dynamic from Master Admin) */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -188,7 +214,7 @@ const HomePage = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
-            {categoryTiles.map((cat) => (
+            {dynamicCategoryTiles.map((cat) => (
               <Link
                 key={cat.slug}
                 to={`/category/${cat.slug}`}
@@ -210,91 +236,128 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* 3. Three Featured Promo Banners (Matches User Image 1) */}
+        {/* 3. Promotional Banners (Dynamic from Admin Panel /api/banners) */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Banner 1: Fruits & Veg */}
-          <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
-            <div className="relative z-10 space-y-1">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-blue-200">
-                Fresh & Farm Crisp
-              </span>
-              <h3 className="text-lg font-black leading-tight">
-                Fresh Fruits & Vegetables <br />
-                <span className="text-yellow-300">Up to 40% OFF</span>
-              </h3>
-            </div>
-            <div className="relative z-10 pt-4">
-              <Link
-                to="/category/vegetables-fruits"
-                className="px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
+          {banners.length >= 3 ? (
+            banners.slice(0, 3).map((b, i) => (
+              <div 
+                key={b._id || i}
+                className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm"
               >
-                <span>Shop Now</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-            <img
-              src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=300&q=80"
-              alt="Fresh vegetables"
-              className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
-            />
-          </div>
+                <div className="relative z-10 space-y-1">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-blue-200">
+                    {b.tag || 'Special Offer'}
+                  </span>
+                  <h3 className="text-lg font-black leading-tight">
+                    {b.title || b.name || 'Daily Essentials'}
+                  </h3>
+                  <p className="text-xs text-blue-100">{b.description || 'Save more on your daily order'}</p>
+                </div>
+                <div className="relative z-10 pt-4">
+                  <Link
+                    to={b.link || '/categories'}
+                    className="px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
+                  >
+                    <span>Shop Now</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+                {b.image && (
+                  <img
+                    src={b.image}
+                    alt={b.title || 'Banner'}
+                    className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
+                  />
+                )}
+              </div>
+            ))
+          ) : (
+            <>
+              {/* Banner 1: Fruits & Veg */}
+              <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
+                <div className="relative z-10 space-y-1">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-blue-200">
+                    Fresh & Farm Crisp
+                  </span>
+                  <h3 className="text-lg font-black leading-tight">
+                    Fresh Fruits & Vegetables <br />
+                    <span className="text-yellow-300">Up to 40% OFF</span>
+                  </h3>
+                </div>
+                <div className="relative z-10 pt-4">
+                  <Link
+                    to="/category/vegetables-fruits"
+                    className="px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
+                  >
+                    <span>Shop Now</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+                <img
+                  src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=300&q=80"
+                  alt="Fresh vegetables"
+                  className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
+                />
+              </div>
 
-          {/* Banner 2: Daily Essentials */}
-          <div className="bg-gradient-to-br from-indigo-700 to-blue-900 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
-            <div className="relative z-10 space-y-1">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-200">
-                Pantry Savings
-              </span>
-              <h3 className="text-lg font-black leading-tight">
-                Daily Essentials <br />
-                <span className="text-green-300">Save More Everyday</span>
-              </h3>
-            </div>
-            <div className="relative z-10 pt-4">
-              <Link
-                to="/category/atta-rice-dal"
-                className="px-4 py-2 bg-white text-indigo-900 hover:bg-indigo-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
-              >
-                <span>Shop Now</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-            <img
-              src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80"
-              alt="Daily essentials"
-              className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
-            />
-          </div>
+              {/* Banner 2: Daily Essentials */}
+              <div className="bg-gradient-to-br from-indigo-700 to-blue-900 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
+                <div className="relative z-10 space-y-1">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-200">
+                    Pantry Savings
+                  </span>
+                  <h3 className="text-lg font-black leading-tight">
+                    Daily Essentials <br />
+                    <span className="text-green-300">Save More Everyday</span>
+                  </h3>
+                </div>
+                <div className="relative z-10 pt-4">
+                  <Link
+                    to="/category/atta-rice-dal"
+                    className="px-4 py-2 bg-white text-indigo-900 hover:bg-indigo-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
+                  >
+                    <span>Shop Now</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+                <img
+                  src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80"
+                  alt="Daily essentials"
+                  className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
+                />
+              </div>
 
-          {/* Banner 3: Top Brands */}
-          <div className="bg-gradient-to-br from-blue-700 to-cyan-800 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
-            <div className="relative z-10 space-y-1">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-cyan-200">
-                Direct Brand Mart
-              </span>
-              <h3 className="text-lg font-black leading-tight">
-                Top Brands <br />
-                <span className="text-yellow-300">Lower Prices</span>
-              </h3>
-            </div>
-            <div className="relative z-10 pt-4">
-              <Link
-                to="/category/munchies-snacks"
-                className="px-4 py-2 bg-white text-cyan-900 hover:bg-cyan-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
-              >
-                <span>Shop Now</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-            <img
-              src="https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80"
-              alt="Top brands"
-              className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
-            />
-          </div>
+              {/* Banner 3: Top Brands */}
+              <div className="bg-gradient-to-br from-blue-700 to-cyan-800 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
+                <div className="relative z-10 space-y-1">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-cyan-200">
+                    Direct Brand Mart
+                  </span>
+                  <h3 className="text-lg font-black leading-tight">
+                    Top Brands <br />
+                    <span className="text-yellow-300">Lower Prices</span>
+                  </h3>
+                </div>
+                <div className="relative z-10 pt-4">
+                  <Link
+                    to="/category/munchies-snacks"
+                    className="px-4 py-2 bg-white text-cyan-900 hover:bg-cyan-50 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition"
+                  >
+                    <span>Shop Now</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+                <img
+                  src="https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80"
+                  alt="Top brands"
+                  className="absolute -right-4 -bottom-6 w-32 h-32 object-cover rounded-full opacity-40 mix-blend-screen pointer-events-none"
+                />
+              </div>
+            </>
+          )}
         </section>
 
-        {/* 4. Best Sellers Product Grid (Matches Reference Image 1) */}
+        {/* 4. Best Sellers Product Grid (100% Dynamic from Product Collection) */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -405,7 +468,7 @@ const HomePage = () => {
           </Link>
         </section>
 
-        {/* 6. Nearby Indore Grocery Stores & Supermarkets */}
+        {/* 6. Nearby Indore Grocery Stores & Supermarkets (100% Dynamic from Restaurant/Store Model) */}
         {stores.length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center justify-between">
@@ -510,4 +573,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

@@ -199,3 +199,4 @@ const ProductDetailModal = () => {
 };
 
 export default ProductDetailModal;
+

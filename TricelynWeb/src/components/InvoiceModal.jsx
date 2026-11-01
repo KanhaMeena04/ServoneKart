@@ -170,3 +170,4 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
 };
 
 export default InvoiceModal;
+

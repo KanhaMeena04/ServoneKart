@@ -5,33 +5,55 @@ import { groceryService } from '../services/api';
 
 const CategoriesOverviewPage = () => {
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const defaultCategoriesList = [
-    { name: 'Fruits & Vegetables', slug: 'vegetables-fruits', img: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=300&q=80', count: '120+ items', bg: 'bg-emerald-50' },
-    { name: 'Dairy, Bread & Eggs', slug: 'dairy-breakfast', img: 'https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?w=300&q=80', count: '85+ items', bg: 'bg-blue-50' },
-    { name: 'Munchies & Snacks', slug: 'munchies-snacks', img: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80', count: '200+ items', bg: 'bg-amber-50' },
-    { name: 'Cold Drinks & Juices', slug: 'drinks-juices', img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&q=80', count: '75+ items', bg: 'bg-red-50' },
-    { name: 'Atta, Rice & Dal', slug: 'atta-rice-dal', img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80', count: '150+ items', bg: 'bg-orange-50' },
-    { name: 'Instant & Frozen Food', slug: 'instant-food', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80', count: '90+ items', bg: 'bg-yellow-50' },
-    { name: 'Chocolates & Sweets', slug: 'sweets-chocolates', img: 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=300&q=80', count: '110+ items', bg: 'bg-pink-50' },
-    { name: 'Personal Care & Hygiene', slug: 'personal-care', img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80', count: '160+ items', bg: 'bg-purple-50' },
-    { name: 'Cleaning & Household', slug: 'cleaning-household', img: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=300&q=80', count: '95+ items', bg: 'bg-teal-50' },
-    { name: 'Pet Care Supplies', slug: 'pet-care', img: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=300&q=80', count: '60+ items', bg: 'bg-amber-50' },
-    { name: 'Baby Care Essentials', slug: 'baby-care', img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&q=80', count: '50+ items', bg: 'bg-cyan-50' },
-    { name: 'Pharmacy & Wellness', slug: 'pharmacy', img: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&q=80', count: '140+ items', bg: 'bg-emerald-50' },
+  const fallbackPalettes = [
+    { img: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=300&q=80', bg: 'bg-emerald-50' },
+    { img: 'https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?w=300&q=80', bg: 'bg-blue-50' },
+    { img: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80', bg: 'bg-amber-50' },
+    { img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&q=80', bg: 'bg-red-50' },
+    { img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80', bg: 'bg-orange-50' },
+    { img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80', bg: 'bg-yellow-50' },
+    { img: 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=300&q=80', bg: 'bg-pink-50' },
+    { img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80', bg: 'bg-purple-50' },
+    { img: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=300&q=80', bg: 'bg-teal-50' },
+    { img: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=300&q=80', bg: 'bg-amber-50' },
+    { img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&q=80', bg: 'bg-cyan-50' },
+    { img: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&q=80', bg: 'bg-emerald-50' },
   ];
 
   useEffect(() => {
     const fetchCats = async () => {
       try {
+        setLoading(true);
         const res = await groceryService.getCategories();
         if (res.data?.data && res.data.data.length > 0) {
-          // merge
+          setCategories(res.data.data);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Categories overview error:', e.message);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchCats();
   }, []);
+
+  const displayList = categories.length > 0 
+    ? categories.map((c, i) => ({
+        name: c.name,
+        slug: c.slug || c._id,
+        img: c.image || fallbackPalettes[i % fallbackPalettes.length].img,
+        bg: fallbackPalettes[i % fallbackPalettes.length].bg,
+        count: 'Fresh Stock',
+      }))
+    : fallbackPalettes.map((p, i) => ({
+        name: `Category ${i + 1}`,
+        slug: `category-${i + 1}`,
+        img: p.img,
+        bg: p.bg,
+        count: '10-15 min delivery',
+      }));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -45,7 +67,7 @@ const CategoriesOverviewPage = () => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {defaultCategoriesList.map((cat) => (
+        {displayList.map((cat) => (
           <Link
             key={cat.slug}
             to={`/category/${cat.slug}`}
@@ -72,4 +94,3 @@ const CategoriesOverviewPage = () => {
 };
 
 export default CategoriesOverviewPage;
-

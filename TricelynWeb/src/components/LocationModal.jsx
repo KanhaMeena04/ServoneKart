@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { MapPin, X, Check, Search, Navigation } from 'lucide-react';
-import { useLocation, INDORE_HUBS } from '../context/LocationContext';
+import { useLocation } from '../context/LocationContext';
 
 const LocationModal = () => {
-  const { selectedLocation, setLocation, isLocationModalOpen, setIsLocationModalOpen } = useLocation();
+  const { selectedLocation, setLocation, isLocationModalOpen, setIsLocationModalOpen, hubs } = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isLocationModalOpen) return null;
 
-  const filteredHubs = INDORE_HUBS.filter(
+  const currentHubs = hubs || [];
+  const filteredHubs = currentHubs.filter(
     (hub) =>
       hub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      hub.locality.toLowerCase().includes(searchQuery.toLowerCase())
+      (hub.locality && hub.locality.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleSelect = (hub) => {
