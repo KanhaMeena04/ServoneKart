@@ -77,13 +77,14 @@ export const menuItems: MenuItemType[] = [
   { text: 'Customers', icon: <People />, path: '/user-management', permission: 'User' },
 
   {
-    text: 'Restaurants',
+    text: 'Vendors & Partners',
     icon: <Store />,
     permission: 'Restaurant',
     children: [
-      { text: 'All Restaurants', path: '/restaurants' },
+      { text: 'Vendor Control Tower', path: '/vendors' },
+      { text: 'All Restaurants & Marts', path: '/restaurants' },
       { text: 'Pending Approval', path: '/pending-restaurants' },
-      { text: 'Approved Restaurants', path: '/approve-restaurant' },
+      { text: 'Approved Partners', path: '/approve-restaurant' },
       { text: 'Restaurant Promocodes', path: '/promocodes', permission: 'Promocode' },
       { text: 'Add Promocode', path: '/add-promocodes', permission: 'Promocode' },
     ]

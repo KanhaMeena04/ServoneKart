@@ -13,6 +13,7 @@ const GiftsWorkspace = lazy(() => import("../pages/workspaces/GiftsWorkspace"));
 const EssentialsWorkspace = lazy(() => import("../pages/workspaces/EssentialsWorkspace"));
 const RolePermissionMatrix = lazy(() => import("../roles/pages/RolePermissionMatrix"));
 const ChangePasswordForm = lazy(() => import("../pages/ChangePassword"));
+const VendorPanel = lazy(() => import("../vendors/pages/VendorPanel"));
 const NewOrder = lazy(() => import("../orders/pages/NewOrder"));
 const ProcessingOrders=lazy(()=>import("../orders/pages/ProcessingOrders"))
 const PickUpOrders =lazy(()=>import("../orders/pages/PickUpOrders"))
@@ -208,6 +209,8 @@ const AdminRoutes = () => {
 				 <Route path="/orders" element={<OrdersAnalytics />} />
 				 <Route path="/view-order/:id" element={<ViewOrder />} />
 
+				 <Route path="/vendors" element={<VendorPanel />} />
+				 <Route path="/vendor-panel" element={<VendorPanel />} />
 				 <Route path="/restaurants" element={<RestaurantsList />} />
 				 <Route path="/restaurant-dashboard/:id" element={<RestaurantDashboard/>} />
 				 <Route path="/edit-restaurant/:id" element={<EditRestaurant/>} />

@@ -45,6 +45,18 @@ import { useMasterCategory } from "../../api/category.js";
 
 const PRIMARY_COLOR = "#248C70";
 
+const VERTICAL_OPTIONS = [
+  { id: "all", label: "All Verticals", icon: "🌐", color: "#64748B" },
+  { id: "food", label: "Food Delivery", icon: "🍔", color: "#248C70" },
+  { id: "grocery", label: "Grocery & Mart", icon: "🛒", color: "#16A34A" },
+  { id: "home_services", label: "Home Services", icon: "🔧", color: "#2563EB" },
+  { id: "medicine", label: "Medicine & Pharma", icon: "💊", color: "#DC2626" },
+  { id: "courier", label: "Courier & Drop", icon: "📦", color: "#7C3AED" },
+  { id: "laundry", label: "Laundry & Clean", icon: "🧺", color: "#0D9488" },
+  { id: "essentials", label: "Daily Essentials", icon: "💧", color: "#0284C7" },
+  { id: "gifts_bakery", label: "Bakery & Gifts", icon: "🎂", color: "#DB2777" },
+];
+
 const CategoryTable = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -65,6 +77,7 @@ const CategoryTable = () => {
   } = useMasterCategory();
 
   const [activeTab, setActiveTab] = useState(initialTab); // 0 = Main Categories, 1 = Subcategories
+  const [selectedVertical, setSelectedVertical] = useState("all");
 
   useEffect(() => {
     if (tabParam === "1" || tabParam === "subcategories" || tabParam === "subcategory") {
@@ -84,6 +97,7 @@ const CategoryTable = () => {
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
+    vertical: "food",
     parentCategoryId: "",
     description: "",
     startingPrice: 49,
@@ -108,7 +122,11 @@ const CategoryTable = () => {
     }
   }, [activeTab, selectedParentId, fetchSubcategories]);
 
-  const mainCategoriesList = categories.filter((c) => c.type === "main" || !c.type);
+  const allMainCategories = categories.filter((c) => c.type === "main" || !c.type);
+  const mainCategoriesList = allMainCategories.filter((c) => {
+    if (selectedVertical === "all") return true;
+    return (c.vertical || "food") === selectedVertical;
+  });
 
   const handleOpenAddModal = (type = "main", parentId = "") => {
     setEditingCategory(null);
@@ -116,6 +134,7 @@ const CategoryTable = () => {
     setFormData({
       name: "",
       slug: "",
+      vertical: selectedVertical !== "all" ? selectedVertical : "food",
       parentCategoryId: parentId || (mainCategoriesList[0]?._id || ""),
       description: "",
       startingPrice: 49,
@@ -137,6 +156,7 @@ const CategoryTable = () => {
     setFormData({
       name: cat.name || "",
       slug: cat.slug || "",
+      vertical: cat.vertical || "food",
       parentCategoryId: cat.parentCategoryId?._id || cat.parentCategoryId || "",
       description: cat.description || "",
       startingPrice: cat.startingPrice !== undefined && cat.startingPrice !== null ? cat.startingPrice : 49,
@@ -249,6 +269,36 @@ const CategoryTable = () => {
         </Alert>
       )}
 
+      {/* Super App Vertical Selector Toolbar */}
+      <Box sx={{ mb: 2.5, p: 1.5, bgcolor: "#FFFFFF", borderRadius: 2, border: "1px solid #E2E8F0" }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.5, mb: 1, display: "block" }}>
+          Filter By Super App Business Vertical:
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          {VERTICAL_OPTIONS.map((v) => {
+            const isSelected = selectedVertical === v.id;
+            return (
+              <Chip
+                key={v.id}
+                label={`${v.icon} ${v.label}`}
+                onClick={() => setSelectedVertical(v.id)}
+                clickable
+                variant={isSelected ? "filled" : "outlined"}
+                sx={{
+                  fontWeight: isSelected ? 700 : 500,
+                  bgcolor: isSelected ? v.color : "transparent",
+                  color: isSelected ? "#FFFFFF" : "#334155",
+                  borderColor: isSelected ? v.color : "#CBD5E1",
+                  "&:hover": {
+                    bgcolor: isSelected ? v.color : "#F1F5F9",
+                  },
+                }}
+              />
+            );
+          })}
+        </Box>
+      </Box>
+
       {/* Tabs & Top Actions */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={activeTab} onChange={(e, val) => setActiveTab(val)} textColor="primary" indicatorColor="primary">
@@ -303,6 +353,7 @@ const CategoryTable = () => {
               <TableRow>
                 <TableCell>Icon / Image</TableCell>
                 <TableCell>Category Name</TableCell>
+                <TableCell>Vertical</TableCell>
                 <TableCell>Slug</TableCell>
                 <TableCell align="center">Starting Price</TableCell>
                 <TableCell align="center">Subcategories</TableCell>
@@ -317,7 +368,7 @@ const CategoryTable = () => {
             <TableBody>
               {mainCategoriesList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center">
+                  <TableCell colSpan={12} align="center">
                     No main categories found. Click "Add Main Category" to create one.
                   </TableCell>
                 </TableRow>
@@ -333,6 +384,24 @@ const CategoryTable = () => {
                       />
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{cat.name}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const vInfo = VERTICAL_OPTIONS.find(v => v.id === (cat.vertical || "food")) || { label: cat.vertical || "Food", color: "#248C70", icon: "📦" };
+                        return (
+                          <Chip
+                            label={`${vInfo.icon} ${vInfo.label}`}
+                            size="small"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              bgcolor: `${vInfo.color}15`,
+                              color: vInfo.color,
+                              border: `1px solid ${vInfo.color}40`,
+                            }}
+                          />
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell sx={{ color: "text.secondary", fontSize: "0.85rem" }}>{cat.slug}</TableCell>
                     <TableCell align="center">
                       <Chip label={`₹${cat.startingPrice !== undefined && cat.startingPrice !== null ? cat.startingPrice : 49}`} size="small" sx={{ fontWeight: 700, bgcolor: "#E8F5E9", color: "#2E7D32" }} />
@@ -477,6 +546,24 @@ const CategoryTable = () => {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
+
+            <FormControl fullWidth required>
+              <InputLabel>Business Vertical</InputLabel>
+              <Select
+                value={formData.vertical || "food"}
+                onChange={(e) => setFormData({ ...formData, vertical: e.target.value })}
+                label="Business Vertical"
+              >
+                {VERTICAL_OPTIONS.filter((v) => v.id !== "all").map((v) => (
+                  <MenuItem key={v.id} value={v.id}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <span>{v.icon}</span>
+                      <Typography sx={{ fontWeight: 500 }}>{v.label}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             {formType === "subcategory" && (
               <FormControl fullWidth required>

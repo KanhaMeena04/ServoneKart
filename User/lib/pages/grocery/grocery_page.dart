@@ -31,13 +31,20 @@ class _GroceryPageState extends State<GroceryPage> {
     try {
       // 1. Fetch Dynamic Categories from Admin / Backend
       try {
-        final catRes = await http.get(Uri.parse('${AppConstants.baseUrl}/grocery/categories'));
+        final catRes = await http
+            .get(Uri.parse('${AppConstants.baseUrl}/grocery/categories'));
         if (catRes.statusCode == 200) {
           final catData = json.decode(catRes.body);
           if (catData['success'] == true && catData['data'] is List) {
-            final catNames = (catData['data'] as List).map((c) => (c['name'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+            final catNames = (catData['data'] as List)
+                .map((c) => (c['name'] ?? '').toString())
+                .where((n) => n.isNotEmpty)
+                .toList();
             if (catNames.isNotEmpty) {
-              _categories = ['All', ...catNames.where((n) => n.toLowerCase() != 'all')];
+              _categories = [
+                'All',
+                ...catNames.where((n) => n.toLowerCase() != 'all')
+              ];
             }
           }
         }
@@ -47,7 +54,8 @@ class _GroceryPageState extends State<GroceryPage> {
 
       // 2. Fetch Dynamic Products from Admin / Backend
       try {
-        final prodRes = await http.get(Uri.parse('${AppConstants.baseUrl}/grocery/products'));
+        final prodRes = await http
+            .get(Uri.parse('${AppConstants.baseUrl}/grocery/products'));
         if (prodRes.statusCode == 200) {
           final prodData = json.decode(prodRes.body);
           if (prodData['success'] == true && prodData['data'] is List) {
@@ -60,7 +68,8 @@ class _GroceryPageState extends State<GroceryPage> {
 
       // 3. Fetch Dynamic Stores from Admin / Backend
       try {
-        final res = await http.get(Uri.parse('${AppConstants.baseUrl}/grocery/stores?city=Indore'));
+        final res = await http.get(
+            Uri.parse('${AppConstants.baseUrl}/grocery/stores?city=Indore'));
         if (res.statusCode == 200) {
           final data = json.decode(res.body);
           if (data['success'] == true && data['data'] is List) {
@@ -109,7 +118,10 @@ class _GroceryPageState extends State<GroceryPage> {
     final totalItems = _getItemCount();
     final filteredProducts = _quickProducts.where((p) {
       if (_selectedCategory != 'All') {
-        final catName = (p['category'] is Map ? p['category']['name'] : p['category'] ?? '').toString().toLowerCase();
+        final catName =
+            (p['category'] is Map ? p['category']['name'] : p['category'] ?? '')
+                .toString()
+                .toLowerCase();
         if (!catName.contains(_selectedCategory.toLowerCase())) return false;
       }
       if (_searchCtrl.text.trim().isNotEmpty) {
@@ -136,18 +148,25 @@ class _GroceryPageState extends State<GroceryPage> {
               children: [
                 const Text(
                   'ECDKART Mart',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.amber[400],
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
                     '10-15 MINS',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black87),
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black87),
                   ),
                 ),
               ],
@@ -186,15 +205,18 @@ class _GroceryPageState extends State<GroceryPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.search_rounded, color: Color(0xFF16A34A)),
+                          const Icon(Icons.search_rounded,
+                              color: Color(0xFF16A34A)),
                           const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: _searchCtrl,
                               onChanged: (_) => setState(() {}),
                               decoration: const InputDecoration(
-                                hintText: 'Search products from live inventory...',
-                                hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                                hintText:
+                                    'Search products from live inventory...',
+                                hintStyle:
+                                    TextStyle(fontSize: 13, color: Colors.grey),
                                 border: InputBorder.none,
                               ),
                             ),
@@ -205,7 +227,8 @@ class _GroceryPageState extends State<GroceryPage> {
                                 _searchCtrl.clear();
                                 setState(() {});
                               },
-                              child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              child: const Icon(Icons.clear,
+                                  size: 18, color: Colors.grey),
                             ),
                         ],
                       ),
@@ -240,14 +263,18 @@ class _GroceryPageState extends State<GroceryPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: Colors.amber[300],
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
                                   '⚡ LIVE ADMIN INVENTORY',
-                                  style: TextStyle(color: Colors.black87, fontSize: 9.5, fontWeight: FontWeight.w900),
+                                  style: TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w900),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -263,7 +290,8 @@ class _GroceryPageState extends State<GroceryPage> {
                               const SizedBox(height: 4),
                               const Text(
                                 'Stock-managed in real time • Zero overselling',
-                                style: TextStyle(color: Colors.white70, fontSize: 11),
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 11),
                               ),
                             ],
                           ),
@@ -274,7 +302,8 @@ class _GroceryPageState extends State<GroceryPage> {
                             color: Colors.white.withOpacity(0.18),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 40),
+                          child: const Icon(Icons.shopping_bag_outlined,
+                              color: Colors.white, size: 40),
                         ),
                       ],
                     ),
@@ -298,8 +327,12 @@ class _GroceryPageState extends State<GroceryPage> {
                             cat,
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? Colors.white : const Color(0xFF334155),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF334155),
                             ),
                           ),
                           selected: isSelected,
@@ -308,11 +341,15 @@ class _GroceryPageState extends State<GroceryPage> {
                           elevation: isSelected ? 1 : 0,
                           pressElevation: 1,
                           side: BorderSide(
-                            color: isSelected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                            color: isSelected
+                                ? const Color(0xFF16A34A)
+                                : const Color(0xFFE2E8F0),
                             width: 1,
                           ),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          onSelected: (val) => setState(() => _selectedCategory = cat),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          onSelected: (val) =>
+                              setState(() => _selectedCategory = cat),
                         );
                       },
                     ),
@@ -328,11 +365,17 @@ class _GroceryPageState extends State<GroceryPage> {
                       children: [
                         Text(
                           'Live Products (${filteredProducts.length})',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A)),
                         ),
                         const Text(
                           '⚡ 10 mins',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF16A34A),
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -348,7 +391,8 @@ class _GroceryPageState extends State<GroceryPage> {
                             child: Text(
                               'No products found matching this filter in Indore.\nAdmin can add new products from the Admin Panel!',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
                             ),
                           ),
                         ),
@@ -356,7 +400,8 @@ class _GroceryPageState extends State<GroceryPage> {
                     : SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         sliver: SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 12,
@@ -367,13 +412,15 @@ class _GroceryPageState extends State<GroceryPage> {
                               final item = filteredProducts[index];
                               final id = (item['_id'] ?? item['id']).toString();
                               final qty = _cartItems[id] ?? 0;
-                              final inStock = item['inStock'] ?? ((item['stockQuantity'] ?? 1) > 0);
+                              final inStock = item['inStock'] ??
+                                  ((item['stockQuantity'] ?? 1) > 0);
 
                               return Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  border: Border.all(
+                                      color: const Color(0xFFE2E8F0)),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.02),
@@ -389,98 +436,207 @@ class _GroceryPageState extends State<GroceryPage> {
                                       height: 100,
                                       width: double.infinity,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF16A34A).withOpacity(0.08),
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                                        color: const Color(0xFF16A34A)
+                                            .withOpacity(0.08),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(15)),
                                       ),
                                       child: Center(
-                                        child: (item['image'] != null && item['image'].toString().startsWith('http'))
-                                            ? Image.network(item['image'], fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.shopping_basket_rounded, size: 40, color: Color(0xFF16A34A)))
-                                            : const Icon(Icons.shopping_basket_rounded, size: 40, color: Color(0xFF16A34A)),
+                                        child: (item['image'] != null &&
+                                                item['image']
+                                                    .toString()
+                                                    .startsWith('http'))
+                                            ? Image.network(item['image'],
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    const Icon(
+                                                        Icons
+                                                            .shopping_basket_rounded,
+                                                        size: 40,
+                                                        color:
+                                                            Color(0xFF16A34A)))
+                                            : const Icon(
+                                                Icons.shopping_basket_rounded,
+                                                size: 40,
+                                                color: Color(0xFF16A34A)),
                                       ),
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.all(10),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             item['name'] ?? 'Item',
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, height: 1.2),
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12.5,
+                                                height: 1.2),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            item['weight'] ?? item['unit'] ?? '1 unit',
-                                            style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                                            item['weight'] ??
+                                                item['unit'] ??
+                                                '1 unit',
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey,
+                                                fontWeight: FontWeight.w500),
                                           ),
                                           const SizedBox(height: 8),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     '₹${item['price'] ?? 0}',
-                                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+                                                    style: const TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.black),
                                                   ),
-                                                  if (item['mrp'] != null && item['mrp'] > (item['price'] ?? 0))
+                                                  if (item['mrp'] != null &&
+                                                      item['mrp'] >
+                                                          (item['price'] ?? 0))
                                                     Text(
                                                       '₹${item['mrp']}',
                                                       style: const TextStyle(
                                                         fontSize: 10,
                                                         color: Colors.grey,
-                                                        decoration: TextDecoration.lineThrough,
+                                                        decoration:
+                                                            TextDecoration
+                                                                .lineThrough,
                                                       ),
                                                     ),
                                                 ],
                                               ),
                                               !inStock
                                                   ? Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(6)),
-                                                      child: const Text('OUT OF STOCK', style: TextStyle(fontSize: 9, color: Colors.red, fontWeight: FontWeight.bold)),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                          color:
+                                                              Colors.grey[200],
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(6)),
+                                                      child: const Text(
+                                                          'OUT OF STOCK',
+                                                          style: TextStyle(
+                                                              fontSize: 9,
+                                                              color: Colors.red,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold)),
                                                     )
                                                   : qty == 0
                                                       ? SizedBox(
                                                           height: 32,
                                                           child: ElevatedButton(
-                                                            onPressed: () => _addItem(item),
-                                                            style: ElevatedButton.styleFrom(
-                                                              backgroundColor: const Color(0xFF16A34A),
-                                                              foregroundColor: Colors.white,
+                                                            onPressed: () =>
+                                                                _addItem(item),
+                                                            style:
+                                                                ElevatedButton
+                                                                    .styleFrom(
+                                                              backgroundColor:
+                                                                  const Color(
+                                                                      0xFF16A34A),
+                                                              foregroundColor:
+                                                                  Colors.white,
                                                               elevation: 0,
-                                                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          14),
+                                                              shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8)),
                                                             ),
-                                                            child: const Text('ADD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                                            child: const Text(
+                                                                'ADD',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold)),
                                                           ),
                                                         )
                                                       : Container(
                                                           height: 32,
-                                                          decoration: BoxDecoration(
-                                                            color: const Color(0xFF16A34A),
-                                                            borderRadius: BorderRadius.circular(8),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: const Color(
+                                                                0xFF16A34A),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
                                                           ),
                                                           child: Row(
-                                                            mainAxisSize: MainAxisSize.min,
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
                                                             children: [
                                                               IconButton(
-                                                                icon: const Icon(Icons.remove, size: 14, color: Colors.white),
-                                                                padding: EdgeInsets.zero,
-                                                                constraints: const BoxConstraints(minWidth: 28),
-                                                                onPressed: () => _removeItem(item),
+                                                                icon: const Icon(
+                                                                    Icons
+                                                                        .remove,
+                                                                    size: 14,
+                                                                    color: Colors
+                                                                        .white),
+                                                                padding:
+                                                                    EdgeInsets
+                                                                        .zero,
+                                                                constraints:
+                                                                    const BoxConstraints(
+                                                                        minWidth:
+                                                                            28),
+                                                                onPressed: () =>
+                                                                    _removeItem(
+                                                                        item),
                                                               ),
                                                               Text(
                                                                 '$qty',
-                                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        13),
                                                               ),
                                                               IconButton(
-                                                                icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                                                                padding: EdgeInsets.zero,
-                                                                constraints: const BoxConstraints(minWidth: 28),
-                                                                onPressed: () => _addItem(item),
+                                                                icon: const Icon(
+                                                                    Icons.add,
+                                                                    size: 14,
+                                                                    color: Colors
+                                                                        .white),
+                                                                padding:
+                                                                    EdgeInsets
+                                                                        .zero,
+                                                                constraints:
+                                                                    const BoxConstraints(
+                                                                        minWidth:
+                                                                            28),
+                                                                onPressed: () =>
+                                                                    _addItem(
+                                                                        item),
                                                               ),
                                                             ],
                                                           ),
@@ -505,7 +661,10 @@ class _GroceryPageState extends State<GroceryPage> {
                     padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
                     child: Text(
                       'Partner Grocery Marts in Indore (From Admin)',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A)),
                     ),
                   ),
                 ),
@@ -519,7 +678,8 @@ class _GroceryPageState extends State<GroceryPage> {
                             child: Text(
                               'Certified Indore grocery partners are verified by Admin.\nOrder directly from live products above!',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
                             ),
                           ),
                         ),
@@ -535,7 +695,8 @@ class _GroceryPageState extends State<GroceryPage> {
                                 margin: const EdgeInsets.only(bottom: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  side: const BorderSide(
+                                      color: Color(0xFFE2E8F0)),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(14),
@@ -547,43 +708,63 @@ class _GroceryPageState extends State<GroceryPage> {
                                           width: 65,
                                           height: 65,
                                           color: const Color(0xFFE2E8F0),
-                                          child: const Icon(Icons.storefront_rounded, color: Color(0xFF16A34A), size: 34),
+                                          child: const Icon(
+                                              Icons.storefront_rounded,
+                                              color: Color(0xFF16A34A),
+                                              size: 34),
                                         ),
                                       ),
                                       const SizedBox(width: 14),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               s['name'] ?? 'Indore Super Mart',
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14.5),
                                             ),
                                             const SizedBox(height: 3),
                                             Text(
                                               s['address'] ?? 'Indore, MP',
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(color: Colors.grey, fontSize: 11.5),
+                                              style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 11.5),
                                             ),
                                             const SizedBox(height: 6),
                                             Row(
                                               children: [
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
                                                   decoration: BoxDecoration(
                                                     color: Colors.amber[50],
-                                                    borderRadius: BorderRadius.circular(4),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
                                                   ),
                                                   child: Text(
                                                     '★ ${s['rating'] ?? '4.7'}',
-                                                    style: TextStyle(color: Colors.amber[800], fontSize: 10.5, fontWeight: FontWeight.bold),
+                                                    style: TextStyle(
+                                                        color:
+                                                            Colors.amber[800],
+                                                        fontSize: 10.5,
+                                                        fontWeight:
+                                                            FontWeight.bold),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Text(
                                                   '${s['deliveryTime'] ?? 15} mins • Free delivery',
-                                                  style: const TextStyle(fontSize: 11.5, color: Colors.black54),
+                                                  style: const TextStyle(
+                                                      fontSize: 11.5,
+                                                      color: Colors.black54),
                                                 ),
                                               ],
                                             ),
@@ -592,17 +773,28 @@ class _GroceryPageState extends State<GroceryPage> {
                                       ),
                                       OutlinedButton(
                                         onPressed: () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Browsing ${s['name']}...')),
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    'Browsing ${s['name']}...')),
                                           );
                                         },
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: const Color(0xFF16A34A),
-                                          side: const BorderSide(color: Color(0xFF16A34A)),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                          foregroundColor:
+                                              const Color(0xFF16A34A),
+                                          side: const BorderSide(
+                                              color: Color(0xFF16A34A)),
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8)),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 6),
                                         ),
-                                        child: const Text('Store', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                        child: const Text('Store',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12)),
                                       ),
                                     ],
                                   ),
@@ -624,7 +816,8 @@ class _GroceryPageState extends State<GroceryPage> {
               left: 16,
               right: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF16A34A),
                   borderRadius: BorderRadius.circular(16),
@@ -644,7 +837,8 @@ class _GroceryPageState extends State<GroceryPage> {
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 20),
+                      child: const Icon(Icons.shopping_bag_rounded,
+                          color: Colors.white, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -653,11 +847,17 @@ class _GroceryPageState extends State<GroceryPage> {
                       children: [
                         Text(
                           '$totalItems ${totalItems == 1 ? 'ITEM' : 'ITEMS'} ADDED',
-                          style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
                         ),
                         Text(
                           '₹${_cartTotal.toStringAsFixed(0)}',
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -666,7 +866,8 @@ class _GroceryPageState extends State<GroceryPage> {
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Proceeding to checkout with $totalItems items (₹${_cartTotal.toStringAsFixed(0)})'),
+                            content: Text(
+                                'Proceeding to checkout with $totalItems items (₹${_cartTotal.toStringAsFixed(0)})'),
                             backgroundColor: const Color(0xFF15803D),
                           ),
                         );
@@ -675,13 +876,17 @@ class _GroceryPageState extends State<GroceryPage> {
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFF16A34A),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('View Cart', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('View Cart',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13)),
                           SizedBox(width: 4),
                           Icon(Icons.arrow_forward_rounded, size: 16),
                         ],

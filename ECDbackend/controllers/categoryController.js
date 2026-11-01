@@ -2,6 +2,7 @@ const Category = require("../models/Category");
 const Product = require("../models/Product");
 const AuditLog = require("../models/AuditLog");
 const { uploadToImageKit } = require("../utils/imagekit");
+const { VERTICALS } = require("../constants/verticals");
 
 // Helper slugify
 const slugify = (text) => {
@@ -39,24 +40,35 @@ const emitCategoryChange = (req) => {
  */
 exports.getCategoriesTree = async (req, res) => {
   try {
-    const mainCategories = await Category.find({
+    const { vertical } = req.query;
+    const filter = {
       type: "main",
       isActive: true,
       isVisible: { $ne: false },
       userAppVisible: { $ne: false },
-    })
+    };
+    if (vertical && vertical !== "all") {
+      filter.vertical = vertical;
+    }
+
+    const mainCategories = await Category.find(filter)
       .sort({ position: 1, createdAt: 1 })
       .lean();
 
     const mainCategoryIds = mainCategories.map((c) => c._id);
 
-    const subcategories = await Category.find({
+    const subFilter = {
       type: "subcategory",
       parentCategoryId: { $in: mainCategoryIds },
       isActive: true,
       isVisible: { $ne: false },
       userAppVisible: { $ne: false },
-    })
+    };
+    if (vertical && vertical !== "all") {
+      subFilter.vertical = vertical;
+    }
+
+    const subcategories = await Category.find(subFilter)
       .sort({ position: 1, createdAt: 1 })
       .lean();
 
@@ -71,6 +83,7 @@ exports.getCategoriesTree = async (req, res) => {
         id: sub._id,
         name: sub.name,
         slug: sub.slug,
+        vertical: sub.vertical || "food",
         description: sub.description,
         image: sub.image,
         icon: sub.icon,
@@ -85,6 +98,7 @@ exports.getCategoriesTree = async (req, res) => {
       id: cat._id,
       name: cat.name,
       slug: cat.slug,
+      vertical: cat.vertical || "food",
       description: cat.description,
       image: cat.image,
       startingPrice: cat.startingPrice !== undefined && cat.startingPrice !== null ? cat.startingPrice : 49,
@@ -112,9 +126,10 @@ exports.getCategoriesTree = async (req, res) => {
  */
 exports.getCategories = async (req, res) => {
   try {
-    const { type, parentCategoryId, search, isActive, isFeatured, userAppVisible, restaurantAppVisible } = req.query;
+    const { type, parentCategoryId, search, isActive, isFeatured, userAppVisible, restaurantAppVisible, vertical } = req.query;
     const filter = {};
 
+    if (vertical && vertical !== "all") filter.vertical = vertical;
     if (type) filter.type = type;
     if (parentCategoryId) filter.parentCategoryId = parentCategoryId;
     if (isActive !== undefined) filter.isActive = isActive === "true";
@@ -128,6 +143,75 @@ exports.getCategories = async (req, res) => {
         { slug: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
+    }
+
+    const existingTotal = await Category.countDocuments();
+    if (existingTotal === 0) {
+      const defaultSeeds = [
+        // Food
+        { name: "North Indian & Thali", slug: "north-indian-thali", vertical: "food", startingPrice: 99, position: 1, type: "main", isActive: true },
+        { name: "South Indian & Dosa", slug: "south-indian-dosa", vertical: "food", startingPrice: 69, position: 2, type: "main", isActive: true },
+        { name: "Indore Street Food & Poha", slug: "indore-street-food", vertical: "food", startingPrice: 39, position: 3, type: "main", isActive: true },
+        { name: "Pizza & Burgers", slug: "pizza-burgers", vertical: "food", startingPrice: 89, position: 4, type: "main", isActive: true },
+        { name: "Biryani & Kebabs", slug: "biryani-kebabs", vertical: "food", startingPrice: 149, position: 5, type: "main", isActive: true },
+        { name: "Chinese & Momos", slug: "chinese-momos", vertical: "food", startingPrice: 59, position: 6, type: "main", isActive: true },
+        { name: "Desserts & Shakes", slug: "desserts-shakes", vertical: "food", startingPrice: 49, position: 7, type: "main", isActive: true },
+
+        // Grocery
+        { name: "Fresh Vegetables & Fruits", slug: "fresh-vegetables-fruits", vertical: "grocery", startingPrice: 20, position: 1, type: "main", isActive: true },
+        { name: "Dairy, Bread & Eggs", slug: "dairy-bread-eggs", vertical: "grocery", startingPrice: 30, position: 2, type: "main", isActive: true },
+        { name: "Atta, Rice & Dals", slug: "atta-rice-dals", vertical: "grocery", startingPrice: 65, position: 3, type: "main", isActive: true },
+        { name: "Oil, Ghee & Masalas", slug: "oil-ghee-masalas", vertical: "grocery", startingPrice: 85, position: 4, type: "main", isActive: true },
+        { name: "Munchies & Snacks", slug: "munchies-snacks", vertical: "grocery", startingPrice: 10, position: 5, type: "main", isActive: true },
+        { name: "Cold Drinks & Juices", slug: "drinks-juices", vertical: "grocery", startingPrice: 20, position: 6, type: "main", isActive: true },
+        { name: "Cleaning & Household", slug: "cleaning-household", vertical: "grocery", startingPrice: 45, position: 7, type: "main", isActive: true },
+
+        // Home Services
+        { name: "Electrician & Wiring", slug: "electrician-wiring", vertical: "home_services", startingPrice: 149, position: 1, type: "main", isActive: true },
+        { name: "Plumber & Sanitary", slug: "plumber-sanitary", vertical: "home_services", startingPrice: 149, position: 2, type: "main", isActive: true },
+        { name: "AC Service & Repair", slug: "ac-service-repair", vertical: "home_services", startingPrice: 399, position: 3, type: "main", isActive: true },
+        { name: "Home Deep Cleaning", slug: "home-deep-cleaning", vertical: "home_services", startingPrice: 499, position: 4, type: "main", isActive: true },
+        { name: "Carpenter & Woodwork", slug: "carpenter-woodwork", vertical: "home_services", startingPrice: 199, position: 5, type: "main", isActive: true },
+        { name: "Appliance & RO Repair", slug: "appliance-ro-repair", vertical: "home_services", startingPrice: 249, position: 6, type: "main", isActive: true },
+        { name: "Pest Control", slug: "pest-control", vertical: "home_services", startingPrice: 599, position: 7, type: "main", isActive: true },
+        { name: "Painting & Waterproofing", slug: "painting-waterproofing", vertical: "home_services", startingPrice: 899, position: 8, type: "main", isActive: true },
+
+        // Medicine
+        { name: "Prescription Medicines", slug: "prescription-medicines", vertical: "medicine", startingPrice: 10, position: 1, type: "main", isActive: true },
+        { name: "Fever, Cold & Cough", slug: "fever-cold-cough", vertical: "medicine", startingPrice: 25, position: 2, type: "main", isActive: true },
+        { name: "First Aid & Antiseptics", slug: "first-aid-antiseptics", vertical: "medicine", startingPrice: 30, position: 3, type: "main", isActive: true },
+        { name: "Vitamins & Supplements", slug: "vitamins-supplements", vertical: "medicine", startingPrice: 120, position: 4, type: "main", isActive: true },
+        { name: "Ayurvedic & Herbal", slug: "ayurvedic-herbal", vertical: "medicine", startingPrice: 60, position: 5, type: "main", isActive: true },
+        { name: "Baby & Mom Care", slug: "baby-mom-care", vertical: "medicine", startingPrice: 90, position: 6, type: "main", isActive: true },
+
+        // Courier
+        { name: "Documents & Files", slug: "documents-files", vertical: "courier", startingPrice: 40, position: 1, type: "main", isActive: true },
+        { name: "Parcels & Boxes", slug: "parcels-boxes", vertical: "courier", startingPrice: 60, position: 2, type: "main", isActive: true },
+        { name: "Clothes & Laundry", slug: "clothes-laundry", vertical: "courier", startingPrice: 50, position: 3, type: "main", isActive: true },
+        { name: "Homemade Tiffin", slug: "homemade-tiffin", vertical: "courier", startingPrice: 40, position: 4, type: "main", isActive: true },
+
+        // Laundry
+        { name: "Wash & Fold", slug: "wash-and-fold", vertical: "laundry", startingPrice: 59, position: 1, type: "main", isActive: true },
+        { name: "Wash & Steam Iron", slug: "wash-and-iron", vertical: "laundry", startingPrice: 89, position: 2, type: "main", isActive: true },
+        { name: "Steam Ironing Only", slug: "steam-iron-only", vertical: "laundry", startingPrice: 15, position: 3, type: "main", isActive: true },
+        { name: "Dry Clean - Suits", slug: "dry-clean-suits", vertical: "laundry", startingPrice: 299, position: 4, type: "main", isActive: true },
+        { name: "Dry Clean - Sarees", slug: "dry-clean-sarees", vertical: "laundry", startingPrice: 249, position: 5, type: "main", isActive: true },
+        { name: "Shoe & Sneaker Care", slug: "shoe-care", vertical: "laundry", startingPrice: 299, position: 6, type: "main", isActive: true },
+
+        // Essentials
+        { name: "20L Mineral Water Cans", slug: "20l-water-cans", vertical: "essentials", startingPrice: 35, position: 1, type: "main", isActive: true },
+        { name: "Daily Fresh Milk & Dairy", slug: "daily-fresh-milk", vertical: "essentials", startingPrice: 32, position: 2, type: "main", isActive: true },
+        { name: "Fresh Artisanal Breads", slug: "fresh-breads", vertical: "essentials", startingPrice: 35, position: 3, type: "main", isActive: true },
+        { name: "Pet Food & Care", slug: "pet-food-care", vertical: "essentials", startingPrice: 80, position: 4, type: "main", isActive: true },
+        { name: "Pooja & Morning Flowers", slug: "pooja-flowers", vertical: "essentials", startingPrice: 30, position: 5, type: "main", isActive: true },
+
+        // Bakery & Gifts
+        { name: "Designer Birthday Cakes", slug: "designer-cakes", vertical: "gifts_bakery", startingPrice: 299, position: 1, type: "main", isActive: true },
+        { name: "Fresh Flower Bouquets", slug: "flower-bouquets", vertical: "gifts_bakery", startingPrice: 199, position: 2, type: "main", isActive: true },
+        { name: "Chocolates & Gift Hampers", slug: "chocolates-hampers", vertical: "gifts_bakery", startingPrice: 149, position: 3, type: "main", isActive: true },
+        { name: "Pastries & Cupcakes", slug: "pastries-cupcakes", vertical: "gifts_bakery", startingPrice: 49, position: 4, type: "main", isActive: true }
+      ];
+      await Category.insertMany(defaultSeeds).catch(() => {});
     }
 
     const categories = await Category.find(filter)
@@ -212,8 +296,9 @@ exports.getSubcategoriesByParent = async (req, res) => {
  */
 exports.getAdminCategories = async (req, res) => {
   try {
-    const { type, parentCategoryId, search } = req.query;
+    const { type, parentCategoryId, search, vertical } = req.query;
     const filter = {};
+    if (vertical && vertical !== "all") filter.vertical = vertical;
     if (type) filter.type = type;
     if (parentCategoryId) filter.parentCategoryId = parentCategoryId;
     if (search) {
@@ -221,6 +306,75 @@ exports.getAdminCategories = async (req, res) => {
         { name: { $regex: search, $options: "i" } },
         { slug: { $regex: search, $options: "i" } },
       ];
+    }
+
+    const existingTotal = await Category.countDocuments();
+    if (existingTotal === 0) {
+      const defaultSeeds = [
+        // Food
+        { name: "North Indian & Thali", slug: "north-indian-thali", vertical: "food", startingPrice: 99, position: 1, type: "main", isActive: true },
+        { name: "South Indian & Dosa", slug: "south-indian-dosa", vertical: "food", startingPrice: 69, position: 2, type: "main", isActive: true },
+        { name: "Indore Street Food & Poha", slug: "indore-street-food", vertical: "food", startingPrice: 39, position: 3, type: "main", isActive: true },
+        { name: "Pizza & Burgers", slug: "pizza-burgers", vertical: "food", startingPrice: 89, position: 4, type: "main", isActive: true },
+        { name: "Biryani & Kebabs", slug: "biryani-kebabs", vertical: "food", startingPrice: 149, position: 5, type: "main", isActive: true },
+        { name: "Chinese & Momos", slug: "chinese-momos", vertical: "food", startingPrice: 59, position: 6, type: "main", isActive: true },
+        { name: "Desserts & Shakes", slug: "desserts-shakes", vertical: "food", startingPrice: 49, position: 7, type: "main", isActive: true },
+
+        // Grocery
+        { name: "Fresh Vegetables & Fruits", slug: "fresh-vegetables-fruits", vertical: "grocery", startingPrice: 20, position: 1, type: "main", isActive: true },
+        { name: "Dairy, Bread & Eggs", slug: "dairy-bread-eggs", vertical: "grocery", startingPrice: 30, position: 2, type: "main", isActive: true },
+        { name: "Atta, Rice & Dals", slug: "atta-rice-dals", vertical: "grocery", startingPrice: 65, position: 3, type: "main", isActive: true },
+        { name: "Oil, Ghee & Masalas", slug: "oil-ghee-masalas", vertical: "grocery", startingPrice: 85, position: 4, type: "main", isActive: true },
+        { name: "Munchies & Snacks", slug: "munchies-snacks", vertical: "grocery", startingPrice: 10, position: 5, type: "main", isActive: true },
+        { name: "Cold Drinks & Juices", slug: "drinks-juices", vertical: "grocery", startingPrice: 20, position: 6, type: "main", isActive: true },
+        { name: "Cleaning & Household", slug: "cleaning-household", vertical: "grocery", startingPrice: 45, position: 7, type: "main", isActive: true },
+
+        // Home Services
+        { name: "Electrician & Wiring", slug: "electrician-wiring", vertical: "home_services", startingPrice: 149, position: 1, type: "main", isActive: true },
+        { name: "Plumber & Sanitary", slug: "plumber-sanitary", vertical: "home_services", startingPrice: 149, position: 2, type: "main", isActive: true },
+        { name: "AC Service & Repair", slug: "ac-service-repair", vertical: "home_services", startingPrice: 399, position: 3, type: "main", isActive: true },
+        { name: "Home Deep Cleaning", slug: "home-deep-cleaning", vertical: "home_services", startingPrice: 499, position: 4, type: "main", isActive: true },
+        { name: "Carpenter & Woodwork", slug: "carpenter-woodwork", vertical: "home_services", startingPrice: 199, position: 5, type: "main", isActive: true },
+        { name: "Appliance & RO Repair", slug: "appliance-ro-repair", vertical: "home_services", startingPrice: 249, position: 6, type: "main", isActive: true },
+        { name: "Pest Control", slug: "pest-control", vertical: "home_services", startingPrice: 599, position: 7, type: "main", isActive: true },
+        { name: "Painting & Waterproofing", slug: "painting-waterproofing", vertical: "home_services", startingPrice: 899, position: 8, type: "main", isActive: true },
+
+        // Medicine
+        { name: "Prescription Medicines", slug: "prescription-medicines", vertical: "medicine", startingPrice: 10, position: 1, type: "main", isActive: true },
+        { name: "Fever, Cold & Cough", slug: "fever-cold-cough", vertical: "medicine", startingPrice: 25, position: 2, type: "main", isActive: true },
+        { name: "First Aid & Antiseptics", slug: "first-aid-antiseptics", vertical: "medicine", startingPrice: 30, position: 3, type: "main", isActive: true },
+        { name: "Vitamins & Supplements", slug: "vitamins-supplements", vertical: "medicine", startingPrice: 120, position: 4, type: "main", isActive: true },
+        { name: "Ayurvedic & Herbal", slug: "ayurvedic-herbal", vertical: "medicine", startingPrice: 60, position: 5, type: "main", isActive: true },
+        { name: "Baby & Mom Care", slug: "baby-mom-care", vertical: "medicine", startingPrice: 90, position: 6, type: "main", isActive: true },
+
+        // Courier
+        { name: "Documents & Files", slug: "documents-files", vertical: "courier", startingPrice: 40, position: 1, type: "main", isActive: true },
+        { name: "Parcels & Boxes", slug: "parcels-boxes", vertical: "courier", startingPrice: 60, position: 2, type: "main", isActive: true },
+        { name: "Clothes & Laundry", slug: "clothes-laundry", vertical: "courier", startingPrice: 50, position: 3, type: "main", isActive: true },
+        { name: "Homemade Tiffin", slug: "homemade-tiffin", vertical: "courier", startingPrice: 40, position: 4, type: "main", isActive: true },
+
+        // Laundry
+        { name: "Wash & Fold", slug: "wash-and-fold", vertical: "laundry", startingPrice: 59, position: 1, type: "main", isActive: true },
+        { name: "Wash & Steam Iron", slug: "wash-and-iron", vertical: "laundry", startingPrice: 89, position: 2, type: "main", isActive: true },
+        { name: "Steam Ironing Only", slug: "steam-iron-only", vertical: "laundry", startingPrice: 15, position: 3, type: "main", isActive: true },
+        { name: "Dry Clean - Suits", slug: "dry-clean-suits", vertical: "laundry", startingPrice: 299, position: 4, type: "main", isActive: true },
+        { name: "Dry Clean - Sarees", slug: "dry-clean-sarees", vertical: "laundry", startingPrice: 249, position: 5, type: "main", isActive: true },
+        { name: "Shoe & Sneaker Care", slug: "shoe-care", vertical: "laundry", startingPrice: 299, position: 6, type: "main", isActive: true },
+
+        // Essentials
+        { name: "20L Mineral Water Cans", slug: "20l-water-cans", vertical: "essentials", startingPrice: 35, position: 1, type: "main", isActive: true },
+        { name: "Daily Fresh Milk & Dairy", slug: "daily-fresh-milk", vertical: "essentials", startingPrice: 32, position: 2, type: "main", isActive: true },
+        { name: "Fresh Artisanal Breads", slug: "fresh-breads", vertical: "essentials", startingPrice: 35, position: 3, type: "main", isActive: true },
+        { name: "Pet Food & Care", slug: "pet-food-care", vertical: "essentials", startingPrice: 80, position: 4, type: "main", isActive: true },
+        { name: "Pooja & Morning Flowers", slug: "pooja-flowers", vertical: "essentials", startingPrice: 30, position: 5, type: "main", isActive: true },
+
+        // Bakery & Gifts
+        { name: "Designer Birthday Cakes", slug: "designer-cakes", vertical: "gifts_bakery", startingPrice: 299, position: 1, type: "main", isActive: true },
+        { name: "Fresh Flower Bouquets", slug: "flower-bouquets", vertical: "gifts_bakery", startingPrice: 199, position: 2, type: "main", isActive: true },
+        { name: "Chocolates & Gift Hampers", slug: "chocolates-hampers", vertical: "gifts_bakery", startingPrice: 149, position: 3, type: "main", isActive: true },
+        { name: "Pastries & Cupcakes", slug: "pastries-cupcakes", vertical: "gifts_bakery", startingPrice: 49, position: 4, type: "main", isActive: true }
+      ];
+      await Category.insertMany(defaultSeeds).catch(() => {});
     }
 
     const categories = await Category.find(filter)
@@ -266,6 +420,7 @@ exports.createCategory = async (req, res) => {
     const {
       name,
       slug: customSlug,
+      vertical = "food",
       type = "main",
       parentCategoryId,
       description,
@@ -338,6 +493,7 @@ exports.createCategory = async (req, res) => {
     const category = await Category.create({
       name: name.trim(),
       slug: generatedSlug,
+      vertical: vertical || "food",
       type,
       parentCategoryId: type === "subcategory" ? parentCategoryId : null,
       description: description || "",
@@ -389,6 +545,7 @@ exports.updateCategory = async (req, res) => {
     const {
       name,
       slug: customSlug,
+      vertical,
       type,
       parentCategoryId,
       description,
@@ -411,6 +568,7 @@ exports.updateCategory = async (req, res) => {
 
     const oldState = category.toObject();
 
+    if (vertical) category.vertical = vertical;
     if (name) category.name = name.trim();
     if (customSlug || name) {
       category.slug = customSlug ? slugify(customSlug) : slugify(category.name);

@@ -3,26 +3,44 @@ const router = express.Router();
 const Product = require('../models/Product');
 const Subscription = require('../models/Subscription');
 const Restaurant = require('../models/Restaurant');
+const Category = require('../models/Category');
 const { protect } = require('../middleware/authMiddleware');
 const { VERTICALS, BUSINESS_TYPES } = require('../constants/verticals');
 
 /**
  * GET /api/essentials/categories
- * Get essential categories
+ * Get essential categories (Dynamic from MongoDB Category model)
  */
 router.get('/categories', async (req, res) => {
   try {
-    const categories = [
-      { id: 'water_cans', name: '20L Water Cans', icon: 'water_drop', badge: 'Same Day' },
-      { id: 'dairy_milk', name: 'Daily Fresh Milk & Dairy', icon: 'local_drink', badge: 'Morning 7 AM' },
-      { id: 'bakery_breads', name: 'Artisan Bakery & Breads', icon: 'bakery_dining', badge: 'Fresh Oven' },
-      { id: 'pet_supplies', name: 'Pet Food & Care', icon: 'pets', badge: 'Fast Delivery' },
-      { id: 'pooja_needs', name: 'Pooja & Spiritual Flowers', icon: 'spa', badge: 'Daily Fresh' }
-    ];
+    let categories = await Category.find({
+      vertical: { $in: [VERTICALS.ESSENTIALS, VERTICALS.GIFTS_BAKERY] },
+      isActive: { $ne: false }
+    }).select('name slug icon startingPrice position').sort({ position: 1 }).lean();
+
+    if (!categories || categories.length === 0) {
+      const defaultCategories = [
+        { id: 'water_cans', name: '20L Water Cans', slug: 'water_cans', icon: 'water_drop', badge: 'Same Day', vertical: VERTICALS.ESSENTIALS, startingPrice: 35, position: 1 },
+        { id: 'dairy_milk', name: 'Daily Fresh Milk & Dairy', slug: 'dairy_milk', icon: 'local_drink', badge: 'Morning 7 AM', vertical: VERTICALS.ESSENTIALS, startingPrice: 32, position: 2 },
+        { id: 'bakery_breads', name: 'Artisan Bakery & Breads', slug: 'bakery_breads', icon: 'bakery_dining', badge: 'Fresh Oven', vertical: VERTICALS.GIFTS_BAKERY, startingPrice: 35, position: 3 },
+        { id: 'pet_supplies', name: 'Pet Food & Care', slug: 'pet_supplies', icon: 'pets', badge: 'Fast Delivery', vertical: VERTICALS.ESSENTIALS, startingPrice: 80, position: 4 },
+        { id: 'pooja_needs', name: 'Pooja & Spiritual Flowers', slug: 'pooja_needs', icon: 'spa', badge: 'Daily Fresh', vertical: VERTICALS.ESSENTIALS, startingPrice: 30, position: 5 }
+      ];
+      categories = await Category.insertMany(defaultCategories).catch(() => defaultCategories);
+    }
+
+    const formatted = categories.map(c => ({
+      id: c.slug || c._id,
+      _id: c._id,
+      name: c.name,
+      slug: c.slug,
+      icon: c.icon || 'local_drink',
+      badge: c.startingPrice ? `From ₹${c.startingPrice}` : 'Express'
+    }));
 
     return res.status(200).json({
       success: true,
-      data: categories
+      data: formatted
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

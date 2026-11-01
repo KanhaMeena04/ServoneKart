@@ -9,7 +9,8 @@ const AddCategoryForm = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [form, setForm] = useState({
     name: "",
-    status: "",
+    vertical: "food",
+    status: "active",
     image: "", // will hold Base64 string
   });
 
@@ -36,25 +37,43 @@ const AddCategoryForm = () => {
 
     await addCategory({
       name: form.name,
+      vertical: form.vertical || "food",
       status: form.status,
       image: form.image, // send Base64 string to backend
     });
 
     alert("Category added successfully");
-    setForm({ name: "", status: "", image: "" });
+    setForm({ name: "", vertical: "food", status: "active", image: "" });
     setImagePreview(null);
   };
 
   return (
     <div className="p-8 bg-white shadow-sm rounded-md min-h-screen">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-3 gap-8">
           <TextField
             size="small"
             label="Category Name"
             value={form.name}
             onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
           />
+
+          <TextField
+            select
+            size="small"
+            label="Business Vertical"
+            value={form.vertical || "food"}
+            onChange={(e) => setForm(prev => ({ ...prev, vertical: e.target.value }))}
+          >
+            <MenuItem value="food">🍔 Food Delivery</MenuItem>
+            <MenuItem value="grocery">🛒 Grocery & Mart</MenuItem>
+            <MenuItem value="home_services">🔧 Home Services</MenuItem>
+            <MenuItem value="medicine">💊 Medicine & Pharmacy</MenuItem>
+            <MenuItem value="courier">📦 Courier & Drop</MenuItem>
+            <MenuItem value="laundry">🧺 Laundry & Dry Clean</MenuItem>
+            <MenuItem value="essentials">💧 Daily Essentials</MenuItem>
+            <MenuItem value="gifts_bakery">🎂 Bakery & Gifts</MenuItem>
+          </TextField>
 
           <TextField
             select

@@ -251,6 +251,11 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/admin/categories', categoryRoutes);
 
+const vendorRoutes = require('./routes/vendorRoutes');
+app.use('/api/admin/vendors', vendorRoutes);
+app.use('/api/v1/admin/vendors', vendorRoutes);
+app.use('/api/vendors', vendorRoutes);
+
 const { getCategories, getBanners, getPopularDishes } = require('./controllers/homeController');
 app.get('/api/banners', getBanners);
 app.get('/api/v1/banners', getBanners);

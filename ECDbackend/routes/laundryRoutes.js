@@ -38,13 +38,66 @@ router.get('/stores', async (req, res) => {
   }
 });
 
+const Category = require('../models/Category');
+
+/**
+ * GET /api/laundry/categories
+ * Get laundry categories from Category collection
+ */
+router.get('/categories', async (req, res) => {
+  try {
+    let categories = await Category.find({
+      vertical: 'laundry',
+      isActive: { $ne: false }
+    }).select('name slug icon startingPrice position').sort({ position: 1 }).lean();
+
+    if (!categories || categories.length === 0) {
+      const defaultCategories = [
+        { name: 'Wash & Fold', slug: 'wash-and-fold', vertical: 'laundry', startingPrice: 59, position: 1, type: 'main', isActive: true },
+        { name: 'Wash & Steam Iron', slug: 'wash-and-iron', vertical: 'laundry', startingPrice: 89, position: 2, type: 'main', isActive: true },
+        { name: 'Steam Ironing Only', slug: 'steam-iron-only', vertical: 'laundry', startingPrice: 15, position: 3, type: 'main', isActive: true },
+        { name: 'Dry Clean - Suits', slug: 'dry-clean-suits', vertical: 'laundry', startingPrice: 299, position: 4, type: 'main', isActive: true },
+        { name: 'Dry Clean - Sarees', slug: 'dry-clean-sarees', vertical: 'laundry', startingPrice: 249, position: 5, type: 'main', isActive: true },
+        { name: 'Shoe & Sneaker Care', slug: 'shoe-care', vertical: 'laundry', startingPrice: 299, position: 6, type: 'main', isActive: true }
+      ];
+      categories = await Category.insertMany(defaultCategories).catch(() => defaultCategories);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 /**
  * GET /api/laundry/services
- * Get laundry service price catalog
+ * Get laundry service price catalog (Dynamic)
  */
 router.get('/services', async (req, res) => {
   try {
-    const services = [
+    const categories = await Category.find({
+      vertical: 'laundry',
+      isActive: { $ne: false }
+    }).sort({ position: 1 }).lean();
+
+    if (categories && categories.length > 0) {
+      const services = categories.map(c => ({
+        id: c.slug || c._id,
+        _id: c._id,
+        name: c.name,
+        unitType: c.slug.includes('iron') ? 'piece' : (c.slug.includes('wash') ? 'kg' : 'piece'),
+        pricePerUnit: c.startingPrice || 59,
+        minUnits: c.slug.includes('wash') ? 3 : 1,
+        description: c.description || `${c.name} with premium fabric care & sanitized wash`
+      }));
+      return res.status(200).json({ success: true, data: services });
+    }
+
+    const defaultServices = [
       { id: 'wash_and_fold', name: 'Wash & Fold', unitType: 'kg', pricePerUnit: 59, minUnits: 3, description: 'Daily wear clothes washed and neatly folded' },
       { id: 'wash_and_iron', name: 'Wash & Steam Iron', unitType: 'kg', pricePerUnit: 89, minUnits: 3, description: 'Washed, softened and crisp steam pressed' },
       { id: 'steam_iron_only', name: 'Steam Ironing Only', unitType: 'piece', pricePerUnit: 15, minUnits: 5, description: 'Wrinkle-free high quality steam iron' },
@@ -56,7 +109,7 @@ router.get('/services', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: services
+      data: defaultServices
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

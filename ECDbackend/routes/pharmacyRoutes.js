@@ -3,8 +3,42 @@ const router = express.Router();
 const Restaurant = require('../models/Restaurant');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const Category = require('../models/Category');
 const { protect } = require('../middleware/authMiddleware');
 const { VERTICALS, BUSINESS_TYPES } = require('../constants/verticals');
+
+/**
+ * GET /api/pharmacy/categories
+ * List medicine & healthcare categories
+ */
+router.get('/categories', async (req, res) => {
+  try {
+    let categories = await Category.find({
+      vertical: VERTICALS.MEDICINE,
+      isActive: { $ne: false }
+    }).select('name slug icon startingPrice position').sort({ position: 1 }).lean();
+
+    if (!categories || categories.length === 0) {
+      const defaultCategories = [
+        { name: "Prescription Medicines", slug: "prescription-medicines", vertical: VERTICALS.MEDICINE, startingPrice: 10, position: 1, type: "main", isActive: true },
+        { name: "Fever, Cold & Cough", slug: "fever-cold-cough", vertical: VERTICALS.MEDICINE, startingPrice: 25, position: 2, type: "main", isActive: true },
+        { name: "First Aid & Antiseptics", slug: "first-aid-antiseptics", vertical: VERTICALS.MEDICINE, startingPrice: 30, position: 3, type: "main", isActive: true },
+        { name: "Vitamins & Supplements", slug: "vitamins-supplements", vertical: VERTICALS.MEDICINE, startingPrice: 120, position: 4, type: "main", isActive: true },
+        { name: "Ayurvedic & Herbal", slug: "ayurvedic-herbal", vertical: VERTICALS.MEDICINE, startingPrice: 60, position: 5, type: "main", isActive: true },
+        { name: "Baby & Mom Care", slug: "baby-mom-care", vertical: VERTICALS.MEDICINE, startingPrice: 90, position: 6, type: "main", isActive: true }
+      ];
+      categories = await Category.insertMany(defaultCategories).catch(() => defaultCategories);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 /**
  * GET /api/pharmacy/stores

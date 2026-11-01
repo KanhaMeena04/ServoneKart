@@ -3,28 +3,48 @@ const router = express.Router();
 const Booking = require('../models/Booking');
 const ServiceProvider = require('../models/ServiceProvider');
 const ServiceCatalog = require('../models/ServiceCatalog');
+const Category = require('../models/Category');
 const { protect } = require('../middleware/authMiddleware');
 
 /**
  * GET /api/home-services/categories
- * List home service categories (with service count)
+ * List home service categories (Dynamic from MongoDB Category collection)
  */
 router.get('/categories', async (req, res) => {
   try {
-    const categories = [
-      { id: 'electrician', name: 'Electrician', icon: 'electrical_services', description: 'Switchboard, wiring, fans, inverters & MCB repairs' },
-      { id: 'plumber', name: 'Plumber', icon: 'plumbing', description: 'Pipe leakage, taps, water tank, sanitary fittings & blockages' },
-      { id: 'ac_repair', name: 'AC Service & Repair', icon: 'ac_unit', description: 'Deep cleaning, gas refill, cooling issues, uninstallation' },
-      { id: 'cleaning', name: 'Home Deep Cleaning', icon: 'cleaning_services', description: 'Bathroom, kitchen, sofa, carpet & full home deep cleaning' },
-      { id: 'carpenter', name: 'Carpenter', icon: 'carpenter', description: 'Furniture repair, door locks, hinges, custom wood work' },
-      { id: 'appliance', name: 'Appliance Repair', icon: 'kitchen', description: 'Washing machine, refrigerator, microwave & RO water purifiers' },
-      { id: 'pest_control', name: 'Pest Control', icon: 'pest_control', description: 'Cockroaches, bedbugs, termites & mosquito protection' },
-      { id: 'painting', name: 'Painting & Waterproofing', icon: 'format_paint', description: 'Wall painting, touch-ups, dampness & waterproofing' }
-    ];
+    let categories = await Category.find({
+      vertical: 'home_services',
+      isActive: { $ne: false }
+    }).select('name slug icon description startingPrice position').sort({ position: 1 }).lean();
+
+    if (!categories || categories.length === 0) {
+      const defaultCategories = [
+        { id: 'electrician', name: 'Electrician', slug: 'electrician', icon: 'electrical_services', description: 'Switchboard, wiring, fans, inverters & MCB repairs', vertical: 'home_services', startingPrice: 149, position: 1 },
+        { id: 'plumber', name: 'Plumber', slug: 'plumber', icon: 'plumbing', description: 'Pipe leakage, taps, water tank, sanitary fittings & blockages', vertical: 'home_services', startingPrice: 149, position: 2 },
+        { id: 'ac_repair', name: 'AC Service & Repair', slug: 'ac_repair', icon: 'ac_unit', description: 'Deep cleaning, gas refill, cooling issues, uninstallation', vertical: 'home_services', startingPrice: 399, position: 3 },
+        { id: 'cleaning', name: 'Home Deep Cleaning', slug: 'cleaning', icon: 'cleaning_services', description: 'Bathroom, kitchen, sofa, carpet & full home deep cleaning', vertical: 'home_services', startingPrice: 499, position: 4 },
+        { id: 'carpenter', name: 'Carpenter', slug: 'carpenter', icon: 'carpenter', description: 'Furniture repair, door locks, hinges, custom wood work', vertical: 'home_services', startingPrice: 199, position: 5 },
+        { id: 'appliance', name: 'Appliance Repair', slug: 'appliance', icon: 'kitchen', description: 'Washing machine, refrigerator, microwave & RO water purifiers', vertical: 'home_services', startingPrice: 249, position: 6 },
+        { id: 'pest_control', name: 'Pest Control', slug: 'pest_control', icon: 'pest_control', description: 'Cockroaches, bedbugs, termites & mosquito protection', vertical: 'home_services', startingPrice: 599, position: 7 },
+        { id: 'painting', name: 'Painting & Waterproofing', slug: 'painting', icon: 'format_paint', description: 'Wall painting, touch-ups, dampness & waterproofing', vertical: 'home_services', startingPrice: 899, position: 8 }
+      ];
+      categories = await Category.insertMany(defaultCategories).catch(() => defaultCategories);
+    }
+
+    const formatted = categories.map(c => ({
+      id: c.slug || c._id,
+      _id: c._id,
+      name: c.name,
+      slug: c.slug,
+      icon: c.icon || 'home_repair_service',
+      description: c.description || '',
+      startingPrice: c.startingPrice || 149
+    }));
 
     return res.status(200).json({
       success: true,
-      data: categories
+      count: formatted.length,
+      data: formatted
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
