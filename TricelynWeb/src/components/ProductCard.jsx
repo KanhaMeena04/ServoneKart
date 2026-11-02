@@ -1,14 +1,21 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Minus, Star, Clock, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const ProductCard = ({ product }) => {
-  const { getItemQuantity, addToCart, updateQuantity, setSelectedProductForDetail } = useCart();
-  const quantity = getItemQuantity(product._id || product.id);
+  const navigate = useNavigate();
+  const { getItemQuantity, addToCart, updateQuantity } = useCart();
+  const productId = product._id || product.id || product.slug;
+  const quantity = getItemQuantity(productId);
 
   const price = Number(product.price ?? product.sellingPrice ?? product.basePrice) || 0;
   const mrp = Number(product.mrp) || Math.round(price * 1.25);
   const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : (product.discountPercent || 0);
+
+  const handleCardClick = () => {
+    navigate(`/product/${productId}`);
+  };
 
   // Fallback image helper
   const getProductImage = () => {
@@ -29,7 +36,7 @@ const ProductCard = ({ product }) => {
       
       {/* Clickable Image Container */}
       <div 
-        onClick={() => setSelectedProductForDetail(product)}
+        onClick={handleCardClick}
         className="relative w-full h-32 sm:h-36 flex items-center justify-center p-2 mb-2 bg-gray-50/70 rounded-xl group-hover:bg-blue-50/30 transition cursor-pointer"
         title="View product details"
       >
@@ -46,7 +53,7 @@ const ProductCard = ({ product }) => {
         <div>
           {/* Product Name (Clickable) */}
           <h4 
-            onClick={() => setSelectedProductForDetail(product)}
+            onClick={handleCardClick}
             className="text-xs sm:text-sm font-extrabold text-gray-900 line-clamp-1 group-hover:text-[#0055ff] transition cursor-pointer mb-0.5" 
             title={product.name}
           >

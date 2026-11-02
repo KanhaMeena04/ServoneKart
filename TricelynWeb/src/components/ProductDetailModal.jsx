@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   Plus, 
@@ -10,27 +11,35 @@ import {
   Truck, 
   Package, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const ProductDetailModal = () => {
+  const navigate = useNavigate();
   const { selectedProductForDetail, setSelectedProductForDetail, getItemQuantity, addToCart, updateQuantity } = useCart();
 
   if (!selectedProductForDetail) return null;
 
   const product = selectedProductForDetail;
-  const quantity = getItemQuantity(product._id);
+  const productId = product._id || product.id;
+  const quantity = getItemQuantity(productId);
   const price = Number(product.price) || 0;
   const mrp = Number(product.mrp) || Math.round(price * 1.25);
   const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const savings = mrp > price ? mrp - price : 0;
 
+  const handleOpenFullScreen = () => {
+    setSelectedProductForDetail(null);
+    navigate(`/product/${productId}`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]">
         
-        {/* Header with Close */}
+        {/* Header with Close & Full Screen link */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
@@ -38,12 +47,21 @@ const ProductDetailModal = () => {
               {product.category?.name || 'Daily Essentials'}
             </span>
           </div>
-          <button
-            onClick={() => setSelectedProductForDetail(null)}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOpenFullScreen}
+              className="text-xs font-bold text-[#0055ff] hover:text-blue-700 flex items-center gap-1 px-3 py-1 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+            >
+              <span>Full Screen Page</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setSelectedProductForDetail(null)}
+              className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Body */}

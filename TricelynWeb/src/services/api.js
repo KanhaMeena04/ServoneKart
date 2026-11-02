@@ -42,6 +42,8 @@ api.interceptors.response.use(
 export const groceryService = {
   getCategories: () => api.get('/grocery/categories'),
   getProducts: (params = {}) => api.get('/grocery/products', { params }),
+  getProductById: (id) => api.get(`/grocery/products/${id}`),
+  getSimilarProducts: (id, categorySlug) => api.get(`/grocery/products/${id}/similar`, { params: { categorySlug } }),
   getCategorySections: () => api.get('/grocery/category-sections'),
   getBanners: () => api.get('/grocery/banners'),
   getBestSellers: () => api.get('/grocery/best-sellers'),

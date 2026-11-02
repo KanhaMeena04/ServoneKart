@@ -14,6 +14,7 @@ import ProductDetailModal from './components/ProductDetailModal';
 import ActiveOrderBanner from './components/ActiveOrderBanner';
 
 import HomePage from './pages/HomePage';
+import ProductDetailPage from './pages/ProductDetailPage';
 import CategoryPage from './pages/CategoryPage';
 import CategoriesOverviewPage from './pages/CategoriesOverviewPage';
 import StoresPage from './pages/StoresPage';
@@ -39,6 +40,7 @@ function App() {
               <main className="flex-1">
                 <Routes>
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/product/:id" element={<ProductDetailPage />} />
                   <Route path="/category/:slug" element={<CategoryPage />} />
                   <Route path="/categories" element={<CategoriesOverviewPage />} />
                   <Route path="/stores" element={<StoresPage />} />
