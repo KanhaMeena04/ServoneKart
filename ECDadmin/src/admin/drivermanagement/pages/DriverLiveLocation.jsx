@@ -6,10 +6,10 @@ function DriverLiveLocation() {
   return (
     <div className="w-full bg-white p-6 rounded-lg border">
       <PageHeader
-        title="Rider Live Location"
+        title="Delivery Partner Live Location"
         breadcrumbs={[
-          { label: "Rider Live Location" },
-          { label: "Rider", active: true }
+          { label: "Delivery Partner Live Location" },
+          { label: "Delivery Partner", active: true }
         ]}
       />
       <UpdateLocationCard/>

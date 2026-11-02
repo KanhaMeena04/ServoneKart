@@ -29,7 +29,7 @@ function DriverPayout() {
 
   const columns = [
     { field: 'id', headerName: '#', width: 60 },
-    { field: 'driver', headerName: 'Driver', flex: 1 },
+    { field: 'driver', headerName: 'Delivery Partner', flex: 1 },
     { field: 'phone', headerName: 'Phone Number', flex: 1 },
     { field: 'totalOrders', headerName: 'Total Orders', flex: 1 },
     { field: 'totalToBePaid', headerName: 'Total To Be Paid', flex: 1 },
@@ -53,9 +53,9 @@ function DriverPayout() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <PageHeader
-        title="Driver Payout List"
+        title="Delivery Partner Payout List"
         breadcrumbs={[
-          { label: "Driver Payout" },
+          { label: "Delivery Partner Payout" },
           { label: "Payout", active: true }
         ]}
       />
@@ -64,7 +64,7 @@ function DriverPayout() {
       ) : error ? (
         <Typography color="error" className="p-4">{error}</Typography>
       ) : (
-        <PayoutTable data={rows} columns={columns} title="Driver Payout" /> 
+        <PayoutTable data={rows} columns={columns} title="Delivery Partner Payout" /> 
       )}
     </div>
   );

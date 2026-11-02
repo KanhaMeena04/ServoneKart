@@ -6,10 +6,10 @@ function DriverProfile() {
   return (
     <div className="w-full bg-white p-6 rounded-lg border">
       <PageHeader
-        title="Rider Profile"
+        title="Delivery Partner Profile"
         breadcrumbs={[
-          { label: "Rider Profile" },
-          { label: "Rider", active: true }
+          { label: "Delivery Partner Profile" },
+          { label: "Delivery Partner", active: true }
         ]}
       />
       <RiderView/>

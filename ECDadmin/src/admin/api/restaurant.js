@@ -295,7 +295,7 @@ const useEditRestaurantProfile = (restaurantId) => {
             ...rawData,
             name: rawData.name || "Restaurant",
             ownerName: rawData.ownerName || (rawData.owner ? rawData.owner.name || rawData.owner.email : "Owner"),
-            ownerEmail: rawData.ownerEmail || (rawData.owner ? rawData.owner.email : "owner@ecdkart.com"),
+            ownerEmail: rawData.ownerEmail || (rawData.owner ? rawData.owner.email : "owner@servonekart.com"),
             ownerMobile: rawData.ownerMobile || rawData.contactNumber || rawData.phone || (rawData.owner ? rawData.owner.mobile : ""),
             contactNumber: rawData.contactNumber || rawData.phone || "",
             phone: rawData.phone || rawData.contactNumber || "",

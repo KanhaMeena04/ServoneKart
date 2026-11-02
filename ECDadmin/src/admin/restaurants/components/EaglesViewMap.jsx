@@ -153,8 +153,8 @@ export default function EaglesViewMap({ restaurants = [], riders = [] }) {
       const infoWindow = new googleMaps.InfoWindow({
         content: `
           <div style="padding:6px; font-family:sans-serif;">
-            <strong style="font-size:14px; color:#059669;">🛵 ${rd.name || 'Rider'}</strong>
-            <p style="margin:4px 0 0 0; font-size:12px; color:#4b5563;">📱 ${rd.mobile || 'Active Rider'}</p>
+            <strong style="font-size:14px; color:#059669;">🛵 ${rd.name || 'Delivery Partner'}</strong>
+            <p style="margin:4px 0 0 0; font-size:12px; color:#4b5563;">📱 ${rd.mobile || 'Active Delivery Partner'}</p>
           </div>
         `,
       });

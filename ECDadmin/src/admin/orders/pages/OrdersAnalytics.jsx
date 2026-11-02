@@ -120,7 +120,7 @@ export default function OrdersAnalytics() {
     },
     {
       key: "restaurant",
-      label: "Restaurant",
+      label: "Vendor Partner",
       render: (row) => (
         <span className="font-medium text-gray-800 text-xs truncate max-w-[140px] block">
           {row.restaurant}

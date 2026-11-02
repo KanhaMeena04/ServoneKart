@@ -102,7 +102,7 @@ const CreateStaffForm = () => {
             <input 
               type="email" 
               name="email"
-              placeholder="staff@ecdkart.co.in"
+              placeholder="staff@servonekart.com"
               value={formData.email}
               className="border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               onChange={handleChange}

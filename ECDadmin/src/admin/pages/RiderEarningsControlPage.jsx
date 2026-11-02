@@ -47,7 +47,7 @@ export default function RiderEarningsControlPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
-        toast.success('Rider base rates & surge bonus structure saved to Database!');
+        toast.success('Delivery Partner base rates & surge bonus structure saved to Database!');
       }
     } catch (err) {
       toast.error('Failed to save rider earning config');
@@ -67,10 +67,10 @@ export default function RiderEarningsControlPage() {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 1 }}>
-        Rider Earning & Bonus Control Engine
+        Delivery Partner Earning & Bonus Control Engine
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Configure base earnings, distance slabs, surge bonuses (peak/rain/night), and incentive targets for riders.
+        Configure base earnings, distance slabs, surge bonuses (peak/rain/night), and incentive targets for delivery partners.
       </Typography>
 
       <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -110,7 +110,7 @@ export default function RiderEarningsControlPage() {
 
           <Grid item xs={12} sx={{ textAlign: 'right' }}>
             <Button variant="contained" disabled={saving} sx={{ bgcolor: '#248C70', '&:hover': { bgcolor: '#1e755d' } }} onClick={handleSave}>
-              {saving ? 'Saving...' : 'Save Rider Earning Config'}
+              {saving ? 'Saving...' : 'Save Delivery Partner Earning Config'}
             </Button>
           </Grid>
         </Grid>

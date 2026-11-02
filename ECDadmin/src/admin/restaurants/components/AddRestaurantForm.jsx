@@ -519,7 +519,7 @@ const AddRestaurantForm = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ECDKART_Sample_Menu_Template.json";
+    a.download = "ServoneKart_Sample_Menu_Template.json";
     a.click();
   };
 
@@ -866,10 +866,10 @@ const AddRestaurantForm = () => {
       cuisine: [restaurantType, "North Indian", "Fast Food"],
       brand: name.trim(),
       ownerName: ownerName.trim() || `${name.trim()} Owner`,
-      ownerEmail: ownerEmail.trim() || `vendor_${cleanMobile}@ecdkart.com`,
+      ownerEmail: ownerEmail.trim() || `vendor_${cleanMobile}@servonekart.com`,
       ownerMobile: cleanMobile,
       contactNumber: cleanMobile,
-      email: ownerEmail.trim() || `vendor_${cleanMobile}@ecdkart.com`,
+      email: ownerEmail.trim() || `vendor_${cleanMobile}@servonekart.com`,
       ownerPassword: cleanPin,
       ownerPin: cleanPin,
       pin: cleanPin,

@@ -79,7 +79,7 @@ export default function NewOrder() {
     },
     {
       key: "restaurant",
-      label: "Restaurant",
+      label: "Vendor Partner",
       render: (row) => (
         <div>
           <span className="font-medium text-gray-800 text-xs block">{row.restaurant}</span>
@@ -98,7 +98,7 @@ export default function NewOrder() {
     },
     {
       key: "deliveryPeople",
-      label: "Rider",
+      label: "Delivery Partner",
       render: (row) => (
         <div>
           <span className="text-xs font-medium text-gray-700 block">{row.deliveryPeople}</span>

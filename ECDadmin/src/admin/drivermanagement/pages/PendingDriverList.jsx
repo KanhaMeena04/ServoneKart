@@ -11,17 +11,17 @@ export default function PendingDriverList() {
   return (
     <div className="bg-white border rounded-lg p-6 w-full">
       <PageHeader
-        title="Pending Rider Verification"
+        title="Pending Delivery Partner Verification"
         breadcrumbs={[
-          { label: "Pending Riders" },
-          { label: "Riders", active: true }
+          { label: "Pending Delivery Partners" },
+          { label: "Delivery Partners", active: true }
         ]}
       />
       
       <PageActionBar
-        buttonLabel="Add Rider"   
+        buttonLabel="Add Delivery Partner"   
         onButtonClick={() => navigate("/admin-create-driver")} 
-        searchLabel="Riders"
+        searchLabel="Delivery Partners"
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
       />

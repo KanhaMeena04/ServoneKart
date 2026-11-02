@@ -5,10 +5,10 @@ function AdminCreateRestaurant() {
   return (
 	<div className="w-full lg:mt-0 p-4 xs:p-5">
 			  <PageHeader
-				title="Admin Create Restaurant"
+				title="Admin Create Vendor Partner"
 				breadcrumbs={[
-				  { label: "Admin Create Restaurant " },
-				  { label: "Restaurants", active: true },
+				  { label: "Admin Create Vendor Partner" },
+				  { label: "Vendor Partners", active: true },
 				]}
 			  />
 		<AdminCreateRestaurantForm/>

@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DriverBloc()), // âœ… Provide DriverBloc
       ],
       child: MaterialApp(
-        title: 'ECD KART Driver',
+        title: 'Servone Delivery Partner',
         // theme: ThemeData(
         //   primarySwatch: const Color(0xFF248C70),
         //   useMaterial3: true,

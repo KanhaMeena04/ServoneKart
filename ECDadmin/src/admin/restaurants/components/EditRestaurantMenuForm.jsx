@@ -380,7 +380,7 @@ const EditRestaurantMenuForm = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ECDKART_Dynamic_Menu_Template.json";
+    a.download = "ServoneKart_Dynamic_Menu_Template.json";
     a.click();
   };
 

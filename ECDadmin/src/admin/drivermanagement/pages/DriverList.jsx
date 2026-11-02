@@ -11,17 +11,17 @@ export default function DriverList() {
   return (
     <div className="w-full bg-white p-6 rounded-lg border">
       <PageHeader
-        title="Rider List"
+        title="Delivery Partner List"
         breadcrumbs={[
-          { label: "Rider List" },
-          { label: "Rider", active: true }
+          { label: "Delivery Partner List" },
+          { label: "Delivery Partner", active: true }
         ]}
       />
      
       <PageActionBar
-        buttonLabel="Add Rider"   
+        buttonLabel="Add Delivery Partner"   
         onButtonClick={() => navigate("/admin-create-driver")} 
-        searchLabel="Riders"
+        searchLabel="Delivery Partners"
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
       />

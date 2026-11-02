@@ -29,7 +29,7 @@ function DriverTransactionHistory() {
 
   const columns = [
     { field: 'id', headerName: '#', width: 60 },
-    { field: 'driver', headerName: 'Driver', flex: 1 },
+    { field: 'driver', headerName: 'Delivery Partner', flex: 1 },
     { field: 'total', headerName: 'Total', flex: 1 },
     { field: 'transactionId', headerName: 'Transaction ID', flex: 1 },
     { 
@@ -52,10 +52,10 @@ function DriverTransactionHistory() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <PageHeader
-        title="Driver Transaction History"
+        title="Delivery Partner Transaction History"
         breadcrumbs={[
-          { label: "Driver Transaction History" },
-          { label: "Driver Transaction History", active: true }
+          { label: "Delivery Partner Transaction History" },
+          { label: "Delivery Partner Transaction History", active: true }
         ]}
       />
       {loading ? (
@@ -63,7 +63,7 @@ function DriverTransactionHistory() {
       ) : error ? (
         <Typography color="error" className="p-4">{error}</Typography>
       ) : (
-        <PayoutTable data={rows} columns={columns} title="Driver Transaction History" />
+        <PayoutTable data={rows} columns={columns} title="Delivery Partner Transaction History" />
       )}
     </div>
   );

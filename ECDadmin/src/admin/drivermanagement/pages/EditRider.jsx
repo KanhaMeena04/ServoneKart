@@ -6,10 +6,10 @@ function EditRider() {
   return (
     <div className="w-full bg-white p-6 rounded-lg border">
       <PageHeader
-        title="Edit Rider Profile"
+        title="Edit Delivery Partner Profile"
         breadcrumbs={[
-          { label: "Edit Rider Profile" },
-          { label: "Edit Rider", active: true }
+          { label: "Edit Delivery Partner Profile" },
+          { label: "Edit Delivery Partner", active: true }
         ]}
       />
       <EditRiderWrapper/>

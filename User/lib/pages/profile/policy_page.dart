@@ -405,7 +405,7 @@ class SupportPage extends StatelessWidget {
         ),
         PolicySection(
           heading: 'Contact Details',
-          content: 'Email: support@ecdkart.co.in\nPhone: +91 89506 05676\n\nFeel free to reach out to us anytime.',
+          content: 'Email: support@servonekart.com\nPhone: +91 89506 05676\n\nFeel free to reach out to us anytime.',
           customWidget: actionButtons,
         ),
       ],
@@ -424,16 +424,16 @@ class FaqPage extends StatelessWidget {
       emoji: '❓',
       sections: [
         PolicySection(
-          heading: '1. What is ECDKART?',
-          content: 'ECDKART is a food ordering platform that allows customers to discover participating restaurants, order food, make payments, and choose between Home Delivery and Self Pickup where available.',
+          heading: '1. What is ServoneKart?',
+          content: 'ServoneKart is a food ordering platform that allows customers to discover participating restaurants, order food, make payments, and choose between Home Delivery and Self Pickup where available.',
         ),
         PolicySection(
           heading: '2. How do I place an order?',
-          content: 'Open ECDKART, select your location and restaurant, add items to your cart, choose Home Delivery or Self Pickup, confirm your details, select a payment method, and place your order.',
+          content: 'Open ServoneKart, select your location and restaurant, add items to your cart, choose Home Delivery or Self Pickup, confirm your details, select a payment method, and place your order.',
         ),
         PolicySection(
           heading: '3. Can I track my order?',
-          content: 'Where order tracking is available, you may be able to view your order status in real-time through the ECDKART App under "My Orders".',
+          content: 'Where order tracking is available, you may be able to view your order status in real-time through the ServoneKart App under "My Orders".',
         ),
         PolicySection(
           heading: '4. Can I cancel my order?',
@@ -441,23 +441,23 @@ class FaqPage extends StatelessWidget {
         ),
         PolicySection(
           heading: '5. How can I request a refund?',
-          content: 'If you believe your order qualifies for a refund, contact ECDKART Support and provide your Order ID. Refund eligibility is determined according to the ECDKART Refund & Cancellation Policy.',
+          content: 'If you believe your order qualifies for a refund, contact ServoneKart Support and provide your Order ID. Refund eligibility is determined according to the ServoneKart Refund & Cancellation Policy.',
         ),
         PolicySection(
           heading: '6. What payment methods are available?',
           content: 'Payment methods include UPI, Debit/Credit Cards, Wallets, and other supported payment methods displayed during checkout.',
         ),
         PolicySection(
-          heading: '7. Why does ECDKART need my location?',
+          heading: '7. Why does ServoneKart need my location?',
           content: 'Location is used to show nearby restaurants, determine delivery availability, calculate delivery distance, provide order tracking, and support location-based Self Pickup services.',
         ),
         PolicySection(
-          heading: '8. How can I delete my ECDKART account?',
-          content: 'You can use the account deletion option available in your Profile settings under "Edit Profile", or contact ECDKART Support for an account deletion request. Certain information may be retained where required by law.',
+          heading: '8. How can I delete my ServoneKart account?',
+          content: 'You can use the account deletion option available in your Profile settings under "Edit Profile", or contact ServoneKart Support for an account deletion request. Certain information may be retained where required by law.',
         ),
         PolicySection(
-          heading: '9. How can I contact ECDKART Support?',
-          content: 'You can contact us via our website (https://ecdkart.co.in) or email. Please provide your Order ID for faster assistance.',
+          heading: '9. How can I contact ServoneKart Support?',
+          content: 'You can contact us via our website (https://servonekart.com) or email. Please provide your Order ID for faster assistance.',
         ),
       ],
     );
@@ -475,12 +475,12 @@ class AboutAppPage extends StatelessWidget {
       emoji: 'ðŸ“±',
       sections: [
         PolicySection(
-          heading: 'ECDKART',
-          content: 'ECDKART is your premium food delivery application, designed to bring the best local restaurants right to your doorstep. Our mission is to provide lightning-fast deliveries with top-notch reliability.',
+          heading: 'ServoneKart',
+          content: 'ServoneKart is your premium food delivery application, designed to bring the best local restaurants right to your doorstep. Our mission is to provide lightning-fast deliveries with top-notch reliability.',
         ),
         PolicySection(
           heading: 'App Version',
-          content: 'Version 1.0.0 (Build 1)\nDeveloped by ECDKART (OPC) PRIVATE LIMITED.\nTechnology Partner: webintegratorz technologies',
+          content: 'Version 1.0.0 (Build 1)\nDeveloped by ServoneKart (OPC) PRIVATE LIMITED.\nTechnology Partner: webintegratorz technologies',
         ),
       ],
     );
@@ -533,8 +533,8 @@ class PrivacyPolicyPage extends StatelessWidget {
           heading: '7. Grievance Officer & Contact',
           content: 'In accordance with federal compliance regulations, if you have privacy concerns, please contact our Grievance Officer at:\n\n'
                    'ECD KART (OPC) PRIVATE LIMITED\n'
-                   'Website: https://ecdkart.co.in\n'
-                   'Email: support@ecdkart.co.in',
+                   'Website: https://servonekart.com\n'
+                   'Email: support@servonekart.com',
         ),
       ],
     );
@@ -570,7 +570,7 @@ class RefundPolicyPage extends StatelessWidget {
               'delivery address was provided by the customer, (c) the customer was unavailable at '
               'the delivery location after multiple attempts, (d) the refund request was raised '
               'more than 24 hours after the order, (e) the issue was caused by factors outside '
-              'ECDKART\'s control such as natural disasters or government restrictions, or '
+              'ServoneKart\'s control such as natural disasters or government restrictions, or '
               '(f) promotional or free items included in the order.',
         ),
         PolicySection(
@@ -578,10 +578,10 @@ class RefundPolicyPage extends StatelessWidget {
           content:
               'To initiate a refund, go to My Orders in the app, select the relevant order, and '
               'tap "Report an Issue". Describe the problem and attach photos if applicable. '
-              'Alternatively, contact our support team at support@ecdkart.co.in or call +91 89506 05676. '
+              'Alternatively, contact our support team at support@servonekart.com or call +91 89506 05676. '
               'Our team will review your request within 24–48 hours. If approved, the refund will '
               'be processed to your original payment method. For cash-on-delivery orders, refunds '
-              'will be credited as ECDKART wallet balance.',
+              'will be credited as ServoneKart wallet balance.',
         ),
         PolicySection(
           heading: 'Refund Timeline',
@@ -589,7 +589,7 @@ class RefundPolicyPage extends StatelessWidget {
               'Once a refund is approved, the processing time depends on your payment method:\n\n'
               '• UPI / Net Banking: 2–3 business days\n'
               '• Credit / Debit Card: 5–7 business days\n'
-              '• ECDKART Wallet: Instant\n'
+              '• ServoneKart Wallet: Instant\n'
               '• Cash on Delivery: Credited as wallet balance within 24 hours\n\n'
               'Please note that bank processing times may vary. If you do not receive your refund '
               'within the stated period, contact your bank before reaching out to us.',
@@ -598,20 +598,20 @@ class RefundPolicyPage extends StatelessWidget {
           heading: 'Partial Refunds',
           content:
               'In cases where only part of your order was affected — for example, one item was '
-              'missing from a multi-item order — ECDKART may issue a partial refund corresponding '
+              'missing from a multi-item order — ServoneKart may issue a partial refund corresponding '
               'to the value of the affected item(s). The partial refund amount will be calculated '
               'based on the item price at the time of order, excluding any discounts or offers '
-              'applied to the overall order. Partial refunds are credited to your ECDKART wallet '
+              'applied to the overall order. Partial refunds are credited to your ServoneKart wallet '
               'by default for faster processing.',
         ),
         PolicySection(
           heading: 'Contact for Refunds',
           content:
               'For any refund-related queries or disputes, please contact us:\n\n'
-              'Email: support@ecdkart.co.in\n'
+              'Email: support@servonekart.com\n'
               'Phone: +91 89506 05676 (Mon–Sat, 9 AM – 9 PM)\n'
               'In-App: My Orders → Select Order → Report an Issue\n'
-              'Address: ECDKART Technologies Pvt. Ltd., 42 MG Road, Indore, Madhya Pradesh – 452001, India\n\n'
+              'Address: ServoneKart Technologies Pvt. Ltd., 42 MG Road, Indore, Madhya Pradesh – 452001, India\n\n'
               'We are committed to resolving all refund disputes fairly and promptly.',
         ),
       ],
@@ -632,31 +632,31 @@ class TermsConditionsPage extends StatelessWidget {
       sections: [
         PolicySection(
           heading: '1. Introduction & Definitions',
-          content: 'The Platform is operated by ECDKART (OPC) PRIVATE LIMITED. By downloading or using the ECDKART Customer App, you agree to these Terms & Conditions. "Platform" refers to the ECDKART app and services. "Restaurant Partner" refers to listed food outlets, and "Rider" refers to delivery personnel.',
+          content: 'The Platform is operated by ServoneKart (OPC) PRIVATE LIMITED. By downloading or using the ServoneKart Customer App, you agree to these Terms & Conditions. "Platform" refers to the ServoneKart app and services. "Vendor Partner" refers to listed food outlets, and "Delivery Partner" refers to delivery personnel.',
         ),
         PolicySection(
           heading: '2. Account Registration & Security',
-          content: 'You must provide accurate information to register. You are responsible for maintaining the confidentiality of your account credentials and OTPs. ECDKART uses OTP-based authentication for security. Do not share your OTPs with unknown persons.',
+          content: 'You must provide accurate information to register. You are responsible for maintaining the confidentiality of your account credentials and OTPs. ServoneKart uses OTP-based authentication for security. Do not share your OTPs with unknown persons.',
         ),
         PolicySection(
           heading: '3. Ordering & Services',
-          content: 'ECDKART facilitates Home Delivery and Self Pickup from Restaurant Partners. Restaurant Partners are responsible for food preparation and quality. Placing an order does not guarantee acceptance; orders may be rejected due to item unavailability or operational limits.',
+          content: 'ServoneKart facilitates Home Delivery and Self Pickup from Vendor Partners. Vendor Partners are responsible for food preparation and quality. Placing an order does not guarantee acceptance; orders may be rejected due to item unavailability or operational limits.',
         ),
         PolicySection(
           heading: '4. Payments & Refunds',
-          content: 'Payments can be made via UPI, Debit/Credit Cards, Wallets, and other supported methods. Cancellations may be available before food preparation begins. Refunds for eligible cancelled or rejected orders will be processed according to the ECDKART Refund & Cancellation Policy.',
+          content: 'Payments can be made via UPI, Debit/Credit Cards, Wallets, and other supported methods. Cancellations may be available before food preparation begins. Refunds for eligible cancelled or rejected orders will be processed according to the ServoneKart Refund & Cancellation Policy.',
         ),
         PolicySection(
           heading: '5. Prohibited Activities & Conduct',
-          content: 'You must not use the Platform for unlawful purposes, submit fraudulent refund claims, create fake accounts, manipulate payments, or harass Restaurant Partners or Riders. ECDKART may suspend or terminate accounts involved in fraud or abuse.',
+          content: 'You must not use the Platform for unlawful purposes, submit fraudulent refund claims, create fake accounts, manipulate payments, or harass Vendor Partners or Delivery Partners. ServoneKart may suspend or terminate accounts involved in fraud or abuse.',
         ),
         PolicySection(
           heading: '6. Limitation of Liability',
-          content: 'To the maximum extent permitted by applicable law, ECDKART acts as a technology platform and will not be liable for losses arising solely from circumstances beyond its reasonable control, including food quality issues which are the responsibility of the Restaurant Partner.',
+          content: 'To the maximum extent permitted by applicable law, ServoneKart acts as a technology platform and will not be liable for losses arising solely from circumstances beyond its reasonable control, including food quality issues which are the responsibility of the Vendor Partner.',
         ),
         PolicySection(
           heading: '7. Dispute Resolution & Grievance',
-          content: 'These Terms shall be governed by the laws applicable in India. For complaints or grievances, please contact us at:\n\nECDKART (OPC) PRIVATE LIMITED\nWebsite: https://ecdkart.co.in\nPlease provide your registered mobile number and Order ID for faster resolution.',
+          content: 'These Terms shall be governed by the laws applicable in India. For complaints or grievances, please contact us at:\n\nServoneKart (OPC) PRIVATE LIMITED\nWebsite: https://servonekart.com\nPlease provide your registered mobile number and Order ID for faster resolution.',
         ),
       ],
     );
@@ -677,7 +677,7 @@ class ShippingPolicyPage extends StatelessWidget {
         PolicySection(
           heading: 'Delivery Coverage',
           content:
-              'ECDKART currently delivers across Indore, Madhya Pradesh, India. Our delivery '
+              'ServoneKart currently delivers across Indore, Madhya Pradesh, India. Our delivery '
               'zones cover major areas including Vijay Nagar, Palasia, Rajwada, Bhanwarkuan, '
               'Scheme 54, Scheme 78, Nipania, Bhawarkuan, LIG Colony, and surrounding localities. '
               'You can check if your area is serviceable by entering your delivery address in the '
@@ -692,7 +692,7 @@ class ShippingPolicyPage extends StatelessWidget {
               'During peak hours (12 PM – 2 PM and 7 PM – 9 PM), delivery may take up to '
               '60 minutes. Estimated delivery time is displayed on the order confirmation screen '
               'and is updated in real time. Delivery times may be affected by traffic conditions, '
-              'weather, or high order volumes. ECDKART will notify you of any significant delays '
+              'weather, or high order volumes. ServoneKart will notify you of any significant delays '
               'via push notification.',
         ),
         PolicySection(
@@ -702,7 +702,7 @@ class ShippingPolicyPage extends StatelessWidget {
               'your delivery address. The applicable delivery fee is displayed clearly before you '
               'confirm your order. Orders above ₹299 qualify for free delivery from participating '
               'restaurants. A small platform fee may apply to certain orders. During promotional '
-              'periods, delivery charges may be waived. ECDKART reserves the right to revise '
+              'periods, delivery charges may be waived. ServoneKart reserves the right to revise '
               'delivery charges at any time, with changes reflected in the app before order '
               'placement.',
         ),
@@ -726,17 +726,17 @@ class ShippingPolicyPage extends StatelessWidget {
               'cancelled and a refund will be processed as per our Refund Policy. To avoid '
               'failed deliveries, please ensure your address details are accurate and complete, '
               'and that you are reachable on the registered phone number at the time of delivery. '
-              'ECDKART is not liable for failed deliveries due to incorrect address information.',
+              'ServoneKart is not liable for failed deliveries due to incorrect address information.',
         ),
         PolicySection(
           heading: 'Order Tracking',
           content:
-              'ECDKART provides real-time order tracking so you always know where your food is. '
+              'ServoneKart provides real-time order tracking so you always know where your food is. '
               'After placing an order, navigate to My Orders and tap on your active order to '
               'view the live tracking map. You will see status updates including: Order Confirmed, '
               'Preparing, Out for Delivery, and Delivered. Push notifications are sent at each '
               'stage. If you experience any issues with tracking or your order status appears '
-              'stuck, please contact our support team at support@ecdkart.co.in or call '
+              'stuck, please contact our support team at support@servonekart.com or call '
               '+91 89506 05676.',
         ),
       ],

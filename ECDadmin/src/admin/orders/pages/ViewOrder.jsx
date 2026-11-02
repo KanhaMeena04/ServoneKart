@@ -381,7 +381,7 @@ const ViewOrder = () => {
               </div>
             </div>
 
-            {/* 3-COLUMN DETAILS: Customer | Restaurant | Rider (All 3 Always Visible!) */}
+            {/* 3-COLUMN DETAILS: Customer | Vendor Partner | Delivery Partner (All 3 Always Visible!) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
               {/* 1. Customer Details */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
@@ -422,7 +422,7 @@ const ViewOrder = () => {
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-bold uppercase text-[11px] tracking-wider text-red-600 flex items-center gap-1">
-                    <Storefront sx={{ fontSize: 16 }} /> Restaurant Details
+                    <Storefront sx={{ fontSize: 16 }} /> Vendor Partner Details
                   </span>
                   <span className="text-xs font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
                     #{restaurantId}
@@ -453,7 +453,7 @@ const ViewOrder = () => {
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-bold uppercase text-[11px] tracking-wider text-red-600 flex items-center gap-1">
-                    <TwoWheeler sx={{ fontSize: 16 }} /> Rider Details
+                    <TwoWheeler sx={{ fontSize: 16 }} /> Delivery Partner Details
                   </span>
                   <span
                     className={`text-xs font-extrabold px-2 py-0.5 rounded-full ${
@@ -486,10 +486,10 @@ const ViewOrder = () => {
                   </div>
                 ) : (
                   <div className="text-sm space-y-2">
-                    <p className="font-bold text-gray-800 text-sm">No Rider Assigned Yet</p>
+                    <p className="font-bold text-gray-800 text-sm">No Delivery Partner Assigned Yet</p>
                     <p className="text-xs text-gray-500 leading-relaxed">
                       {isPickup
-                        ? "Customer selected self pickup. No rider required."
+                        ? "Customer selected self pickup. No delivery partner required."
                         : "Order will be auto-dispatched or can be assigned by admin."}
                     </p>
                   </div>
@@ -690,7 +690,7 @@ const ViewOrder = () => {
                   </div>
                   {Number(order?.tip || 0) > 0 && (
                     <div className="flex justify-between text-gray-600">
-                      <span>Rider Tip</span>
+                      <span>Delivery Partner Tip</span>
                       <span className="font-bold text-gray-900">₹ {Number(order?.tip || 0).toFixed(2)}</span>
                     </div>
                   )}

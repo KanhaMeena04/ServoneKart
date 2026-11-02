@@ -128,7 +128,29 @@ io.on('connection', (socket) => {
     const idStr = String(restaurantId);
     socket.join(`restaurant_${idStr}`);
     socket.join(`restaurant:${idStr}`);
-    console.log(`📡 Socket ${socket.id} joined restaurant rooms: restaurant_${idStr}, restaurant:${idStr}`);
+    socket.join(`vendor_${idStr}`);
+    socket.join(`vendor:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined restaurant/vendor rooms: restaurant_${idStr}, vendor_${idStr}`);
+  });
+
+  socket.on('joinVendor', (vendorId) => {
+    if (!vendorId) return;
+    const idStr = String(vendorId);
+    socket.join(`restaurant_${idStr}`);
+    socket.join(`restaurant:${idStr}`);
+    socket.join(`vendor_${idStr}`);
+    socket.join(`vendor:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined vendor rooms: ${idStr}`);
+  });
+
+  socket.on('joinVendorPartner', (vendorId) => {
+    if (!vendorId) return;
+    const idStr = String(vendorId);
+    socket.join(`restaurant_${idStr}`);
+    socket.join(`restaurant:${idStr}`);
+    socket.join(`vendor_${idStr}`);
+    socket.join(`vendor:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined vendor partner rooms: ${idStr}`);
   });
 
   socket.on('joinUser', (userId) => {
@@ -156,9 +178,23 @@ io.on('connection', (socket) => {
     const idStr = String(riderId);
     socket.join(`rider_${idStr}`);
     socket.join(`rider:${idStr}`);
+    socket.join(`delivery_partner_${idStr}`);
+    socket.join(`delivery_partner:${idStr}`);
     socket.join(`user_${idStr}`);
     socket.join(`user:${idStr}`);
-    console.log(`📡 Socket ${socket.id} joined rider rooms: ${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined rider/delivery partner rooms: ${idStr}`);
+  });
+
+  socket.on('joinDeliveryPartner', (partnerId) => {
+    if (!partnerId) return;
+    const idStr = String(partnerId);
+    socket.join(`rider_${idStr}`);
+    socket.join(`rider:${idStr}`);
+    socket.join(`delivery_partner_${idStr}`);
+    socket.join(`delivery_partner:${idStr}`);
+    socket.join(`user_${idStr}`);
+    socket.join(`user:${idStr}`);
+    console.log(`📡 Socket ${socket.id} joined delivery partner rooms: ${idStr}`);
   });
 
   socket.on('disconnect', () => {
@@ -195,6 +231,8 @@ app.use('/api/v1/auth', authRoutes);
 
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/v1/restaurants', restaurantRoutes);
+app.use('/api/vendor-partners', restaurantRoutes);
+app.use('/api/v1/vendor-partners', restaurantRoutes);
 
 app.use('/api/menu', menuRoutes);
 app.use('/api/v1/menu', menuRoutes);
@@ -211,6 +249,8 @@ app.use('/api/riders', riderRoutes);
 app.use('/api/v1/riders', riderRoutes);
 app.use('/api/drivers', riderRoutes);
 app.use('/api/v1/drivers', riderRoutes);
+app.use('/api/delivery-partners', riderRoutes);
+app.use('/api/v1/delivery-partners', riderRoutes);
 
 app.use('/api/cms', cmsRoutes);
 app.use('/api/v1/cms', cmsRoutes);
@@ -396,7 +436,7 @@ app.get('/health', (req, res) => {
   });
 });
 app.get('/', (req, res) => {
-  res.send('Food Delivery API is running...');
+  res.send('Servone Hyperlocal Super App API is running...');
 });
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 app.use(notFound);

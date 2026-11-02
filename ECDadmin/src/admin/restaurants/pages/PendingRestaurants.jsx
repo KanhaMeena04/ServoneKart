@@ -5,10 +5,10 @@ function PendingRestaurants() {
   return (
       <div className="w-full lg:mt-0 p-4 xs:p-5">
           <PageHeader
-            title="Pending Restaurants List"
+            title="Pending Vendor Partners List"
             breadcrumbs={[
-              { label: "Pending Restaurants List" },
-              { label: "Restaurants", active: true },
+              { label: "Pending Vendor Partners List" },
+              { label: "Vendor Partners", active: true },
             ]}
           />
     

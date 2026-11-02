@@ -320,7 +320,7 @@ const LiveSupportChat = () => {
   const quickReplies = [
     "Hello! How can I help you today?",
     "We are checking this for you right now, please allow 2 minutes.",
-    "Your issue has been resolved. Thank you for choosing ECDKart!",
+    "Your issue has been resolved. Thank you for choosing ServoneKart!",
     "Could you please share your order number or registered phone?",
   ];
 
@@ -379,7 +379,7 @@ const LiveSupportChat = () => {
           </div>
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Live Support Chat Center</h2>
           <p className="text-white/80 text-xs sm:text-sm mt-1 max-w-xl">
-            Real-time two-way support chat connecting customers, restaurant partners, and riders with the ECDKart Admin team.
+            Real-time two-way support chat connecting customers, vendor partners, and delivery partners with the ServoneKart Admin team.
           </p>
         </div>
 
@@ -417,7 +417,7 @@ const LiveSupportChat = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Users, Restaurants, Riders, Phone..."
+                placeholder="Search Users, Vendor Partners, Delivery Partners, Phone..."
                 className="w-full pl-9 pr-8 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold bg-gray-50 text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#248C70]"
               />
               {searchQuery && (
@@ -439,8 +439,8 @@ const LiveSupportChat = () => {
                 {[
                   { key: "all", label: `All (${searchResults.length})` },
                   { key: "customer", label: `Users (${searchResults.filter((r) => r.entityType === "customer").length})` },
-                  { key: "restaurant", label: `Restaurants (${searchResults.filter((r) => r.entityType === "restaurant").length})` },
-                  { key: "rider", label: `Riders (${searchResults.filter((r) => r.entityType === "rider").length})` },
+                  { key: "restaurant", label: `Vendor Partners (${searchResults.filter((r) => r.entityType === "restaurant").length})` },
+                  { key: "rider", label: `Delivery Partners (${searchResults.filter((r) => r.entityType === "rider").length})` },
                 ].map((tab) => (
                   <button
                     key={tab.key}

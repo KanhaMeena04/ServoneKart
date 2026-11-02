@@ -25,7 +25,7 @@ import {
 const SECTION_TYPE_LABELS = {
   banner_carousel: "Banner Carousel",
   category_grid: "Food Categories Grid",
-  comparison_banner: "ECDkart Price Comparison Banner",
+  comparison_banner: "ServoneKart Price Comparison Banner",
   recommended_dishes: "Recommended Dishes Row",
   restaurant_list: "Explore Restaurants List",
   promotional_card: "Promotional Card",
@@ -670,7 +670,7 @@ const HomeScreenBuilder = () => {
                   >
                     <option value="banner_carousel">Banner Carousel</option>
                     <option value="category_grid">Food Categories Grid (What's on your mind?)</option>
-                    <option value="comparison_banner">ECDkart Price Comparison Banner</option>
+                    <option value="comparison_banner">ServoneKart Price Comparison Banner</option>
                     <option value="recommended_dishes">Recommended Dishes Row</option>
                     <option value="restaurant_list">Explore Restaurants List</option>
                     <option value="promotional_card">Promotional Card</option>

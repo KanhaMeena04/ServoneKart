@@ -83,7 +83,7 @@ export default function CourierWorkspace() {
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active In-Transit</p>
             <h3 className="text-2xl font-bold text-blue-600 mt-1">{metrics.activeOrders}</h3>
-            <span className="text-xs text-blue-600 font-medium">Riders en-route</span>
+            <span className="text-xs text-blue-600 font-medium">Delivery Partners en-route</span>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Navigation /></div>
         </div>

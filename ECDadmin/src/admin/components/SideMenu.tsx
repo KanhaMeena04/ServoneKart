@@ -42,7 +42,7 @@ export default function SideMenu() {
       >
         <img
           src="/image.png"
-          alt="ECDKART Logo"
+          alt="ServoneKart Logo"
           style={{ height: '50px', width: 'auto', objectFit: 'contain' }}
         />
         <SelectContent />

@@ -6,10 +6,10 @@ function AdminCreateRider() {
   return (
     <div className="w-full bg-white p-6 rounded-lg border">
       <PageHeader
-        title="Create Rider"
+        title="Create Delivery Partner"
         breadcrumbs={[
-          { label: "Create Rider" },
-          { label: "Rider", active: true }
+          { label: "Create Delivery Partner" },
+          { label: "Delivery Partner", active: true }
         ]}
       />
       <CreateRiderWrapper/>

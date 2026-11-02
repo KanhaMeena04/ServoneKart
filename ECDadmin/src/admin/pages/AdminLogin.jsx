@@ -48,7 +48,7 @@ const AdminLogin = () => {
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-semibold tracking-wide backdrop-blur-sm shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[#E89D1E] animate-pulse"></span>
-            ECDKART PLATFORM
+            SERVONE PLATFORM
           </div>
         </div>
 
@@ -88,7 +88,7 @@ const AdminLogin = () => {
             <div className="mb-4">
               <img 
                 src="/image.png" 
-                alt="ECDKART Logo" 
+                alt="ServoneKart Logo" 
                 className="h-14 sm:h-16 w-auto object-contain transition-transform duration-300 hover:scale-105" 
               />
             </div>
@@ -117,7 +117,7 @@ const AdminLogin = () => {
                   type="text"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  placeholder="admin@ecdkart.com or 9876543210"
+                  placeholder="admin@servonekart.com or 9876543210"
                   required
                   disabled={loading}
                   style={{ color: '#2C2C2C', WebkitTextFillColor: '#2C2C2C', backgroundColor: '#FFFFFF' }}
@@ -217,7 +217,7 @@ const AdminLogin = () => {
           {/* Footer Note */}
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-400 font-medium">
-              ECDKART Food Delivery &copy; 2026 &bull; Sohna, Haryana Hub
+              ServoneKart Hyperlocal Platform &copy; 2026 &bull; Central Operations Hub
             </p>
           </div>
         </div>

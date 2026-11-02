@@ -77,26 +77,26 @@ export const menuItems: MenuItemType[] = [
   { text: 'Customers', icon: <People />, path: '/user-management', permission: 'User' },
 
   {
-    text: 'Vendors & Partners',
+    text: 'Vendor Partners',
     icon: <Store />,
     permission: 'Restaurant',
     children: [
       { text: 'Vendor Control Tower', path: '/vendors' },
       { text: 'Web Vendor Portal', path: '/vendor/portal' },
-      { text: 'All Restaurants & Marts', path: '/restaurants' },
+      { text: 'All Vendor Partners & Marts', path: '/restaurants' },
       { text: 'Pending Approval', path: '/pending-restaurants' },
-      { text: 'Approved Partners', path: '/approve-restaurant' },
-      { text: 'Restaurant Promocodes', path: '/promocodes', permission: 'Promocode' },
+      { text: 'Approved Vendor Partners', path: '/approve-restaurant' },
+      { text: 'Vendor Partner Promocodes', path: '/promocodes', permission: 'Promocode' },
       { text: 'Add Promocode', path: '/add-promocodes', permission: 'Promocode' },
     ]
   },
 
   {
-    text: 'Riders',
+    text: 'Delivery Partners',
     icon: <DriveEta />,
     permission: 'Driver',
     children: [
-      { text: 'All Riders', path: '/driver-list' },
+      { text: 'All Delivery Partners', path: '/driver-list' },
       { text: 'Pending Verification', path: '/pending-driver-list' },
       { text: 'Earnings & Config', path: '/rider-earnings-control' },
       { text: 'Payout Requests', path: '/rider-payout-requests', permission: 'Settlements' },
@@ -165,8 +165,8 @@ export const menuItems: MenuItemType[] = [
     children: [
       { text: 'Payments', path: '/financial-overview', permission: 'Reports' },
       { text: 'Refunds', path: '/order-refund', permission: 'Reports' },
-      { text: 'Restaurant Settlement', path: '/restaurant-payout', permission: 'Settlements' },
-      { text: 'Rider Settlement', path: '/driver-payout', permission: 'Settlements' },
+      { text: 'Vendor Partner Settlement', path: '/restaurant-payout', permission: 'Settlements' },
+      { text: 'Delivery Partner Settlement', path: '/driver-payout', permission: 'Settlements' },
       { text: 'Reconciliation', path: '/payment-reconciliation', permission: 'Reports' },
     ]
   },
@@ -186,8 +186,8 @@ export const menuItems: MenuItemType[] = [
     children: [
       { text: 'Order & Cancellation Rules', path: '/order-timing-control' },
       { text: 'Delivery Rules', path: '/pricing-control' },
-      { text: 'Rider Rules', path: '/rider-earnings-control' },
-      { text: 'Restaurant Rules', path: '/self-pickup-control' },
+      { text: 'Delivery Partner Rules', path: '/rider-earnings-control' },
+      { text: 'Vendor Partner Rules', path: '/self-pickup-control' },
       { text: 'Refund Rules', path: '/payment-reconciliation' },
     ]
   },
@@ -220,6 +220,7 @@ export default function MenuContent() {
     user?.role === 'admin' ||
     (user as any)?.role === 'admin' ||
     user?.email === 'admin@gmail.com' ||
+    user?.email === 'admin@servonekart.com' ||
     user?.email === 'admin@ecdkart.com' ||
     (user as any)?.roleName === 'Super Admin' ||
     (user as any)?.name === 'Super Admin';

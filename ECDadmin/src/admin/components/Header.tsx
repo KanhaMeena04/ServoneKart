@@ -466,7 +466,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
           </Box>
         </Stack>
 
-        {/* Center Section: Looping Marquee Banner "Welcome To ECDKART" */}
+        {/* Center Section: Looping Marquee Banner "Welcome To ServoneKart" */}
         <Box
           sx={{
             flex: 1,
@@ -507,11 +507,11 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                   pr: 4,
                 }}
               >
-                <span>✨ Welcome To ECDKART</span>
+                <span>✨ Welcome To ServoneKart</span>
                 <span>•</span>
-                <span>🛒 Welcome To ECDKART</span>
+                <span>🛒 Welcome To ServoneKart</span>
                 <span>•</span>
-                <span>🚀 Welcome To ECDKART</span>
+                <span>🚀 Welcome To ServoneKart</span>
                 <span>•</span>
               </Typography>
             ))}
@@ -766,7 +766,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                               </span>
                             ) : (
                               <>
-                                {safeText(notif.orderCode, 'Order')} • <span style={{ color: '#047857' }}>{safeText(notif.restaurantName, 'Restaurant')}</span>
+                                {safeText(notif.orderCode, 'Order')} • <span style={{ color: '#047857' }}>{safeText(notif.restaurantName, 'Vendor Partner')}</span>
                               </>
                             )}
                           </Typography>

@@ -235,7 +235,7 @@ const CreateRoleForm = () => {
                     <Mail size={14} className="text-[#248C70]" /> Login Email ID*
                   </label>
                   <TextField
-                    placeholder="e.g. manager@ecdkart.com"
+                    placeholder="e.g. manager@servonekart.com"
                     size="small"
                     type="email"
                     fullWidth

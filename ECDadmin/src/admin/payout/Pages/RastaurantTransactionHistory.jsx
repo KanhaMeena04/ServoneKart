@@ -29,7 +29,7 @@ function RastaurantTransactionHistory() {
 
   const columns = [
     { field: 'id', headerName: '#', width: 60 },
-    { field: 'restaurant', headerName: 'Restaurant', flex: 1.5 },
+    { field: 'restaurant', headerName: 'Vendor Partner', flex: 1.5 },
     { field: 'total', headerName: 'Total', flex: 1 },
     { field: 'transactionId', headerName: 'Transaction ID', flex: 1 },
     { field: 'date', headerName: 'Date', flex: 1.5 },
@@ -46,7 +46,7 @@ function RastaurantTransactionHistory() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <PageHeader
-        title="Restaurant Transaction History"
+        title="Vendor Partner Transaction History"
         breadcrumbs={[
           { label: "Transaction History" },
           { label: "History", active: true }
@@ -57,7 +57,7 @@ function RastaurantTransactionHistory() {
       ) : error ? (
         <Typography color="error" className="p-4">{error}</Typography>
       ) : (
-        <PayoutTable data={rows} columns={columns} title="Restaurant Transaction History" />
+        <PayoutTable data={rows} columns={columns} title="Vendor Partner Transaction History" />
       )}
     </div>
   );

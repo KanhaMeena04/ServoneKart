@@ -143,10 +143,10 @@ const RiderCashManagement = () => {
   return (
     <Box sx={{ p: 3, backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
       <PageHeader
-        title="Rider COD Cash Management & Unfreeze"
+        title="Delivery Partner COD Cash Management & Unfreeze"
         breadcrumbs={[
           { label: "Payouts" },
-          { label: "Rider Cash Controls", active: true }
+          { label: "Delivery Partner Cash Controls", active: true }
         ]}
       />
 
@@ -159,7 +159,7 @@ const RiderCashManagement = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <LockIcon color="error" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="textSecondary">Frozen Riders</Typography>
+                <Typography variant="subtitle2" color="textSecondary">Frozen Delivery Partners</Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold" color="error">{frozenRiders.length}</Typography>
             </CardContent>

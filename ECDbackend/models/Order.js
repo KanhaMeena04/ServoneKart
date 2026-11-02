@@ -253,6 +253,15 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+orderSchema.virtual("deliveryPartner").get(function() {
+  return this.rider;
+});
+orderSchema.virtual("vendorPartner").get(function() {
+  return this.restaurant;
+});
+orderSchema.set("toJSON", { virtuals: true });
+orderSchema.set("toObject", { virtuals: true });
+
 orderSchema.index({ customer: 1, createdAt: -1 });
 orderSchema.index({ rider: 1 });
 orderSchema.index({ "deliveryAddress.coordinates": "2dsphere" });

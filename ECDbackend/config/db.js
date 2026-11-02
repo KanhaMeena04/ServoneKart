@@ -7,7 +7,7 @@ const connectDB = async () => {
   if (!mongoUri) {
     console.error('❌ FATAL: MONGODB_URI / MONGO_URI environment variable is missing.');
     console.error('Silently falling back to localhost or legacy databases is strictly disabled.');
-    throw new Error('MONGODB_URI environment variable is required to start ECDbackend.');
+    throw new Error('MONGODB_URI environment variable is required to start ServoneBackend.');
   }
 
   const connectionOptions = {

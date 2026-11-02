@@ -17,12 +17,12 @@ const SiteSetting = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
-    appName: 'ECDKART Food Delivery',
-    metaTitle: 'ECDKART - Instant Food Delivery App',
-    metaDescription: 'ECDKART | Order food online from top nearby restaurants',
-    iosAppLink: 'https://apps.apple.com/in/app/ecdkart-food-delivery/id12113974',
-    androidAppLink: 'https://play.google.com/store/apps/details?id=com.ecdkart.userapp',
-    siteEmail: 'info@ecdkart.co.in',
+    appName: 'ServoneKart Super Delivery',
+    metaTitle: 'ServoneKart - Instant Hyperlocal Delivery App',
+    metaDescription: 'ServoneKart | Order food, grocery, medicines and essentials online',
+    iosAppLink: 'https://apps.apple.com/in/app/servonekart-delivery/id12113974',
+    androidAppLink: 'https://play.google.com/store/apps/details?id=com.servonekart.userapp',
+    siteEmail: 'info@servonekart.com',
     siteContact: '9847192735',
     menuColors: '#248C70',
     highlightColors: '#248C70',
@@ -30,7 +30,7 @@ const SiteSetting = () => {
     restaurantCommission: '80',
     globalGeofenceRadius: '3000',
     defaultUnit: 'KM',
-    orderPrefix: 'ECD',
+    orderPrefix: 'SRV',
     primaryLanguage: 'English',
     secondaryLanguage: 'None',
     facebook: 'https://www.facebook.com/',
@@ -54,17 +54,17 @@ const SiteSetting = () => {
         setSettings((prev) => ({
           ...prev,
           ...res.data,
-          appName: res.data.appName || 'ECDKART Food Delivery',
-          metaTitle: res.data.metaTitle || 'ECDKART - Instant Food Delivery App',
-          metaDescription: res.data.metaDescription || 'ECDKART | Order food online from top nearby restaurants',
-          androidAppLink: res.data.androidAppLink || 'https://play.google.com/store/apps/details?id=com.ecdkart.userapp',
-          siteEmail: res.data.siteEmail || 'info@ecdkart.co.in',
+          appName: res.data.appName || 'ServoneKart Super Delivery',
+          metaTitle: res.data.metaTitle || 'ServoneKart - Instant Hyperlocal Delivery App',
+          metaDescription: res.data.metaDescription || 'ServoneKart | Order food, grocery, medicines and essentials online',
+          androidAppLink: res.data.androidAppLink || 'https://play.google.com/store/apps/details?id=com.servonekart.userapp',
+          siteEmail: res.data.siteEmail || 'info@servonekart.com',
           menuColors: res.data.menuColors || '#248C70',
           highlightColors: res.data.highlightColors || '#248C70'
         }));
       }
     } catch (err) {
-      console.warn("Using default ECDKART master settings");
+      console.warn("Using default ServoneKart master settings");
     } finally {
       setLoading(false);
     }

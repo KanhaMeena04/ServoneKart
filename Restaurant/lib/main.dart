@@ -52,7 +52,7 @@ class RestaurantApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ECD Restaurant',
+      title: 'Servone Vendor Partner',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

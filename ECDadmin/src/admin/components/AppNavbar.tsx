@@ -99,7 +99,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
                         <Typography variant="body2">🔔 New Order #1094 Received</Typography>
                       </MenuItem>
                       <MenuItem onClick={() => setNotifAnchorEl(null)}>
-                        <Typography variant="body2">🛵 Rider assigned to Order #1089</Typography>
+                        <Typography variant="body2">🛵 Delivery Partner assigned to Order #1089</Typography>
                       </MenuItem>
                     </Menu>
                   </Stack>

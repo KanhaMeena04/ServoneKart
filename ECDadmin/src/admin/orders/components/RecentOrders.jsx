@@ -285,7 +285,7 @@ export default function RecentOrders({
         <div className="mt-2.5 relative">
           <input
             type="text"
-            placeholder="Search by Order ID, Restaurant, Customer, Rider..."
+            placeholder="Search by Order ID, Vendor Partner, Customer, Delivery Partner..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white placeholder-gray-400 text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
@@ -321,7 +321,7 @@ export default function RecentOrders({
           filteredOrders.map((order) => {
             const cfg = getStatusConfig(order.normalizedStatus, order.rawStatus || order.status);
             const StatusIcon = cfg.Icon;
-            const restaurantTitle = formatName(order.restaurantName || order.restaurant?.name || order.restaurant, "Restaurant");
+            const restaurantTitle = formatName(order.restaurantName || order.restaurant?.name || order.restaurant, "Vendor Partner");
             const customerTitle = formatName(order.customerName || order.customer?.name || order.customer, "Customer");
             const riderTitle = formatName(order.riderName || order.rider?.name || order.rider?.user?.name, "");
             const isPickup = order.orderType === "self_pickup" || order.orderType === "pickup";
@@ -392,7 +392,7 @@ export default function RecentOrders({
                           <span>•</span>
                           <span className="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded text-[11px] font-semibold border border-purple-100">
                             <PedalBike sx={{ fontSize: 12 }} />
-                            Rider: {riderTitle}
+                            Delivery Partner: {riderTitle}
                             {order.riderId && <span className="opacity-75">({order.riderId})</span>}
                           </span>
                         </>
@@ -400,7 +400,7 @@ export default function RecentOrders({
                         <>
                           <span>•</span>
                           <span className="text-[11px] text-amber-600 font-medium">
-                            No rider assigned
+                            No delivery partner assigned
                           </span>
                         </>
                       ) : null}

@@ -72,7 +72,7 @@ export default function FailedOrders() {
     },
     {
       key: "restaurant",
-      label: "Restaurant",
+      label: "Vendor Partner",
       render: (row) => (
         <div>
           <span className="font-semibold text-gray-800 text-xs block truncate max-w-[160px]" title={row.restaurant}>

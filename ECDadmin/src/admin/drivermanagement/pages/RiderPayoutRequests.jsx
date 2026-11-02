@@ -325,9 +325,9 @@ export default function RiderPayoutRequests() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <PageHeader
-          title="Rider Settlement & Payout Engine"
+          title="Delivery Partner Settlement & Payout Engine"
           breadcrumbs={[
-            { label: "Riders", active: false },
+            { label: "Delivery Partners", active: false },
             { label: "Payout Requests & Settlement", active: true }
           ]}
         />
@@ -351,7 +351,7 @@ export default function RiderPayoutRequests() {
           }`}
         >
           <Wallet size={18} />
-          Rider Payout Requests
+          Delivery Partner Payout Requests
           <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'requests' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'}`}>
             {totalCount}
           </span>
@@ -366,7 +366,7 @@ export default function RiderPayoutRequests() {
           }`}
         >
           <FileText size={18} />
-          Rider Settlement Ledger Engine
+          Delivery Partner Settlement Ledger Engine
           <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'ledger' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'}`}>
             {ledgers.length}
           </span>

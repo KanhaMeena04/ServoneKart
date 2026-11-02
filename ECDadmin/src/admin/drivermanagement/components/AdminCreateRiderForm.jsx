@@ -241,7 +241,7 @@ const AdminCreateRiderForm = ({
                 autoComplete="new-password"
                 value={formData.email || ""}
                 onChange={handleChange}
-                placeholder="rider@ecdkart.com"
+                placeholder="rider@servonekart.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-800 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition"
               />
             </div>

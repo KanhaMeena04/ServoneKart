@@ -56,7 +56,7 @@ export default function EaglesView() {
               🌍 Platform Ecosystem Live Map
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Real-time locations of active restaurant partners, live orders, and available riders.
+              Real-time locations of active vendor partners, live orders, and available delivery partners.
             </Typography>
           </div>
           <Button variant="contained" size="small" sx={{ bgcolor: '#248C70', '&:hover': { bgcolor: '#1e755d' } }} onClick={fetchLiveOverview}>

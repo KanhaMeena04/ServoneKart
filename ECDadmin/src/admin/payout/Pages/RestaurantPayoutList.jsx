@@ -406,10 +406,10 @@ export default function RestaurantPayoutList() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <PageHeader
-          title="Restaurant Settlement & Payout Engine"
+          title="Vendor Partner Settlement & Payout Engine"
           breadcrumbs={[
             { label: "Payouts", active: false },
-            { label: "Restaurant Settlement Screen", active: true }
+            { label: "Vendor Partner Settlement Screen", active: true }
           ]}
         />
         <div className="flex items-center gap-2">
@@ -933,7 +933,7 @@ export default function RestaurantPayoutList() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 font-medium">ECDKART Model: 2–3 Days</span>
+              <span className="text-xs text-gray-500 font-medium">ServoneKart Model: 2–3 Days</span>
             </div>
           </div>
 
@@ -1299,7 +1299,7 @@ export default function RestaurantPayoutList() {
                   <span className="font-bold">+₹{selectedLedger.packagingFee || 0}</span>
                 </div>
                 <div className="flex justify-between p-2 bg-amber-50 text-amber-800 rounded-lg">
-                  <span>Coupon Share ({selectedLedger.couponFundingSource || "ECDKART"}):</span>
+                  <span>Coupon Share ({selectedLedger.couponFundingSource || "ServoneKart"}):</span>
                   <span className="font-bold">-₹{selectedLedger.couponDiscountShare || 0}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-emerald-100 text-emerald-900 rounded-xl font-extrabold text-base">
@@ -1353,7 +1353,7 @@ export default function RestaurantPayoutList() {
                 className="w-full px-3 py-2 bg-gray-50 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="T+1">T+1 (Daily Next Day)</option>
-                <option value="T+2">T+2 (ECDKART Operating Standard 2 Days)</option>
+                <option value="T+2">T+2 (ServoneKart Operating Standard 2 Days)</option>
                 <option value="T+3">T+3 (3 Days Cycle)</option>
                 <option value="Weekly">Weekly (Every Sunday)</option>
                 <option value="Custom">Custom Schedule</option>

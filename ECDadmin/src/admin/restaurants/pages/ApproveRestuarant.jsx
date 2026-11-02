@@ -60,9 +60,9 @@ export default function ApproveRestaurants() {
   return (
     <div className="w-full lg:mt-0 p-4 xs:p-5">
       <PageHeader
-        title="Approved Restaurants"
+        title="Approved Vendor Partners"
         breadcrumbs={[
-          { label: "Restaurants" },
+          { label: "Vendor Partners" },
           { label: "Approved", active: true },
         ]}
       />
