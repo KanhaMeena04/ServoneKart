@@ -48,7 +48,8 @@ const CategoryPage = () => {
           const apiCats = catsRes.value.data.data.map((c) => ({
             name: c.name,
             slug: c.slug || c._id,
-            icon: '🛒',
+            icon: c.icon || '🛒',
+            image: c.image
           }));
           loadedCats = [{ name: 'All Categories', slug: 'all', icon: '✨' }, ...apiCats];
         }

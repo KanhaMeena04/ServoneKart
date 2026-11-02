@@ -42,16 +42,18 @@ const ProductCard = ({ product }) => {
       {/* Top Badges */}
       <div className="flex items-center justify-between w-full mb-1">
         {discountPercent > 0 ? (
-          <span className="bg-brand-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
+          <span className="bg-blue-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-xs">
             {discountPercent}% OFF
           </span>
         ) : (
-          <span className="text-[10px] font-bold text-gray-400">FRESH</span>
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+            FRESH
+          </span>
         )}
         
-        <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
-          <Clock className="w-2.5 h-2.5 text-brand-600" />
-          <span>10-15m</span>
+        <div className="flex items-center gap-1 text-[10px] font-extrabold text-gray-600 bg-gray-100/80 px-2 py-0.5 rounded-md">
+          <Clock className="w-2.5 h-2.5 text-emerald-600" />
+          <span>{product.deliveryTime || '8 MINS'}</span>
         </div>
       </div>
 
@@ -116,16 +118,16 @@ const ProductCard = ({ product }) => {
           {quantity === 0 ? (
             <button
               onClick={() => addToCart(product, 1)}
-              className="px-4 py-1.5 bg-brand-50 hover:bg-brand-600 text-brand-600 hover:text-white border border-brand-200 hover:border-brand-600 rounded-xl text-xs font-extrabold uppercase transition-all shadow-xs flex items-center gap-1 active:scale-95"
+              className="px-4 py-1.5 bg-emerald-50/80 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-600 rounded-lg text-xs font-black uppercase transition-all shadow-xs flex items-center gap-1 active:scale-95 tracking-wide"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
               <span>ADD</span>
             </button>
           ) : (
-            <div className="flex items-center bg-brand-600 text-white rounded-xl shadow-xs overflow-hidden">
+            <div className="flex items-center bg-emerald-600 text-white rounded-lg shadow-xs overflow-hidden">
               <button
                 onClick={() => updateQuantity(product._id, quantity - 1)}
-                className="w-7 h-7 flex items-center justify-center hover:bg-brand-700 active:scale-90 transition font-bold"
+                className="w-7 h-7 flex items-center justify-center hover:bg-emerald-700 active:scale-90 transition font-bold"
                 aria-label="Decrease quantity"
               >
                 <Minus className="w-3.5 h-3.5" />
@@ -135,7 +137,7 @@ const ProductCard = ({ product }) => {
               </span>
               <button
                 onClick={() => updateQuantity(product._id, quantity + 1)}
-                className="w-7 h-7 flex items-center justify-center hover:bg-brand-700 active:scale-90 transition font-bold"
+                className="w-7 h-7 flex items-center justify-center hover:bg-emerald-700 active:scale-90 transition font-bold"
                 aria-label="Increase quantity"
               >
                 <Plus className="w-3.5 h-3.5" />
