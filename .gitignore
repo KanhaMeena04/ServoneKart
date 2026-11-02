@@ -64,3 +64,10 @@ Thumbs.db
 .vscode/
 *.iml
 
+# Backward-compatibility local directory junctions
+ECDadmin/
+ECDbackend/
+Rider/
+User/
+Restaurant/
+
