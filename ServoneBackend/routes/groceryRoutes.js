@@ -11,6 +11,7 @@ const { VERTICALS, BUSINESS_TYPES } = require('../constants/verticals');
 const {
   HERO_BANNERS,
   CATEGORIES,
+  BEST_SELLERS,
   PRODUCTS_BY_CATEGORY,
   ALL_CATALOG_PRODUCTS
 } = require('../data/comprehensiveGroceryCatalog');
@@ -56,39 +57,52 @@ function normalizeProduct(p) {
 
 /**
  * GET /api/grocery/banners
- * Dynamic Hero Top Banner + 3 Feature Promo Banners
+ * Dynamic Hero Top Banner + 3 Feature Promo Banners + Rider Priority Banner
  */
 router.get('/banners', async (req, res) => {
   try {
-    let dbBanners = [];
-    if (mongoose.connection.readyState === 1) {
-      dbBanners = await Banner.find({
-        $or: [{ vertical: 'grocery' }, { type: 'static' }, { isActive: true }]
-      }).sort({ position: 1 }).lean();
-    }
-
     return res.status(200).json({
       success: true,
-      topBanner: HERO_BANNERS.topBanner,
-      subBanners: HERO_BANNERS.subBanners,
+      hero: HERO_BANNERS.hero,
+      offerBanners: HERO_BANNERS.offerBanners,
+      priorityBanner: HERO_BANNERS.priorityBanner,
+      topBanner: HERO_BANNERS.hero,
+      subBanners: HERO_BANNERS.offerBanners,
       banners: [
-        HERO_BANNERS.topBanner,
-        ...HERO_BANNERS.subBanners
+        HERO_BANNERS.hero,
+        ...HERO_BANNERS.offerBanners
       ],
       data: [
-        HERO_BANNERS.topBanner,
-        ...HERO_BANNERS.subBanners
+        HERO_BANNERS.hero,
+        ...HERO_BANNERS.offerBanners
       ]
     });
   } catch (error) {
     return res.status(200).json({
       success: true,
-      topBanner: HERO_BANNERS.topBanner,
-      subBanners: HERO_BANNERS.subBanners,
-      banners: [
-        HERO_BANNERS.topBanner,
-        ...HERO_BANNERS.subBanners
-      ]
+      hero: HERO_BANNERS.hero,
+      offerBanners: HERO_BANNERS.offerBanners,
+      priorityBanner: HERO_BANNERS.priorityBanner
+    });
+  }
+});
+
+/**
+ * GET /api/grocery/best-sellers
+ * Best Selling Products matching Master Mockup
+ */
+router.get('/best-sellers', async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      count: BEST_SELLERS.length,
+      data: BEST_SELLERS
+    });
+  } catch (error) {
+    return res.status(200).json({
+      success: true,
+      count: BEST_SELLERS.length,
+      data: BEST_SELLERS
     });
   }
 });
