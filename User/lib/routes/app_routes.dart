@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/models/restaurant_models.dart';
 import '../pages/auth/otp_page.dart';
 import '../pages/auth/verify_google_phone_page.dart';
 import '../pages/auth/register_page.dart';
 import '../pages/category_product/category_products.dart';
 import '../pages/food_delivery/home_page.dart';
 import '../pages/food_delivery/restaurant_detail_screen.dart';
-import '../pages/category_selection/category_selection_page.dart';
-import '../pages/splash_screen/splash_screen.dart';
-import '../pages/onboarding/onboarding_screen.dart';
+import '../pages/category_selection/categories_page.dart';
+import '../pages/splash_screen/splash_page.dart';
+import '../pages/onboarding/onboarding_page.dart';
 import '../pages/auth/login_page.dart';
 import '../pages/cart/cart_page.dart';
 import '../pages/checkout/checkout_page.dart';
@@ -68,11 +69,11 @@ class AppRoutes {
     routes: [
       GoRoute(
         path: splash,
-        builder: (context, state) => const SplashScreen(),
+        builder: (context, state) => const SplashPage(),
       ),
       GoRoute(
         path: onboarding,
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
         path: locationSetup,
@@ -96,24 +97,35 @@ class AppRoutes {
       ),
       GoRoute(
         path: otpPage,
-        builder: (context, state) {
-          final phone = state.extra as String? ?? '';
-          return OtpPage(phoneNumber: phone);
-        },
+        builder: (context, state) => const OtpPage(),
       ),
       GoRoute(
         path: verifyGooglePhone,
-        builder: (context, state) => const VerifyGooglePhonePage(),
+        builder: (context, state) {
+          final extra = state.extra;
+          final googleUser = extra is Map<String, dynamic> ? extra : <String, dynamic>{};
+          return VerifyGooglePhonePage(googleUser: googleUser);
+        },
       ),
       GoRoute(
         path: restaurantDetail,
         builder: (context, state) {
           final extra = state.extra;
-          if (extra is Map<String, dynamic>) {
+          if (extra is Restaurant) {
             return RestaurantDetailScreen(restaurant: extra);
           }
+          if (extra is Map<String, dynamic>) {
+            try {
+              return RestaurantDetailScreen(restaurant: Restaurant.fromJson(extra));
+            } catch (_) {
+              final id = extra['_id']?.toString() ?? extra['id']?.toString() ?? '';
+              final slug = extra['slug']?.toString() ?? '';
+              return RestaurantDetailScreen(restaurantId: id, slug: slug);
+            }
+          }
           final slug = state.uri.queryParameters['slug'] ?? '';
-          return RestaurantDetailScreen(slug: slug);
+          final id = state.uri.queryParameters['id'] ?? '';
+          return RestaurantDetailScreen(slug: slug, restaurantId: id);
         },
       ),
       GoRoute(
@@ -127,11 +139,21 @@ class AppRoutes {
         path: '/restaurant-detail',
         builder: (context, state) {
           final extra = state.extra;
-          if (extra is Map<String, dynamic>) {
+          if (extra is Restaurant) {
             return RestaurantDetailScreen(restaurant: extra);
           }
+          if (extra is Map<String, dynamic>) {
+            try {
+              return RestaurantDetailScreen(restaurant: Restaurant.fromJson(extra));
+            } catch (_) {
+              final id = extra['_id']?.toString() ?? extra['id']?.toString() ?? '';
+              final slug = extra['slug']?.toString() ?? '';
+              return RestaurantDetailScreen(restaurantId: id, slug: slug);
+            }
+          }
           final slug = state.uri.queryParameters['slug'] ?? '';
-          return RestaurantDetailScreen(slug: slug);
+          final id = state.uri.queryParameters['id'] ?? '';
+          return RestaurantDetailScreen(slug: slug, restaurantId: id);
         },
       ),
       GoRoute(
@@ -143,7 +165,10 @@ class AppRoutes {
       ),
       GoRoute(
         path: categoryProduct,
-        builder: (context, state) => const CategoryProductsPage(),
+        builder: (context, state) {
+          final cat = state.extra as String? ?? state.uri.queryParameters['cat'] ?? '';
+          return CategoryProducts(cat: cat);
+        },
       ),
       GoRoute(
         path: home,
@@ -151,7 +176,7 @@ class AppRoutes {
       ),
       GoRoute(
         path: categories,
-        builder: (context, state) => const CategorySelectionPage(),
+        builder: (context, state) => const CategoriesPage(),
       ),
       GoRoute(
         path: cart,

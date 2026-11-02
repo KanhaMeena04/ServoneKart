@@ -155,7 +155,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
               final rawBType = data['businessType'] ?? data['restaurant']?['businessType'] ?? data['vertical'] ?? prefs.getString('businessType') ?? 'restaurant';
               _businessType = rawBType.toString();
-              prefs.setString('businessType', _businessType); else if (_restaurantName == 'Loading...') {
+              prefs.setString('businessType', _businessType);
+              if (_restaurantName == 'Loading...') {
                 _restaurantName = storedName.isNotEmpty ? storedName : 'My Restaurant';
               }
               _isOnline = data['isActive'] ?? data['restaurant']?['isActive'] ?? true;
