@@ -219,7 +219,7 @@ const HomePage = () => {
 
         {/* ============================================================
             2. SHOP BY CATEGORY SECTION
-            (Matches Master Mockup: Clean White Cards with Group Photos)
+            (Full Round Circular Cards with Thin Brand Blue Theme Border)
            ============================================================ */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -235,22 +235,27 @@ const HomePage = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 lg:grid-cols-7 gap-3 sm:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 lg:grid-cols-7 gap-4 sm:gap-6">
             {categories.slice(0, 7).map((cat) => (
               <Link
                 key={cat.slug || cat._id}
                 to={`/category/${cat.slug}`}
-                className="group bg-white rounded-2xl border border-gray-100 hover:border-blue-300 shadow-xs hover:shadow-md transition-all duration-200 p-3 flex flex-col items-center text-center"
+                className="group flex flex-col items-center text-center cursor-pointer"
               >
-                <div className="w-full h-24 sm:h-28 rounded-xl bg-gray-50 flex items-center justify-center p-2 mb-2 group-hover:bg-blue-50/40 transition">
-                  <img
-                    src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
-                    alt={cat.name}
-                    className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
+                {/* Fully Goal Circle with Thin Brand Theme Blue Border */}
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
+                    <img
+                      src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
+                      alt={cat.name}
+                      className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-gray-900 group-hover:text-[#0055ff] transition line-clamp-1">
+
+                {/* Name Below Circle */}
+                <span className="mt-2.5 text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0055ff] transition line-clamp-2 leading-tight text-center max-w-[105px]">
                   {cat.shortName || cat.name}
                 </span>
               </Link>

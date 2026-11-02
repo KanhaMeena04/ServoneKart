@@ -66,22 +66,27 @@ const CategoriesOverviewPage = () => {
         <p className="text-xs text-gray-500 mt-1">Delivered to your home in 10-15 minutes across Indore</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 sm:gap-8">
         {displayList.map((cat) => (
           <Link
             key={cat.slug}
             to={`/category/${cat.slug}`}
-            className="group bg-white rounded-3xl border border-gray-100 hover:border-brand-300 hover:shadow-md transition p-4 flex flex-col items-center text-center space-y-3"
+            className="group flex flex-col items-center text-center cursor-pointer"
           >
-            <div className={`w-20 h-20 rounded-2xl ${cat.bg} flex items-center justify-center p-2 group-hover:scale-105 transition-transform`}>
-              <img
-                src={cat.img}
-                alt={cat.name}
-                className="max-h-full max-w-full object-contain rounded-xl"
-              />
+            {/* Full Goal Circle with Thin Brand Theme Blue Border */}
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
+              <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
+                <img
+                  src={cat.img}
+                  alt={cat.name}
+                  className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                />
+              </div>
             </div>
-            <div>
-              <h3 className="text-xs font-extrabold text-gray-900 group-hover:text-brand-600 transition leading-snug">
+
+            {/* Name Below Circle */}
+            <div className="mt-2.5">
+              <h3 className="text-xs sm:text-[13px] font-extrabold text-gray-900 group-hover:text-[#0055ff] transition leading-snug line-clamp-2 max-w-[120px]">
                 {cat.name}
               </h3>
               <p className="text-[10px] text-gray-400 font-semibold mt-0.5">{cat.count}</p>
