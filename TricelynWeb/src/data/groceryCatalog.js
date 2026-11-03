@@ -3094,23 +3094,6 @@ export function buildProductDetailsPayload(rawProd, allProds = ALL_CATALOG_PRODU
     .filter(item => (item._id || item.id) !== (p._id || p.id) && (item.categorySlug !== catSlug))
     .slice(0, 8);
 
-  // 6. Recipes for you (matching the 2nd mockup screenshot)
-  const recipes = isDairy ? [
-    { id: 'r1', name: 'Beetroot Halwa', time: '15 mins', image: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=300&q=80', description: 'Rich dessert made with pure full cream milk and fresh beetroots.' },
-    { id: 'r2', name: 'Badam Phirni', time: '20 mins', image: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=300&q=80', description: 'Creamy Kashmiri rice and almond pudding garnished with saffron.' },
-    { id: 'r3', name: 'Angoori Rasmalai', time: '25 mins', image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=300&q=80', description: 'Mini cottage cheese balls soaked in chilled cardamom rabri.' },
-    { id: 'r4', name: 'Bread Pudding', time: '20 mins', image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=300&q=80', description: 'Golden baked bread custard with raisins and melted butter.' },
-    { id: 'r5', name: 'Rabri Kheer', time: '30 mins', image: 'https://images.unsplash.com/photo-1505253758473-96b30decb89c?w=300&q=80', description: 'Slow-simmered authentic festive Indian rice pudding.' },
-    { id: 'r6', name: 'Avocado Smoothie', time: '5 mins', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80', description: 'High protein healthy breakfast shake made in 5 minutes.' }
-  ] : [
-    { id: 'r1', name: 'Quick Morning Oats Bowl', time: '5 mins', image: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=300&q=80', description: 'Nutritious breakfast packed with fiber, fruits and honey.' },
-    { id: 'r2', name: 'Crispy Veggie Stir Fry', time: '12 mins', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&q=80', description: 'Colorful farm-fresh vegetables tossed with garlic and herbs.' },
-    { id: 'r3', name: 'Herb Butter Garlic Toast', time: '8 mins', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=300&q=80', description: 'Crunchy artisan bread with freshly crushed garlic and butter.' },
-    { id: 'r4', name: 'Comfort Moong Dal Khichdi', time: '20 mins', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300&q=80', description: 'Wholesome Ayurvedic comfort meal cooked in pure desi ghee.' },
-    { id: 'r5', name: 'Spiced Kadak Chai', time: '7 mins', image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80', description: 'Classic Indian ginger-cardamom tea brewed to perfection.' },
-    { id: 'r6', name: 'Fresh Fruit Smoothie', time: '5 mins', image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=300&q=80', description: 'Energizing all-natural chilled fruit blend for instant vitality.' }
-  ];
-
   return {
     ...p,
     variants,
@@ -3133,8 +3116,7 @@ export function buildProductDetailsPayload(rawProd, allProds = ALL_CATALOG_PRODU
     storeName: p.storeName,
     storeAddress: p.storeAddress,
     similarProducts,
-    peopleAlsoBought,
-    recipes
+    peopleAlsoBought
   };
 }
 

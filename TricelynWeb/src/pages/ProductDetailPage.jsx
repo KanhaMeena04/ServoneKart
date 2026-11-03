@@ -627,55 +627,6 @@ const ProductDetailPage = () => {
           </section>
         )}
 
-        {/* ============================================================
-            5. RECIPES FOR YOU (Matches Screenshot 2 Middle)
-           ============================================================ */}
-        {product.recipes && product.recipes.length > 0 && (
-          <section className="space-y-4 bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-xs">
-            <div>
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">
-                {product.name} recipes for you
-              </h2>
-              <p className="text-xs text-gray-500 font-medium">
-                Delicious culinary inspirations handpicked for this ingredient
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-              {product.recipes.map((rec) => (
-                <div
-                  key={rec.id}
-                  className="group rounded-2xl border border-gray-100 overflow-hidden bg-white hover:shadow-md transition duration-200 flex flex-col justify-between"
-                >
-                  <div className="relative h-28 w-full overflow-hidden bg-gray-100">
-                    <img
-                      src={rec.image}
-                      alt={rec.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    <span className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" />
-                      <span>{rec.time}</span>
-                    </span>
-                  </div>
-
-                  <div className="p-3 space-y-1">
-                    <h4 className="text-xs font-extrabold text-gray-900 line-clamp-1 group-hover:text-[#0055ff] transition">
-                      {rec.name}
-                    </h4>
-                    {rec.description && (
-                      <p className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">
-                        {rec.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
       </div>
     </div>
   );
