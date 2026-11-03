@@ -10,10 +10,12 @@ const connectDB = async () => {
     throw new Error('MONGODB_URI environment variable is required to start ServoneBackend.');
   }
 
+  mongoose.set('bufferCommands', false);
+
   const connectionOptions = {
-    serverSelectionTimeoutMS: 30000,
-    connectTimeoutMS: 30000,
-    socketTimeoutMS: 45000,
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 15000,
     family: 4, // Use IPv4, skip IPv6 try delays
   };
 
