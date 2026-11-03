@@ -1,5 +1,3 @@
-// layouts/AppLayout.jsx
-// layouts/AppLayout.tsx
 import * as React from "react";
 import { Outlet } from "react-router-dom";
 import Box from "@mui/material/Box";
@@ -15,12 +13,12 @@ export default function AppLayout() {
   const toggleDrawer = (newOpen) => () => setOpen(newOpen);
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f8faff" }}>
       <SideMenu />
       <AppNavbar open={open} toggleDrawer={toggleDrawer} />
 
-      <Box component="main" sx={{ flexGrow: 1 }}>
-        <Stack sx={{ mx: 3, mt: 8 }}>
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, overflowX: "hidden" }}>
+        <Stack sx={{ mx: { xs: 1, sm: 2, md: 3 }, mt: { xs: 7, md: 0 } }}>
           <Header onToggleDashboard={toggleDrawer(true)} />
 
           {/* 👇 PAGE CONTENT COMES HERE */}

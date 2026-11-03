@@ -499,7 +499,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                 sx={{
                   fontWeight: 700,
                   fontSize: { xs: '0.78rem', sm: '0.85rem' },
-                  color: '#047857',
+                  color: '#0055ff',
                   letterSpacing: '0.5px',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -507,11 +507,11 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                   pr: 4,
                 }}
               >
-                <span>✨ Welcome To ServoneKart</span>
+                <span>⚡ TRICELYN Hyperlocal Console</span>
                 <span>•</span>
-                <span>🛒 Welcome To ServoneKart</span>
+                <span>🛒 10-15 Min Superfast Grocery</span>
                 <span>•</span>
-                <span>🚀 Welcome To ServoneKart</span>
+                <span>📍 Indore Dark Store Hubs Live</span>
                 <span>•</span>
               </Typography>
             ))}
@@ -690,7 +690,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <Box sx={{ p: 2, bgcolor: '#F5FAF8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0' }}>
+              <Box sx={{ p: 2, bgcolor: '#f8faff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2C2C2C', fontSize: '0.95rem' }}>
                     Live Notifications {unreadCount > 0 && `(${unreadCount})`}
@@ -766,7 +766,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                               </span>
                             ) : (
                               <>
-                                {safeText(notif.orderCode, 'Order')} • <span style={{ color: '#047857' }}>{safeText(notif.restaurantName, 'Vendor Partner')}</span>
+                                {safeText(notif.orderCode, 'Order')} • <span style={{ color: '#0055ff' }}>{safeText(notif.restaurantName, 'Vendor Partner')}</span>
                               </>
                             )}
                           </Typography>
@@ -820,7 +820,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                             fontSize: '0.75rem',
                             fontWeight: 600,
                             color: '#ffffff',
-                            backgroundColor: '#047857',
+                            backgroundColor: '#0055ff',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
