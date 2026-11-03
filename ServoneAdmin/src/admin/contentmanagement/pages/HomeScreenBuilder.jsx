@@ -24,10 +24,10 @@ import {
 
 const SECTION_TYPE_LABELS = {
   banner_carousel: "Banner Carousel",
-  category_grid: "Food Categories Grid",
-  comparison_banner: "ServoneKart Price Comparison Banner",
-  recommended_dishes: "Recommended Dishes Row",
-  restaurant_list: "Explore Restaurants List",
+  category_grid: "Grocery & Daily Needs Categories Grid",
+  comparison_banner: "Tricelyn Savings Comparison Banner",
+  recommended_dishes: "Best-Selling & Featured Items Row",
+  restaurant_list: "Nearby Dark Stores & Marts List",
   promotional_card: "Promotional Card",
   custom_banner: "Custom Banner",
 };

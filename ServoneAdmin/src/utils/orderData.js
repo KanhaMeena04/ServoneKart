@@ -60,7 +60,7 @@ const extractCustomerMobile = (order) => {
 };
 
 const extractRestaurantName = (order) => {
-  if (!order) return "ECD Restaurant";
+  if (!order) return "Tricelyn Mart & Dark Store";
   if (order.restaurantName && order.restaurantName !== "—" && order.restaurantName !== "Restaurant") {
     return order.restaurantName;
   }
@@ -78,18 +78,18 @@ const extractRestaurantName = (order) => {
     }
   }
   if (order.storeName && order.storeName !== "—") return order.storeName;
-  return "ECD Partner Restaurant";
+  return "Tricelyn Partner Store";
 };
 
 const extractRestaurantId = (order) => {
-  if (!order) return "RNT001";
+  if (!order) return "STR001";
   if (order.restaurantId) return order.restaurantId;
   const rest = order.restaurant || order.store;
   if (rest && typeof rest === "object") {
     if (rest.restaurantId) return rest.restaurantId;
-    if (rest._id) return `RNT${rest._id.toString().slice(-4).toUpperCase()}`;
+    if (rest._id) return `STR${rest._id.toString().slice(-4).toUpperCase()}`;
   }
-  return "RNT001";
+  return "STR001";
 };
 
 const getAddress = (addr) => {

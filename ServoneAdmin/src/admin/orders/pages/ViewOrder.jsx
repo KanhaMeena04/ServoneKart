@@ -30,7 +30,7 @@ import {
   Email,
   ArrowBack,
   Print,
-  Fastfood,
+  LocalMall,
   Schedule,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
@@ -386,7 +386,7 @@ const ViewOrder = () => {
               {/* 1. Customer Details */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold uppercase text-[11px] tracking-wider text-red-600 flex items-center gap-1">
+                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0055ff] flex items-center gap-1">
                     <Person sx={{ fontSize: 16 }} /> Customer Details
                   </span>
                   <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
@@ -398,7 +398,7 @@ const ViewOrder = () => {
                   <p className="text-gray-600 text-xs flex items-center gap-1.5">
                     <Phone sx={{ fontSize: 13 }} className="text-gray-400" />
                     {customerMobile !== "—" ? (
-                      <a href={`tel:${customerMobile}`} className="hover:text-red-600 font-medium text-gray-700 underline decoration-dotted">
+                      <a href={`tel:${customerMobile}`} className="hover:text-blue-600 font-medium text-gray-700 underline decoration-dotted">
                         {customerMobile}
                       </a>
                     ) : (
@@ -408,7 +408,7 @@ const ViewOrder = () => {
                   <p className="text-gray-600 text-xs flex items-center gap-1.5 truncate">
                     <Email sx={{ fontSize: 13 }} className="text-gray-400" />
                     {customerEmail !== "—" ? (
-                      <a href={`mailto:${customerEmail}`} className="hover:text-red-600 text-gray-700 truncate">
+                      <a href={`mailto:${customerEmail}`} className="hover:text-blue-600 text-gray-700 truncate">
                         {customerEmail}
                       </a>
                     ) : (
@@ -421,7 +421,7 @@ const ViewOrder = () => {
               {/* 2. Restaurant Details */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold uppercase text-[11px] tracking-wider text-red-600 flex items-center gap-1">
+                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0055ff] flex items-center gap-1">
                     <Storefront sx={{ fontSize: 16 }} /> Vendor Partner Details
                   </span>
                   <span className="text-xs font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
@@ -433,7 +433,7 @@ const ViewOrder = () => {
                   <p className="text-gray-600 text-xs flex items-center gap-1.5">
                     <Phone sx={{ fontSize: 13 }} className="text-gray-400" />
                     {restaurantPhone !== "—" ? (
-                      <a href={`tel:${restaurantPhone}`} className="hover:text-red-600 font-medium text-gray-700 underline decoration-dotted">
+                      <a href={`tel:${restaurantPhone}`} className="hover:text-blue-600 font-medium text-gray-700 underline decoration-dotted">
                         {restaurantPhone}
                       </a>
                     ) : (
@@ -452,7 +452,7 @@ const ViewOrder = () => {
               {/* 3. Rider Details (Always present!) */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold uppercase text-[11px] tracking-wider text-red-600 flex items-center gap-1">
+                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0055ff] flex items-center gap-1">
                     <TwoWheeler sx={{ fontSize: 16 }} /> Delivery Partner Details
                   </span>
                   <span
@@ -469,7 +469,7 @@ const ViewOrder = () => {
                     <p className="text-gray-600 text-xs flex items-center gap-1.5">
                       <Phone sx={{ fontSize: 13 }} className="text-gray-400" />
                       {riderMobile !== "—" ? (
-                        <a href={`tel:${riderMobile}`} className="hover:text-red-600 font-medium text-gray-700 underline decoration-dotted">
+                        <a href={`tel:${riderMobile}`} className="hover:text-blue-600 font-medium text-gray-700 underline decoration-dotted">
                           {riderMobile}
                         </a>
                       ) : (
@@ -530,7 +530,7 @@ const ViewOrder = () => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-sm uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                  <Fastfood sx={{ fontSize: 18 }} className="text-red-500" />
+                  <LocalMall sx={{ fontSize: 18 }} className="text-blue-600" />
                   Order Items ({items.length})
                 </h3>
               </div>
@@ -576,7 +576,7 @@ const ViewOrder = () => {
                                 />
                               ) : (
                                 <div className="w-12 h-12 bg-gray-100 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400">
-                                  <Fastfood sx={{ fontSize: 20 }} />
+                                  <LocalMall sx={{ fontSize: 20 }} />
                                 </div>
                               )}
                             </TableCell>
@@ -618,7 +618,7 @@ const ViewOrder = () => {
               {/* Left: Payment & Financial Summary */}
               <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/80 space-y-3">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                  <Payment sx={{ fontSize: 16 }} className="text-red-500" /> Payment & Transaction
+                  <Payment sx={{ fontSize: 16 }} className="text-blue-600" /> Payment & Transaction
                 </h4>
                 <div className="text-xs space-y-2 pt-1 text-gray-600">
                   <div className="flex justify-between items-center">
@@ -660,7 +660,7 @@ const ViewOrder = () => {
               </div>
 
               {/* Right: Amount Calculation Card */}
-              <Paper elevation={0} sx={{ bgcolor: BRAND_BG_LIGHT, p: 4, borderRadius: 3, border: "1px solid #fee2e2" }}>
+              <Paper elevation={0} sx={{ bgcolor: BRAND_BG_LIGHT, p: 4, borderRadius: 3, border: "1px solid rgba(0, 85, 255, 0.15)" }}>
                 <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between text-gray-600">
                     <span>Item Total</span>
@@ -700,7 +700,7 @@ const ViewOrder = () => {
                       <span className="font-extrabold">- ₹ {Number(order?.discount || 0).toFixed(2)}</span>
                     </div>
                   )}
-                  <Divider sx={{ my: 1.5, borderColor: "#fecaca" }} />
+                  <Divider sx={{ my: 1.5, borderColor: "rgba(0, 85, 255, 0.18)" }} />
                   <div className="flex justify-between items-center text-lg">
                     <span className="font-bold text-gray-900">Grand Total</span>
                     <span className="font-black text-xl" style={{ color: BRAND_MAIN }}>
@@ -715,7 +715,7 @@ const ViewOrder = () => {
             {Array.isArray(order.timeline) && order.timeline.length > 0 && (
               <div className="mt-8 pt-6 border-t border-gray-100">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-gray-700 flex items-center gap-1.5 mb-4">
-                  <Schedule sx={{ fontSize: 16 }} className="text-red-500" /> Order Journey Timeline
+                  <Schedule sx={{ fontSize: 16 }} className="text-blue-600" /> Order Journey Timeline
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   {order.timeline.map((step, idx) => (

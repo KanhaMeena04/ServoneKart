@@ -50,8 +50,8 @@ import {
 import api from "../../../utils/api";
 import CategoryTable from "../../categories/components/CategoryTable";
 
-const PRIMARY_COLOR = "#248C70";
-const ACCENT_COLOR = "#E89D1E";
+const PRIMARY_COLOR = "#0055ff";
+const ACCENT_COLOR = "#021b44";
 
 export default function CatalogMasterControl() {
   const [activeTab, setActiveTab] = useState(0);

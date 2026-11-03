@@ -199,6 +199,7 @@ const AdminRoutes = () => {
           <Route path="/admin/gifts/dashboard" element={<GiftsWorkspace />} />
           <Route path="/admin/essentials/dashboard" element={<EssentialsWorkspace />} />
           <Route path="/admin/roles/matrix" element={<RolePermissionMatrix />} />
+          <Route path="/role-permission-matrix" element={<RolePermissionMatrix />} />
 				 <Route path="/change-password" element={<ChangePasswordForm />} />
 				 <Route path="/new-order" element={<NewOrder />} />
 				 <Route path="/processing-order" element={<ProcessingOrders />} />
@@ -376,7 +377,6 @@ const AdminRoutes = () => {
 				 <Route path="/service-areas" element={<ServiceAreasPage/>} />
 				 <Route path="/self-pickup-control" element={<SelfPickupControlPage/>} />
 				 <Route path="/order-timing-control" element={<OrderTimingControlPage/>} />
-				 <Route path="/setting" element={<OrderTimingControlPage/>} />
 				 <Route path="/payment-reconciliation" element={<PaymentReconciliationPage/>} />
 				 <Route path="/rider-earnings-control" element={<RiderEarningsControlPage/>} />
 				 <Route path="/audit-logs" element={<AuditLogsPage/>} />

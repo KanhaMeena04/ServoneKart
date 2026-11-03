@@ -48,8 +48,8 @@ import {
 } from "@mui/icons-material";
 import api from "../../../utils/api";
 
-const PRIMARY_COLOR = "#248C70";
-const ACCENT_COLOR = "#E89D1E";
+const PRIMARY_COLOR = "#0055ff";
+const ACCENT_COLOR = "#021b44";
 
 export default function PricingControlTower() {
   const [activeTab, setActiveTab] = useState(0);
