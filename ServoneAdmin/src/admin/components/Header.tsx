@@ -478,8 +478,8 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
             py: 0.5,
             px: 1.5,
             borderRadius: '20px',
-            bgcolor: 'rgba(36, 140, 112, 0.08)',
-            border: '1px solid rgba(36, 140, 112, 0.22)',
+            bgcolor: 'rgba(0, 85, 255, 0.08)',
+            border: '1px solid rgba(0, 85, 255, 0.22)',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -534,12 +534,12 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                   borderRadius: '20px',
                   bgcolor: isSearchFocused ? '#ffffff' : '#f3f4f6',
                   border: '1px solid',
-                  borderColor: isSearchFocused ? '#248C70' : '#e5e7eb',
-                  boxShadow: isSearchFocused ? '0 0 0 3px rgba(36, 140, 112, 0.15)' : 'none',
+                  borderColor: isSearchFocused ? '#0055ff' : '#e5e7eb',
+                  boxShadow: isSearchFocused ? '0 0 0 3px rgba(0, 85, 255, 0.15)' : 'none',
                   transition: 'all 0.2s ease-in-out',
                 }}
               >
-                <SearchRoundedIcon sx={{ color: isSearchFocused ? '#248C70' : '#9ca3af', mr: 0.8, fontSize: 19 }} />
+                <SearchRoundedIcon sx={{ color: isSearchFocused ? '#0055ff' : '#9ca3af', mr: 0.8, fontSize: 19 }} />
                 <InputBase
                   placeholder="Search menu..."
                   value={searchQuery}
@@ -598,10 +598,10 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                           sx={{
                             px: 2,
                             py: 1,
-                            '&:hover': { bgcolor: 'rgba(36, 140, 112, 0.08)' },
+                            '&:hover': { bgcolor: 'rgba(0, 85, 255, 0.08)' },
                           }}
                         >
-                          <ListItemIcon sx={{ minWidth: 32, color: '#248C70' }}>{item.icon}</ListItemIcon>
+                          <ListItemIcon sx={{ minWidth: 32, color: '#0055ff' }}>{item.icon}</ListItemIcon>
                           <ListItemText
                             primary={item.text}
                             secondary={item.parent}
@@ -628,15 +628,15 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                 px: 1.6,
                 py: 0.6,
                 borderRadius: '12px',
-                bgcolor: supportUnreadCount > 0 ? '#10B981' : '#248C70',
+                bgcolor: supportUnreadCount > 0 ? '#10B981' : '#0055ff',
                 color: '#ffffff',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease-in-out',
                 boxShadow: supportUnreadCount > 0 
                   ? '0 0 15px rgba(16, 185, 129, 0.5)' 
-                  : '0 2px 8px rgba(36, 140, 112, 0.25)',
+                  : '0 2px 8px rgba(0, 85, 255, 0.25)',
                 '&:hover': {
-                  bgcolor: supportUnreadCount > 0 ? '#059669' : '#1c6d57',
+                  bgcolor: supportUnreadCount > 0 ? '#059669' : '#0043c7',
                   transform: 'translateY(-1px)',
                 },
               }}
@@ -683,7 +683,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                   borderRadius: 3,
                   p: 0,
                   border: '1px solid rgba(148, 178, 170, 0.3)',
-                  boxShadow: '0 12px 32px rgba(36, 140, 112, 0.15)',
+                  boxShadow: '0 12px 32px rgba(0, 85, 255, 0.15)',
                   overflow: 'hidden'
                 }
               }}
@@ -714,7 +714,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                   <Typography 
                     variant="caption" 
                     onClick={(e) => handleMarkAllRead(e)}
-                    sx={{ color: '#248C70', fontWeight: 700, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                    sx={{ color: '#0055ff', fontWeight: 700, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                   >
                     Mark all as read
                   </Typography>
@@ -746,11 +746,11 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                       sx={{
                         py: 1.5,
                         px: 2,
-                        bgcolor: notif.read ? 'transparent' : 'rgba(36, 140, 112, 0.08)',
+                        bgcolor: notif.read ? 'transparent' : 'rgba(0, 85, 255, 0.08)',
                         cursor: 'pointer',
                         transition: 'background-color 0.2s',
                         borderBottom: '1px solid #f0f0f0',
-                        '&:hover': { bgcolor: 'rgba(36, 140, 112, 0.14)' },
+                        '&:hover': { bgcolor: 'rgba(0, 85, 255, 0.12)' },
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'stretch',
@@ -761,7 +761,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                         <Box sx={{ pr: 1, flex: 1 }}>
                           <Typography variant="body2" sx={{ fontWeight: notif.read ? 600 : 800, color: '#1f2937', fontSize: '0.86rem' }}>
                             {notif.type === 'support' ? (
-                              <span style={{ color: '#248C70', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ color: '#0055ff', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                 💬 Support • {safeText(notif.customerName, 'Customer')}
                               </span>
                             ) : (
@@ -841,7 +841,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
               <Typography variant="body2" sx={{ fontWeight: 700, color: '#1f2937', lineHeight: 1.1 }}>
                 {user?.name || 'Administrator'}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#248C70', fontWeight: 600, display: 'block', textTransform: 'capitalize' }}>
+              <Typography variant="caption" sx={{ color: '#0055ff', fontWeight: 600, display: 'block', textTransform: 'capitalize' }}>
                 {(user as any)?.roleName || (user?.role === 'admin' ? 'Super Admin' : user?.role || 'Admin')}
               </Typography>
             </Box>
@@ -852,14 +852,14 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
               sx={{ 
                 width: 36, 
                 height: 36, 
-                bgcolor: '#248C70', 
+                bgcolor: '#0055ff', 
                 color: '#ffffff', 
                 fontWeight: 700,
                 fontSize: '0.82rem',
                 cursor: 'pointer',
-                border: '2px solid #94B2AA',
-                boxShadow: '0 2px 8px rgba(36, 140, 112, 0.25)',
-                '&:hover': { bgcolor: '#1c6d57' } 
+                border: '2px solid #93c5fd',
+                boxShadow: '0 2px 8px rgba(0, 85, 255, 0.25)',
+                '&:hover': { bgcolor: '#0043c7' } 
               }}
             >
               {((user?.name || 'AD').split(' ').map((n: string) => n[0]).slice(0, 2).join('')).toUpperCase() || 'AD'}

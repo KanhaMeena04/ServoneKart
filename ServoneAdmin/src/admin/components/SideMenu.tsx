@@ -41,9 +41,9 @@ export default function SideMenu() {
         }}
       >
         <img
-          src="/image.png"
-          alt="ServoneKart Logo"
-          style={{ height: '50px', width: 'auto', objectFit: 'contain' }}
+          src="/logo.png"
+          alt="Tricelyn Logo"
+          style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
         />
         <SelectContent />
       </Box>

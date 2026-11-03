@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Main Color Palette
-  static const Color primaryGreen = Color(0xFF248C70);  // Primary Green (#248C70) - Headings, main brand, buttons
-  static const Color accentOrange = Color(0xFFE89D1E);   // Accent Orange (#E89D1E) - Highlights, CTA, important words
-  static const Color darkBlack = Color(0xFF2C2C2C);      // Dark Black (#2C2C2C) - Main text / dark headings
-  static const Color lightGreen = Color(0xFF94B2AA);     // Light Green (#94B2AA) - Secondary elements / borders
-  static const Color lightOrange = Color(0xFFEDB35E);    // Light Orange (#EDB35E) - Underlines / subtle accents
-  static const Color offWhite = Color(0xFFF5FAF8);       // Off-White Background (#F5FAF8) - Main background
-  static const Color cream = Color(0xFFE9E2CE);          // Cream (#E9E2CE) - Secondary background / card accent
+  // Tricelyn Main Brand Palette
+  static const Color primaryBlue = Color(0xFF0055FF);  // Primary Blue (#0055FF) - Headings, main brand, buttons
+  static const Color accentCyan = Color(0xFF00B4D8);   // Accent Cyan (#00B4D8) - Highlights, CTA, pills
+  static const Color darkBlack = Color(0xFF0F172A);    // Dark Slate (#0F172A) - Main text / headings
+  static const Color lightBlue = Color(0xFF93C5FD);    // Light Blue (#93C5FD) - Secondary elements / borders
+  static const Color lightCyan = Color(0xFF38BDF8);    // Light Cyan (#38BDF8) - Accents
+  static const Color offWhite = Color(0xFFF8FAFF);     // Off-White Background (#F8FAFF)
+  static const Color cream = Color(0xFFEFF6FF);        // Soft Tint Background (#EFF6FF)
+
+  // Backward compatibility aliases for existing widgets
+  static const Color primaryGreen = primaryBlue;
+  static const Color accentOrange = accentCyan;
+  static const Color lightGreen = lightBlue;
+  static const Color lightOrange = lightCyan;
 
   // Aliases for compatibility
-  static const Color primary = primaryGreen;
-  static const Color accent = accentOrange;
-  static const Color secondary = accentOrange;
+  static const Color primary = primaryBlue;
+  static const Color accent = accentCyan;
+  static const Color secondary = accentCyan;
   static const Color dark = darkBlack;
   static const Color white = Color(0xFFFFFFFF);
 
@@ -22,24 +28,24 @@ class AppColors {
   static const Color cardBackground = Colors.white;
   static const Color cardAccent = cream;
   static const Color textPrimary = darkBlack;
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color border = lightGreen;
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color border = lightBlue;
 
   // Status Colors
-  static const Color success = primaryGreen;
+  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color warning = accentOrange;
-  static const Color info = Color(0xFF3B82F6);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF0055FF);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primaryGreen, primaryGreen],
+    colors: [primaryBlue, Color(0xFF0043C7)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient secondaryGradient = LinearGradient(
-    colors: [accentOrange, lightOrange],
+    colors: [accentCyan, lightCyan],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

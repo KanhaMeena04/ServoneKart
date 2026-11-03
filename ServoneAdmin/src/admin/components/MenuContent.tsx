@@ -202,7 +202,7 @@ export const menuItems: MenuItemType[] = [
     ]
   },
   { text: 'Audit Logs', icon: <ReceiptLong />, path: '/audit-logs', permission: 'SiteSettings' },
-  { text: 'Chat Support', icon: <SupportAgent sx={{ color: '#248C70' }} />, path: '/support-chat', badge: 'LIVE' },
+  { text: 'Chat Support', icon: <SupportAgent sx={{ color: '#0055ff' }} />, path: '/support-chat', badge: 'LIVE' },
   { text: 'Emergency Controls', icon: <Warning />, path: '/emergency-controls', permission: 'RuleEngine' },
   { text: 'System Health', icon: <HealthAndSafety />, path: '/dashboard', permission: 'Dashboard' },
 ];
@@ -279,14 +279,14 @@ export default function MenuContent() {
                   py: 1,
                   borderRadius: 1,
                   mx: 1,
-                  backgroundColor: location.pathname === item.path ? 'rgba(36, 140, 112, 0.12)' : 'transparent',
-                  color: location.pathname === item.path ? '#248C70' : '#2C2C2C',
-                  '&:hover': { bgcolor: 'rgba(36, 140, 112, 0.08)' }
+                  backgroundColor: location.pathname === item.path ? 'rgba(0, 85, 255, 0.10)' : 'transparent',
+                  color: location.pathname === item.path ? '#0055ff' : '#2C2C2C',
+                  '&:hover': { bgcolor: 'rgba(0, 85, 255, 0.06)' }
                 }}
               >
                 <ListItemIcon sx={{ 
                   minWidth: 36, 
-                  color: location.pathname === item.path ? '#248C70' : '#2C2C2C' 
+                  color: location.pathname === item.path ? '#0055ff' : '#2C2C2C' 
                 }}>
                   {item.icon}
                 </ListItemIcon>
@@ -295,8 +295,8 @@ export default function MenuContent() {
                   <span style={{
                     fontSize: '10px',
                     fontWeight: 800,
-                    backgroundColor: '#d1fae5',
-                    color: '#065f46',
+                    backgroundColor: '#dbeafe',
+                    color: '#1e40af',
                     padding: '2px 7px',
                     borderRadius: '10px',
                     letterSpacing: '0.5px',
@@ -312,7 +312,7 @@ export default function MenuContent() {
                       transform: open === item.text ? 'rotate(90deg)' : 'rotate(0deg)',
                       transition: '0.2s',
                       display: 'flex',
-                      color: open === item.text ? '#248C70' : '#2C2C2C'
+                      color: open === item.text ? '#0055ff' : '#2C2C2C'
                     }}
                   >
                     <ChevronRight fontSize="small" />
@@ -333,16 +333,16 @@ export default function MenuContent() {
                           py: 0.7,
                           borderRadius: 1,
                           mr: 1,
-                          backgroundColor: location.pathname === sub.path ? 'rgba(232, 157, 30, 0.15)' : 'transparent',
-                          color: location.pathname === sub.path ? '#E89D1E' : '#2C2C2C',
+                          backgroundColor: location.pathname === sub.path ? 'rgba(0, 85, 255, 0.12)' : 'transparent',
+                          color: location.pathname === sub.path ? '#0055ff' : '#2C2C2C',
                           '&:hover': {
-                            backgroundColor: '#248C70',
+                            backgroundColor: '#0055ff',
                             color: '#fff',
                             '& .MuiListItemIcon-root': { color: '#fff' }
                           },
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 28, color: location.pathname === sub.path ? '#E89D1E' : '#94B2AA' }}>
+                        <ListItemIcon sx={{ minWidth: 28, color: location.pathname === sub.path ? '#0055ff' : '#93c5fd' }}>
                           <RadioButtonUnchecked sx={{ fontSize: 10 }} />
                         </ListItemIcon>
                         <ListItemText primary={sub.text} primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: location.pathname === sub.path ? 600 : 400 }} />

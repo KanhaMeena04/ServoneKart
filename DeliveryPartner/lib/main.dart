@@ -53,20 +53,20 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DriverBloc()), // âœ… Provide DriverBloc
       ],
       child: MaterialApp(
-        title: 'Servone Delivery Partner',
+        title: 'Tricelyn Delivery Partner',
         // theme: ThemeData(
-        //   primarySwatch: const Color(0xFF248C70),
+        //   primarySwatch: const Color(0xFF0055FF),
         //   useMaterial3: true,
         // ),
         theme: ThemeData(
-          primaryColor: const Color(0xFF248C70),
+          primaryColor: const Color(0xFF0055FF),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF248C70),
-            primary: const Color(0xFF248C70),
-            secondary: const Color(0xFFE89D1E),
+            seedColor: const Color(0xFF0055FF),
+            primary: const Color(0xFF0055FF),
+            secondary: const Color(0xFF00B4D8),
             surface: Colors.white,
           ),
-          scaffoldBackgroundColor: const Color(0xFFF5FAF8),
+          scaffoldBackgroundColor: const Color(0xFFF8FAFF),
           useMaterial3: true,
         ),
 

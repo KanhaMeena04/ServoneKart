@@ -12,6 +12,7 @@ import {
   Clock, 
   HeartHandshake 
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -82,13 +83,14 @@ const Footer = () => {
           
           {/* Brand Info (4 cols) */}
           <div className="md:col-span-5 lg:col-span-4 space-y-2.5">
-            <Link to="/" className="inline-block">
-              <span className="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
-                TRICELYN
-              </span>
-              <p className="text-[9px] tracking-widest font-bold text-blue-400 uppercase mt-0.5">
-                Everything You Actually Want
-              </p>
+            <Link to="/" className="inline-block group">
+              <div className="bg-white px-2.5 py-1 rounded-xl inline-flex items-center shadow-xs">
+                <img 
+                  src={logoImg} 
+                  alt="Tricelyn - Everything You Actually Want" 
+                  className="h-7 sm:h-8 w-auto object-contain" 
+                />
+              </div>
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
               Indore's premier quick-commerce grocery delivery platform. Fresh fruits, vegetables, milk, daily staples & snacks delivered to your doorstep in 10-15 minutes.

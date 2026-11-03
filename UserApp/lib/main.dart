@@ -188,7 +188,7 @@ class _ECDKartAppState extends State<ECDKartApp> {
         ChangeNotifierProvider(create: (_) => AddressProvider()),
       ],
      child: MaterialApp.router(
-        title: 'ECDKART',
+        title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,

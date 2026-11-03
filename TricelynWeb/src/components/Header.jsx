@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLocation } from '../context/LocationContext';
 import { groceryService } from '../services/api';
+import logoImg from '../assets/logo.png';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -61,16 +62,15 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 py-2 gap-4">
             
-            {/* Logo (Matches Mockup with Tricelyn T-mark) */}
-            <Link to="/" className="flex flex-col flex-shrink-0 group">
-              <div className="flex items-center gap-1.5">
-                <span className="text-2xl sm:text-3xl font-black tracking-tighter text-white">
-                  TRICELYN
-                </span>
+            {/* Brand Logo (Tricelyn Logo) */}
+            <Link to="/" className="flex items-center flex-shrink-0 group">
+              <div className="bg-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl shadow-xs transition group-hover:shadow-md flex items-center">
+                <img 
+                  src={logoImg} 
+                  alt="Tricelyn - Everything You Actually Want" 
+                  className="h-8 sm:h-9 w-auto object-contain" 
+                />
               </div>
-              <span className="text-[10px] tracking-wider font-semibold text-blue-100 uppercase -mt-1">
-                Everything You Actually Want
-              </span>
             </Link>
 
             {/* Delivery Location Selector (Matches Mockup) */}

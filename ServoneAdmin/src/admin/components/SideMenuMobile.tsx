@@ -43,8 +43,8 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
       >
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
           <img
-            src="/image.png"
-            alt="ServoneKart Logo"
+            src="/logo.png"
+            alt="Tricelyn Logo"
             style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
           />
         </Box>

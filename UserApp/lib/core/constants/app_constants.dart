@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 class AppConstants {
-  static const String appName = 'ServoneKart';
-  static const String appTagline = 'Food Delivery App';
+  static const String appName = 'Tricelyn';
+  static const String appTagline = 'Everything You Actually Want';
   
   // Pass --dart-define=BACKEND_URL=https://... or --dart-define=LOCAL_IP=192.168.x.x for custom backend
   static const String _customBackendUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
