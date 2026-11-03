@@ -26,17 +26,19 @@ const HomePage = () => {
   const [bestSellers, setBestSellers] = useState([]);
   const [categorySections, setCategorySections] = useState([]);
   const [bannersData, setBannersData] = useState(null);
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadHomeData = async () => {
       try {
         setLoading(true);
-        const [catsRes, bestRes, sectionsRes, bannersRes] = await Promise.allSettled([
+        const [catsRes, bestRes, sectionsRes, bannersRes, storesRes] = await Promise.allSettled([
           groceryService.getCategories(),
           groceryService.getBestSellers(),
           groceryService.getCategorySections(),
           groceryService.getBanners(),
+          groceryService.getStores({ city: 'Indore' }),
         ]);
 
         if (catsRes.status === 'fulfilled' && catsRes.value.data?.data) {
@@ -53,6 +55,10 @@ const HomePage = () => {
 
         if (bannersRes.status === 'fulfilled' && bannersRes.value.data) {
           setBannersData(bannersRes.value.data);
+        }
+
+        if (storesRes.status === 'fulfilled' && storesRes.value.data?.data) {
+          setStores(storesRes.value.data.data);
         }
       } catch (err) {
         console.error('Error fetching home data:', err);
@@ -262,6 +268,103 @@ const HomePage = () => {
             ))}
           </div>
         </section>
+
+        {/* ============================================================
+            SHOPS NEAR ME (Multi-Vendor Hyperlocal Stores in Indore)
+           ============================================================ */}
+        {stores && stores.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
+                    Shops Near Me
+                  </h2>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
+                    ⚡ 10-15 Mins Delivery
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 font-medium">
+                  Verified partner grocery stores & supermarkets in Indore delivering to you
+                </p>
+              </div>
+
+              <Link
+                to="/stores"
+                className="text-xs font-bold text-[#0055ff] hover:text-blue-700 flex items-center gap-0.5 group"
+              >
+                <span>View All ({stores.length}+ Shops)</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {stores.slice(0, 6).map((store) => (
+                <Link
+                  key={store._id || store.id}
+                  to={`/store/${store._id || store.id}`}
+                  className="bg-white rounded-2xl border border-gray-100 hover:border-[#0055ff] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition">
+                      <img
+                        src={store.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
+                        alt={store.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#0055ff] transition truncate">
+                          {store.name}
+                        </h3>
+                        <span className="flex items-center gap-0.5 text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                          <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                          <span>{store.rating || '4.8'}</span>
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                        {store.address || 'Scheme 54, Vijay Nagar, Indore'}
+                      </p>
+
+                      <div className="flex items-center gap-2 mt-1.5 text-[11px]">
+                        <span className="font-bold text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-blue-600" />
+                          <span>{store.deliveryTime || '10-15 mins'}</span>
+                        </span>
+                        {store.distance && (
+                          <span className="text-gray-400 font-medium">
+                            • {store.distance}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-emerald-600 font-bold ml-auto">
+                          Free on ₹199+
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-gray-50 flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      {(store.tags || ['Groceries', 'Daily Needs']).slice(0, 2).map((t, idx) => (
+                        <span key={idx} className="text-[10px] text-gray-500 bg-gray-100/70 px-1.5 py-0.5 rounded truncate">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="font-bold text-[#0055ff] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 flex-shrink-0">
+                      <span>Shop Store</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ============================================================
             3. THREE PROMOTIONAL OFFER BANNERS

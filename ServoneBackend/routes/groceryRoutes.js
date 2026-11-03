@@ -17,7 +17,7 @@ const {
 } = require('../data/comprehensiveGroceryCatalog');
 
 /**
- * Normalizes DB product record into clean frontend-ready structure
+ * Normalizes DB product record into clean frontend-ready structure with Multi-Vendor information
  */
 function normalizeProduct(p) {
   if (!p) return null;
@@ -31,6 +31,14 @@ function normalizeProduct(p) {
   const mrpVal = Number(p.mrp) || Math.round(priceVal * 1.25);
   const discount = mrpVal > priceVal ? Math.round(((mrpVal - priceVal) / mrpVal) * 100) : 0;
   
+  // Extract vendor / store details dynamically
+  const storeObj = (typeof p.restaurant === 'object' && p.restaurant !== null) ? p.restaurant : null;
+  const storeId = storeObj?._id?.toString() || (typeof p.restaurant === 'string' ? p.restaurant : null) || p.storeId || p.store?._id?.toString() || 'store_tricelyn_indore_01';
+  const storeName = storeObj?.name || p.restaurantName || p.storeName || p.store?.name || 'Tricelyn Express Mart (Vijay Nagar Hub)';
+  const storeAddress = storeObj?.address || p.storeAddress || 'Scheme 54, Vijay Nagar, Indore';
+  const storeRating = storeObj?.rating?.average || storeObj?.rating || p.storeRating || 4.8;
+  const storeDelivery = storeObj?.deliveryTime ? `${storeObj.deliveryTime} mins` : (p.deliveryTime || '10-15 mins');
+
   return {
     _id: p._id?.toString() || p.id,
     id: p._id?.toString() || p.id,
@@ -49,33 +57,73 @@ function normalizeProduct(p) {
     categoryName: p.categoryName || p.category?.name || '',
     inStock: p.inStock !== false && (p.stockQuantity ?? 10) > 0,
     stockQuantity: p.stockQuantity ?? 100,
-    deliveryTime: p.deliveryTime || '8 MINS',
+    deliveryTime: storeDelivery,
     rating: p.rating || '4.5',
-    ratingsCount: p.ratingsCount || 150
+    ratingsCount: p.ratingsCount || 150,
+    // Multi-Vendor Store details
+    storeId,
+    storeName,
+    storeAddress,
+    storeRating,
+    restaurant: storeId,
+    restaurantId: storeId,
+    restaurantName: storeName,
+    vendorName: storeName,
+    vendorId: storeId
   };
 }
 
 /**
  * GET /api/grocery/banners
  * Dynamic Hero Top Banner + 3 Feature Promo Banners + Rider Priority Banner
+ * Dynamically queries Admin CMS Banner model when populated, with fallback
  */
 router.get('/banners', async (req, res) => {
   try {
+    let hero = HERO_BANNERS.hero;
+    let offerBanners = HERO_BANNERS.offerBanners;
+    let priorityBanner = HERO_BANNERS.priorityBanner;
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const Banner = require('../models/Banner');
+        const dbBanners = await Banner.find({ isActive: { $ne: false } }).sort({ position: 1, createdAt: -1 }).lean();
+        if (dbBanners && dbBanners.length > 0) {
+          const mainBanner = dbBanners[0];
+          if (mainBanner) {
+            hero = {
+              ...HERO_BANNERS.hero,
+              title: mainBanner.title || HERO_BANNERS.hero.title,
+              bagImage: mainBanner.image || HERO_BANNERS.hero.bagImage,
+              buttonLink: mainBanner.targetId ? `/category/${mainBanner.targetId}` : HERO_BANNERS.hero.buttonLink
+            };
+          }
+          if (dbBanners.length > 1) {
+            offerBanners = dbBanners.slice(1, 4).map((b, idx) => ({
+              id: b._id?.toString() || `db-banner-${idx}`,
+              title: b.title,
+              highlight: b.subtitle || 'Special Partner Offer',
+              buttonText: 'Shop Now',
+              link: b.targetId ? `/category/${b.targetId}` : '/categories',
+              bgGradient: HERO_BANNERS.offerBanners[idx % HERO_BANNERS.offerBanners.length].bgGradient,
+              image: b.image || HERO_BANNERS.offerBanners[idx % HERO_BANNERS.offerBanners.length].image
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Error reading DB banners in groceryRoutes:', err.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      hero: HERO_BANNERS.hero,
-      offerBanners: HERO_BANNERS.offerBanners,
-      priorityBanner: HERO_BANNERS.priorityBanner,
-      topBanner: HERO_BANNERS.hero,
-      subBanners: HERO_BANNERS.offerBanners,
-      banners: [
-        HERO_BANNERS.hero,
-        ...HERO_BANNERS.offerBanners
-      ],
-      data: [
-        HERO_BANNERS.hero,
-        ...HERO_BANNERS.offerBanners
-      ]
+      hero,
+      offerBanners,
+      priorityBanner,
+      topBanner: hero,
+      subBanners: offerBanners,
+      banners: [hero, ...offerBanners],
+      data: [hero, ...offerBanners]
     });
   } catch (error) {
     return res.status(200).json({
@@ -202,7 +250,9 @@ router.get('/products', async (req, res) => {
         isApproved: { $ne: false }
       };
 
-      if (storeId) query.restaurant = storeId;
+      if (storeId) {
+        query.$or = [{ restaurant: storeId }, { storeId: storeId }];
+      }
       if (search) {
         query.$or = [
           { 'name.en': { $regex: search, $options: 'i' } },
@@ -224,7 +274,10 @@ router.get('/products', async (req, res) => {
         }
       }
 
-      const q = Product.find(query).populate('category', 'name slug image').lean();
+      const q = Product.find(query)
+        .populate('category', 'name slug image')
+        .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+        .lean();
       if (limit) q.limit(Number(limit));
       products = await q.exec();
       products = products.map(normalizeProduct).filter(Boolean);
@@ -239,6 +292,9 @@ router.get('/products', async (req, res) => {
           p.category?.slug === category || 
           p.category?.id === category
         );
+      }
+      if (storeId) {
+        filtered = filtered.filter(p => p.storeId === storeId || p.restaurant === storeId);
       }
       if (search) {
         const s = search.toLowerCase();
@@ -260,9 +316,12 @@ router.get('/products', async (req, res) => {
     });
   } catch (error) {
     let filtered = ALL_CATALOG_PRODUCTS;
-    const { category, search, limit } = req.query;
+    const { category, search, storeId, limit } = req.query;
     if (category && category !== 'all') {
       filtered = filtered.filter(p => p.categorySlug === category || p.category?.slug === category);
+    }
+    if (storeId) {
+      filtered = filtered.filter(p => p.storeId === storeId || p.restaurant === storeId);
     }
     if (search) {
       const s = search.toLowerCase();
@@ -446,6 +505,19 @@ function buildProductDetailsPayload(rawProd, allProds) {
     countryOfOrigin: 'India 🇮🇳',
     manufacturerDetails: 'Direct from authorized Indore fulfillment hub & trusted brands.',
     disclaimer: 'Every effort is made to maintain accuracy of all information. However, actual product packaging and materials may contain more and/or different information. It is recommended not to solely rely on the information presented.',
+    // Multi-Vendor Store Information
+    vendor: {
+      id: p.storeId,
+      name: p.storeName,
+      address: p.storeAddress,
+      rating: p.storeRating,
+      deliveryTime: p.deliveryTime,
+      isVerified: true
+    },
+    vendorName: p.storeName,
+    storeId: p.storeId,
+    storeName: p.storeName,
+    storeAddress: p.storeAddress,
     similarProducts,
     peopleAlsoBought,
     recipes
@@ -464,7 +536,10 @@ const getSingleProductHandler = async (req, res) => {
 
     if (mongoose.connection.readyState === 1) {
       if (mongoose.isValidObjectId(id)) {
-        foundProduct = await Product.findById(id).populate('category', 'name slug image').lean();
+        foundProduct = await Product.findById(id)
+          .populate('category', 'name slug image')
+          .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+          .lean();
       } else {
         foundProduct = await Product.findOne({
           $or: [
@@ -472,7 +547,10 @@ const getSingleProductHandler = async (req, res) => {
             { 'slug.en': id },
             { name: new RegExp(`^${id}$`, 'i') }
           ]
-        }).populate('category', 'name slug image').lean();
+        })
+          .populate('category', 'name slug image')
+          .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+          .lean();
       }
     }
 
@@ -570,29 +648,105 @@ router.get('/stores', async (req, res) => {
       stores = [
         {
           _id: "store_tricelyn_indore_01",
-          name: "Tricelyn Express Mart (Vijay Nagar Super Darkstore)",
+          id: "store_tricelyn_indore_01",
+          name: "Tricelyn Express Mart (Vijay Nagar Hub)",
           address: "Scheme 54, Vijay Nagar, Indore, Madhya Pradesh 452010",
-          image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80",
+          distance: "1.2 km",
           rating: 4.8,
           ratingsCount: 2450,
-          deliveryTime: "8 - 12 mins",
+          deliveryTime: "10-15 mins",
           minOrderAmount: 49,
           freeDeliveryThreshold: 199,
           isOpen: true,
-          timing: "24x7 Open"
+          timing: "24x7 Open",
+          image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80",
+          tags: ["Daily Grocery", "Dairy & Bakery", "Express 10m"],
+          isPureVeg: false
         },
         {
           _id: "store_tricelyn_indore_02",
-          name: "Tricelyn Fresh Farm Hub (Palasia Hub)",
+          id: "store_tricelyn_indore_02",
+          name: "Fresh Farm Hub (Palasia Superstore)",
           address: "Old Palasia Main Road, Near Industry House, Indore 452001",
-          image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&q=80",
+          distance: "2.4 km",
           rating: 4.7,
           ratingsCount: 1890,
-          deliveryTime: "10 - 15 mins",
+          deliveryTime: "12-18 mins",
           minOrderAmount: 49,
           freeDeliveryThreshold: 199,
           isOpen: true,
-          timing: "6:00 AM - 11:30 PM"
+          timing: "6:00 AM - 11:30 PM",
+          image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&q=80",
+          tags: ["Farm Fresh Veggies", "Organic Staples", "Exotic Fruits"],
+          isPureVeg: true
+        },
+        {
+          _id: "store_tricelyn_indore_03",
+          id: "store_tricelyn_indore_03",
+          name: "Apna Super Kirana (Saket Nagar)",
+          address: "Saket Square, Near Anand Bazaar, Indore 452018",
+          distance: "3.1 km",
+          rating: 4.6,
+          ratingsCount: 1230,
+          deliveryTime: "15-20 mins",
+          minOrderAmount: 49,
+          freeDeliveryThreshold: 149,
+          isOpen: true,
+          timing: "7:00 AM - 11:00 PM",
+          image: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80",
+          tags: ["Pantry Staples", "Atta Rice & Dal", "Snacks"],
+          isPureVeg: true
+        },
+        {
+          _id: "store_tricelyn_indore_04",
+          id: "store_tricelyn_indore_04",
+          name: "Malwa Daily Mart (Bhawarkua Square)",
+          address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001",
+          distance: "3.8 km",
+          rating: 4.5,
+          ratingsCount: 940,
+          deliveryTime: "15-20 mins",
+          minOrderAmount: 49,
+          freeDeliveryThreshold: 149,
+          isOpen: true,
+          timing: "8:00 AM - Midnight",
+          image: "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=600&q=80",
+          tags: ["Student Budget", "Instant Food", "Beverages & Mints"],
+          isPureVeg: false
+        },
+        {
+          _id: "store_tricelyn_indore_05",
+          id: "store_tricelyn_indore_05",
+          name: "Rajwada Heritage Grocery & Dry Fruits",
+          address: "MG Road, Near Rajwada Palace, Indore 452002",
+          distance: "4.5 km",
+          rating: 4.9,
+          ratingsCount: 3120,
+          deliveryTime: "20-25 mins",
+          minOrderAmount: 99,
+          freeDeliveryThreshold: 249,
+          isOpen: true,
+          timing: "9:00 AM - 10:30 PM",
+          image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=600&q=80",
+          tags: ["Indori Namkeen", "Premium Dry Fruits", "Pure Spices"],
+          isPureVeg: true
+        },
+        {
+          _id: "store_tricelyn_indore_06",
+          id: "store_tricelyn_indore_06",
+          name: "Metro Mart Quickstore (Super Corridor)",
+          address: "Sector A, Super Corridor Highway, Indore 452005",
+          distance: "5.2 km",
+          rating: 4.7,
+          ratingsCount: 850,
+          deliveryTime: "15-25 mins",
+          minOrderAmount: 49,
+          freeDeliveryThreshold: 199,
+          isOpen: true,
+          timing: "24x7 Open",
+          image: "https://images.unsplash.com/photo-1506484381205-f7945653044d?w=600&q=80",
+          tags: ["Household Cleaners", "Personal Care", "Dairy"],
+          isPureVeg: false
         }
       ];
     }
@@ -609,7 +763,7 @@ router.get('/stores', async (req, res) => {
 
 /**
  * GET /api/grocery/stores/:id/catalog
- * Get store catalog (categories + in-stock grocery items with variants)
+ * Get store catalog (categories + in-stock grocery items with variants for that specific vendor)
  */
 router.get('/stores/:id/catalog', async (req, res) => {
   try {
@@ -618,27 +772,80 @@ router.get('/stores/:id/catalog', async (req, res) => {
     let products = [];
 
     if (mongoose.connection.readyState === 1) {
-      store = await Restaurant.findById(id).lean();
+      if (mongoose.isValidObjectId(id)) {
+        store = await Restaurant.findById(id).lean();
+      }
       if (store) {
         products = await Product.find({
-          restaurant: id,
+          $or: [{ restaurant: id }, { storeId: id }],
           isDeleted: { $ne: true }
         }).populate('category', 'name slug image').lean();
       }
     }
 
     if (!store) {
-      store = {
+      const defaultStoreMap = {
+        "store_tricelyn_indore_01": {
+          _id: "store_tricelyn_indore_01",
+          name: "Tricelyn Express Mart (Vijay Nagar Hub)",
+          address: "Scheme 54, Vijay Nagar, Indore 452010",
+          rating: 4.8,
+          deliveryTime: "10-15 mins",
+          image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
+        },
+        "store_tricelyn_indore_02": {
+          _id: "store_tricelyn_indore_02",
+          name: "Fresh Farm Hub (Palasia Superstore)",
+          address: "Old Palasia Main Road, Near Industry House, Indore 452001",
+          rating: 4.7,
+          deliveryTime: "12-18 mins",
+          image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&q=80"
+        },
+        "store_tricelyn_indore_03": {
+          _id: "store_tricelyn_indore_03",
+          name: "Apna Super Kirana (Saket Nagar)",
+          address: "Saket Square, Near Anand Bazaar, Indore 452018",
+          rating: 4.6,
+          deliveryTime: "15-20 mins",
+          image: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80"
+        },
+        "store_tricelyn_indore_04": {
+          _id: "store_tricelyn_indore_04",
+          name: "Malwa Daily Mart (Bhawarkua Square)",
+          address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001",
+          rating: 4.5,
+          deliveryTime: "15-20 mins",
+          image: "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=600&q=80"
+        },
+        "store_tricelyn_indore_05": {
+          _id: "store_tricelyn_indore_05",
+          name: "Rajwada Heritage Grocery & Dry Fruits",
+          address: "MG Road, Near Rajwada Palace, Indore 452002",
+          rating: 4.9,
+          deliveryTime: "20-25 mins",
+          image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=600&q=80"
+        },
+        "store_tricelyn_indore_06": {
+          _id: "store_tricelyn_indore_06",
+          name: "Metro Mart Quickstore (Super Corridor)",
+          address: "Sector A, Super Corridor Highway, Indore 452005",
+          rating: 4.7,
+          deliveryTime: "15-25 mins",
+          image: "https://images.unsplash.com/photo-1506484381205-f7945653044d?w=600&q=80"
+        }
+      };
+      store = defaultStoreMap[id] || {
         _id: id,
         id: id,
-        name: "Tricelyn Express Mart",
+        name: "Tricelyn Partner Supermarket",
         address: "Scheme 54, Vijay Nagar, Indore",
-        rating: 4.8
+        rating: 4.8,
+        deliveryTime: "10-15 mins"
       };
       products = ALL_CATALOG_PRODUCTS;
     }
 
-    // Group products by category
+    // Group products by category and inject specific store details
     const categoryMap = {};
     products.forEach(p => {
       const catName = p.category?.name || p.categoryName || 'Daily Essentials';
@@ -651,7 +858,14 @@ router.get('/stores/:id/catalog', async (req, res) => {
           products: []
         };
       }
-      categoryMap[catId].products.push(normalizeProduct(p));
+      const normalized = normalizeProduct(p);
+      normalized.storeId = store._id || store.id;
+      normalized.storeName = store.name;
+      normalized.storeAddress = store.address;
+      normalized.restaurant = store._id || store.id;
+      normalized.restaurantName = store.name;
+      normalized.vendorName = store.name;
+      categoryMap[catId].products.push(normalized);
     });
 
     return res.status(200).json({
@@ -659,10 +873,12 @@ router.get('/stores/:id/catalog', async (req, res) => {
       data: {
         store: {
           id: store._id || store.id,
+          _id: store._id || store.id,
           name: store.name,
           address: store.address,
           image: store.image,
-          rating: store.rating
+          rating: store.rating,
+          deliveryTime: store.deliveryTime || '10-15 mins'
         },
         catalog: Object.values(categoryMap)
       }
@@ -674,7 +890,7 @@ router.get('/stores/:id/catalog', async (req, res) => {
 
 /**
  * POST /api/grocery/order
- * Place a grocery order with inventory reservation
+ * Place a grocery order routed directly to the selected Vendor/Store
  */
 router.post('/order', protect, async (req, res) => {
   try {
@@ -688,6 +904,16 @@ router.post('/order', protect, async (req, res) => {
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Items are required' });
+    }
+
+    let targetStoreId = storeId || 'store_tricelyn_indore_01';
+    let targetStoreName = req.body.storeName || 'Tricelyn Partner Store';
+
+    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(targetStoreId)) {
+      const stDoc = await Restaurant.findById(targetStoreId).lean();
+      if (stDoc) {
+        targetStoreName = stDoc.name || targetStoreName;
+      }
     }
 
     let subtotal = 0;
@@ -725,8 +951,13 @@ router.post('/order', protect, async (req, res) => {
       customer: req.user?._id || 'guest_user',
       customerName: req.user?.name || 'Customer',
       customerPhone: req.user?.mobile || req.user?.phone || '9999999999',
-      restaurant: storeId || 'store_tricelyn_indore_01',
-      restaurantName: 'Tricelyn Express Mart',
+      // Explicit Multi-Vendor routing so this order displays in VendorPartner app
+      restaurant: targetStoreId,
+      restaurantId: String(targetStoreId),
+      restaurantName: targetStoreName,
+      store: targetStoreId,
+      storeId: String(targetStoreId),
+      storeName: targetStoreName,
       vertical: VERTICALS.GROCERY,
       items: orderItems,
       subtotal,
@@ -745,7 +976,7 @@ router.post('/order', protect, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Grocery order placed successfully',
+      message: 'Grocery order placed successfully with vendor',
       data: orderDoc
     });
   } catch (error) {

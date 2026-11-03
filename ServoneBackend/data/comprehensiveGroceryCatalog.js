@@ -929,10 +929,38 @@ const PRODUCTS_BY_CATEGORY = {
   ]
 };
 
+// Multi-Vendor Store Distribution across Indore
+const STORE_DISTRIBUTION = {
+  "dairy-bread-eggs": { id: "store_tricelyn_indore_01", name: "Tricelyn Express Mart (Vijay Nagar Hub)", address: "Scheme 54, Vijay Nagar, Indore 452010", rating: 4.8 },
+  "fruits-vegetables": { id: "store_tricelyn_indore_02", name: "Fresh Farm Hub (Palasia Superstore)", address: "Old Palasia Main Road, Near Industry House, Indore 452001", rating: 4.7 },
+  "atta-rice-dal": { id: "store_tricelyn_indore_03", name: "Apna Super Kirana (Saket Nagar)", address: "Saket Square, Near Anand Bazaar, Indore 452018", rating: 4.6 },
+  "masala-oil-more": { id: "store_tricelyn_indore_03", name: "Apna Super Kirana (Saket Nagar)", address: "Saket Square, Near Anand Bazaar, Indore 452018", rating: 4.6 },
+  "snacks-munchies": { id: "store_tricelyn_indore_04", name: "Malwa Daily Mart (Bhawarkua Square)", address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001", rating: 4.5 },
+  "cold-drinks-juices": { id: "store_tricelyn_indore_04", name: "Malwa Daily Mart (Bhawarkua Square)", address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001", rating: 4.5 },
+  "breakfast-instant-food": { id: "store_tricelyn_indore_04", name: "Malwa Daily Mart (Bhawarkua Square)", address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001", rating: 4.5 },
+  "sweet-tooth": { id: "store_tricelyn_indore_04", name: "Malwa Daily Mart (Bhawarkua Square)", address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001", rating: 4.5 },
+  "tea-coffee": { id: "store_tricelyn_indore_05", name: "Rajwada Heritage Grocery & Dry Fruits", address: "MG Road, Near Rajwada Palace, Indore 452002", rating: 4.9 },
+  "organic-healthy": { id: "store_tricelyn_indore_05", name: "Rajwada Heritage Grocery & Dry Fruits", address: "MG Road, Near Rajwada Palace, Indore 452002", rating: 4.9 },
+  "bakery-biscuits": { id: "store_tricelyn_indore_01", name: "Tricelyn Express Mart (Vijay Nagar Hub)", address: "Scheme 54, Vijay Nagar, Indore 452010", rating: 4.8 },
+  "personal-care": { id: "store_tricelyn_indore_06", name: "Metro Mart Quickstore (Super Corridor)", address: "Sector A, Super Corridor Highway, Indore 452005", rating: 4.7 },
+  "household-essentials": { id: "store_tricelyn_indore_06", name: "Metro Mart Quickstore (Super Corridor)", address: "Sector A, Super Corridor Highway, Indore 452005", rating: 4.7 },
+  "cleaning-essentials": { id: "store_tricelyn_indore_06", name: "Metro Mart Quickstore (Super Corridor)", address: "Sector A, Super Corridor Highway, Indore 452005", rating: 4.7 },
+  "baby-care": { id: "store_tricelyn_indore_06", name: "Metro Mart Quickstore (Super Corridor)", address: "Sector A, Super Corridor Highway, Indore 452005", rating: 4.7 },
+  "pet-care": { id: "store_tricelyn_indore_06", name: "Metro Mart Quickstore (Super Corridor)", address: "Sector A, Super Corridor Highway, Indore 452005", rating: 4.7 },
+  "paan-corner": { id: "store_tricelyn_indore_04", name: "Malwa Daily Mart (Bhawarkua Square)", address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001", rating: 4.5 }
+};
+
 // Flatten all catalog products
 const ALL_CATALOG_PRODUCTS = [];
 Object.entries(PRODUCTS_BY_CATEGORY).forEach(([catSlug, items]) => {
   const catObj = CATEGORIES.find(c => c.slug === catSlug);
+  const assignedStore = STORE_DISTRIBUTION[catSlug] || {
+    id: "store_tricelyn_indore_01",
+    name: "Tricelyn Express Mart (Vijay Nagar Hub)",
+    address: "Scheme 54, Vijay Nagar, Indore 452010",
+    rating: 4.8
+  };
+
   items.forEach((item, idx) => {
     const price = Number(item.price) || 50;
     const mrp = Number(item.mrp) || Math.round(price * 1.25);
@@ -952,6 +980,16 @@ Object.entries(PRODUCTS_BY_CATEGORY).forEach(([catSlug, items]) => {
       },
       categorySlug: catSlug,
       categoryName: catObj ? catObj.name : catSlug,
+      // Vendor / Store Linking
+      restaurant: assignedStore.id,
+      restaurantId: assignedStore.id,
+      restaurantName: assignedStore.name,
+      storeId: assignedStore.id,
+      storeName: assignedStore.name,
+      storeAddress: assignedStore.address,
+      storeRating: assignedStore.rating,
+      vendorName: assignedStore.name,
+      vendorId: assignedStore.id,
       price: price,
       mrp: mrp,
       discountPercent: item.discountPercent || discountPercent,

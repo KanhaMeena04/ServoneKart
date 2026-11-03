@@ -19,7 +19,8 @@ import {
   Info,
   Package,
   Layers,
-  ArrowLeft
+  ArrowLeft,
+  Store
 } from 'lucide-react';
 import { groceryService } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -396,6 +397,42 @@ const ProductDetailPage = () => {
                         </button>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* ----------------- VENDOR & STORE FULFILLMENT INFO ----------------- */}
+                <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/50 via-white to-indigo-50/20 p-4 space-y-2.5 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 bg-blue-100/60 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Store className="w-3 h-3 text-blue-600" />
+                      <span>Verified Local Partner Store</span>
+                    </span>
+                    <span className="text-[11px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-200/50">
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      <span>{product.vendor?.rating || product.storeRating || '4.8'}</span>
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 leading-snug">
+                      Sold & Fulfilled by: <span className="text-[#0055ff]">{product.vendor?.name || product.storeName || product.restaurantName || 'Tricelyn Express Mart (Vijay Nagar Hub)'}</span>
+                    </h4>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      📍 {product.vendor?.address || product.storeAddress || 'Scheme 54, Vijay Nagar, Indore'}
+                    </p>
+                  </div>
+
+                  <div className="pt-2.5 border-t border-blue-100/70 flex items-center justify-between text-xs">
+                    <span className="text-[11px] text-gray-500">
+                      ⚡ Orders from this item route directly to this vendor
+                    </span>
+                    <Link
+                      to={`/store/${product.vendor?.id || product.storeId || product.restaurant || 'store_tricelyn_indore_01'}`}
+                      className="font-bold text-[#0055ff] hover:text-blue-800 hover:underline flex items-center gap-0.5 text-xs"
+                    >
+                      <span>Visit Store Catalog</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 </div>
 

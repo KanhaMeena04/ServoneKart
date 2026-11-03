@@ -88,14 +88,24 @@ const CheckoutPage = () => {
 
     const fullAddress = `${houseNo}, ${street}${landmark ? ', Near ' + landmark : ''}, ${selectedLocation?.name || 'Vijay Nagar'}, Indore, Madhya Pradesh`;
 
+    const targetRestaurant = items[0]?.product?.restaurant?._id || items[0]?.product?.restaurant || items[0]?.product?.storeId || '672000000000000000000001';
+    const targetRestaurantName = items[0]?.product?.restaurant?.name || items[0]?.product?.storeName || items[0]?.product?.vendorName || 'Indore Central Partner Store';
+
     const orderPayload = {
       orderType: 'grocery',
+      restaurant: targetRestaurant,
+      restaurantId: String(targetRestaurant),
+      storeId: targetRestaurant,
+      restaurantName: targetRestaurantName,
+      storeName: targetRestaurantName,
       items: items.map((i) => ({
         product: i.product._id,
         food: i.product._id,
         quantity: i.quantity,
         name: i.product.name,
         price: Number(i.product.price) || 0,
+        storeId: i.product.storeId || (i.product.restaurant?._id || i.product.restaurant) || targetRestaurant,
+        storeName: i.product.storeName || (i.product.restaurant?.name) || targetRestaurantName,
       })),
       deliveryAddress: {
         address: fullAddress,
@@ -124,7 +134,11 @@ const CheckoutPage = () => {
         response = await orderService.placeOrder(orderPayload);
       } catch (firstErr) {
         response = await groceryService.placeGroceryOrder({
-          storeId: items[0]?.product?.restaurant || '672000000000000000000001',
+          storeId: targetRestaurant,
+          storeName: targetRestaurantName,
+          restaurant: targetRestaurant,
+          restaurantId: String(targetRestaurant),
+          restaurantName: targetRestaurantName,
           items: items.map(i => ({ productId: i.product._id, quantity: i.quantity })),
           deliveryAddress: fullAddress,
           paymentMethod: paymentDetails.paymentMethod,
