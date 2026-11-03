@@ -307,7 +307,10 @@ router.get('/products', async (req, res) => {
         ];
       }
 
-      if (category && category !== 'all') {
+      if (storeId && storeId !== 'all') {
+      filtered = filtered.filter(i => String(i.storeId) === String(storeId) || String(i.storeName).toLowerCase().includes(String(storeId).toLowerCase()));
+    }
+    if (category && category !== 'all') {
         const catDoc = await Category.findOne({
           $or: [
             { slug: category },
@@ -1041,7 +1044,7 @@ router.post('/order', protect, async (req, res) => {
  */
 router.get('/inventory', async (req, res) => {
   try {
-    const { search, category, status, page = 1, limit = 50 } = req.query;
+    const { search, category, status, storeId, page = 1, limit = 50 } = req.query;
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(10, parseInt(limit)));
 
@@ -1107,28 +1110,28 @@ router.get('/inventory', async (req, res) => {
     // Fallback merge with ALL_CATALOG_PRODUCTS if DB has few items
     if (items.length === 0) {
       items = ALL_CATALOG_PRODUCTS.map((p, idx) => {
-        const stock = idx === 3 ? 0 : (idx === 7 || idx === 12 ? 4 : 50 + (idx * 5));
-        const threshold = 10;
-        const inStock = stock > 0;
+        const stock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : (idx === 3 ? 0 : (idx === 7 || idx === 12 ? 4 : 50 + (idx * 5)));
+        const threshold = Number(p.lowStockThreshold || 10);
+        const inStock = p.inStock !== undefined ? Boolean(p.inStock) : stock > 0;
         return {
           _id: p.id || `item-${idx}`,
           id: p.id || `item-${idx}`,
-          sku: `TRC-SKU-${1000 + idx}`,
+          sku: p.sku || `TRC-SKU-${1000 + idx}`,
           name: p.name,
           categoryName: p.categoryName || 'Grocery',
           categorySlug: p.categorySlug || 'grocery',
-          storeName: p.storeName || 'Tricelyn Indore Superstore',
-          storeId: p.storeId || 'store-01',
+          storeName: p.storeName || 'Tricelyn Supermart (Central Warehouse Hub)',
+          storeId: p.storeId || 'store_tricelyn_indore_01',
           unit: p.weight || '1 unit',
-          sellingPrice: p.price,
-          mrp: p.mrp || Math.round(p.price * 1.25),
+          sellingPrice: Number(p.price || p.sellingPrice || 50),
+          mrp: Number(p.mrp || Math.round((p.price || 50) * 1.25)),
           stockQuantity: stock,
           lowStockThreshold: threshold,
           inStock,
           status: !inStock || stock === 0 ? 'out_of_stock' : (stock <= threshold ? 'low_stock' : 'in_stock'),
           image: p.image,
           approvalStatus: 'approved',
-          updatedAt: new Date()
+          updatedAt: p.updatedAt || new Date()
         };
       });
     }
@@ -1199,15 +1202,46 @@ router.put('/inventory/:id', async (req, res) => {
     }
     if (mrp !== undefined) updateObj.mrp = Number(mrp);
 
+    // 1. Update in-memory ALL_CATALOG_PRODUCTS so state persists immediately
+    const memItem = ALL_CATALOG_PRODUCTS.find(p => 
+      String(p.id) === String(id) || 
+      String(p._id) === String(id) || 
+      String(p.sku) === String(id) || 
+      (p.name && String(p.name).toLowerCase() === String(id).toLowerCase())
+    );
+    if (memItem) {
+      if (stockQuantity !== undefined) {
+        memItem.stockQuantity = Number(stockQuantity);
+        memItem.inStock = memItem.stockQuantity > 0;
+      }
+      if (lowStockThreshold !== undefined) memItem.lowStockThreshold = Number(lowStockThreshold);
+      if (inStock !== undefined) memItem.inStock = Boolean(inStock);
+      if (sellingPrice !== undefined) {
+        memItem.price = Number(sellingPrice);
+        memItem.sellingPrice = Number(sellingPrice);
+      }
+      if (mrp !== undefined) memItem.mrp = Number(mrp);
+    }
+
+    // 2. Update in MongoDB Product collection
     let updated = null;
-    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(id)) {
-      updated = await Product.findByIdAndUpdate(id, { $set: updateObj }, { new: true });
+    if (mongoose.connection.readyState === 1) {
+      if (mongoose.isValidObjectId(id)) {
+        updated = await Product.findByIdAndUpdate(id, { $set: updateObj }, { new: true });
+      }
+      if (!updated) {
+        updated = await Product.findOneAndUpdate(
+          { $or: [{ sku: id }, { 'name.en': id }, { name: id }] },
+          { $set: updateObj },
+          { new: true }
+        );
+      }
     }
 
     return res.status(200).json({
       success: true,
       message: 'Stock updated successfully',
-      data: updated || { _id: id, ...updateObj }
+      data: updated || memItem || { _id: id, ...updateObj }
     });
   } catch (error) {
     console.error('Inventory update error:', error);

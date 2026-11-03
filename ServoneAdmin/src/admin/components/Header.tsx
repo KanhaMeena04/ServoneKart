@@ -507,11 +507,11 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                   pr: 4,
                 }}
               >
-                <span>⚡ TRICELYN Hyperlocal Console</span>
+                <span>👑 TRICELYN Master Super Admin Console</span>
                 <span>•</span>
-                <span>🛒 10-15 Min Superfast Grocery</span>
+                <span>🌐 Global Multi-Store & Vendor Control</span>
                 <span>•</span>
-                <span>📍 Indore Dark Store Hubs Live</span>
+                <span>📦 Live Quick-Commerce Platform Operations Tower</span>
                 <span>•</span>
               </Typography>
             ))}

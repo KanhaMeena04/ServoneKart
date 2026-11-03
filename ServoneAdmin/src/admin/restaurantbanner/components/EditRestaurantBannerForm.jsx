@@ -415,7 +415,7 @@ const EditRestaurantBannerForm = () => {
                       className="bg-white rounded-xl"
                       disabled={cityLoading}
                     >
-                      <MenuItem value="all">📍 All Indore Hubs (Global)</MenuItem>
+                      <MenuItem value="all">🌐 All Operating Regions / Cities (Global)</MenuItem>
                       {cities?.map((c, idx) => {
                         const cName = typeof c === 'string' ? c : (c.name || c.cityName);
                         return <MenuItem key={idx} value={cName}>{cName}</MenuItem>;

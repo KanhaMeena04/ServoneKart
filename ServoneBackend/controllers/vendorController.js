@@ -680,3 +680,152 @@ exports.updateVendorProfile = async (req, res) => {
   }
 };
 
+
+/**
+ * GET /api/admin/vendors/credentials/all
+ * Super Admin Master Endpoint to view all vendor credentials, login IDs, PINs & RBAC
+ */
+exports.getVendorCredentials = async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    let vendors = [];
+    if (mongoose.connection.readyState === 1) {
+      vendors = await Restaurant.find({})
+        .select('name ownerName phone contactNumber email city pin ownerPin assignedRole permissions isActive verificationStatus')
+        .lean();
+    }
+
+    if (!vendors || vendors.length === 0) {
+      vendors = [
+        {
+          _id: 'store_tricelyn_indore_01',
+          name: 'Tricelyn Supermart (Central Warehouse Hub)',
+          ownerName: 'Vikas Agrawal',
+          phone: '9826022002',
+          contactNumber: '9826022002',
+          email: 'freshmart@servonekart.com',
+          city: 'Indore',
+          pin: '1234',
+          assignedRole: 'Store Manager',
+          permissions: ['orders', 'inventory', 'products', 'payouts', 'settings'],
+          isActive: true
+        },
+        {
+          _id: 'store_tricelyn_indore_02',
+          name: 'Fresh Farm Hub (Palasia Superstore)',
+          ownerName: 'Rajesh Sharma',
+          phone: '9826011001',
+          contactNumber: '9826011001',
+          email: 'chappan@servonekart.com',
+          city: 'Indore',
+          pin: '1234',
+          assignedRole: 'Inventory Manager',
+          permissions: ['inventory', 'orders'],
+          isActive: true
+        },
+        {
+          _id: 'store_tricelyn_indore_03',
+          name: 'Apna Super Kirana (Saket Nagar)',
+          ownerName: 'Sanjay Gupta',
+          phone: '9893077123',
+          contactNumber: '9893077123',
+          email: 'apnakirana@servonekart.com',
+          city: 'Indore',
+          pin: '4321',
+          assignedRole: 'Store Manager',
+          permissions: ['orders', 'inventory', 'products', 'payouts'],
+          isActive: true
+        },
+        {
+          _id: 'store_tricelyn_indore_04',
+          name: 'Malwa Daily Mart (Bhawarkua)',
+          ownerName: 'Ramesh Patel',
+          phone: '9893055441',
+          contactNumber: '9893055441',
+          email: 'malwamart@servonekart.com',
+          city: 'Indore',
+          pin: '1234',
+          assignedRole: 'Order Dispatcher',
+          permissions: ['orders'],
+          isActive: true
+        }
+      ];
+    }
+
+    const formatted = vendors.map(v => {
+      const nameStr = typeof v.name === 'object' ? (v.name.en || Object.values(v.name)[0] || 'Store Partner') : (v.name || 'Store Partner');
+      return {
+        _id: v._id.toString(),
+        id: v._id.toString(),
+        name: nameStr,
+        ownerName: v.ownerName || 'Store Manager',
+        phone: v.contactNumber || v.phone || '',
+        email: v.email || '',
+        city: v.city || 'Indore',
+        pin: v.pin || v.ownerPin || '1234',
+        assignedRole: v.assignedRole || 'Store Manager',
+        permissions: v.permissions && v.permissions.length > 0 ? v.permissions : ['orders', 'inventory', 'products', 'payouts', 'settings'],
+        isActive: v.isActive !== false,
+        status: v.isActive !== false ? 'active' : 'suspended'
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      vendors: formatted
+    });
+  } catch (error) {
+    console.error('getVendorCredentials error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * PUT /api/admin/vendors/:id/credentials
+ * Super Admin updates vendor PIN, password & role-based permissions
+ */
+exports.updateVendorCredentials = async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const { id } = req.params;
+    const { pin, password, assignedRole, permissions, isActive, ownerName, phone, email } = req.body;
+
+    const updateObj = {};
+    if (pin !== undefined) {
+      updateObj.pin = String(pin).trim();
+      updateObj.ownerPin = String(pin).trim();
+    }
+    if (assignedRole) updateObj.assignedRole = assignedRole;
+    if (permissions && Array.isArray(permissions)) updateObj.permissions = permissions;
+    if (isActive !== undefined) updateObj.isActive = Boolean(isActive);
+    if (ownerName) updateObj.ownerName = ownerName;
+    if (phone) {
+      updateObj.phone = phone;
+      updateObj.contactNumber = phone;
+    }
+    if (email) updateObj.email = email;
+
+    let updated = null;
+    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(id)) {
+      updated = await Restaurant.findByIdAndUpdate(id, { $set: updateObj }, { new: true });
+      if (updated?.owner) {
+        const userUpdates = {};
+        if (pin) userUpdates.pin = String(pin).trim();
+        if (password) {
+          const bcrypt = require('bcryptjs');
+          userUpdates.password = await bcrypt.hash(password, 10);
+        }
+        await User.findByIdAndUpdate(updated.owner, { $set: userUpdates });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Vendor credentials and permissions updated successfully',
+      data: updated || { _id: id, ...updateObj }
+    });
+  } catch (error) {
+    console.error('updateVendorCredentials error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

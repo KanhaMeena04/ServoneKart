@@ -39,7 +39,9 @@ export default function InvoiceManagement() {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/admin/orders?limit=25`);
+        const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(`${API_BASE_URL}/api/admin/orders?limit=25`, { headers, withCredentials: true });
         if (res.data?.orders || Array.isArray(res.data)) {
           setOrders(res.data?.orders || res.data);
         } else {
@@ -127,7 +129,9 @@ export default function InvoiceManagement() {
     setInvoiceLoading(true);
     setModalOpen(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/grocery/orders/${orderId}/invoice`);
+      const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`${API_BASE_URL}/api/grocery/orders/${orderId}/invoice`, { headers, withCredentials: true });
       if (res.data?.invoice) {
         setSelectedInvoice(res.data.invoice);
       }
@@ -155,6 +159,11 @@ export default function InvoiceManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0055ff] px-2.5 py-0.5 rounded-full">
+              👑 Super Admin Central Invoicing
+            </span>
+          </div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <ReceiptLong className="text-[#0055ff]" />
             Billing & GST Tax Invoices
@@ -433,3 +442,4 @@ export default function InvoiceManagement() {
     </div>
   );
 }
+

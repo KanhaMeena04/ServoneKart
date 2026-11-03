@@ -271,7 +271,7 @@ const MainGrid = () => {
       bg: 'bg-purple-50', 
       border: 'border-purple-200/60', 
       iconColor: 'text-purple-600', 
-      trend: '6 Indore Hubs',
+      trend: 'Multi-Store Platform',
       badgeBg: 'bg-purple-100/70 text-purple-800'
     },
     { 
@@ -588,7 +588,7 @@ const MainGrid = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 mt-3.5 pt-2.5 border-t border-slate-200">
-                    <span>Indore Hubs: <strong className="text-slate-800 font-bold">{dashboard.totalRestaurants} Active</strong></span>
+                    <span>Dark Stores & Marts: <strong className="text-slate-800 font-bold">{dashboard.totalRestaurants} Active</strong></span>
                     <span>Status: <strong className="text-emerald-600 font-bold">Live Ready</strong></span>
                   </div>
                 </div>

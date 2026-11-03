@@ -419,7 +419,7 @@ const AddRestaurantBannerForm = () => {
                       className="bg-white rounded-xl"
                       disabled={cityLoading}
                     >
-                      <MenuItem value="all">📍 All Indore Hubs (Global)</MenuItem>
+                      <MenuItem value="all">🌐 All Operating Regions / Cities (Global)</MenuItem>
                       {dynamicCityList.map((cityName, idx) => (
                         <MenuItem key={idx} value={cityName}>
                           {cityName}

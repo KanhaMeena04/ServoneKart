@@ -109,7 +109,7 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
                 {((user?.name || 'Admin').split(' ').map((n) => n[0]).slice(0, 2).join('')).toUpperCase()}
               </Avatar>
               <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', truncate: true }}>
+                <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>
                   {user?.name || 'Super Admin'}
                 </Typography>
                 <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#0055ff' }}>

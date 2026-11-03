@@ -84,6 +84,8 @@ export const menuItems: MenuItemType[] = [
     permission: 'Restaurant',
     children: [
       { text: 'Dark Store Control Tower', path: '/vendors' },
+      { text: '🔑 Vendor Credentials & RBAC', path: '/admin/vendor-credentials' },
+      { text: '🛡️ Role & Permission Matrix', path: '/role-permission-matrix' },
       { text: 'Store Partner Portal', path: '/vendor/portal' },
       { text: 'All Dark Stores & Marts', path: '/restaurants' },
       { text: 'Pending Verification', path: '/pending-restaurants' },
