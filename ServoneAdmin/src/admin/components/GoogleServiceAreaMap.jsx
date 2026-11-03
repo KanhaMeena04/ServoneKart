@@ -417,7 +417,7 @@ export default function GoogleServiceAreaMap({
             fullWidth
             size="small"
             inputRef={searchInputRef}
-            label="Search Nearby Location / Landmark / Restaurant / City..."
+            label="Search Nearby Location / Landmark / Dark Store / City..."
             placeholder="Type place name e.g. Gyani Ji Ka Dhaba, Vijay Nagar, Indore..."
             value={searchValue}
             onChange={(e) => handleInputChange(e.target.value)}

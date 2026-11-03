@@ -8,7 +8,7 @@ export default function AddRestaurantsList() {
 	  title="Add New Restaurant Partner"
 	  breadcrumbs={[
 		{ label: "Restaurants" },
-		{ label: "Add Restaurant", active: true }
+		{ label: "Register New Dark Store / Mart", active: true }
 	  ]}
 	/>
 	

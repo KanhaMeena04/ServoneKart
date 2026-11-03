@@ -21,7 +21,7 @@ class _MapScreenState extends State<MapScreen> {
 
   final List<String> orderStatuses = [
     "Order Confirmed",
-    "Preparing Food",
+    "Packing Grocery Order",
     "Out for Delivery",
     "Delivered",
   ];

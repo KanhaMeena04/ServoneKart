@@ -11,7 +11,7 @@ const columns = (onEdit, onDelete) => [
 
   {
     field: 'restaurant',
-    headerName: 'Restaurant',
+    headerName: 'Dark Store / Mart',
     flex: 1,
     minWidth: 200,
   },

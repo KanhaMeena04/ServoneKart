@@ -427,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (tradeName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please enter your Restaurant Name'),
+            content: Text('Please enter your Dark Store / Mart Name'),
             backgroundColor: Colors.red),
       );
       return;
@@ -1154,7 +1154,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please enter your Restaurant Address'),
+            content: Text('Please enter your Dark Store / Mart Address'),
             backgroundColor: Colors.red),
       );
       return;
@@ -1669,7 +1669,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                   content:
-                      Text('Mobile verified! Please fill restaurant details.'),
+                      Text('Mobile verified! Please fill store partner details.'),
                   backgroundColor: AppTheme.primaryGreen),
             );
           } else if (!isApproved) {
@@ -1905,7 +1905,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
-                Text('Restaurant photo added! (${_restaurantImages.length}/6)'),
+                Text('Store photo added! (${_restaurantImages.length}/6)'),
             backgroundColor: AppTheme.primaryGreen,
           ),
         );
@@ -3399,7 +3399,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Restaurant Profile',
+                              Text('Dark Store Profile',
                                   style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -3911,7 +3911,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Food Type (Veg vs Non-Veg Pill Toggle with Green Active State)
                     Row(
                       children: [
-                        Text('Food Type',
+                        Text('Store Type',
                             style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -4798,7 +4798,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content: Text('Food license $name uploaded!'),
+                                  content: Text('Store / FSSAI license $name uploaded!'),
                                   backgroundColor: AppTheme.primaryGreen),
                             );
                           },

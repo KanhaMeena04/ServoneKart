@@ -5,9 +5,9 @@ function PendingRestaurants() {
   return (
       <div className="w-full lg:mt-0 p-4 xs:p-5">
           <PageHeader
-            title="Pending Vendor Partners List"
+            title="Pending Dark Store Approvalss List"
             breadcrumbs={[
-              { label: "Pending Vendor Partners List" },
+              { label: "Pending Dark Store Approvalss List" },
               { label: "Vendor Partners", active: true },
             ]}
           />

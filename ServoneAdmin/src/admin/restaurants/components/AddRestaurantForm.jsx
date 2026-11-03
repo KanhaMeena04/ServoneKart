@@ -48,9 +48,9 @@ import GoogleServiceAreaMap, { parseGooglePlaceDetails } from "../../components/
 import { Slider } from "@mui/material";
 import { useCities } from "../../api/city";
 
-const BRAND_MAIN = "#ed2026";
-const BRAND_HOVER = "#c8161b";
-const BRAND_LIGHT = "#FFF5F4";
+const BRAND_MAIN = "#0055ff";
+const BRAND_HOVER = "#0043c7";
+const BRAND_LIGHT = "#eff6ff";
 
 // Clean Form Section Card Component
 const FormSectionCard = ({ step, title, subtitle, icon: Icon, actionButton, children }) => (
@@ -646,11 +646,11 @@ const AddRestaurantForm = () => {
   // Add Menu Item with Full / Half and S / M / L support
   const handleAddMenuItem = () => {
     if (!newItemName.trim()) {
-      alert("Please enter Dish Name");
+      alert("Please enter Product Name");
       return;
     }
     if (!newItemImage) {
-      alert("Dish Photo is mandatory! Please upload a photo for this item.");
+      alert("Product Photo is mandatory! Please upload a photo for this item.");
       return;
     }
 
@@ -1800,7 +1800,7 @@ const AddRestaurantForm = () => {
         {/* Row 1: Dish Basic Details */}
         <Grid item xs={12} sm={4}>
           <TextField
-            label="Dish Name *"
+            label="Product Name *"
             size="small"
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}

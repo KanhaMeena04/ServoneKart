@@ -145,7 +145,7 @@ class _FoodPreferencesPageState extends State<FoodPreferencesPage> {
               child: Column(
                 children: [
                   Text(
-                    'Food Preferences',
+                    'Grocery Preferences',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -156,7 +156,7 @@ class _FoodPreferencesPageState extends State<FoodPreferencesPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose your favorite food types and dietary preferences to personalize your menu and get recommendations you\'ll love.',
+                    'Choose your favorite grocery essentials and shopping preferences to personalize your dark store catalog and daily recommendations.',
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.4,

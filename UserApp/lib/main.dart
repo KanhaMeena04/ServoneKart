@@ -109,7 +109,7 @@ class _ECDKartAppState extends State<ECDKartApp> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'We sincerely apologize for the inconvenience. Sometimes unforeseen circumstances arise at the restaurant. We highly value you as a customer and deeply appreciate your understanding!',
+                    'We sincerely apologize for the inconvenience. Sometimes unforeseen circumstances arise at the dark store. We highly value you as a customer and deeply appreciate your understanding!',
                     style: TextStyle(fontSize: 13, color: Colors.black87),
                   ),
                 ],

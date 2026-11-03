@@ -37,6 +37,8 @@ import {
   Warning,
   ReceiptLong,
   HealthAndSafety,
+  LocalGroceryStore,
+  Inventory,
 } from '@mui/icons-material'
 import AccountBalanceWallet from "@mui/icons-material/AccountBalanceWallet";
 import RateReview from "@mui/icons-material/RateReview";
@@ -63,13 +65,13 @@ export const menuItems: MenuItemType[] = [
     icon: <Storefront />,
     permission: 'Dashboard',
     children: [
-      { text: '🛒 Grocery Tower', path: '/admin/grocery/dashboard' },
-      { text: '🔧 Home Services', path: '/admin/home-services/dashboard' },
-      { text: '💊 Medicine & Pharmacy', path: '/admin/medicine/dashboard' },
-      { text: '📦 Courier & Drop', path: '/admin/courier/dashboard' },
-      { text: '🧺 Laundry Care', path: '/admin/laundry/dashboard' },
-      { text: '🎁 Gifts & Bakery', path: '/admin/gifts/dashboard' },
-      { text: '💧 Daily Essentials', path: '/admin/essentials/dashboard' },
+      { text: '🛒 Grocery & Supermarket (Core)', path: '/admin/grocery/dashboard' },
+      { text: '💧 Daily Essentials & Milk', path: '/admin/essentials/dashboard' },
+      { text: '💊 Pharmacy & Wellness', path: '/admin/medicine/dashboard' },
+      { text: '📦 Courier & Quick Parcel', path: '/admin/courier/dashboard' },
+      { text: '🔧 Home & Appliance Services', path: '/admin/home-services/dashboard' },
+      { text: '🧺 Laundry & Fabric Care', path: '/admin/laundry/dashboard' },
+      { text: '🎁 Gifts & Celebration', path: '/admin/gifts/dashboard' },
     ]
   },
   { text: 'Live Orders', icon: <Assignment />, path: '/order-dashboard', permission: 'Order' },
@@ -77,17 +79,17 @@ export const menuItems: MenuItemType[] = [
   { text: 'Customers', icon: <People />, path: '/user-management', permission: 'User' },
 
   {
-    text: 'Vendor Partners',
+    text: 'Dark Stores & Marts',
     icon: <Store />,
     permission: 'Restaurant',
     children: [
-      { text: 'Vendor Control Tower', path: '/vendors' },
-      { text: 'Web Vendor Portal', path: '/vendor/portal' },
-      { text: 'All Vendor Partners & Marts', path: '/restaurants' },
-      { text: 'Pending Approval', path: '/pending-restaurants' },
-      { text: 'Approved Vendor Partners', path: '/approve-restaurant' },
-      { text: 'Vendor Partner Promocodes', path: '/promocodes', permission: 'Promocode' },
-      { text: 'Add Promocode', path: '/add-promocodes', permission: 'Promocode' },
+      { text: 'Dark Store Control Tower', path: '/vendors' },
+      { text: 'Store Partner Portal', path: '/vendor/portal' },
+      { text: 'All Dark Stores & Marts', path: '/restaurants' },
+      { text: 'Pending Verification', path: '/pending-restaurants' },
+      { text: 'Approved Dark Stores', path: '/approve-restaurant' },
+      { text: 'Store Promocodes & Deals', path: '/promocodes', permission: 'Promocode' },
+      { text: 'Add Store Promocode', path: '/add-promocodes', permission: 'Promocode' },
     ]
   },
 
@@ -96,7 +98,7 @@ export const menuItems: MenuItemType[] = [
     icon: <DriveEta />,
     permission: 'Driver',
     children: [
-      { text: 'All Delivery Partners', path: '/driver-list' },
+      { text: 'All Delivery Fleet', path: '/driver-list' },
       { text: 'Pending Verification', path: '/pending-driver-list' },
       { text: 'Earnings & Config', path: '/rider-earnings-control' },
       { text: 'Payout Requests', path: '/rider-payout-requests', permission: 'Settlements' },
@@ -105,15 +107,15 @@ export const menuItems: MenuItemType[] = [
   },
 
   {
-    text: 'Orders',
+    text: 'Grocery Orders',
     icon: <Assignment />,
     permission: 'Order',
     children: [
       { text: 'Orders Analytics', path: '/orders-analytics' },
-      { text: 'All Orders', path: '/new-order' },
-      { text: 'Processing Orders', path: '/processing-order' },
-      { text: 'Pickup Orders', path: '/pick-up-order' },
-      { text: 'Delivered Orders', path: '/delivered-order' },
+      { text: 'All Grocery Orders', path: '/new-order' },
+      { text: 'Packing & Processing', path: '/processing-order' },
+      { text: 'Rider Pickup Orders', path: '/pick-up-order' },
+      { text: 'Delivered Grocery Orders', path: '/delivered-order' },
       { text: 'Cancelled Orders', path: '/cancelled-order' },
       { text: 'Failed Orders', path: '/failed-order' },
       { text: 'Refund Orders', path: '/order-refund', permission: 'Reports' },
@@ -122,27 +124,27 @@ export const menuItems: MenuItemType[] = [
   },
 
   {
-    text: 'Menu',
-    icon: <RestaurantMenu />,
+    text: 'Grocery Catalog',
+    icon: <Inventory />,
     permission: 'Restaurant',
     children: [
-      { text: 'Menu Items', path: '/catalog-master-control' },
-      { text: 'Categories', path: '/category', permission: 'Category' },
-      { text: 'Subcategories', path: '/category?tab=1', permission: 'Category' },
-      { text: 'Pending Menu Approvals', path: '/pending-menu-approvals', permission: 'MenuApprovals' },
+      { text: 'Master Product Catalog', path: '/catalog-master-control' },
+      { text: 'Grocery Categories', path: '/category', permission: 'Category' },
+      { text: 'Subcategories & Aisles', path: '/category?tab=1', permission: 'Category' },
+      { text: 'Pending Product Approvals', path: '/pending-menu-approvals', permission: 'MenuApprovals' },
       { text: 'Category Requests', path: '/category-requests', permission: 'Category' },
-      { text: 'Menu Approval History', path: '/menu-approval-history', permission: 'MenuApprovals' },
+      { text: 'Catalog Approval History', path: '/menu-approval-history', permission: 'MenuApprovals' },
     ]
   },
 
   {
-    text: 'Pricing',
+    text: 'Pricing & Delivery',
     icon: <AttachMoney />,
     permission: 'SiteSettings',
     children: [
       { text: 'Delivery Charges', path: '/pricing-control' },
-      { text: 'Commission', path: '/financial-overview', permission: 'Reports' },
-      { text: 'Packaging', path: '/pricing-control' },
+      { text: 'Platform Commission', path: '/financial-overview', permission: 'Reports' },
+      { text: 'Packing Charges', path: '/pricing-control' },
       { text: 'Platform Fees', path: '/pricing-control' },
     ]
   },
@@ -153,28 +155,28 @@ export const menuItems: MenuItemType[] = [
     permission: 'Promocode',
     children: [
       { text: 'Coupons & Offers', path: '/promocodes', permission: 'Promocode' },
-      { text: 'Banners', path: '/restaurant-banner', permission: 'CMSControlTower' },
-      { text: 'Notifications', path: '/custom-push', permission: 'PushNotifications' },
+      { text: 'Store & App Banners', path: '/restaurant-banner', permission: 'CMSControlTower' },
+      { text: 'Customer Notifications', path: '/custom-push', permission: 'PushNotifications' },
     ]
   },
 
   {
-    text: 'Finance',
+    text: 'Finance & Payouts',
     icon: <AccountBalance />,
     permission: 'Reports',
     children: [
-      { text: 'Payments', path: '/financial-overview', permission: 'Reports' },
-      { text: 'Refunds', path: '/order-refund', permission: 'Reports' },
-      { text: 'Vendor Partner Settlement', path: '/restaurant-payout', permission: 'Settlements' },
+      { text: 'Revenue Overview', path: '/financial-overview', permission: 'Reports' },
+      { text: 'Refunds & Returns', path: '/order-refund', permission: 'Reports' },
+      { text: 'Dark Store Settlements', path: '/restaurant-payout', permission: 'Settlements' },
       { text: 'Delivery Partner Settlement', path: '/driver-payout', permission: 'Settlements' },
-      { text: 'Reconciliation', path: '/payment-reconciliation', permission: 'Reports' },
+      { text: 'Payment Reconciliation', path: '/payment-reconciliation', permission: 'Reports' },
     ]
   },
 
-  { text: 'Service Areas', icon: <LocationCity />, path: '/service-areas', permission: 'City' },
-  { text: 'Self Pickup', icon: <Storefront />, path: '/self-pickup-control', permission: 'SiteSettings' },
+  { text: 'Service Areas & Hubs', icon: <LocationCity />, path: '/service-areas', permission: 'City' },
+  { text: 'Dark Store Self Pickup', icon: <Storefront />, path: '/self-pickup-control', permission: 'SiteSettings' },
   { text: 'Order Timings & Cancellation', icon: <Schedule />, path: '/order-timing-control', permission: 'SiteSettings' },
-  { text: 'CMS', icon: <Article />, path: '/user-app-cms', permission: 'CMSControlTower' },
+  { text: 'App CMS', icon: <Article />, path: '/user-app-cms', permission: 'CMSControlTower' },
   { text: 'Reports & Analytics', icon: <BarChart />, path: '/profit-loss-report', permission: 'Reports' },
 
   { text: 'Feature Flags', icon: <Flag />, path: '/feature-flags', permission: 'RuleEngine' },
@@ -185,9 +187,9 @@ export const menuItems: MenuItemType[] = [
     permission: 'SiteSettings',
     children: [
       { text: 'Order & Cancellation Rules', path: '/order-timing-control' },
-      { text: 'Delivery Rules', path: '/pricing-control' },
+      { text: 'Grocery Delivery Rules', path: '/pricing-control' },
       { text: 'Delivery Partner Rules', path: '/rider-earnings-control' },
-      { text: 'Vendor Partner Rules', path: '/self-pickup-control' },
+      { text: 'Dark Store & Mart Rules', path: '/self-pickup-control' },
       { text: 'Refund Rules', path: '/payment-reconciliation' },
     ]
   },

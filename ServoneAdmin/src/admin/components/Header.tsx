@@ -766,7 +766,7 @@ export default function Header({ onToggleDashboard, showToggleButton }: HeaderPr
                               </span>
                             ) : (
                               <>
-                                {safeText(notif.orderCode, 'Order')} • <span style={{ color: '#0055ff' }}>{safeText(notif.restaurantName, 'Vendor Partner')}</span>
+                                {safeText(notif.orderCode, 'Order')} • <span style={{ color: '#0055ff' }}>{safeText(notif.restaurantName, 'Dark Store Partner')}</span>
                               </>
                             )}
                           </Typography>

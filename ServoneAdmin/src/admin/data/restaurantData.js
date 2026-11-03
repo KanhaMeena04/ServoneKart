@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 
 
 
-export const initialRestaurantFormState = {
+export const initialDark Store / MartFormState = {
   ownerName: "",
   ownerEmail: "",
   ownerMobile: "",
@@ -44,7 +44,7 @@ export const initialRestaurantFormState = {
   },
 
   deliveryType: ["Home Delivery", "Pickup", "Both"],
-  deliveryTime: "30-40 mins",
+  deliveryTime: "10-15 mins",
 
   packagingCharge: "",
   adminCommission: "",
@@ -74,7 +74,7 @@ export const initialRestaurantFormState = {
   },
 };
 
-export const getRestaurantColumns = ({
+export const getDark Store / MartColumns = ({
   navigate,
   formatDate,
   onDeleteClick,
@@ -97,11 +97,11 @@ export const getRestaurantColumns = ({
     { key: "index", label: "" },
 
     {
-      key: "restaurantId",
-      label: "Restaurant ID",
+      key: "dark storeId",
+      label: "Dark Store / Mart ID",
       render: (row, idx) => {
-        const idVal = (row.restaurantId && /^RNT\d+/i.test(row.restaurantId))
-          ? row.restaurantId.toUpperCase()
+        const idVal = (row.dark storeId && /^RNT\d+/i.test(row.dark storeId))
+          ? row.dark storeId.toUpperCase()
           : `RNT${String(idx + 1).padStart(3, '0')}`;
         return (
           <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -121,8 +121,8 @@ export const getRestaurantColumns = ({
         return (
           <div className="flex flex-col">
             <span className="font-semibold text-gray-900">{n}</span>
-            {row.restaurantId && (
-              <span className="text-[10px] font-mono text-emerald-600 font-semibold">{row.restaurantId}</span>
+            {row.dark storeId && (
+              <span className="text-[10px] font-mono text-emerald-600 font-semibold">{row.dark storeId}</span>
             )}
           </div>
         );
@@ -133,12 +133,12 @@ export const getRestaurantColumns = ({
       key: "ownerId",
       label: "Owner",
       render: (row) => {
-        if (row.ownerName && row.ownerName !== 'Restaurant') return row.ownerName;
-        if (row.ownerId && row.ownerId !== 'Restaurant') return row.ownerId;
+        if (row.ownerName && row.ownerName !== 'Dark Store / Mart') return row.ownerName;
+        if (row.ownerId && row.ownerId !== 'Dark Store / Mart') return row.ownerId;
         const n = typeof row.name === 'object' && row.name !== null
           ? (row.name.en || Object.values(row.name)[0])
           : row.name;
-        return n && n !== 'Restaurant' ? `${n} Owner` : '-';
+        return n && n !== 'Dark Store / Mart' ? `${n} Owner` : '-';
       }
     },
 
@@ -260,17 +260,17 @@ export const getRestaurantColumns = ({
             <VisibilityOutlined
               fontSize="small"
               className="cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={() => navigate(`/restaurant/${row._id || row.id}`)}
+              onClick={() => navigate(`/dark store/${row._id || row.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Edit Restaurant">
+          <Tooltip title="Edit Dark Store / Mart">
             <EditOutlined
               fontSize="small"
               className="cursor-pointer text-gray-600 hover:text-emerald-600 transition-colors"
-              onClick={() => navigate(`/edit-restaurant/${row._id || row.id}`)}
+              onClick={() => navigate(`/edit-dark store/${row._id || row.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Delete Restaurant">
+          <Tooltip title="Delete Dark Store / Mart">
             <DeleteOutline
               fontSize="small"
               className="cursor-pointer text-gray-600 hover:text-red-600 transition-colors"
@@ -284,7 +284,7 @@ export const getRestaurantColumns = ({
               onClick={() => {
                 const targetId = row._id || row.id || "";
                 const rName = typeof row.name === 'object' ? (row.name.en || Object.values(row.name)[0]) : row.name;
-                const textToCopy = `Restaurant: ${rName}\nID: ${targetId}\nContact: ${row.contact || '-'}\nPIN: ${row.pin || '1234'}`;
+                const textToCopy = `Dark Store / Mart: ${rName}\nID: ${targetId}\nContact: ${row.contact || '-'}\nPIN: ${row.pin || '1234'}`;
                 navigator.clipboard.writeText(textToCopy);
                 toast.success(`Copied details of "${rName}" to clipboard!`);
               }}

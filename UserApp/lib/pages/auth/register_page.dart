@@ -103,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
     PolicySection(
       heading: '2. Location Telemetry Data',
       content:
-          'To drive effective food delivery dispatch and tracking, we require active GPS location coordinates from your smartphone when the app is in use (foreground). This facilitates accurate address selection and real-time tracking during active checkouts. You can revoke this permission at any time in device settings.',
+          'To drive effective quick-commerce grocery delivery dispatch and tracking, we require active GPS location coordinates from your smartphone when the app is in use (foreground). This facilitates accurate address selection and real-time tracking during active checkouts. You can revoke this permission at any time in device settings.',
     ),
     PolicySection(
       heading: '3. Payment Processing Safeguards',

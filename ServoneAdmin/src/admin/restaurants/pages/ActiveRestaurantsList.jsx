@@ -70,9 +70,9 @@ export default function ActiveRestaurantsList() {
   return (
     <div className="w-full lg:mt-0 p-4 xs:p-5">
       <PageHeader
-        title="Active Restaurant List"
+        title="Active Dark Store / Mart List"
         breadcrumbs={[
-          { label: "Active Restaurant List" },
+          { label: "Active Dark Store / Mart List" },
           { label: "Restaurants", active: true },
         ]}
       />

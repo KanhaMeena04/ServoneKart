@@ -50,7 +50,7 @@ export default function AuditLogsPage() {
           <Select value={entityFilter} label="Filter Entity" onChange={(e) => setEntityFilter(e.target.value)}>
             <MenuItem value="">All Entities</MenuItem>
             <MenuItem value="Order">Order</MenuItem>
-            <MenuItem value="Restaurant">Restaurant</MenuItem>
+            <MenuItem value="Restaurant">Dark Store / Mart</MenuItem>
             <MenuItem value="Rider">Rider</MenuItem>
             <MenuItem value="Settlement">Settlement</MenuItem>
             <MenuItem value="Refund">Refund</MenuItem>
@@ -64,7 +64,7 @@ export default function AuditLogsPage() {
           <Select value={userRoleFilter} label="Filter User Role" onChange={(e) => setUserRoleFilter(e.target.value)}>
             <MenuItem value="">All Roles</MenuItem>
             <MenuItem value="admin">Admin</MenuItem>
-            <MenuItem value="restaurant_owner">Restaurant Owner</MenuItem>
+            <MenuItem value="restaurant_owner">Store Owner</MenuItem>
             <MenuItem value="rider">Rider</MenuItem>
             <MenuItem value="customer">Customer</MenuItem>
           </Select>

@@ -89,7 +89,7 @@ export default function OrderTimingControlPage() {
           Order Cancellation & Pickup Timing Control
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Configure live real-time countdown windows for customer/restaurant cancellation and delivery rider pickup grace periods across all apps.
+          Configure live real-time countdown windows for customer/store cancellation and delivery rider pickup grace periods across all apps.
         </Typography>
       </Box>
 
@@ -103,7 +103,7 @@ export default function OrderTimingControlPage() {
             </Typography>
 
             <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-              These parameters directly drive the live countdown timers in the <b>Restaurant App</b>, <b>User App</b>, and <b>Rider App</b> without hardcoding.
+              These parameters directly drive the live countdown timers in the <b>Store Partner App</b>, <b>User App</b>, and <b>Rider App</b> without hardcoding.
             </Alert>
 
             <Grid container spacing={2.5}>

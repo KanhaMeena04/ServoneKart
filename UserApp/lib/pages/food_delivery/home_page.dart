@@ -564,7 +564,7 @@ class _HomeTabState extends State<_HomeTab> {
       },
       {
         'sectionKey': 'explore_restaurants',
-        'title': 'Explore Restaurants',
+        'title': 'Explore Dark Stores & Marts',
         'subtitle': 'Delicious meals delivered fast from nearby kitchens',
         'sectionType': 'restaurant_list',
         'priority': 50,
@@ -1797,7 +1797,7 @@ class _HomeTabState extends State<_HomeTab> {
   Widget _buildExploreRestaurantsSection(Map<String, dynamic> sec, bool isDark) {
     final title = (sec['title'] != null && (sec['title'] as String).trim().isNotEmpty)
         ? (sec['title'] as String).trim()
-        : 'Explore Restaurants';
+        : 'Explore Dark Stores & Marts';
     final subtitle = (sec['subtitle'] != null && (sec['subtitle'] as String).trim().isNotEmpty)
         ? (sec['subtitle'] as String).trim()
         : 'Delicious meals delivered fast from nearby kitchens';
@@ -1924,7 +1924,7 @@ class _HomeTabState extends State<_HomeTab> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'All', child: Text('All Foods')),
+                        const PopupMenuItem(value: 'All', child: Text('All Grocery Items')),
                         const PopupMenuItem(value: 'Veg', child: Text('Pure Veg Only')),
                         const PopupMenuItem(value: 'Non-Veg', child: Text('Non-Veg Only')),
                       ],
@@ -2036,7 +2036,7 @@ class _HomeTabState extends State<_HomeTab> {
                       Text(
                         _selectedCategoryIndex == 0
                             ? subtitle
-                            : '${_displayRestaurants.length} top-rated restaurants nearby',
+                            : '${_displayRestaurants.length} verified dark stores & partner marts nearby',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -2085,7 +2085,7 @@ class _HomeTabState extends State<_HomeTab> {
                                   backgroundColor: AppColors.primary,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
-                                child: const Text('View All Restaurants', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                child: const Text('View All Dark Stores & Marts', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),
@@ -4378,12 +4378,12 @@ class _SuperAppServicesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final services = [
       _ServiceItem(
-        title: 'Food Delivery',
-        subtitle: 'Top Indore Cafes',
-        badge: 'Popular',
-        icon: Icons.restaurant_rounded,
-        gradient: const [Color(0xFFFF5722), Color(0xFFFF8A65)],
-        onTap: () {},
+        title: 'Grocery & Marts',
+        subtitle: '10-15 Min Delivery',
+        badge: 'Core Focus',
+        icon: Icons.shopping_basket_rounded,
+        gradient: const [Color(0xFF0055FF), Color(0xFF00D2FF)],
+        onTap: () => context.push(AppRoutes.grocery),
       ),
       _ServiceItem(
         title: 'Grocery & Mart',

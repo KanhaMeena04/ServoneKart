@@ -476,7 +476,7 @@ class AboutAppPage extends StatelessWidget {
       sections: [
         PolicySection(
           heading: 'ServoneKart',
-          content: 'ServoneKart is your premium food delivery application, designed to bring the best local restaurants right to your doorstep. Our mission is to provide lightning-fast deliveries with top-notch reliability.',
+          content: 'Tricelyn is your premier quick-commerce grocery and essentials delivery application, designed to bring the best local restaurants right to your doorstep. Our mission is to provide lightning-fast deliveries with top-notch reliability.',
         ),
         PolicySection(
           heading: 'App Version',

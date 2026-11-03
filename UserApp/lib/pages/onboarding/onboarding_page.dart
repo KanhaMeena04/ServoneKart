@@ -28,18 +28,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final List<OnboardingItem> _items = [
     OnboardingItem(
       image: 'assets/Group 2072750484.jpg',
-      title: 'Easy Ordering',
-      subtitle: 'Choose from curated set menus daily\n— fresh, healthy, and ready to enjoy.',
+      title: '10-15 Min Superfast Grocery',
+      subtitle: 'Order fresh fruits, vegetables, dairy & daily essentials\ndelivered in minutes across Indore.',
     ),
     OnboardingItem(
       image: 'assets/Group 2072750484.jpg',
-      title: 'Track Your Order',
-      subtitle: 'Real-time tracking of your food delivery\nso you know exactly when it arrives.',
+      title: 'Live Rider Tracking',
+      subtitle: 'Real-time GPS tracking of your grocery shipment\nso you know exactly when it arrives at your door.',
     ),
     OnboardingItem(
       image: 'assets/Group 2072750484.jpg',
-      title: 'Fastest Food Delivery',
-      subtitle: 'Get your favorite meals delivered fast\nright to your doorstep hot and fresh.',
+      title: '100% Quality & Best Prices',
+      subtitle: 'Direct from verified dark stores and supermarkets\nat prices cheaper than local marts.',
     ),
   ];
 

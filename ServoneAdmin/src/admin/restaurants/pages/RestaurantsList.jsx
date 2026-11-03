@@ -345,17 +345,17 @@ export default function RestaurantsList() {
   return (
     <div className="w-full lg:mt-0 p-4 xs:p-5">
       <PageHeader
-        title="Vendor Partner List"
+        title="Dark Stores & Supermarkets List"
         breadcrumbs={[
-          { label: "Vendor Partner List" },
-          { label: "Vendor Partners", active: true },
+          { label: "Dark Stores & Supermarkets" },
+          { label: "Store Directory", active: true },
         ]}
       />
 
       <PageActionBar
-        buttonLabel="Add Vendor Partner"
+        buttonLabel="Add Dark Store / Mart"
         onButtonClick={() => navigate("/add-restaurants")}
-        placeholder="Search by vendor partner name, owner, mobile, email, city, location, state..."
+        placeholder="Search by dark store name, owner, mobile, email, city, location, state..."
         searchValue={searchTerm}
         onSearchChange={(val) => setSearchTerm(val)}
       />
@@ -368,7 +368,7 @@ export default function RestaurantsList() {
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
-        title="Delete Vendor Partner"
+        title="Delete Dark Store / Mart"
         description={
           deleteTarget
             ? `Are you sure you want to delete "${
