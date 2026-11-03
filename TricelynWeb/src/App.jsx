@@ -12,6 +12,7 @@ import AuthModal from './components/AuthModal';
 import SupportWidget from './components/SupportWidget';
 import ProductDetailModal from './components/ProductDetailModal';
 import ActiveOrderBanner from './components/ActiveOrderBanner';
+import StickyMobileCartBar from './components/StickyMobileCartBar';
 
 import HomePage from './pages/HomePage';
 import ProductDetailPage from './pages/ProductDetailPage';
@@ -75,6 +76,9 @@ function App() {
 
               {/* Global Floating 24/7 Support Chat Widget */}
               <SupportWidget />
+
+              {/* Global Sticky Bottom Cart Bar on Mobile (Blinkit / Zepto Style) */}
+              <StickyMobileCartBar />
 
               {/* Tricelyn Footer */}
               <Footer />

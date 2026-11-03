@@ -91,24 +91,45 @@ const CategoryPage = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24 sm:pb-8">
       
       {/* Breadcrumbs (Matches Zepto User Image 3) */}
-      <nav className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-        <Link to="/" className="hover:text-brand-600">Home</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-        <Link to="/categories" className="hover:text-brand-600">Categories</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-        <span className="font-bold text-gray-900">{selectedCategory?.name || 'All'}</span>
-        <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-        <span className="text-brand-600 font-bold">Top Picks</span>
+      <nav className="flex items-center gap-1.5 text-xs text-gray-500 font-medium overflow-x-auto no-scrollbar py-0.5">
+        <Link to="/" className="hover:text-brand-600 flex-shrink-0">Home</Link>
+        <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <Link to="/categories" className="hover:text-brand-600 flex-shrink-0">Categories</Link>
+        <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <span className="font-bold text-gray-900 truncate max-w-[140px]">{selectedCategory?.name || 'All'}</span>
+        <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <span className="text-brand-600 font-bold flex-shrink-0">Top Picks</span>
       </nav>
 
-      {/* Main Two-Column Layout (Zepto Style Left Sidebar) */}
+      {/* Mobile Horizontal Category Pills (Quick-Commerce Style for Phones) */}
+      <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4">
+        {categories.map((cat) => {
+          const isActive = (slug === cat.slug) || (!slug && cat.slug === 'all');
+          return (
+            <Link
+              key={cat.slug}
+              to={`/category/${cat.slug}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                isActive
+                  ? 'bg-[#0055ff] text-white shadow-xs'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <span>{cat.icon || '📦'}</span>
+              <span>{cat.name}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Main Layout (Zepto Style Left Sidebar for Desktop, Full Width for Mobile) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         
-        {/* Left Vertical Categories Sidebar (Sticky) */}
-        <aside className="md:col-span-3 bg-white rounded-2xl border border-gray-100 p-3 shadow-xs sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto no-scrollbar">
+        {/* Left Vertical Categories Sidebar (Desktop only - Sticky) */}
+        <aside className="hidden md:block md:col-span-3 bg-white rounded-2xl border border-gray-100 p-3 shadow-xs sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto no-scrollbar">
           <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between mb-2">
             <h3 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-brand-600" />

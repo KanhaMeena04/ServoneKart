@@ -171,7 +171,7 @@ const ProductDetailPage = () => {
   const categorySlug = product.categorySlug || product.category?.slug || 'dairy-bread-eggs';
 
   return (
-    <div className="bg-[#f4f7fb] min-h-screen pb-16">
+    <div className="bg-[#f4f7fb] min-h-screen pb-24 sm:pb-16">
       
       {/* Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 space-y-8">
@@ -627,6 +627,59 @@ const ProductDetailPage = () => {
           </section>
         )}
 
+      </div>
+
+      {/* MOBILE STICKY BOTTOM ACTION BAR (< sm) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-bold text-gray-500">
+            {activeUnit}
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl font-black text-gray-900">₹{activePrice}</span>
+            {activeMrp > activePrice && (
+              <span className="text-xs text-gray-400 line-through">₹{activeMrp}</span>
+            )}
+          </div>
+        </div>
+
+        <div>
+          {quantity === 0 ? (
+            <button
+              onClick={() => addToCart({
+                ...product,
+                price: activePrice,
+                mrp: activeMrp,
+                weight: activeUnit,
+                selectedVariantId: selectedVariant?.id
+              }, 1)}
+              className="px-6 py-2.5 bg-[#0c831f] active:bg-[#0a701a] text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 active:scale-95 transition"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Add to Cart</span>
+            </button>
+          ) : (
+            <div className="flex items-center bg-[#0c831f] text-white rounded-xl shadow-xs overflow-hidden py-1 px-1">
+              <button
+                onClick={() => updateQuantity(cartItemId, quantity - 1)}
+                className="w-8 h-8 flex items-center justify-center active:scale-90 transition font-bold"
+                aria-label="Decrease quantity"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="w-8 text-center text-xs font-black select-none">
+                {quantity}
+              </span>
+              <button
+                onClick={() => updateQuantity(cartItemId, quantity + 1)}
+                className="w-8 h-8 flex items-center justify-center active:scale-90 transition font-bold"
+                aria-label="Increase quantity"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

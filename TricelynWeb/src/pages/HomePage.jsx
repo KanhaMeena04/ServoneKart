@@ -21,6 +21,45 @@ import ProductCard from '../components/ProductCard';
 import { groceryService } from '../services/api';
 import { CATEGORIES, BEST_SELLERS, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 
+// Quick-Commerce Mobile Category Groups (Matches Reference Screenshots 1 & 2)
+const MOBILE_CATEGORY_GROUPS = [
+  {
+    title: "Grocery & Kitchen",
+    items: [
+      { name: "Vegetables & Fruits", slug: "fruits-vegetables", image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=300&q=80" },
+      { name: "Atta, Rice & Dal", slug: "atta-rice-dal", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80" },
+      { name: "Oil, Ghee & Masala", slug: "masala-oil-more", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80" },
+      { name: "Dairy, Bread & Eggs", slug: "dairy-bread-eggs", image: "https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?w=300&q=80" },
+      { name: "Bakery & Biscuits", slug: "bakery-biscuits", image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&q=80" },
+      { name: "Dry Fruits & Cereals", slug: "organic-healthy-living", image: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=300&q=80" },
+      { name: "Chicken, Meat & Fish", slug: "chicken-meat-fish", image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&q=80" },
+      { name: "Kitchen & Home", slug: "home-office", image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300&q=80" }
+    ]
+  },
+  {
+    title: "Snacks & Drinks",
+    items: [
+      { name: "Chips & Namkeen", slug: "snacks-munchies", image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80" },
+      { name: "Sweets & Chocolates", slug: "sweet-tooth", image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=300&q=80" },
+      { name: "Drinks & Juices", slug: "cold-drinks-juices", image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=300&q=80" },
+      { name: "Tea, Coffee & Drinks", slug: "tea-coffee-milk-drinks", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300&q=80" },
+      { name: "Instant Food", slug: "breakfast-instant-food", image: "https://images.unsplash.com/photo-1612927601601-6638404737ce?w=300&q=80" },
+      { name: "Sauces & Spreads", slug: "sauces-spreads", image: "https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=300&q=80" },
+      { name: "Paan Corner", slug: "paan-corner", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&q=80" },
+      { name: "Ice Creams & More", slug: "sweet-tooth", image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=300&q=80" }
+    ]
+  },
+  {
+    title: "Beauty & Household",
+    items: [
+      { name: "Personal Care", slug: "personal-care", image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80" },
+      { name: "Cleaning Essentials", slug: "cleaning-essentials", image: "https://images.unsplash.com/photo-1585421514738-01798e348b17?w=300&q=80" },
+      { name: "Pharma & Wellness", slug: "pharma-wellness", image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&q=80" },
+      { name: "Baby Care", slug: "baby-care", image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&q=80" }
+    ]
+  }
+];
+
 const HomePage = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState(CATEGORIES);
@@ -227,18 +266,18 @@ const HomePage = () => {
             </div>
 
             {/* Center: Branded Grocery Tote Bag Image */}
-            <div className="lg:col-span-4 flex items-center justify-center py-2">
+            <div className="lg:col-span-4 flex items-center justify-center py-1 sm:py-2">
               <div className="relative group">
                 <img
                   src={heroContent.bagImage}
                   alt="Tricelyn Fresh Grocery Bag"
-                  className="max-h-56 sm:max-h-64 object-contain rounded-2xl drop-shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
+                  className="max-h-40 sm:max-h-56 lg:max-h-64 object-contain rounded-2xl drop-shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
             </div>
 
-            {/* Right: 4 Value Proposition Badges (Matches Mockup) */}
-            <div className="lg:col-span-3 flex flex-col justify-center space-y-4 border-t lg:border-t-0 lg:border-l border-white/15 pt-4 lg:pt-0 lg:pl-6">
+            {/* Right: 4 Value Proposition Badges (2x2 on Mobile, Vertical on Desktop) */}
+            <div className="lg:col-span-3 grid grid-cols-2 lg:flex lg:flex-col justify-center gap-2.5 sm:gap-3 lg:gap-4 border-t lg:border-t-0 lg:border-l border-white/15 pt-4 lg:pt-0 lg:pl-6">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-blue-400/20 flex items-center justify-center text-cyan-300 flex-shrink-0">
                   <Zap className="w-5 h-5 fill-current" />
@@ -285,7 +324,8 @@ const HomePage = () => {
 
         {/* ============================================================
             2. SHOP BY CATEGORY SECTION
-            (Full Round Circular Cards with Thin Brand Blue Theme Border)
+            - Desktop: Full Round Circular Cards with Thin Blue Theme Border
+            - Mobile: 4-Column Quick-Commerce Grid (Matches Reference Screenshots 1 & 2)
            ============================================================ */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -301,14 +341,14 @@ const HomePage = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 lg:grid-cols-7 gap-4 sm:gap-6">
+          {/* DESKTOP VIEW: Circular Category Cards */}
+          <div className="hidden md:grid md:grid-cols-7 lg:grid-cols-7 gap-4 sm:gap-6">
             {categories.slice(0, 7).map((cat) => (
               <Link
                 key={cat.slug || cat._id}
                 to={`/category/${cat.slug}`}
                 className="group flex flex-col items-center text-center cursor-pointer"
               >
-                {/* Fully Goal Circle with Thin Brand Theme Blue Border */}
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
                   <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
                     <img
@@ -320,11 +360,54 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                {/* Name Below Circle */}
                 <span className="mt-2.5 text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0055ff] transition line-clamp-2 leading-tight text-center max-w-[105px]">
                   {cat.shortName || cat.name}
                 </span>
               </Link>
+            ))}
+          </div>
+
+          {/* MOBILE VIEW (< 768px): 4-Column Quick-Commerce Sections (Matches Reference Screenshot 1 & 2) */}
+          <div className="space-y-6 md:hidden">
+            {MOBILE_CATEGORY_GROUPS.map((group, gIdx) => (
+              <div key={gIdx} className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-gray-900 tracking-tight">
+                    {group.title}
+                  </h3>
+                  <Link
+                    to="/categories"
+                    className="text-[11px] font-bold text-[#0055ff] hover:underline"
+                  >
+                    see all
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2.5">
+                  {group.items.map((cat, cIdx) => (
+                    <Link
+                      key={cIdx}
+                      to={`/category/${cat.slug}`}
+                      className="flex flex-col items-center group text-center cursor-pointer"
+                    >
+                      {/* Soft Light Blue Rounded Square (Matches Blinkit Reference) */}
+                      <div className="w-full aspect-square bg-[#f0f6ff] active:bg-blue-100 rounded-2xl p-2 flex items-center justify-center border border-blue-100/60 shadow-2xs group-active:scale-95 transition">
+                        <img
+                          src={cat.image}
+                          alt={cat.name}
+                          className="max-h-full max-w-full object-contain mix-blend-multiply rounded-lg"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      {/* Category Label Below */}
+                      <span className="text-[10px] font-bold text-gray-800 group-hover:text-[#0055ff] line-clamp-2 mt-1 leading-tight text-center">
+                        {cat.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>
@@ -358,12 +441,12 @@ const HomePage = () => {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            <div className="flex overflow-x-auto pb-2 scrollbar-none snap-x sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5 -mx-4 px-4 sm:mx-0 sm:px-0">
               {stores.slice(0, 6).map((store) => (
                 <Link
                   key={store._id || store.id}
                   to={`/store/${store._id || store.id}`}
-                  className="bg-white rounded-2xl border border-gray-100 hover:border-[#0055ff] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                  className="w-[84vw] flex-shrink-0 snap-start sm:w-auto bg-white rounded-2xl border border-gray-100 hover:border-[#0055ff] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div className="flex items-start gap-3.5">
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition">
@@ -428,13 +511,13 @@ const HomePage = () => {
 
         {/* ============================================================
             3. THREE PROMOTIONAL OFFER BANNERS
-            (Matches Master Mockup: 3 Royal Blue / Navy Offer Cards)
+            (Matches Master Mockup: Horizontal Swipe on Mobile, 3 Cols on Desktop)
            ============================================================ */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="flex overflow-x-auto pb-2 scrollbar-none snap-x md:grid md:grid-cols-3 gap-3 sm:gap-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {offerBanners.map((card, idx) => (
             <div
               key={card.id || idx}
-              className={`rounded-2xl p-6 bg-gradient-to-r ${card.bgGradient} text-white relative overflow-hidden flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-md transition-shadow group`}
+              className={`w-[82vw] flex-shrink-0 snap-start md:w-auto rounded-2xl p-5 sm:p-6 bg-gradient-to-r ${card.bgGradient} text-white relative overflow-hidden flex flex-col justify-between min-h-[150px] shadow-sm hover:shadow-md transition-shadow group`}
             >
               <div className="relative z-10 space-y-1.5 max-w-[65%]">
                 <h3 className="text-base sm:text-lg font-black leading-snug">
