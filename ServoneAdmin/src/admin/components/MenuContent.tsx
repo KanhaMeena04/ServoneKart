@@ -124,28 +124,47 @@ export const menuItems: MenuItemType[] = [
   },
 
   {
-    text: 'Grocery Catalog',
-    icon: <Inventory />,
-    permission: 'Restaurant',
+    text: 'Categories & Aisles',
+    icon: <Category />,
+    permission: 'Category',
     children: [
-      { text: 'Master Product Catalog', path: '/catalog-master-control' },
-      { text: 'Grocery Categories', path: '/category', permission: 'Category' },
+      { text: 'All Grocery Categories', path: '/category', permission: 'Category' },
       { text: 'Subcategories & Aisles', path: '/category?tab=1', permission: 'Category' },
-      { text: 'Pending Product Approvals', path: '/pending-menu-approvals', permission: 'MenuApprovals' },
+      { text: 'Add New Category', path: '/category?action=add', permission: 'Category' },
       { text: 'Category Requests', path: '/category-requests', permission: 'Category' },
-      { text: 'Catalog Approval History', path: '/menu-approval-history', permission: 'MenuApprovals' },
     ]
   },
 
   {
-    text: 'Pricing & Delivery',
-    icon: <AttachMoney />,
-    permission: 'SiteSettings',
+    text: 'Products & Approvals',
+    icon: <Inventory />,
+    permission: 'Restaurant',
     children: [
-      { text: 'Delivery Charges', path: '/pricing-control' },
-      { text: 'Platform Commission', path: '/financial-overview', permission: 'Reports' },
-      { text: 'Packing Charges', path: '/pricing-control' },
-      { text: 'Platform Fees', path: '/pricing-control' },
+      { text: 'Master Product Catalog', path: '/catalog-master-control' },
+      { text: 'Pending Product Approvals', path: '/pending-menu-approvals', permission: 'MenuApprovals' },
+      { text: 'Product Approval History', path: '/menu-approval-history', permission: 'MenuApprovals' },
+    ]
+  },
+
+  {
+    text: 'Inventory & Stock Control',
+    icon: <LocalGroceryStore />,
+    permission: 'Restaurant',
+    children: [
+      { text: 'Real-Time Stock Manager', path: '/admin/inventory' },
+      { text: 'Low Stock Alerts (< 10)', path: '/admin/inventory?status=low_stock' },
+      { text: 'Out of Stock Items', path: '/admin/inventory?status=out_of_stock' },
+    ]
+  },
+
+  {
+    text: 'Billing & Tax Invoices',
+    icon: <ReceiptLong />,
+    permission: 'Order',
+    children: [
+      { text: 'Order Tax Invoices', path: '/admin/invoices' },
+      { text: 'GST & Payment Reconciliation', path: '/payment-reconciliation', permission: 'Reports' },
+      { text: 'Pricing & Delivery Fees', path: '/pricing-control', permission: 'SiteSettings' },
     ]
   },
 

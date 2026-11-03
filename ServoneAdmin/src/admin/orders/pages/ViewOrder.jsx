@@ -40,8 +40,8 @@ import PageHeader from "../../components/PageHeader";
 import { getName, getAddress } from "../../../utils/orderData";
 
 // BRAND CONSTANTS
-const BRAND_MAIN = "#ed2026";
-const BRAND_BG_LIGHT = "#FFF5F2";
+const BRAND_MAIN = "#0055ff";
+const BRAND_BG_LIGHT = "#eff6ff";
 
 const formatIST = (dateStr) => {
   if (!dateStr) return "—";
@@ -169,7 +169,7 @@ const ViewOrder = () => {
           <Warning className="text-red-500 mx-auto mb-3" sx={{ fontSize: 48 }} />
           <h2 className="text-xl font-bold text-gray-800 mb-2">Failed to load order</h2>
           <p className="text-sm text-red-600 mb-6">{error}</p>
-          <Button variant="contained" sx={{ bgcolor: BRAND_MAIN, "&:hover": { bgcolor: "#c41a1f" } }} onClick={() => navigate("/order-dashboard")}>
+          <Button variant="contained" sx={{ bgcolor: BRAND_MAIN, "&:hover": { bgcolor: "#0047d4" } }} onClick={() => navigate("/order-dashboard")}>
             Back to Live Orders
           </Button>
         </div>
@@ -308,7 +308,7 @@ const ViewOrder = () => {
             onClick={() => handlePrint("A4")}
             sx={{
               bgcolor: BRAND_MAIN,
-              "&:hover": { bgcolor: "#c41a1f" },
+              "&:hover": { bgcolor: "#0047d4" },
               textTransform: "none",
               fontWeight: 600,
               borderRadius: 2,
@@ -752,7 +752,7 @@ const ViewOrder = () => {
               }}
               sx={{
                 bgcolor: BRAND_MAIN,
-                "&:hover": { bgcolor: "#c41a1f" },
+                "&:hover": { bgcolor: "#0047d4" },
                 fontWeight: "bold",
                 textTransform: "none",
                 borderRadius: 2,
@@ -775,7 +775,7 @@ const ViewOrder = () => {
               sx={{
                 borderColor: BRAND_MAIN,
                 color: BRAND_MAIN,
-                "&:hover": { borderColor: "#c41a1f", bgcolor: BRAND_BG_LIGHT },
+                "&:hover": { borderColor: "#0047d4", bgcolor: BRAND_BG_LIGHT },
                 fontWeight: "bold",
                 textTransform: "none",
                 borderRadius: 2,
@@ -792,7 +792,7 @@ const ViewOrder = () => {
               sx={{
                 borderColor: BRAND_MAIN,
                 color: BRAND_MAIN,
-                "&:hover": { borderColor: "#c41a1f", bgcolor: BRAND_BG_LIGHT },
+                "&:hover": { borderColor: "#0047d4", bgcolor: BRAND_BG_LIGHT },
                 fontWeight: "bold",
                 textTransform: "none",
                 borderRadius: 2,

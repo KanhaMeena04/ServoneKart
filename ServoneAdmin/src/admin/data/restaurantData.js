@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 
 
 
-export const initialDark Store / MartFormState = {
+export const initialRestaurantFormState = {
   ownerName: "",
   ownerEmail: "",
   ownerMobile: "",
@@ -74,7 +74,7 @@ export const initialDark Store / MartFormState = {
   },
 };
 
-export const getDark Store / MartColumns = ({
+export const getRestaurantColumns = ({
   navigate,
   formatDate,
   onDeleteClick,
@@ -97,11 +97,11 @@ export const getDark Store / MartColumns = ({
     { key: "index", label: "" },
 
     {
-      key: "dark storeId",
+      key: "restaurantId",
       label: "Dark Store / Mart ID",
       render: (row, idx) => {
-        const idVal = (row.dark storeId && /^RNT\d+/i.test(row.dark storeId))
-          ? row.dark storeId.toUpperCase()
+        const idVal = (row.restaurantId && /^RNT\d+/i.test(row.restaurantId))
+          ? row.restaurantId.toUpperCase()
           : `RNT${String(idx + 1).padStart(3, '0')}`;
         return (
           <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -121,8 +121,8 @@ export const getDark Store / MartColumns = ({
         return (
           <div className="flex flex-col">
             <span className="font-semibold text-gray-900">{n}</span>
-            {row.dark storeId && (
-              <span className="text-[10px] font-mono text-emerald-600 font-semibold">{row.dark storeId}</span>
+            {row.restaurantId && (
+              <span className="text-[10px] font-mono text-emerald-600 font-semibold">{row.restaurantId}</span>
             )}
           </div>
         );
@@ -260,14 +260,14 @@ export const getDark Store / MartColumns = ({
             <VisibilityOutlined
               fontSize="small"
               className="cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={() => navigate(`/dark store/${row._id || row.id}`)}
+              onClick={() => navigate(`/restaurant/${row._id || row.id}`)}
             />
           </Tooltip>
           <Tooltip title="Edit Dark Store / Mart">
             <EditOutlined
               fontSize="small"
               className="cursor-pointer text-gray-600 hover:text-emerald-600 transition-colors"
-              onClick={() => navigate(`/edit-dark store/${row._id || row.id}`)}
+              onClick={() => navigate(`/edit-restaurant/${row._id || row.id}`)}
             />
           </Tooltip>
           <Tooltip title="Delete Dark Store / Mart">

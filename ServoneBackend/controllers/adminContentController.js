@@ -613,7 +613,7 @@ exports.deleteCancellationReason = async (req, res) => {
 };
 exports.addBanner = async (req, res) => {
     try {
-        const { title, type, targetId, targetModel, position, restaurant, city, isActive } = req.body;
+        const { title, type, targetId, targetModel, position, restaurant, city, isActive, placement, subtitle, badge, buttonText, link, bgGradient } = req.body;
         let imageVal = '';
         if (req.file) {
             imageVal = await getFileUrl(req.file);

@@ -65,6 +65,8 @@ const CategorySort=lazy(()=>import("../categories/pages/CategorySort"))
 const EditCategory=lazy(()=>import("../categories/pages/EditCategory"))
 const PendingMenuApprovals=lazy(()=>import("../pages/PendingMenuApprovals"))
 const CategoryRequests=lazy(()=>import("../pages/CategoryRequests"))
+const InventoryManagement=lazy(()=>import("../pages/InventoryManagement"))
+const InvoiceManagement=lazy(()=>import("../pages/InvoiceManagement"))
 
 const UnitSymbolAdd=lazy(()=>import("../units/pages/AddUnitSymbol"))
 const AddUnit=lazy(()=>import("../units/pages/AddUnit"))
@@ -265,6 +267,8 @@ const AdminRoutes = () => {
 				 <Route path="/pending-menu-approvals" element={<PendingMenuApprovals/>} />
 				 <Route path="/category-requests" element={<CategoryRequests/>} />
 				 <Route path="/menu-approval-history" element={<PendingMenuApprovals/>} />
+				 <Route path="/admin/inventory" element={<InventoryManagement/>} />
+				 <Route path="/admin/invoices" element={<InvoiceManagement/>} />
 
 
 				 <Route path="/unit-list" element={<UnitList/>} />

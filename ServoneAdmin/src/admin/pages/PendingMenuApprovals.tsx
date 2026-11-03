@@ -255,10 +255,10 @@ export default function PendingMenuApprovals() {
     }
   };
 
-  const getRestaurantName = (item: PendingItem) => {
+  const getStoreName = (item: PendingItem) => {
     if (!item.restaurant) return 'N/A';
     if (typeof item.restaurant.name === 'string') return item.restaurant.name;
-    return item.restaurant.name?.en || 'Unnamed Restaurant';
+    return item.restaurant.name?.en || 'Tricelyn Dark Store Hub';
   };
 
   const getCategoryName = (cat: any) => {
@@ -271,7 +271,7 @@ export default function PendingMenuApprovals() {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     const name = (item.name || '').toLowerCase();
-    const restName = getRestaurantName(item).toLowerCase();
+    const restName = getStoreName(item).toLowerCase();
     const catName = getCategoryName(item.category).toLowerCase();
     return name.includes(query) || restName.includes(query) || catName.includes(query);
   });
@@ -305,7 +305,7 @@ export default function PendingMenuApprovals() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: '#1E293B' }}>
-              Menu Management & Approvals
+              Product Catalog & Vendor Approvals
             </Typography>
             <Chip
               label={`${items.length} Items`}
@@ -315,7 +315,7 @@ export default function PendingMenuApprovals() {
             />
           </Box>
           <Typography variant="body2" sx={{ color: '#64748B' }}>
-            Review, verify, and approve restaurant menu submissions. Approved items immediately become live on the User App.
+            Review, verify, and approve vendor and dark store product submissions. Approved items immediately become live on Tricelyn Web & Mobile Apps.
           </Typography>
         </Box>
         <Button
@@ -391,7 +391,7 @@ export default function PendingMenuApprovals() {
           <Table>
             <TableHead sx={{ bgcolor: '#F1F5F9' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Restaurant</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Dark Store / Mart</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Item</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Subcategory</TableCell>
@@ -407,7 +407,7 @@ export default function PendingMenuApprovals() {
                 <TableRow key={item._id} hover>
                   <TableCell sx={{ fontWeight: 600 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {getRestaurantName(item)}
+                      {getStoreName(item)}
                     </Typography>
                     {item.restaurant?.contactNumber && (
                       <Typography variant="caption" color="textSecondary">
@@ -551,10 +551,10 @@ export default function PendingMenuApprovals() {
 
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Typography variant="subtitle2" color="textSecondary">
-                    Restaurant Details
+                    Dark Store / Mart Details
                   </Typography>
                   <Typography variant="body1" fontWeight={600} sx={{ mb: 1 }}>
-                    {getRestaurantName(selectedItem)} {selectedItem.restaurant?.contactNumber ? `(${selectedItem.restaurant.contactNumber})` : ''}
+                    {getStoreName(selectedItem)} {selectedItem.restaurant?.contactNumber ? `(${selectedItem.restaurant.contactNumber})` : ''}
                   </Typography>
 
                   <Typography variant="subtitle2" color="textSecondary" sx={{ mt: 1 }}>
@@ -676,7 +676,7 @@ export default function PendingMenuApprovals() {
 
       {/* Request Changes Dialog */}
       <Dialog open={changeOpen} onClose={() => setChangeOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Request Changes from Restaurant</DialogTitle>
+        <DialogTitle>Request Changes from Dark Store / Mart</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
             Detail the modifications required before this item can be approved.

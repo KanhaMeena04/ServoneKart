@@ -9,6 +9,8 @@ const ProductCard = ({ product }) => {
   const productId = product._id || product.id || product.slug;
   const quantity = getItemQuantity(productId);
 
+  const isAvailable = product.inStock !== false && (product.stockQuantity === undefined || product.stockQuantity > 0);
+
   const price = Number(product.price ?? product.sellingPrice ?? product.basePrice) || 0;
   const mrp = Number(product.mrp) || Math.round(price * 1.25);
   const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : (product.discountPercent || 0);
@@ -45,11 +47,17 @@ const ProductCard = ({ product }) => {
         className="relative w-full h-32 sm:h-34 rounded-xl overflow-hidden bg-gradient-to-b from-blue-50/25 via-white to-gray-50/60 border border-blue-50/80 p-2 mb-2 flex items-center justify-center cursor-pointer group-hover:border-blue-200/80 transition-all"
         title="View product details"
       >
-        {/* Quick delivery badge */}
-        <span className="absolute top-1.5 left-1.5 text-[9px] font-bold text-blue-700 bg-white/95 backdrop-blur-xs px-1.5 py-0.5 rounded-md shadow-2xs border border-blue-100/70 flex items-center gap-0.5 z-10">
-          <Clock className="w-2.5 h-2.5 text-blue-600" />
-          <span>10 MINS</span>
-        </span>
+        {/* Quick delivery badge or Out of stock badge */}
+        {isAvailable ? (
+          <span className="absolute top-1.5 left-1.5 text-[9px] font-bold text-blue-700 bg-white/95 backdrop-blur-xs px-1.5 py-0.5 rounded-md shadow-2xs border border-blue-100/70 flex items-center gap-0.5 z-10">
+            <Clock className="w-2.5 h-2.5 text-blue-600" />
+            <span>10 MINS</span>
+          </span>
+        ) : (
+          <span className="absolute top-1.5 left-1.5 text-[9px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200/80 z-10">
+            OUT OF STOCK
+          </span>
+        )}
 
         {/* Discount Badge */}
         {discountPercent > 0 && (
@@ -107,7 +115,14 @@ const ProductCard = ({ product }) => {
 
         {/* Add to Cart Button (Solid Electric Blue matching Brand Theme) */}
         <div>
-          {quantity === 0 ? (
+          {!isAvailable ? (
+            <button
+              disabled
+              className="w-full py-1.5 sm:py-2 bg-gray-100 text-gray-400 font-bold rounded-xl text-xs cursor-not-allowed border border-gray-200 flex items-center justify-center gap-1"
+            >
+              Out of Stock
+            </button>
+          ) : quantity === 0 ? (
             <button
               onClick={() => addToCart(product, 1)}
               className="w-full py-1.5 sm:py-2 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
