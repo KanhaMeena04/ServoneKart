@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
-import bannerDailyEssentials from '../assets/banner_daily_essentials.png';
-import bannerFarmFreshItems from '../assets/banner_farm_fresh_items.png';
 
 const HeroBannerSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -10,63 +8,59 @@ const HeroBannerSlider = () => {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
+  // 4 Original Tricelyn Quick-Commerce Slides
   const slides = [
     {
-      id: 'slide-daily-essentials',
-      tag: 'FARM FRESH · 10-15 MINS',
-      title: 'Stock up on daily essentials',
-      subtitle: 'Get farm-fresh goodness & a range of exotic fruits, vegetables, eggs & more',
-      buttonText: 'Shop Now',
+      id: 'slide-farm-fresh',
+      tag: 'TRICELYN FRESH · 10-15 MINS',
+      title: 'Farm Fresh Fruits & Vegetables',
+      subtitle: 'Crisp seasonal greens, organic veggies & juicy fruits delivered straight from local Indore mandis',
+      buttonText: 'Order Fresh',
       link: '/category/fruits-vegetables',
-      theme: 'green',
-      bgGradient: 'from-[#116932] via-[#15803d] to-[#1e9b4b]',
-      buttonClass: 'bg-white text-[#116932] hover:bg-gray-50',
-      desktopImage: bannerDailyEssentials,
-      mobileSideImage: bannerFarmFreshItems,
-      sideImageAlt: 'Farm fresh fruits, vegetables, milk, and eggs'
+      bgGradient: 'from-[#064e3b] via-[#047857] to-[#10b981]',
+      buttonClass: 'bg-white text-[#064e3b] hover:bg-emerald-50',
+      image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200&q=80',
+      alt: 'Fresh organic vegetables, fruits and greens'
     },
     {
-      id: 'slide-superfast-grocery',
-      tag: 'SUPERFAST INDORE · TRICELYN',
-      title: 'Groceries Delivered in 10-15 Mins',
-      subtitle: 'Fresh milk, breads, daily pantry staples & household essentials delivered right to your doorstep',
-      buttonText: 'Order Now',
-      link: '/categories',
-      theme: 'blue',
-      bgGradient: 'from-[#0038a8] via-[#0055ff] to-[#0284c7]',
+      id: 'slide-dairy-breakfast',
+      tag: 'DAILY ESSENTIALS · SUPERFAST',
+      title: 'Fresh Milk, Breads & Farm Eggs',
+      subtitle: 'Pure dairy pouches, artisan whole-wheat breads, farm fresh eggs & butter at morning speed',
+      buttonText: 'Shop Breakfast',
+      link: '/category/dairy-bread-eggs',
+      bgGradient: 'from-[#002b80] via-[#0055ff] to-[#38bdf8]',
       buttonClass: 'bg-white text-[#0055ff] hover:bg-blue-50',
-      sideImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1000&q=80',
-      sideImageAlt: 'Tricelyn fresh groceries and essentials'
+      image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=1200&q=80',
+      alt: 'Fresh dairy, breads and breakfast essentials'
     },
     {
       id: 'slide-summer-coolers',
-      tag: 'ICY COLD · REFRESHMENTS',
+      tag: 'ICY COLD · INSTANT REFRESH',
       title: 'Chilled Drinks, Ice Creams & Juices',
-      subtitle: 'Beat the heat with iced sodas, cold-pressed juices, coconut water & gourmet ice creams',
+      subtitle: 'Beat the heat with iced sodas, cold-pressed fruit juices, coconut water & gourmet ice creams',
       buttonText: 'Explore Coolers',
       link: '/category/cold-drinks-juices',
-      theme: 'orange',
       bgGradient: 'from-[#9a3412] via-[#ea580c] to-[#f97316]',
       buttonClass: 'bg-white text-[#ea580c] hover:bg-orange-50',
-      sideImage: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=1000&q=80',
-      sideImageAlt: 'Chilled juices, sodas and ice creams'
+      image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=1200&q=80',
+      alt: 'Chilled tropical juices and cold drinks'
     },
     {
       id: 'slide-snacks-munchies',
-      tag: 'INSTANT CRAVINGS · SWEETS',
+      tag: 'MIDNIGHT CRAVINGS · 10 MINS',
       title: 'Snacks, Munchies & Chocolates',
-      subtitle: 'Crunchy namkeen, imported chocolates, potato chips & cookies for every craving',
+      subtitle: 'Crunchy Indore namkeen, imported chocolate bars, potato chips & cookies for instant cravings',
       buttonText: 'Grab Snacks',
       link: '/category/snacks-munchies',
-      theme: 'purple',
-      bgGradient: 'from-[#4c1d95] via-[#7c3aed] to-[#9333ea]',
+      bgGradient: 'from-[#3b0764] via-[#7c3aed] to-[#a855f7]',
       buttonClass: 'bg-white text-[#7c3aed] hover:bg-purple-50',
-      sideImage: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=1000&q=80',
-      sideImageAlt: 'Chips, cookies and chocolates'
+      image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=1200&q=80',
+      alt: 'Assorted chips, cookies and chocolates'
     }
   ];
 
-  // Auto-play timer (slides every 4.5 seconds, pauses on mouse hover)
+  // Auto-play timer: slides advance every 4.5 seconds, pauses on mouse hover
   useEffect(() => {
     if (isPaused) return;
     const timer = setInterval(() => {
@@ -102,7 +96,7 @@ const HeroBannerSlider = () => {
 
   return (
     <div
-      className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md group select-none"
+      className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -114,121 +108,58 @@ const HeroBannerSlider = () => {
         className="flex transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
-        {slides.map((slide, idx) => {
-          // Slide 1 has the exact cropped reference image for desktop
-          if (slide.desktopImage) {
-            return (
-              <div
-                key={slide.id}
-                className="w-full flex-shrink-0 relative overflow-hidden flex items-center h-[185px] sm:h-[210px] md:h-[235px] lg:h-[250px]"
-              >
-                {/* Desktop view: 100% pixel-perfect image from reference screenshot */}
-                <div className="hidden sm:block w-full h-full">
-                  <Link to={slide.link} className="block w-full h-full">
-                    <img
-                      src={slide.desktopImage}
-                      alt={slide.title}
-                      className="w-full h-full object-cover rounded-2xl sm:rounded-3xl"
-                    />
-                  </Link>
-                </div>
+        {slides.map((slide, idx) => (
+          <div
+            key={slide.id}
+            className={`w-full flex-shrink-0 relative overflow-hidden flex items-center h-[190px] sm:h-[220px] md:h-[250px] lg:h-[270px] bg-gradient-to-r ${slide.bgGradient}`}
+          >
+            {/* Ambient Lighting Accents */}
+            <div className="absolute -top-12 -right-12 w-72 h-72 bg-white/15 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 left-1/3 w-64 h-64 bg-black/10 rounded-full blur-xl pointer-events-none" />
 
-                {/* Mobile view (< 640px): Rich responsive layout so typography remains large and clear */}
-                <div className={`sm:hidden w-full h-full min-h-[175px] bg-gradient-to-r ${slide.bgGradient} p-5 flex flex-col justify-between relative overflow-hidden`}>
-                  {/* Subtle blur background element */}
-                  <div className="absolute top-0 right-0 w-44 h-44 bg-white/10 rounded-full blur-xl pointer-events-none" />
+            {/* Right Image: Edge-to-edge full bleed, smoothly blended into background */}
+            <div className="absolute right-0 top-0 bottom-0 w-3/5 sm:w-1/2 lg:w-7/12 pointer-events-none flex items-center justify-end overflow-hidden">
+              <img
+                src={slide.image}
+                alt={slide.alt}
+                className="w-full h-full object-cover object-center sm:object-right transition-transform duration-700 ease-out group-hover:scale-105"
+                style={{
+                  maskImage: 'linear-gradient(to right, transparent 0%, black 25%, black 100%)',
+                  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%, black 100%)'
+                }}
+                loading={idx === 0 ? 'eager' : 'lazy'}
+              />
+              {/* Mobile contrast overlay */}
+              <div className="sm:hidden absolute inset-0 bg-gradient-to-r from-black/45 via-black/10 to-transparent" />
+            </div>
 
-                  {/* Right side farm fresh image filling the right side */}
-                  <div className="absolute right-0 top-0 bottom-0 w-7/12 pointer-events-none flex items-center justify-end overflow-hidden">
-                    <img
-                      src={slide.mobileSideImage}
-                      alt={slide.sideImageAlt}
-                      className="w-full h-full object-cover object-left"
-                      style={{
-                        maskImage: 'linear-gradient(to right, transparent 0%, black 30%, black 100%)',
-                        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 30%, black 100%)'
-                      }}
-                    />
-                  </div>
-
-                  {/* Left Content */}
-                  <div className="relative z-10 max-w-[65%] space-y-2">
-                    <h2 className="text-xl font-black text-white tracking-tight leading-tight">
-                      {slide.title}
-                    </h2>
-                    <p className="text-[11px] text-white/90 font-medium line-clamp-2 leading-snug">
-                      {slide.subtitle}
-                    </p>
-                  </div>
-
-                  <div className="relative z-10 pt-2">
-                    <Link
-                      to={slide.link}
-                      className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-xl font-black text-xs shadow-md active:scale-95 transition-all ${slide.buttonClass}`}
-                    >
-                      <span>{slide.buttonText}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          // Slides 2, 3, 4: Full-bleed high-impact responsive quick-commerce banners
-          return (
-            <div
-              key={slide.id}
-              className={`w-full flex-shrink-0 relative overflow-hidden flex items-center h-[185px] sm:h-[210px] md:h-[235px] lg:h-[250px] bg-gradient-to-r ${slide.bgGradient}`}
-            >
-              {/* Background ambient lighting */}
-              <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/15 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute -bottom-10 left-1/3 w-60 h-60 bg-black/10 rounded-full blur-xl pointer-events-none" />
-
-              {/* Right Image: Stretches top-to-bottom edge-to-edge, smoothly masked into background */}
-              <div className="absolute right-0 top-0 bottom-0 w-3/5 sm:w-1/2 lg:w-7/12 pointer-events-none flex items-center justify-end overflow-hidden">
-                <img
-                  src={slide.sideImage}
-                  alt={slide.sideImageAlt}
-                  className="w-full h-full object-cover object-center sm:object-right transition-transform duration-700 ease-out group-hover:scale-105"
-                  style={{
-                    maskImage: 'linear-gradient(to right, transparent 0%, black 25%, black 100%)',
-                    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%, black 100%)'
-                  }}
-                  loading={idx === 0 ? 'eager' : 'lazy'}
-                />
-                {/* Mobile contrast overlay */}
-                <div className="sm:hidden absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+            {/* Left Content Area */}
+            <div className="relative z-10 w-full sm:w-3/5 lg:w-1/2 p-5 sm:p-7 md:p-10 space-y-2 sm:space-y-3">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-white/20 text-white border border-white/30 backdrop-blur-xs">
+                <Sparkles className="w-3 h-3 text-white" />
+                <span>{slide.tag}</span>
               </div>
 
-              {/* Left Content Area */}
-              <div className="relative z-10 w-full sm:w-3/5 lg:w-1/2 p-5 sm:p-7 md:p-9 space-y-2 sm:space-y-3">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-white/20 text-white border border-white/30 backdrop-blur-xs">
-                  <Sparkles className="w-3 h-3 text-white" />
-                  <span>{slide.tag}</span>
-                </div>
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] font-black text-white tracking-tight leading-[1.15] drop-shadow-xs">
+                {slide.title}
+              </h2>
 
-                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] font-black text-white tracking-tight leading-tight drop-shadow-xs">
-                  {slide.title}
-                </h2>
+              <p className="text-xs sm:text-sm md:text-base text-white/90 font-medium leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
+                {slide.subtitle}
+              </p>
 
-                <p className="text-xs sm:text-sm md:text-base text-white/90 font-medium leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
-                  {slide.subtitle}
-                </p>
-
-                <div className="pt-1 sm:pt-2">
-                  <Link
-                    to={slide.link}
-                    className={`inline-flex items-center gap-2 px-6 sm:px-7 py-2.5 sm:py-3 rounded-full font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all active:scale-95 ${slide.buttonClass}`}
-                  >
-                    <span>{slide.buttonText}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
+              <div className="pt-1 sm:pt-2">
+                <Link
+                  to={slide.link}
+                  className={`inline-flex items-center gap-2 px-6 sm:px-7 py-2 sm:py-2.5 rounded-full font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all active:scale-95 ${slide.buttonClass}`}
+                >
+                  <span>{slide.buttonText}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Navigation Arrow: Previous (Desktop hover) */}
