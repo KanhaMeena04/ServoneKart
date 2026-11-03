@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Search, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { groceryService } from '../services/api';
+import { ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 
 const SearchResultsPage = () => {
   const [searchParams] = useSearchParams();
@@ -20,11 +21,26 @@ const SearchResultsPage = () => {
       try {
         setLoading(true);
         const res = await groceryService.getProducts({ search: query.trim() });
-        if (res.data?.data) {
+        if (res.data?.data && res.data.data.length > 0) {
           setProducts(res.data.data);
+        } else {
+          const q = query.trim().toLowerCase();
+          const matches = ALL_CATALOG_PRODUCTS.filter(p => 
+            p.name.toLowerCase().includes(q) || 
+            (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+            (p.description && p.description.toLowerCase().includes(q))
+          );
+          setProducts(matches);
         }
       } catch (err) {
         console.error('Search error:', err);
+        const q = query.trim().toLowerCase();
+        const matches = ALL_CATALOG_PRODUCTS.filter(p => 
+          p.name.toLowerCase().includes(q) || 
+          (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q))
+        );
+        setProducts(matches);
       } finally {
         setLoading(false);
       }

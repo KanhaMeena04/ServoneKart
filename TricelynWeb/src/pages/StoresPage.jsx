@@ -16,10 +16,119 @@ import {
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { groceryService } from '../services/api';
+import { ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
+
+const DEFAULT_STORES_DATA = [
+  {
+    _id: "store_tricelyn_indore_01",
+    id: "store_tricelyn_indore_01",
+    name: "Tricelyn Express Mart (Vijay Nagar Hub)",
+    address: "Scheme 54, Vijay Nagar, Indore 452010",
+    rating: 4.8,
+    ratingsCount: 520,
+    deliveryTime: "10-15 mins",
+    distance: "1.2 km",
+    tags: ["Groceries", "Dairy & Bakery", "Instant Delivery"],
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80",
+    minOrder: 99
+  },
+  {
+    _id: "store_tricelyn_indore_02",
+    id: "store_tricelyn_indore_02",
+    name: "Fresh Farm Hub (Palasia Superstore)",
+    address: "Old Palasia Main Road, Near Industry House, Indore 452001",
+    rating: 4.7,
+    ratingsCount: 380,
+    deliveryTime: "12-18 mins",
+    distance: "2.5 km",
+    tags: ["Farm Fresh", "Vegetables", "Exotic Fruits"],
+    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80",
+    minOrder: 99
+  },
+  {
+    _id: "store_tricelyn_indore_03",
+    id: "store_tricelyn_indore_03",
+    name: "Apna Super Kirana (Saket Nagar)",
+    address: "Saket Square, Near Anand Bazaar, Indore 452018",
+    rating: 4.6,
+    ratingsCount: 410,
+    deliveryTime: "15-20 mins",
+    distance: "3.1 km",
+    tags: ["Daily Kirana", "Atta & Rice", "Spices & Oil"],
+    image: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=500&q=80",
+    minOrder: 99
+  },
+  {
+    _id: "store_tricelyn_indore_04",
+    id: "store_tricelyn_indore_04",
+    name: "Malwa Daily Mart (Bhawarkua Square)",
+    address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001",
+    rating: 4.5,
+    ratingsCount: 290,
+    deliveryTime: "15-22 mins",
+    distance: "4.0 km",
+    tags: ["Student Snacks", "Instant Food", "Beverages"],
+    image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&q=80",
+    minOrder: 99
+  },
+  {
+    _id: "store_tricelyn_indore_05",
+    id: "store_tricelyn_indore_05",
+    name: "Rajwada Heritage Grocery & Dry Fruits",
+    address: "MG Road, Near Rajwada Palace, Indore 452002",
+    rating: 4.9,
+    ratingsCount: 680,
+    deliveryTime: "18-25 mins",
+    distance: "4.8 km",
+    tags: ["Dry Fruits", "Tea & Coffee", "Indore Namkeen"],
+    image: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=500&q=80",
+    minOrder: 149
+  },
+  {
+    _id: "store_tricelyn_indore_06",
+    id: "store_tricelyn_indore_06",
+    name: "Metro Mart Quickstore (Super Corridor)",
+    address: "Sector A, Super Corridor Highway, Indore 452005",
+    rating: 4.7,
+    ratingsCount: 240,
+    deliveryTime: "15-20 mins",
+    distance: "5.2 km",
+    tags: ["Personal Care", "Household", "Cleaning"],
+    image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=500&q=80",
+    minOrder: 99
+  }
+];
+
+function buildFallbackStoreCatalog(targetStoreId) {
+  const store = DEFAULT_STORES_DATA.find(s => s._id === targetStoreId || s.id === targetStoreId) || DEFAULT_STORES_DATA[0];
+  const prods = ALL_CATALOG_PRODUCTS.filter(p => p.storeId === store.id || p.restaurant === store.id);
+  const catalogProds = prods.length > 0 ? prods : ALL_CATALOG_PRODUCTS.slice(0, 16);
+
+  const groups = {};
+  catalogProds.forEach(p => {
+    const slug = p.categorySlug || 'general';
+    const name = p.categoryName || 'Daily Essentials';
+    if (!groups[slug]) {
+      groups[slug] = {
+        id: slug,
+        slug: slug,
+        name: name,
+        categoryName: name,
+        products: []
+      };
+    }
+    groups[slug].products.push(p);
+  });
+
+  return {
+    store,
+    catalog: Object.values(groups)
+  };
+}
 
 const StoresPage = () => {
   const { storeId } = useParams();
-  const [stores, setStores] = useState([]);
+  const [stores, setStores] = useState(DEFAULT_STORES_DATA);
   const [currentStore, setCurrentStore] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,15 +149,28 @@ const StoresPage = () => {
           if (res.data?.data) {
             setCurrentStore(res.data.data.store);
             setCatalog(res.data.data.catalog || []);
+          } else {
+            const fallback = buildFallbackStoreCatalog(storeId);
+            setCurrentStore(fallback.store);
+            setCatalog(fallback.catalog);
           }
         } else {
           const res = await groceryService.getStores({ city: 'Indore' });
-          if (res.data?.data) {
+          if (res.data?.data && res.data.data.length > 0) {
             setStores(res.data.data);
+          } else {
+            setStores(DEFAULT_STORES_DATA);
           }
         }
       } catch (err) {
-        console.error('Failed to fetch store info:', err);
+        console.warn('Failed to fetch store info, loading fallback:', err.message);
+        if (storeId) {
+          const fallback = buildFallbackStoreCatalog(storeId);
+          setCurrentStore(fallback.store);
+          setCatalog(fallback.catalog);
+        } else {
+          setStores(DEFAULT_STORES_DATA);
+        }
       } finally {
         setLoading(false);
       }

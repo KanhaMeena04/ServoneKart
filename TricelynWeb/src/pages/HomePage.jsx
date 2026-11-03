@@ -19,11 +19,12 @@ import {
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { groceryService } from '../services/api';
+import { CATEGORIES, BEST_SELLERS, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [bestSellers, setBestSellers] = useState([]);
+  const [categories, setCategories] = useState(CATEGORIES);
+  const [bestSellers, setBestSellers] = useState(BEST_SELLERS);
   const [categorySections, setCategorySections] = useState([]);
   const [bannersData, setBannersData] = useState(null);
   const [stores, setStores] = useState([]);
@@ -41,24 +42,83 @@ const HomePage = () => {
           groceryService.getStores({ city: 'Indore' }),
         ]);
 
-        if (catsRes.status === 'fulfilled' && catsRes.value.data?.data) {
+        if (catsRes.status === 'fulfilled' && catsRes.value.data?.data && catsRes.value.data.data.length > 0) {
           setCategories(catsRes.value.data.data);
+        } else {
+          setCategories(CATEGORIES);
         }
 
-        if (bestRes.status === 'fulfilled' && bestRes.value.data?.data) {
+        if (bestRes.status === 'fulfilled' && bestRes.value.data?.data && bestRes.value.data.data.length > 0) {
           setBestSellers(bestRes.value.data.data);
+        } else {
+          setBestSellers(BEST_SELLERS);
         }
 
-        if (sectionsRes.status === 'fulfilled' && sectionsRes.value.data?.data) {
+        if (sectionsRes.status === 'fulfilled' && sectionsRes.value.data?.data && sectionsRes.value.data.data.length > 0) {
           setCategorySections(sectionsRes.value.data.data);
+        } else {
+          const featuredSectionSlugs = [
+            { slug: 'dairy-bread-eggs', name: 'Dairy, Bread & Eggs' },
+            { slug: 'cold-drinks-juices', name: 'Cold Drinks & Juices' },
+            { slug: 'paan-corner', name: 'Mouth fresheners' },
+            { slug: 'snacks-munchies', name: 'Snacks & Munchies' },
+            { slug: 'fruits-vegetables', name: 'Fruits & Vegetables' },
+            { slug: 'atta-rice-dal', name: 'Atta, Rice & Dal' },
+            { slug: 'sweet-tooth', name: 'Sweet Tooth & Chocolates' },
+            { slug: 'bakery-biscuits', name: 'Bakery & Biscuits' }
+          ];
+          const secs = featuredSectionSlugs.map(sec => ({
+            id: `sec_${sec.slug}`,
+            slug: sec.slug,
+            title: sec.name,
+            name: sec.name,
+            products: ALL_CATALOG_PRODUCTS.filter(p => p.categorySlug === sec.slug)
+          }));
+          setCategorySections(secs);
         }
 
         if (bannersRes.status === 'fulfilled' && bannersRes.value.data) {
           setBannersData(bannersRes.value.data);
         }
 
-        if (storesRes.status === 'fulfilled' && storesRes.value.data?.data) {
+        if (storesRes.status === 'fulfilled' && storesRes.value.data?.data && storesRes.value.data.data.length > 0) {
           setStores(storesRes.value.data.data);
+        } else {
+          setStores([
+            {
+              _id: 'store_tricelyn_indore_01',
+              id: 'store_tricelyn_indore_01',
+              name: 'Tricelyn Express Mart (Vijay Nagar Hub)',
+              address: 'Scheme 54, Vijay Nagar, Indore 452010',
+              rating: 4.8,
+              deliveryTime: '10-15 mins',
+              distance: '1.2 km',
+              tags: ['Groceries', 'Dairy & Bakery', 'Instant Delivery'],
+              image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'
+            },
+            {
+              _id: 'store_tricelyn_indore_02',
+              id: 'store_tricelyn_indore_02',
+              name: 'Fresh Farm Hub (Palasia Superstore)',
+              address: 'Old Palasia Main Road, Near Industry House, Indore 452001',
+              rating: 4.7,
+              deliveryTime: '12-18 mins',
+              distance: '2.5 km',
+              tags: ['Farm Fresh', 'Vegetables', 'Exotic Fruits'],
+              image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80'
+            },
+            {
+              _id: 'store_tricelyn_indore_03',
+              id: 'store_tricelyn_indore_03',
+              name: 'Apna Super Kirana (Saket Nagar)',
+              address: 'Saket Square, Near Anand Bazaar, Indore 452018',
+              rating: 4.6,
+              deliveryTime: '15-20 mins',
+              distance: '3.1 km',
+              tags: ['Daily Kirana', 'Atta & Rice', 'Spices & Oil'],
+              image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=500&q=80'
+            }
+          ]);
         }
       } catch (err) {
         console.error('Error fetching home data:', err);

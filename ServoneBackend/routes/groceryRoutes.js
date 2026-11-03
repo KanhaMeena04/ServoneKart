@@ -341,11 +341,14 @@ router.get('/products', async (req, res) => {
  * Helper to build rich product details matching Blinkit/Zepto quick-commerce screen
  */
 function buildProductDetailsPayload(rawProd, allProds) {
-  const p = normalizeProduct(rawProd);
+  if (!rawProd && (!allProds || allProds.length === 0)) return null;
+  const target = rawProd || allProds[0];
+  const p = normalizeProduct(target) || target;
   const nameLower = (p.name || '').toLowerCase();
   const catSlug = p.categorySlug || p.category?.slug || 'daily-essentials';
   const price = Number(p.price) || 40;
   const mrp = Number(p.mrp) || Math.round(price * 1.25);
+  const weightStr = typeof p.weight === 'string' ? p.weight : String(p.weight || '');
 
   // 1. Dynamic Variants matching Quick-Commerce & Blinkit Mockup (e.g. 500 ml ₹35, 1 ltr ₹70)
   let variants = [];
@@ -372,7 +375,7 @@ function buildProductDetailsPayload(rawProd, allProds) {
         inStock: true
       }
     ];
-  } else if (nameLower.includes('atta') || nameLower.includes('rice') || nameLower.includes('dal') || p.weight?.includes('kg')) {
+  } else if (nameLower.includes('atta') || nameLower.includes('rice') || nameLower.includes('dal') || weightStr.includes('kg')) {
     variants = [
       {
         id: 'var_1kg',
@@ -535,32 +538,49 @@ const getSingleProductHandler = async (req, res) => {
     let foundProduct = null;
 
     if (mongoose.connection.readyState === 1) {
-      if (mongoose.isValidObjectId(id)) {
-        foundProduct = await Product.findById(id)
-          .populate('category', 'name slug image')
-          .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
-          .lean();
-      } else {
-        foundProduct = await Product.findOne({
-          $or: [
-            { slug: id },
-            { 'slug.en': id },
-            { name: new RegExp(`^${id}$`, 'i') }
-          ]
-        })
-          .populate('category', 'name slug image')
-          .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
-          .lean();
+      try {
+        if (mongoose.isValidObjectId(id)) {
+          foundProduct = await Product.findById(id)
+            .populate('category', 'name slug image')
+            .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+            .lean();
+        } else {
+          const escapedId = String(id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          foundProduct = await Product.findOne({
+            $or: [
+              { slug: id },
+              { 'slug.en': id },
+              { name: new RegExp(`^${escapedId}$`, 'i') }
+            ]
+          })
+            .populate('category', 'name slug image')
+            .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+            .lean();
+        }
+      } catch (dbErr) {
+        console.warn('DB lookup in getSingleProductHandler encountered error:', dbErr.message);
       }
     }
 
     if (!foundProduct) {
+      const idLower = String(id).toLowerCase();
       foundProduct = ALL_CATALOG_PRODUCTS.find(p => 
         p._id === id || 
         p.id === id || 
         p.slug === id ||
-        p.name.toLowerCase() === id.toLowerCase() ||
-        p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(id.toLowerCase())
+        (p.slug && p.slug.toLowerCase() === idLower) ||
+        (p.name && p.name.toLowerCase() === idLower) ||
+        (p.name && idLower.includes(p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'))) ||
+        (p.name && p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(idLower))
+      );
+    }
+
+    // Check in BEST_SELLERS as well
+    if (!foundProduct) {
+      foundProduct = BEST_SELLERS.find(p => 
+        p._id === id || 
+        p.id === id || 
+        p.name?.toLowerCase() === String(id).toLowerCase()
       );
     }
 

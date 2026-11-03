@@ -25,6 +25,7 @@ import {
 import { groceryService } from '../services/api';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
+import { getProductDetails } from '../data/groceryCatalog';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -41,7 +42,7 @@ const ProductDetailPage = () => {
   const similarScrollRef = useRef(null);
   const peopleScrollRef = useRef(null);
 
-  // Fetch product data on id change
+  // Fetch product data on id change with seamless instant fallback
   useEffect(() => {
     let isMounted = true;
     const fetchProduct = async () => {
@@ -50,28 +51,58 @@ const ProductDetailPage = () => {
         setError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        const res = await groceryService.getProductById(id);
-        if (isMounted && res.data && res.data.data) {
-          const p = res.data.data;
-          setProduct(p);
-          setSelectedImageIndex(0);
-          if (p.variants && p.variants.length > 0) {
-            setSelectedVariant(p.variants[0]);
+        let p = null;
+
+        // 1. Try fetching from Live Backend API / MongoDB / Admin CMS
+        try {
+          const res = await groceryService.getProductById(id);
+          if (res?.data?.data) {
+            p = res.data.data;
+          } else if (res?.data && (res.data._id || res.data.name)) {
+            p = res.data;
+          }
+        } catch (apiErr) {
+          console.warn('Live API product fetch unavailable, loading from instant catalog:', apiErr.message);
+        }
+
+        // 2. Seamlessly resolve from local comprehensive catalog if API unavailable or empty
+        if (!p) {
+          p = getProductDetails(id);
+        }
+
+        if (isMounted) {
+          if (p) {
+            setProduct(p);
+            setSelectedImageIndex(0);
+            if (p.variants && p.variants.length > 0) {
+              setSelectedVariant(p.variants[0]);
+            } else {
+              setSelectedVariant({
+                id: 'var_default',
+                unit: p.weight || p.unit || '1 unit',
+                weight: p.weight || p.unit || '1 unit',
+                price: Number(p.price) || 40,
+                mrp: Number(p.mrp) || Math.round((Number(p.price) || 40) * 1.25),
+                discountPercent: p.discountPercent || 0,
+                inStock: true
+              });
+            }
           } else {
-            setSelectedVariant({
-              id: 'var_default',
-              unit: p.weight || p.unit || '1 unit',
-              weight: p.weight || p.unit || '1 unit',
-              price: Number(p.price) || 40,
-              mrp: Number(p.mrp) || Math.round((Number(p.price) || 40) * 1.25),
-              discountPercent: p.discountPercent || 0,
-              inStock: true
-            });
+            const fallbackProd = getProductDetails(id);
+            setProduct(fallbackProd);
+            setSelectedVariant(fallbackProd.variants?.[0] || null);
           }
         }
       } catch (err) {
         console.error('Error loading product details:', err);
-        if (isMounted) setError('Unable to load product information.');
+        const fallbackProd = getProductDetails(id);
+        if (isMounted && fallbackProd) {
+          setProduct(fallbackProd);
+          setSelectedVariant(fallbackProd.variants?.[0] || null);
+          setError(null);
+        } else if (isMounted) {
+          setError('Unable to load product information.');
+        }
       } finally {
         if (isMounted) setLoading(false);
       }

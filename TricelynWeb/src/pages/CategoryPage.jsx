@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { groceryService } from '../services/api';
+import { CATEGORIES, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 
 const CategoryPage = () => {
   const { slug } = useParams();
@@ -21,17 +22,12 @@ const CategoryPage = () => {
   // Default quick categories list matching Zepto sidebar layout
   const defaultCategoriesList = [
     { name: 'All Categories', slug: 'all', icon: '✨' },
-    { name: 'Fruits & Vegetables', slug: 'vegetables-fruits', icon: '🥦' },
-    { name: 'Dairy, Bread & Eggs', slug: 'dairy-breakfast', icon: '🥛' },
-    { name: 'Munchies & Snacks', slug: 'munchies-snacks', icon: '🍟' },
-    { name: 'Cold Drinks & Juices', slug: 'drinks-juices', icon: '🥤' },
-    { name: 'Atta, Rice & Dal', slug: 'atta-rice-dal', icon: '🌾' },
-    { name: 'Instant & Frozen Food', slug: 'instant-food', icon: '🍜' },
-    { name: 'Chocolates & Sweets', slug: 'sweets-chocolates', icon: '🍫' },
-    { name: 'Personal Care & Hygiene', slug: 'personal-care', icon: '🧴' },
-    { name: 'Cleaning & Household', slug: 'cleaning-household', icon: '🧼' },
-    { name: 'Pet Care Supplies', slug: 'pet-care', icon: '🐾' },
-    { name: 'Baby Care Essentials', slug: 'baby-care', icon: '🍼' },
+    ...CATEGORIES.map(c => ({
+      name: c.name,
+      slug: c.slug,
+      icon: c.icon || '🛒',
+      image: c.image
+    }))
   ];
 
   useEffect(() => {
@@ -58,11 +54,20 @@ const CategoryPage = () => {
         const current = loadedCats.find((c) => c.slug === slug) || loadedCats[0];
         setSelectedCategory(current);
 
-        if (prodsRes.status === 'fulfilled' && prodsRes.value.data?.data) {
+        if (prodsRes.status === 'fulfilled' && prodsRes.value.data?.data && prodsRes.value.data.data.length > 0) {
           setProducts(prodsRes.value.data.data);
+        } else {
+          const fallbackProds = slug && slug !== 'all' 
+            ? ALL_CATALOG_PRODUCTS.filter(p => p.categorySlug === slug || p.category?.slug === slug)
+            : ALL_CATALOG_PRODUCTS;
+          setProducts(fallbackProds.length > 0 ? fallbackProds : ALL_CATALOG_PRODUCTS.slice(0, 12));
         }
       } catch (err) {
         console.error('Error fetching category page:', err);
+        const fallbackProds = slug && slug !== 'all' 
+          ? ALL_CATALOG_PRODUCTS.filter(p => p.categorySlug === slug || p.category?.slug === slug)
+          : ALL_CATALOG_PRODUCTS;
+        setProducts(fallbackProds.length > 0 ? fallbackProds : ALL_CATALOG_PRODUCTS.slice(0, 12));
       } finally {
         setLoading(false);
       }
