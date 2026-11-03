@@ -28,10 +28,10 @@ const StickyMobileCartBar = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 sm:bottom-5 sm:right-6 sm:left-auto sm:w-84 p-2.5 sm:p-0 pointer-events-none animate-in slide-in-from-bottom-4 duration-200">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-2.5 pointer-events-none animate-in slide-in-from-bottom-4 duration-200">
       <div 
         onClick={handleOpenCart}
-        className="pointer-events-auto bg-[#0c831f] hover:bg-[#0a701a] text-white rounded-2xl shadow-[0_8px_25px_rgba(12,131,31,0.45)] px-4 py-3 flex items-center justify-between cursor-pointer transition-all duration-200 active:scale-98 border border-white/20 group"
+        className="pointer-events-auto bg-[#0c831f] hover:bg-[#0a701a] text-white rounded-2xl shadow-[0_8px_25px_rgba(12,131,31,0.45)] px-4 py-3 flex items-center justify-between cursor-pointer transition-all duration-200 active:scale-98 border border-white/20 select-none group"
       >
         {/* Left: Cart Icon & Item count + Price (Matches Mockup) */}
         <div className="flex items-center gap-3">

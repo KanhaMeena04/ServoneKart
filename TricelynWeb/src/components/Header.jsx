@@ -13,7 +13,9 @@ import {
   Clock,
   Sparkles,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Headphones,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -51,6 +53,10 @@ const Header = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  const handleOpenChat = () => {
+    window.dispatchEvent(new Event('open-support-chat'));
   };
 
   return (
@@ -110,6 +116,17 @@ const Header = () => {
                     <User className="w-4 h-4" />
                   </button>
                 )}
+
+                {/* Mobile 24/7 Support Chat Icon */}
+                <button
+                  onClick={handleOpenChat}
+                  className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center relative border border-white/30 active:scale-95 transition"
+                  title="24/7 Support & Chat"
+                  aria-label="Support & Live Chat"
+                >
+                  <Headphones className="w-4 h-4 text-white" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 absolute top-0.5 right-0.5 animate-pulse" />
+                </button>
 
                 {/* Header Cart Icon */}
                 <button
@@ -263,6 +280,20 @@ const Header = () => {
                   <span className="hidden sm:inline">Login / Signup</span>
                 </button>
               )}
+
+              {/* 24/7 Live Support Chat Pill Button (Beside Cart) */}
+              <button
+                onClick={handleOpenChat}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-white/15 hover:bg-white/25 active:scale-95 text-white rounded-full transition text-xs font-bold border border-white/30 shadow-xs"
+                title="24/7 Customer Support & Chat"
+                aria-label="Support & Live Chat"
+              >
+                <div className="relative flex items-center">
+                  <Headphones className="w-4 h-4 text-white" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 animate-pulse" />
+                </div>
+                <span className="hidden lg:inline text-xs font-bold">Support</span>
+              </button>
 
               {/* Cart Button Pill (White / Accent Pill) */}
               <button

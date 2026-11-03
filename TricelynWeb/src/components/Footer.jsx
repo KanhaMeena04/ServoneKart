@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   Truck, 
   Clock, 
-  HeartHandshake 
+  HeartHandshake,
+  Headphones 
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
 
@@ -28,7 +29,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-[#03132e] text-white pt-6 pb-20 sm:pb-5 border-t border-slate-800">
+    <footer className="bg-[#03132e] text-white pt-8 pb-12 sm:pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Top 4 Value Badges - Compact & Streamlined */}
@@ -116,6 +117,16 @@ const Footer = () => {
           <div className="md:col-span-2 lg:col-span-2 space-y-2">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Customer Care</h4>
             <ul className="space-y-1.5 text-xs text-gray-400">
+              <li>
+                <button
+                  onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
+                  className="flex items-center gap-1.5 text-blue-400 hover:text-white transition-colors text-xs font-bold group cursor-pointer text-left"
+                >
+                  <Headphones className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>24/7 Live Support Chat</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </button>
+              </li>
               <li><Link to="/support" className="hover:text-blue-400 transition-colors">Help & FAQs</Link></li>
               <li><Link to="/support" className="hover:text-blue-400 transition-colors">Contact Support</Link></li>
               <li><Link to="/support" className="hover:text-blue-400 transition-colors">Shipping Policy</Link></li>
@@ -164,8 +175,8 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Copyright Bar - Compact & Clean */}
-        <div className="pt-3.5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-400 gap-2">
+        {/* Bottom Copyright Bar - Generous Padding, Never Clipped */}
+        <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-2 border-t border-slate-800/60 mt-4">
           <p>© 2026 Tricelyn Technologies Pvt Ltd. All rights reserved.</p>
           <div className="flex items-center gap-4 text-gray-400 font-medium">
             <span>Fast · Fresh · Everyday</span>

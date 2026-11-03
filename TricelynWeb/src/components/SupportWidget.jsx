@@ -53,6 +53,13 @@ const SupportWidget = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Global event listener to open support chat from Header or Footer
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('open-support-chat', handleOpenChat);
+    return () => window.removeEventListener('open-support-chat', handleOpenChat);
+  }, []);
+
   const fetchMessages = async () => {
     try {
       const res = await api.get('/support/chat/messages', {
@@ -125,31 +132,7 @@ const SupportWidget = () => {
 
   return (
     <>
-      {/* Floating Toggle Button (Bottom Right) */}
-      <div className="fixed bottom-6 right-6 z-40">
-        {!isOpen && (
-          <button
-            onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2.5 px-4 py-3 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-full shadow-2xl transition-all duration-300 group"
-          >
-            <div className="relative">
-              <Headphones className="w-5 h-5 text-white" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-400 absolute -top-0.5 -right-0.5 animate-ping" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-400 absolute -top-0.5 -right-0.5" />
-            </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider leading-none">
-                24/7 Support
-              </p>
-              <p className="text-xs font-black leading-none mt-1">
-                Chat with Us
-              </p>
-            </div>
-          </button>
-        )}
-      </div>
-
-      {/* Slide-Up Chat Window */}
+      {/* Slide-Up Chat Window (Triggered from Header Chat Icon or Footer Support Button) */}
       {isOpen && (
         <div className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-96 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col h-[520px] animate-in slide-in-from-bottom-5">
           

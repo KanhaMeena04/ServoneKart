@@ -97,7 +97,7 @@ const CartPage = () => {
   }
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen py-6 pb-28 sm:pb-16">
+    <div className="bg-[#f8fafc] min-h-screen py-6 pb-36 sm:pb-28">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-4">
         
         {/* Top Header (Matches Screenshot 5) */}
