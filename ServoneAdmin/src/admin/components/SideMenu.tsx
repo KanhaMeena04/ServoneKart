@@ -40,11 +40,13 @@ export default function SideMenu() {
           py: 1.5,
         }}
       >
-        <img
-          src="/logo.png"
-          alt="Tricelyn Logo"
-          style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
-        />
+        <Box sx={{ bgcolor: '#0055ff', px: 1.5, py: 0.6, borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.4)', display: 'inline-flex', alignItems: 'center', boxShadow: '0 2px 8px rgba(0, 85, 255, 0.25)' }}>
+          <img
+            src="/logo.png"
+            alt="Tricelyn Logo"
+            style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
+          />
+        </Box>
         <SelectContent />
       </Box>
       <Divider />

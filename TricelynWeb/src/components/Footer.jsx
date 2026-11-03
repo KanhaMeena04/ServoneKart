@@ -84,7 +84,7 @@ const Footer = () => {
           {/* Brand Info (4 cols) */}
           <div className="md:col-span-5 lg:col-span-4 space-y-2.5">
             <Link to="/" className="inline-block group">
-              <div className="bg-white px-2.5 py-1 rounded-xl inline-flex items-center shadow-xs">
+              <div className="bg-[#03132e] hover:bg-white/5 px-2.5 py-1 rounded-xl border border-white/30 inline-flex items-center shadow-xs transition">
                 <img 
                   src={logoImg} 
                   alt="Tricelyn - Everything You Actually Want" 

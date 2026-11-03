@@ -42,11 +42,13 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
         }}
       >
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ bgcolor: '#0055ff', px: 1.5, py: 0.6, borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.4)', display: 'inline-flex', alignItems: 'center' }}>
           <img
             src="/logo.png"
             alt="Tricelyn Logo"
-            style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+            style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
           />
+        </Box>
         </Box>
              
         <Stack sx={{ flexGrow: 1 }}>

@@ -64,7 +64,7 @@ const Header = () => {
             
             {/* Brand Logo (Tricelyn Logo) */}
             <Link to="/" className="flex items-center flex-shrink-0 group">
-              <div className="bg-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl shadow-xs transition group-hover:shadow-md flex items-center">
+              <div className="bg-[#0055ff] hover:bg-white/10 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/40 shadow-xs transition flex items-center">
                 <img 
                   src={logoImg} 
                   alt="Tricelyn - Everything You Actually Want" 
