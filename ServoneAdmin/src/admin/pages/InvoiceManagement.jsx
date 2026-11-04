@@ -41,7 +41,12 @@ export default function InvoiceManagement() {
       try {
         const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${API_BASE_URL}/api/admin/orders?limit=25`, { headers, withCredentials: true });
+        let res;
+        try {
+          res = await axios.get(`${API_BASE_URL}/api/orders/admin/all?limit=50`, { headers, withCredentials: true });
+        } catch (_) {
+          res = await axios.get(`${API_BASE_URL}/api/admin/orders?limit=50`, { headers, withCredentials: true });
+        }
         if (res.data?.orders || Array.isArray(res.data)) {
           setOrders(res.data?.orders || res.data);
         } else {

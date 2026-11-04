@@ -51,6 +51,7 @@ const {
 } = require("../controllers/adminContentController");
 const adminController = require("../controllers/adminController");
 const dashboardController = require("../controllers/dashboardController");
+const orderController = require("../controllers/orderController");
 const {
   getAdminSettings,
   updateAdminSettings,
@@ -267,6 +268,7 @@ router.get("/transactions/restaurants", protect, admin, dashboardController.getR
 router.get("/transactions/drivers", protect, admin, dashboardController.getDriverTransactionHistory);
 router.get('/orders/dashboard', protect, admin, adminController.getOrdersDashboard);
 router.get('/order-dashboard', protect, admin, adminController.getOrdersDashboard);
+router.get('/orders', protect, admin, orderController.getAllOrdersAdmin);
 
 // Reset / Clear financial data, commissions & order history to 0
 const authenticateAdminOrKey = async (req, res, next) => {

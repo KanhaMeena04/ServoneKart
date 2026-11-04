@@ -1296,14 +1296,18 @@ router.get('/orders/:id/invoice', async (req, res) => {
     let order = null;
 
     if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(id)) {
-      order = await Order.findById(id).populate('user', 'name phone email').lean();
+      order = await Order.findById(id)
+        .populate('user', 'name phone email')
+        .populate('restaurant', 'name address phone gstin fssai documents')
+        .populate('store', 'name address phone gstin fssai documents')
+        .lean();
     }
 
-    // Default mock invoice if order not found in DB
+    // Dynamic order date & generated invoice sequence
     const orderDate = order?.createdAt ? new Date(order.createdAt) : new Date();
     const invNumber = `TRC-INV-${orderDate.getFullYear()}-${(order?._id?.toString() || id || '10842').slice(-6).toUpperCase()}`;
     
-    const items = order?.items || [
+    const items = (order?.items && order.items.length > 0) ? order.items : [
       { name: 'Fresh Farm Red Onion (Pyaaz)', quantity: 2, price: 38, total: 76, unit: '1 kg' },
       { name: 'Amul Taaza Homogenised Toned Milk', quantity: 2, price: 54, total: 108, unit: '1 Ltr' },
       { name: "Lay's India's Magic Masala Chips", quantity: 3, price: 20, total: 60, unit: '52g' }
@@ -1333,38 +1337,56 @@ router.get('/orders/:id/invoice', async (req, res) => {
       };
     });
 
-    const itemsSubtotal = formattedItems.reduce((acc, curr) => acc + curr.totalAmount, 0);
-    const packagingFee = 10;
-    const deliveryFee = itemsSubtotal >= 199 ? 0 : 29;
-    const platformFee = 3;
-    const discount = order?.discount || (itemsSubtotal >= 200 ? 25 : 0);
-    const grandTotal = itemsSubtotal + packagingFee + deliveryFee + platformFee - discount;
+    const itemsSubtotal = order?.itemTotal !== undefined 
+      ? Number(order.itemTotal) 
+      : formattedItems.reduce((acc, curr) => acc + curr.totalAmount, 0);
+
+    const packagingFee = order?.packagingFee !== undefined ? Number(order.packagingFee) : 10;
+    const deliveryFee = order?.deliveryFee !== undefined ? Number(order.deliveryFee) : (itemsSubtotal >= 199 ? 0 : 29);
+    const platformFee = order?.platformFee !== undefined ? Number(order.platformFee) : 3;
+    const discount = order?.discount !== undefined ? Number(order.discount) : (itemsSubtotal >= 200 ? 25 : 0);
+    const grandTotal = order?.totalAmount !== undefined 
+      ? Number(order.totalAmount) 
+      : (itemsSubtotal + packagingFee + deliveryFee + platformFee - discount);
+
+    const storeDoc = order?.restaurant || order?.store;
+    const resolvedStoreName = storeDoc
+      ? (typeof storeDoc.name === 'object' ? (storeDoc.name.en || Object.values(storeDoc.name)[0]) : storeDoc.name)
+      : (order?.storeName || order?.restaurantName || 'Tricelyn Express Dark Store (Hub 01 - Vijay Nagar)');
+
+    const resolvedStoreAddress = storeDoc?.address || order?.restaurantAddress || 'Plot 42, Scheme 54, PU-4 Commercial Zone, Vijay Nagar, Indore, MP 452010';
+    const resolvedGstin = storeDoc?.documents?.gst?.number || storeDoc?.gstin || '23AABCT9988M1Z2';
+    const resolvedFssai = storeDoc?.documents?.license?.number || storeDoc?.fssaiNumber || '11422850000123';
+
+    const resolvedCustName = order?.customerName || order?.user?.name || order?.deliveryAddress?.name || 'Valued Customer';
+    const resolvedCustPhone = order?.customerMobile || order?.user?.phone || order?.deliveryAddress?.phone || '+91 98930 12345';
+    const resolvedCustAddr = order?.deliveryAddress?.fullAddress || order?.deliveryAddress?.addressLine || order?.address || 'Flat 304, Emerald Heights, Scheme 78, Indore 452010';
 
     const invoicePayload = {
       invoiceNumber: invNumber,
       invoiceDate: orderDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       invoiceTime: orderDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
       orderId: order?._id?.toString() || id,
-      orderStatus: order?.orderStatus || 'Delivered',
+      orderStatus: order?.status || order?.orderStatus || 'Delivered',
       paymentMethod: (order?.paymentMethod || 'Online UPI (Razorpay)').toUpperCase(),
-      paymentStatus: (order?.paymentStatus || 'Paid').toUpperCase(),
+      paymentStatus: (order?.paymentStatus || (order?.isPaid ? 'Paid' : 'Unpaid')).toUpperCase(),
 
-      // Dispatching Dark Store Entity
+      // Dispatching Dark Store Entity (Dynamic)
       seller: {
         legalName: 'Tricelyn Hyperlocal Technologies Pvt. Ltd.',
-        storeName: 'Tricelyn Express Dark Store (Hub 01 - Vijay Nagar)',
-        address: 'Plot 42, Scheme 54, PU-4 Commercial Zone, Vijay Nagar, Indore, MP 452010',
-        gstin: '23AABCT9988M1Z2',
-        fssaiNumber: '11422850000123',
+        storeName: resolvedStoreName,
+        address: resolvedStoreAddress,
+        gstin: resolvedGstin,
+        fssaiNumber: resolvedFssai,
         supportEmail: 'care@tricelyn.com',
         helpline: '+91 731-4099880'
       },
 
-      // Customer Details
+      // Customer Details (Dynamic)
       customer: {
-        name: order?.user?.name || order?.deliveryAddress?.name || 'Kanga Store Customer',
-        phone: order?.user?.phone || order?.deliveryAddress?.phone || '+91 98930 12345',
-        deliveryAddress: order?.deliveryAddress?.addressLine || order?.deliveryAddress?.address || 'Flat 304, Emerald Heights, Scheme 78, Indore 452010',
+        name: resolvedCustName,
+        phone: resolvedCustPhone,
+        deliveryAddress: resolvedCustAddr,
         city: 'Indore',
         state: 'Madhya Pradesh (23)'
       },
