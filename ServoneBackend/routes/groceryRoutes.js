@@ -1075,9 +1075,12 @@ router.get('/inventory', async (req, res) => {
             const stock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : 100;
             const threshold = Number(p.lowStockThreshold || 10);
             const inStock = p.inStock !== false && stock > 0;
-            const nameStr = typeof p.name === 'object' ? (p.name.en || 'Grocery Item') : (p.name || 'Grocery Item');
-            const catName = p.category?.name?.en || (typeof p.category?.name === 'string' ? p.category.name : (p.categorySlug || 'Grocery'));
-            const storeName = p.restaurant?.name || 'Tricelyn Indore Dark Store Hub';
+            const nameStr = typeof p.name === 'object' ? (p.name?.en || Object.values(p.name || {})[0] || 'Grocery Item') : (p.name || 'Grocery Item');
+            const catName = typeof p.category?.name === 'object' ? (p.category.name?.en || Object.values(p.category.name || {})[0] || 'Grocery') : (p.category?.name || p.categorySlug || 'Grocery');
+            const rawStoreName = p.restaurant?.name;
+            const storeName = typeof rawStoreName === 'object'
+              ? (rawStoreName?.en || Object.values(rawStoreName || {})[0] || 'Tricelyn Dark Store Hub')
+              : (rawStoreName || 'Tricelyn Dark Store Hub');
 
             return {
               _id: p._id.toString(),
@@ -1137,7 +1140,12 @@ router.get('/inventory', async (req, res) => {
     }
 
     // Apply filters
-    let filtered = [...items];
+    let storeScopedItems = [...items];
+    if (storeId && storeId !== 'all') {
+      storeScopedItems = storeScopedItems.filter(i => String(i.storeId) === String(storeId));
+    }
+
+    let filtered = [...storeScopedItems];
     if (category && category !== 'all') {
       filtered = filtered.filter(i => i.categorySlug === category || i.categoryName.toLowerCase().includes(category.toLowerCase()));
     }
@@ -1149,12 +1157,12 @@ router.get('/inventory', async (req, res) => {
       filtered = filtered.filter(i => i.status === status);
     }
 
-    // Compute stats across full list
-    const totalSkus = items.length;
-    const inStockCount = items.filter(i => i.status === 'in_stock').length;
-    const lowStockCount = items.filter(i => i.status === 'low_stock').length;
-    const outOfStockCount = items.filter(i => i.status === 'out_of_stock').length;
-    const totalValuation = items.reduce((sum, i) => sum + (i.stockQuantity * i.sellingPrice), 0);
+    // Compute stats across store-scoped list
+    const totalSkus = storeScopedItems.length;
+    const inStockCount = storeScopedItems.filter(i => i.status === 'in_stock').length;
+    const lowStockCount = storeScopedItems.filter(i => i.status === 'low_stock').length;
+    const outOfStockCount = storeScopedItems.filter(i => i.status === 'out_of_stock').length;
+    const totalValuation = storeScopedItems.reduce((sum, i) => sum + (i.stockQuantity * i.sellingPrice), 0);
 
     const total = filtered.length;
     const paginated = filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum);
