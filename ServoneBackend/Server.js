@@ -39,6 +39,9 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_ORIGIN,
   process.env.SOCKET_IO_CLIENT_URL,
+  process.env.BACKEND_URL,
+  process.env.RENDER_EXTERNAL_URL,
+  'https://servonekart.onrender.com',
   'https://ecdadminpanel.vercel.app',
   'http://localhost:3000',
   'http://localhost:5000',
@@ -58,7 +61,8 @@ const corsConfig = {
       allowedOrigins.includes(origin) ||
       extraOrigins.includes(origin) ||
       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-      /\.vercel\.app$/.test(origin)
+      /\.vercel\.app$/.test(origin) ||
+      /\.onrender\.com$/.test(origin)
     ) {
       return callback(null, true);
     }

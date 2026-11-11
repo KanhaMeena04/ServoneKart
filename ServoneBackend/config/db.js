@@ -13,9 +13,9 @@ const connectDB = async () => {
   mongoose.set('bufferCommands', false);
 
   const connectionOptions = {
-    serverSelectionTimeoutMS: 5000,
-    connectTimeoutMS: 5000,
-    socketTimeoutMS: 15000,
+    serverSelectionTimeoutMS: 15000,
+    connectTimeoutMS: 15000,
+    socketTimeoutMS: 30000,
     family: 4, // Use IPv4, skip IPv6 try delays
   };
 
@@ -89,9 +89,24 @@ async function ensureAdminUser() {
         console.log(
           `🔒 Production mode: Existing Admin account (${admin.email}) preserved.`
         );
+      } else if (process.env.ADMIN_SEED_EMAIL && process.env.ADMIN_SEED_PASSWORD) {
+        const seedEmail = String(process.env.ADMIN_SEED_EMAIL).trim().toLowerCase();
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(String(process.env.ADMIN_SEED_PASSWORD), salt);
+        await User.create({
+          name: 'Super Admin',
+          email: seedEmail,
+          mobile: process.env.ADMIN_SEED_MOBILE || '+919999999999',
+          password: hashedPassword,
+          role: 'admin',
+          isVerified: true,
+          isDeleted: false,
+          isBlocked: false,
+        });
+        console.log(`🔑 Seeded initial Production Super Admin: ${seedEmail}`);
       } else {
         console.warn(
-          '⚠️ Production mode: No Admin user found. Static admin creation disabled.'
+          '⚠️ Production mode: No Admin user found. Set ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD to bootstrap initial admin.'
         );
       }
 

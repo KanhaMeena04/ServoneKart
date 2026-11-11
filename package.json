@@ -1,0 +1,16 @@
+{
+  "name": "servonekart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ServoneKart Multi-Vendor Quick-Commerce Grocery Platform",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "install-backend": "npm --prefix ServoneBackend install",
+    "postinstall": "npm --prefix ServoneBackend install",
+    "build": "npm --prefix ServoneBackend install",
+    "start": "npm --prefix ServoneBackend start",
+    "dev": "npm --prefix ServoneBackend start"
+  }
+}

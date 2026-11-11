@@ -2,22 +2,31 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'services/notification_service.dart';
 
 class ApiConstants {
-  // Pass --dart-define=BACKEND_URL=https://... or --dart-define=LOCAL_IP=192.168.x.x for custom backend
-  static const String _customBackendUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
-  static const String _customLocalIp = String.fromEnvironment('LOCAL_IP', defaultValue: '');
+  // Pass --dart-define-from-file=.env or --dart-define=BACKEND_URL=https://...
+  // Pass --dart-define=USE_LOCAL=true or --dart-define=LOCAL_IP=192.168.x.x for local backend
+  static const String _defaultProductionBackendUrl =
+      'https://servonekart.onrender.com/api/v1';
+  static const String _customBackendUrl =
+      String.fromEnvironment('BACKEND_URL', defaultValue: _defaultProductionBackendUrl);
+  static const String _customLocalIp =
+      String.fromEnvironment('LOCAL_IP', defaultValue: '');
+  static const bool _useLocalBackend =
+      bool.fromEnvironment('USE_LOCAL', defaultValue: false);
 
   static String get baseUrl {
-    if (_customBackendUrl.isNotEmpty) {
-      return _customBackendUrl;
-    }
     if (_customLocalIp.isNotEmpty) {
       return 'http://$_customLocalIp:5000/api/v1';
     }
-    if (kIsWeb) return 'http://localhost:5000/api/v1';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5000/api/v1';
+    if (_useLocalBackend) {
+      if (kIsWeb) return 'http://localhost:5000/api/v1';
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        return 'http://10.0.2.2:5000/api/v1';
+      }
+      return 'http://localhost:5000/api/v1';
     }
-    return 'http://localhost:5000/api/v1';
+    return _customBackendUrl.isNotEmpty
+        ? _customBackendUrl
+        : _defaultProductionBackendUrl;
   }
   
   static String? _restaurantId;

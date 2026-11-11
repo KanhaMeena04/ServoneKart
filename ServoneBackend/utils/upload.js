@@ -130,11 +130,21 @@ const getFileUrl = async (file) => {
 
   // Absolute fallback: serve from local disk
   if (file.filename) {
-    const baseOrigin = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const baseOrigin =
+      process.env.BACKEND_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://servonekart.onrender.com'
+        : `http://localhost:${process.env.PORT || 5000}`);
     return `${baseOrigin}/uploads/${file.filename}`;
   }
   if (file.path) {
-    const baseOrigin = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const baseOrigin =
+      process.env.BACKEND_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://servonekart.onrender.com'
+        : `http://localhost:${process.env.PORT || 5000}`);
     const filename = path.basename(file.path);
     return `${baseOrigin}/uploads/${filename}`;
   }
