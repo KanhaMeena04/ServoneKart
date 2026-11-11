@@ -153,7 +153,7 @@ class _LaundryBookingPageState extends State<LaundryBookingPage> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ECDKART Laundry & Dry Clean', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Tricelyn Laundry & Dry Clean', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             Text('Doorstep Fabric Care in Indore • Managed from Admin', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),

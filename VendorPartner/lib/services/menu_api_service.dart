@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
-import 'category_api_service.dart';
+import 'platform_config_service.dart';
 
 class MenuApiService {
   static Future<List<Map<String, dynamic>>> fetchRestaurantMenu([String? restaurantId]) async {
@@ -41,6 +41,8 @@ class MenuApiService {
       }
 
       if (itemsList.isNotEmpty) {
+        final bool groceryDefault = PlatformConfigService.isGroceryPlatform;
+        final String fallbackCategory = groceryDefault ? 'Staples & Grains' : 'Main Course';
 
         return itemsList.map((item) {
           final Map<String, dynamic> itemMap = Map<String, dynamic>.from(item);
@@ -82,10 +84,10 @@ class MenuApiService {
                 normalizedAddOns.add({
                   'name': aName.isNotEmpty ? aName : 'Add-on',
                   'price': double.tryParse((a['price'] ?? 0).toString()) ?? 0.0,
-                  'image': a['image']?.toString() ?? 'assets/images/restaurant_chicken_item.jpg',
+                  'image': a['image']?.toString() ?? '',
                 });
               } else if (a is String && a.isNotEmpty) {
-                normalizedAddOns.add({'name': a, 'price': 0.0, 'image': 'assets/images/restaurant_chicken_item.jpg'});
+                normalizedAddOns.add({'name': a, 'price': 0.0, 'image': ''});
               }
             }
           }
@@ -96,11 +98,18 @@ class MenuApiService {
             rawImg = rawImg.startsWith('/') ? '$baseOrigin$rawImg' : '$baseOrigin/$rawImg';
           }
 
+          final rawCat = itemMap['category'] is Map
+              ? (itemMap['category']['name'] ?? '').toString().trim()
+              : (itemMap['category'] ?? '').toString().trim();
+          final stockQty = int.tryParse((itemMap['stockQuantity'] ?? 0).toString()) ?? 0;
+          final lowStockThreshold = int.tryParse((itemMap['lowStockThreshold'] ?? 5).toString()) ?? 5;
+          final inStockVal = itemMap['inStock'] ?? itemMap['available'] ?? itemMap['isAvailable'] ?? true;
+
           return {
             '_id': itemMap['_id'] ?? itemMap['id'] ?? '',
             'name': itemMap['name'] is Map ? (itemMap['name']['en'] ?? (itemMap['name'].values.isNotEmpty ? itemMap['name'].values.first.toString() : '')) : (itemMap['name'] ?? ''),
             'description': itemMap['description'] is Map ? (itemMap['description']['en'] ?? '') : (itemMap['description'] ?? ''),
-            'category': itemMap['category'] is Map ? (itemMap['category']['name'] ?? '') : (itemMap['category'] ?? 'Main Course'),
+            'category': rawCat.isNotEmpty ? rawCat : fallbackCategory,
             'categoryId': itemMap['categoryId'] is Map ? itemMap['categoryId']['_id'] : (itemMap['categoryId'] ?? ''),
             'subcategory': itemMap['subcategory'] is Map ? (itemMap['subcategory']['name'] ?? '') : (itemMap['subcategory'] ?? ''),
             'subcategoryId': itemMap['subcategoryId'] is Map ? itemMap['subcategoryId']['_id'] : (itemMap['subcategoryId'] ?? ''),
@@ -114,8 +123,16 @@ class MenuApiService {
             'foodType': itemMap['foodType'] ?? (itemMap['isVeg'] == false ? 'non-veg' : 'veg'),
             'isVeg': itemMap['isVeg'] ?? (itemMap['foodType'] == 'veg'),
             'preparationTime': int.tryParse((itemMap['preparationTime'] ?? 15).toString()) ?? 15,
-            'isAvailable': itemMap['available'] ?? itemMap['isAvailable'] ?? true,
-            'available': itemMap['available'] ?? itemMap['isAvailable'] ?? true,
+            'isAvailable': inStockVal,
+            'available': inStockVal,
+            'inStock': inStockVal,
+            'sku': itemMap['sku']?.toString() ?? '',
+            'barcode': itemMap['barcode']?.toString() ?? '',
+            'weight': itemMap['weight']?.toString() ?? '',
+            'unit': (itemMap['unit'] != null && itemMap['unit'].toString().trim().isNotEmpty) ? itemMap['unit'].toString() : 'pack',
+            'stockQuantity': stockQty,
+            'lowStockThreshold': lowStockThreshold,
+            'vertical': itemMap['vertical']?.toString() ?? (groceryDefault ? 'grocery' : 'food'),
             'approvalStatus': itemMap['approvalStatus'] ?? (itemMap['isApproved'] == true ? 'approved' : (itemMap['isRejected'] == true ? 'rejected' : 'pending')),
             'isApproved': itemMap['isApproved'] == true,
             'isPublished': itemMap['isPublished'] == true,
@@ -253,6 +270,93 @@ class MenuApiService {
     } catch (e) {
       debugPrint('Error toggling availability: $e');
       return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchGroceryInventory([String? restaurantId]) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String restId = restaurantId ?? ApiConstants.restaurantId;
+      if (restId.isEmpty || restId == 'null' || restId == 'undefined') {
+        restId = prefs.getString('restaurantId') ?? '';
+      }
+      final token = prefs.getString('token') ?? ApiConstants.authToken;
+      final queryParams = <String, String>{'limit': '100'};
+      if (restId.isNotEmpty) {
+        queryParams['storeId'] = restId;
+      }
+      final uri = Uri.parse('${ApiConstants.baseUrl}/grocery/inventory').replace(queryParameters: queryParams);
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      final decoded = json.decode(response.body);
+      if (response.statusCode == 200 && decoded is Map) {
+        final rawList = decoded['items'] ?? decoded['inventory'] ?? decoded['products'] ?? decoded['data'] ?? [];
+        final List<Map<String, dynamic>> parsed = rawList is List
+            ? rawList.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList()
+            : [];
+        return {
+          'success': true,
+          'items': parsed,
+          'lowStockCount': decoded['lowStockCount'] ?? 0,
+          'outOfStockCount': decoded['outOfStockCount'] ?? 0,
+        };
+      }
+      return {
+        'success': false,
+        'items': <Map<String, dynamic>>[],
+        'message': (decoded is Map ? decoded['message']?.toString() : null) ?? 'Failed to load inventory',
+      };
+    } catch (e) {
+      debugPrint('Error fetching grocery inventory: $e');
+      return {
+        'success': false,
+        'items': <Map<String, dynamic>>[],
+        'message': 'Network error loading inventory: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateGroceryInventory(
+    String productId,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? ApiConstants.authToken;
+      final url = '${ApiConstants.baseUrl}/grocery/inventory/$productId';
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+        body: json.encode(payload),
+      ).timeout(const Duration(seconds: 12));
+
+      final decoded = json.decode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {
+          'success': true,
+          'product': decoded is Map ? decoded['product'] : null,
+          'message': decoded is Map ? (decoded['message'] ?? 'Inventory updated') : 'Inventory updated',
+        };
+      }
+      return {
+        'success': false,
+        'message': (decoded is Map ? decoded['message']?.toString() : null) ?? 'Failed to update inventory (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint('Error updating grocery inventory: $e');
+      return {
+        'success': false,
+        'message': 'Network error updating inventory: $e',
+      };
     }
   }
 }

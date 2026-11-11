@@ -23,20 +23,25 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor to handle global errors (e.g. 401 unauth)
+// Interceptor to handle global auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token if invalid or expired
       const currentPath = window.location.pathname;
       if (currentPath.includes('/checkout') || currentPath.includes('/account')) {
-        console.warn('Session expired. Please log in.');
+        window.dispatchEvent(new CustomEvent('tricelyn:auth-required'));
       }
     }
     return Promise.reject(error);
   }
 );
+
+// Platform Settings & Dynamic Mode Service
+export const settingsService = {
+  getPublicSettings: () => api.get('/settings'),
+  getPlatformMode: () => api.get('/settings/platform-mode'),
+};
 
 // Grocery Services
 export const groceryService = {
@@ -60,6 +65,12 @@ export const orderService = {
   trackOrder: (orderId) => api.get(`/orders/tracking/${orderId}`),
   cancelOrder: (orderId, reason) => api.post(`/orders/${orderId}/cancel`, { reason }),
   calculateFee: (data) => api.post('/orders/calculate-fee', data),
+};
+
+// Payment Services
+export const paymentService = {
+  createOrder: (data) => api.post('/razorpay/create-order', data),
+  verifyPayment: (data) => api.post('/razorpay/verify-payment', data),
 };
 
 // Coupons & Banners
@@ -91,11 +102,10 @@ export const userService = {
 
 // Auth Services
 export const authService = {
-  sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
-  verifyOtp: (phone, otp) => api.post('/auth/verify-otp', { phone, otp }),
+  sendOtp: (phone, name = '') => api.post('/auth/send-otp', { phone, mobile: phone, name }),
+  verifyOtp: (phone, otp, name = '') => api.post('/auth/verify-otp', { phone, mobile: phone, otp, name }),
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register/initiate', data),
 };
 
 export default api;
-

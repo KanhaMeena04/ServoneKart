@@ -15,34 +15,44 @@ class PaymentService {
   ) async {
     if (kFrontendPreviewMode) {
       return {
+        'success': true,
+        'isSandbox': true,
         'id': 'rzp_preview_order_123',
         'amount': amount,
         'currency': 'INR',
       };
     }
-    final response = await http.post(
-      Uri.parse("$baseUrl/create-order"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "amount": amount,
-      }),
-    );
+    try {
+      final token = await AuthService.getToken();
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/create-order"),
+            headers: {
+              "Content-Type": "application/json",
+              if (token != null) "Authorization": "Bearer $token",
+            },
+            body: jsonEncode({
+              "amount": amount,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
-    print("STATUS CODE: ${response.statusCode}");
-    print("BODY: ${response.body}");
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      debugPrint("RAZORPAY CREATE STATUS CODE: ${response.statusCode}");
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint("Razorpay createOrder error: $e");
+      return null;
     }
-
-    return null;
   }
+
   static Future<Map<String, dynamic>?> verifyPayment({
     required String razorpayOrderId,
     required String razorpayPaymentId,
     required String razorpaySignature,
+    bool isSandboxConfirm = false,
   }) async {
     if (kFrontendPreviewMode) {
       return {
@@ -50,27 +60,32 @@ class PaymentService {
         'message': 'Payment verified successfully (Preview)',
       };
     }
-    final ordersBaseUrl = baseUrl.replaceAll('/razorpay', '/orders');
-    final token = await AuthService.getToken();
-    final response = await http.post(
-      Uri.parse("$ordersBaseUrl/verify-payment"),
-      headers: {
-        "Content-Type": "application/json",
-        if (token != null) "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        "razorpay_order_id": razorpayOrderId,
-        "razorpay_payment_id": razorpayPaymentId,
-        "razorpay_signature": razorpaySignature,
-      }),
-    );
+    try {
+      final token = await AuthService.getToken();
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/verify-payment"),
+            headers: {
+              "Content-Type": "application/json",
+              if (token != null) "Authorization": "Bearer $token",
+            },
+            body: jsonEncode({
+              "razorpay_order_id": razorpayOrderId,
+              "razorpay_payment_id": razorpayPaymentId,
+              "razorpay_signature": razorpaySignature,
+              if (isSandboxConfirm) "isSandboxConfirm": true,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
-    print("VERIFY STATUS CODE: ${response.statusCode}");
-    print("VERIFY BODY: ${response.body}");
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      debugPrint("VERIFY STATUS CODE: ${response.statusCode}");
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint("Razorpay verifyPayment error: $e");
+      return null;
     }
-    return null;
   }
 }

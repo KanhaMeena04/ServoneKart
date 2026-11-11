@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 
 class RestaurantProfileScreen extends StatefulWidget {
@@ -18,10 +20,10 @@ class RestaurantProfileScreen extends StatefulWidget {
 class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Controllers for Restaurant Details
+  // Controllers for Store / Restaurant Details
   final TextEditingController _tradeNameController = TextEditingController();
-  final TextEditingController _typeController = TextEditingController(text: 'Both (Veg & Non-Veg)');
-  final TextEditingController _cuisineController = TextEditingController(text: 'North Indian, Fast Food, Chinese');
+  final TextEditingController _typeController = TextEditingController();
+  final TextEditingController _cuisineController = TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
 
   // Location Controllers
@@ -29,6 +31,23 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
   final TextEditingController _areaController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   bool _isFetchingLocation = false;
+  bool _isUploadingImage = false;
+  bool _isSaving = false;
+  double? _latitude;
+  double? _longitude;
+
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
+
+  String _resolveImageUrl(String? raw) {
+    final url = (raw ?? '').trim();
+    if (url.isEmpty || url == 'null' || url == 'undefined') return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    final origin = ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+    return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+  }
 
   Future<void> _fetchCurrentLocation() async {
     setState(() => _isFetchingLocation = true);
@@ -59,6 +78,10 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
 
       if (position != null) {
         if (mounted) {
+          setState(() {
+            _latitude = position!.latitude;
+            _longitude = position.longitude;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('📍 Live GPS Fetched: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}'),
@@ -91,8 +114,8 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
   final TextEditingController _emailController = TextEditingController();
 
   // Documents
-  final TextEditingController _tradeLicenseController = TextEditingController(text: 'FSSAI-VERIFIED');
-  final TextEditingController _vatNumberController = TextEditingController(text: 'GST-REGISTERED');
+  final TextEditingController _tradeLicenseController = TextEditingController();
+  final TextEditingController _vatNumberController = TextEditingController();
 
   // Dynamic Images List
   final List<String> _restaurantImages = [];
@@ -234,6 +257,18 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                 _restaurantImages.add(restObj['image'].toString());
               }
 
+              if (restObj['location'] is Map &&
+                  restObj['location']['coordinates'] is List &&
+                  (restObj['location']['coordinates'] as List).length >= 2) {
+                final coords = restObj['location']['coordinates'] as List;
+                final parsedLng = double.tryParse(coords[0].toString());
+                final parsedLat = double.tryParse(coords[1].toString());
+                if (parsedLat != null && parsedLng != null) {
+                  _latitude = parsedLat;
+                  _longitude = parsedLng;
+                }
+              }
+
               // Load and parse restaurant weekly timings
               if (restObj['timing'] != null && restObj['timing'] is Map) {
                 final tMap = restObj['timing'] as Map;
@@ -271,30 +306,82 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
   }
 
   Future<void> _pickProfileImage() async {
+    if (_isUploadingImage) return;
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        setState(() {
-          _restaurantImages.add(image.path);
-        });
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (image == null) return;
+
+      setState(() => _isUploadingImage = true);
+      final bytes = await image.readAsBytes();
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? ApiConstants.authToken;
+
+      final request = http.MultipartRequest('POST', Uri.parse('${ApiConstants.baseUrl}/upload'));
+      if (token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: image.name.isNotEmpty ? image.name : 'store_photo.jpg',
+        ),
+      );
+
+      final streamed = await request.send().timeout(const Duration(seconds: 20));
+      final response = await http.Response.fromStream(streamed);
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode >= 200 && response.statusCode < 300 && decoded is Map) {
+        final uploadedUrl = (decoded['url'] ?? decoded['imageUrl'] ?? '').toString().trim();
+        if (uploadedUrl.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _restaurantImages.add(uploadedUrl);
+            });
+          }
+          return;
+        }
+      }
+
+      if (mounted) {
+        final errMsg = decoded is Map ? decoded['message']?.toString() : null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errMsg ?? 'Failed to upload image (${response.statusCode})'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+      debugPrint('Error picking/uploading image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image upload failed: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
     }
   }
 
   Future<void> _saveProfile() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
     final prefs = await SharedPreferences.getInstance();
-    final restId = prefs.getString('restaurantId') ?? '';
-    final token = prefs.getString('token') ?? '';
+    final restId = ApiConstants.restaurantId.isNotEmpty
+        ? ApiConstants.restaurantId
+        : (prefs.getString('restaurantId') ?? '');
+    final token = prefs.getString('token') ?? ApiConstants.authToken;
 
-    await prefs.setString('restaurantName', _tradeNameController.text.trim());
-    await prefs.setString('restaurantAddress', _addressController.text.trim());
-    await prefs.setString('userPhone', _phoneController.text.trim());
-    await prefs.setString('userEmail', _emailController.text.trim());
+    bool saved = false;
+    String? errorMsg;
 
-    if (restId.isNotEmpty) {
+    if (restId.isEmpty) {
+      errorMsg = 'Store session not found. Please log in again.';
+    } else {
       try {
         final url = '${ApiConstants.baseUrl}/restaurants/vendor/profile/$restId';
         final Map<String, dynamic> timingMap = {};
@@ -308,7 +395,12 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
           };
         }
 
-        final body = {
+        final remoteImages = _restaurantImages
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty && (e.startsWith('http') || e.startsWith('/uploads')))
+            .toList();
+
+        final body = <String, dynamic>{
           'name': _tradeNameController.text.trim(),
           'restaurantType': _typeController.text.trim(),
           'cuisine': _cuisineController.text.trim(),
@@ -320,7 +412,12 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
           'email': _emailController.text.trim(),
           'fssaiNumber': _tradeLicenseController.text.trim(),
           'gstNumber': _vatNumberController.text.trim(),
-          'restaurantImages': _restaurantImages,
+          'restaurantImages': remoteImages,
+          if (remoteImages.isNotEmpty) 'image': remoteImages.first,
+          if (_latitude != null && _longitude != null) ...{
+            'latitude': _latitude,
+            'longitude': _longitude,
+          },
           'timing': timingMap,
           'operationalDays': _operationalDays,
         };
@@ -332,30 +429,45 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
             if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           },
           body: jsonEncode(body),
-        ).timeout(const Duration(seconds: 8));
+        ).timeout(const Duration(seconds: 10));
 
-        if (response.statusCode == 200) {
-          debugPrint("Profile updated successfully on DB!");
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          saved = true;
+          await prefs.setString('restaurantName', _tradeNameController.text.trim());
+          await prefs.setString('restaurantAddress', _addressController.text.trim());
+          await prefs.setString('userPhone', _phoneController.text.trim());
+          await prefs.setString('userEmail', _emailController.text.trim());
+        } else {
+          try {
+            final errData = jsonDecode(response.body);
+            errorMsg = errData['message']?.toString() ?? 'Failed to save (${response.statusCode})';
+          } catch (_) {
+            errorMsg = 'Failed to save profile (${response.statusCode})';
+          }
         }
       } catch (e) {
-        debugPrint("Error saving profile to DB: $e");
+        errorMsg = 'Network error saving profile: $e';
       }
     }
 
     if (mounted) {
-      setState(() {});
+      setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '🎉 Restaurant Profile saved & updated in backend database!',
+            saved
+                ? (_isGrocery
+                    ? '🎉 Store Profile saved & updated in backend database!'
+                    : '🎉 Restaurant Profile saved & updated in backend database!')
+                : (errorMsg ?? 'Could not save profile changes'),
             style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
           ),
-          backgroundColor: AppColors.primaryGreen,
+          backgroundColor: saved ? AppColors.primaryGreen : Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
-      _tabController.animateTo(0);
+      if (saved) _tabController.animateTo(0);
     }
   }
 
@@ -365,7 +477,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Restaurant Profile',
+          _isGrocery ? 'Store Profile' : 'Restaurant Profile',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             fontSize: 20,
@@ -403,8 +515,49 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
     );
   }
 
-  // View Mode matching Reference Image 3
+  Widget _buildStoreAvatarBox(String primaryImageUrl) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: primaryImageUrl.isNotEmpty
+            ? Image.network(
+                primaryImageUrl,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Center(
+                  child: Icon(
+                    _isGrocery ? Icons.storefront_rounded : Icons.restaurant_rounded,
+                    color: AppColors.primaryGreen,
+                    size: 36,
+                  ),
+                ),
+              )
+            : Center(
+                child: Icon(
+                  _isGrocery ? Icons.storefront_rounded : Icons.restaurant_rounded,
+                  color: AppColors.primaryGreen,
+                  size: 36,
+                ),
+              ),
+      ),
+    );
+  }
+
+  // View Mode
   Widget _buildViewMode() {
+    final primaryImageUrl =
+        _restaurantImages.isNotEmpty ? _resolveImageUrl(_restaurantImages.first) : '';
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,67 +569,89 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
               Container(
                 height: 180,
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/restaurant_header_bg.jpg'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.0, 0.40, 0.75, 1.0],
-                      colors: [
-                        Colors.black.withValues(alpha: 0.15),
-                        Colors.white.withValues(alpha: 0.45),
-                        Colors.white.withValues(alpha: 0.85),
-                        Colors.white,
-                      ],
+                decoration: primaryImageUrl.isNotEmpty
+                    ? null
+                    : (_isGrocery
+                        ? const BoxDecoration(gradient: AppColors.primaryGradient)
+                        : const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/images/restaurant_header_bg.jpg'),
+                              fit: BoxFit.cover,
+                            ),
+                          )),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (primaryImageUrl.isNotEmpty)
+                      Image.network(
+                        primaryImageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+                        ),
+                      )
+                    else if (_isGrocery)
+                      Center(
+                        child: Icon(
+                          Icons.local_grocery_store_rounded,
+                          size: 64,
+                          color: Colors.white.withValues(alpha: 0.25),
+                        ),
+                      ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: const [0.0, 0.40, 0.75, 1.0],
+                          colors: [
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.white.withValues(alpha: 0.45),
+                            Colors.white.withValues(alpha: 0.85),
+                            Colors.white,
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
               Positioned(
                 bottom: -40,
                 left: 20,
+                right: 20,
                 child: Row(
                   children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
-                        ],
-                        image: const DecorationImage(
-                          image: NetworkImage('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=200&q=80'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
+                    _buildStoreAvatarBox(primaryImageUrl),
                     const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 42),
-                        Text(
-                          _tradeNameController.text,
-                          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                        ),
-                        Text(
-                          _cuisineController.text,
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Delivery | Pickup services',
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
-                        ),
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 42),
+                          Text(
+                            _tradeNameController.text.isNotEmpty
+                                ? _tradeNameController.text
+                                : (_isGrocery ? 'Partner Grocery Store' : 'Partner Outlet'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                          ),
+                          Text(
+                            _cuisineController.text.isNotEmpty
+                                ? _cuisineController.text
+                                : (_isGrocery ? 'Groceries, Fresh Produce & Essentials' : 'Partner Catalog'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Delivery | Self-Pickup services',
+                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -491,11 +666,15 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // About Restaurant Card
+                // About Store / Restaurant Card
                 _buildInfoCard(
-                  title: 'About Restaurant',
+                  title: _isGrocery ? 'About Store' : 'About Restaurant',
                   child: Text(
-                    _aboutController.text,
+                    _aboutController.text.isNotEmpty
+                        ? _aboutController.text
+                        : (_isGrocery
+                            ? 'Add store description in Edit Details tab.'
+                            : 'Add restaurant description in Edit Details tab.'),
                     style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700], height: 1.5),
                   ),
                 ),
@@ -515,7 +694,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Phone', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
-                                Text(_phoneController.text, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text(_phoneController.text.isNotEmpty ? _phoneController.text : '-', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
@@ -524,7 +703,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Email', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
-                                Text(_emailController.text, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text(_emailController.text.isNotEmpty ? _emailController.text : '-', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
@@ -532,10 +711,15 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                       ),
                       const SizedBox(height: 12),
                       Text('Address', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
-                      Text('${_addressController.text}, ${_cityController.text}', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                      Text(
+                        [_addressController.text, _cityController.text]
+                            .where((s) => s.trim().isNotEmpty)
+                            .join(', '),
+                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
                       const SizedBox(height: 14),
 
-                      // Map Container Placeholder matching Reference Image 3
+                      // Map Container Placeholder
                       Container(
                         height: 110,
                         width: double.infinity,
@@ -561,7 +745,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                                         child: Text(
                                           _addressController.text.isNotEmpty
                                               ? '${_addressController.text}${_areaController.text.isNotEmpty ? ", ${_areaController.text}" : ""}${_cityController.text.isNotEmpty ? ", ${_cityController.text}" : ""}'
-                                              : 'Restaurant Address Pending',
+                                              : (_isGrocery ? 'Store Address Pending' : 'Restaurant Address Pending'),
                                           textAlign: TextAlign.center,
                                           style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
                                         ),
@@ -625,25 +809,25 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
             padding: const EdgeInsets.all(18),
             child: Column(
               children: [
-                // Section 1: Restaurant Details
+                // Section 1: Store / Restaurant Details
                 _buildAccordionSection(
-                  title: 'Restaurant Details',
+                  title: _isGrocery ? 'Store Details' : 'Restaurant Details',
                   children: [
-                    _buildTextField('Restaurant Trade Name', _tradeNameController),
+                    _buildTextField(_isGrocery ? 'Store Trade Name' : 'Restaurant Trade Name', _tradeNameController),
                     const SizedBox(height: 14),
-                    _buildTextField('Restaurant Type', _typeController),
+                    _buildTextField(_isGrocery ? 'Store Format (e.g. Supermarket / Mart)' : 'Restaurant Type', _typeController),
                     const SizedBox(height: 14),
-                    _buildTextField('Cuisine Type', _cuisineController),
+                    _buildTextField(_isGrocery ? 'Store Categories' : 'Cuisine Type', _cuisineController),
                     const SizedBox(height: 14),
-                    _buildTextField('About Restaurant', _aboutController, maxLines: 4),
+                    _buildTextField(_isGrocery ? 'About Store' : 'About Restaurant', _aboutController, maxLines: 4),
                   ],
                 ),
 
                 const SizedBox(height: 16),
 
-                // Section 2: Restaurant Images
+                // Section 2: Store / Restaurant Images
                 _buildAccordionSection(
-                  title: 'Restaurant Images',
+                  title: _isGrocery ? 'Store Images' : 'Restaurant Images',
                   children: [
                     Wrap(
                       spacing: 10,
@@ -651,13 +835,31 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                       children: [
                         ..._restaurantImages.asMap().entries.map((entry) {
                           final idx = entry.key;
-                          final url = entry.value;
+                          final resolved = _resolveImageUrl(entry.value);
                           return Stack(
                             clipBehavior: Clip.none,
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.network(url, width: 80, height: 80, fit: BoxFit.cover),
+                                child: resolved.isNotEmpty
+                                    ? Image.network(
+                                        resolved,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 80,
+                                          height: 80,
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 80,
+                                        height: 80,
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.storefront_rounded, color: AppColors.primaryGreen),
+                                      ),
                               ),
                               Positioned(
                                 top: -6,
@@ -678,9 +880,8 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                             ],
                           );
                         }),
-                        // Add image square matching Reference Image 4
                         GestureDetector(
-                          onTap: _pickProfileImage,
+                          onTap: _isUploadingImage ? null : _pickProfileImage,
                           child: Container(
                             width: 80,
                             height: 80,
@@ -689,8 +890,14 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.grey[300]!, width: 1.5),
                             ),
-                            child: const Center(
-                              child: Icon(Icons.camera_alt_outlined, color: Colors.black54, size: 28),
+                            child: Center(
+                              child: _isUploadingImage
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(color: AppColors.primaryGreen, strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.camera_alt_outlined, color: Colors.black54, size: 28),
                             ),
                           ),
                         ),
@@ -701,9 +908,9 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
 
                 const SizedBox(height: 16),
 
-                // Section 3: Restaurant Location
+                // Section 3: Store / Restaurant Location
                 _buildAccordionSection(
-                  title: 'Restaurant Location',
+                  title: _isGrocery ? 'Store Location' : 'Restaurant Location',
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -728,7 +935,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildTextField('Restaurant Address', _addressController),
+                    _buildTextField(_isGrocery ? 'Store Address' : 'Restaurant Address', _addressController),
                     const SizedBox(height: 14),
                     _buildTextField('Area', _areaController),
                     const SizedBox(height: 14),
@@ -869,7 +1076,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _saveProfile,
+                onPressed: _isSaving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                   elevation: 0,
@@ -877,14 +1084,20 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text(
-                  'Save',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                      )
+                    : Text(
+                        'Save',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ),

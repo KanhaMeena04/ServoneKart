@@ -226,15 +226,61 @@ class OrderApiService {
     }
   }
 
+  static Future<Map<String, dynamic>?> placeGroceryOrder(Map<String, dynamic> orderData) async {
+    if (kFrontendPreviewMode) {
+      return {
+        'success': true,
+        'message': 'Grocery order placed successfully (Preview)',
+        'fulfilmentGroup': 'FG-PREVIEW-101',
+        'splitCount': 1,
+        'order': {
+          '_id': 'GRO-PREVIEW-101',
+          'id': 'GRO-PREVIEW-101',
+          'orderNumber': 'GRO-PREVIEW-101',
+          'status': 'placed',
+          'vertical': 'grocery',
+          'totalAmount': orderData['totalAmount'] ?? 199.0,
+        },
+        'orders': [
+          {
+            '_id': 'GRO-PREVIEW-101',
+            'orderNumber': 'GRO-PREVIEW-101',
+            'status': 'placed',
+          }
+        ],
+      };
+    }
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${AppConstants.baseUrl}/grocery/order'),
+            headers: await _getHeaders(),
+            body: jsonEncode(orderData),
+          )
+          .timeout(const Duration(seconds: 20));
+      debugPrint('API Response [placeGroceryOrder]: ${response.statusCode}');
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error placing grocery order: $e');
+      return {'success': false, 'message': 'Network error placing grocery order'};
+    }
+  }
+
   static Future<bool> verifyPayment(Map<String, dynamic> verifyData) async {
     if (kFrontendPreviewMode) return true;
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/verify-payment'),
-        headers: await _getHeaders(),
-        body: jsonEncode(verifyData),
-      );
-      return response.statusCode == 200 || response.statusCode == 201;
+      final response = await http
+          .post(
+            Uri.parse('${AppConstants.baseUrl}/razorpay/verify-payment'),
+            headers: await _getHeaders(),
+            body: jsonEncode(verifyData),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        return decoded is Map ? (decoded['success'] == true) : true;
+      }
+      return false;
     } catch (e) {
       debugPrint('Error verifying payment: $e');
       return false;

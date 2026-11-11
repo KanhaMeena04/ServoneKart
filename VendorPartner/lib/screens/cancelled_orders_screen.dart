@@ -30,7 +30,7 @@ class _CancelledOrdersScreenState extends State<CancelledOrdersScreen> {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     var restId = ApiConstants.restaurantId.isNotEmpty ? ApiConstants.restaurantId : (prefs.getString('restaurantId') ?? '');
-    final phone = prefs.getString('userPhone') ?? '8305370330';
+    final phone = prefs.getString('userPhone') ?? '';
     if (restId.isEmpty) restId = phone;
     final token = prefs.getString('token') ?? '';
 

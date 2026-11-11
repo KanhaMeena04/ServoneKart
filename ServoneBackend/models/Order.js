@@ -13,6 +13,7 @@ const orderSchema = new mongoose.Schema(
     },
     customerId: { type: String, index: true },
     restaurantId: { type: String, index: true },
+    storeId: { type: String, index: true },
     riderId: { type: String, index: true },
     restaurant: {
       type: mongoose.Schema.Types.ObjectId,
@@ -102,6 +103,9 @@ const orderSchema = new mongoose.Schema(
       enum: ["delivery", "self_pickup", "pickup"],
       default: "delivery",
     },
+    isSelfPickup: { type: Boolean, default: false },
+    pickupTimeSlot: { type: String },
+    specialInstructions: { type: String },
     prepTimeMinutes: { type: Number, default: 15 },
     bufferTimeMinutes: { type: Number, default: 0 },
     bufferReason: { type: String },
@@ -253,6 +257,13 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+orderSchema.pre("validate", function () {
+  if (this.orderType === "self_pickup" || this.orderType === "pickup") {
+    this.isSelfPickup = true;
+  } else if (this.isSelfPickup) {
+    this.orderType = "self_pickup";
+  }
+});
 orderSchema.virtual("deliveryPartner").get(function() {
   return this.rider;
 });

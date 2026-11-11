@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { marketingService, cartService } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { marketingService } from '../services/api';
 
 const CartContext = createContext();
+
+const resolveProductId = (prod) => String(prod?._id || prod?.id || prod?.slug || '');
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => {
@@ -28,7 +30,6 @@ export const CartProvider = ({ children }) => {
   const [couponError, setCouponError] = useState(null);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState(null);
 
-  // Save to local storage on change
   useEffect(() => {
     localStorage.setItem('tricelyn_cart', JSON.stringify(items));
   }, [items]);
@@ -50,18 +51,25 @@ export const CartProvider = ({ children }) => {
   }, [activeOrderId]);
 
   const addToCart = (product, quantity = 1, variant = null) => {
+    const pid = resolveProductId(product);
+    if (!pid) return;
+
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
-        (item) => item.product._id === product._id && (!variant || item.variant?._id === variant?._id)
+        (item) =>
+          resolveProductId(item.product) === pid &&
+          (!variant || item.variant?._id === variant?._id)
       );
 
       if (existingIndex > -1) {
         const newItems = [...prevItems];
-        newItems[existingIndex].quantity += quantity;
+        newItems[existingIndex] = {
+          ...newItems[existingIndex],
+          quantity: newItems[existingIndex].quantity + quantity,
+        };
         return newItems;
-      } else {
-        return [...prevItems, { product, quantity, variant }];
       }
+      return [...prevItems, { product: { ...product, _id: product._id || pid }, quantity, variant }];
     });
   };
 
@@ -70,15 +78,17 @@ export const CartProvider = ({ children }) => {
       removeFromCart(productId);
       return;
     }
+    const targetId = String(productId);
     setItems((prevItems) =>
       prevItems.map((item) =>
-        item.product._id === productId ? { ...item, quantity: newQuantity } : item
+        resolveProductId(item.product) === targetId ? { ...item, quantity: newQuantity } : item
       )
     );
   };
 
   const removeFromCart = (productId) => {
-    setItems((prevItems) => prevItems.filter((item) => item.product._id !== productId));
+    const targetId = String(productId);
+    setItems((prevItems) => prevItems.filter((item) => resolveProductId(item.product) !== targetId));
   };
 
   const clearCart = () => {
@@ -90,9 +100,39 @@ export const CartProvider = ({ children }) => {
   };
 
   const getItemQuantity = (productId) => {
-    const item = items.find((i) => i.product._id === productId);
+    const targetId = String(productId || '');
+    const item = items.find((i) => resolveProductId(i.product) === targetId);
     return item ? item.quantity : 0;
   };
+
+  // Multi-Vendor Store Grouping (mirrors backend split fulfilment groups)
+  const storeGroups = useMemo(() => {
+    const map = new Map();
+    items.forEach((item) => {
+      const prod = item.product || {};
+      const storeObj = prod.restaurant && typeof prod.restaurant === 'object' ? prod.restaurant : null;
+      const storeId = String(
+        prod.storeId ||
+          storeObj?._id ||
+          (typeof prod.restaurant === 'string' ? prod.restaurant : '') ||
+          prod.vendorId ||
+          'tricelyn_dark_store'
+      );
+      const storeName =
+        prod.storeName || storeObj?.name || prod.vendorName || 'Tricelyn Partner Store';
+
+      if (!map.has(storeId)) {
+        map.set(storeId, { storeId, storeName, items: [], subtotal: 0 });
+      }
+      const group = map.get(storeId);
+      group.items.push(item);
+      group.subtotal += (Number(prod.price) || 0) * (Number(item.quantity) || 1);
+    });
+    return Array.from(map.values());
+  }, [items]);
+
+  const storeCount = storeGroups.length;
+  const isMultiStore = storeCount > 1;
 
   // Calculations
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -103,7 +143,7 @@ export const CartProvider = ({ children }) => {
   }, 0);
 
   const mrpTotal = items.reduce((sum, item) => {
-    const mrp = Number(item.product.mrp) || (Number(item.product.price) * 1.25) || 0;
+    const mrp = Number(item.product.mrp) || Number(item.product.price) || 0;
     return sum + mrp * item.quantity;
   }, 0);
 
@@ -113,7 +153,6 @@ export const CartProvider = ({ children }) => {
   const deliveryFee = subtotal >= 199 || items.length === 0 ? 0 : 25;
   const platformFee = items.length > 0 ? 2 : 0;
 
-  // Coupon discount calculation
   let couponDiscount = 0;
   if (coupon && subtotal > 0) {
     if (coupon.discountType === 'percentage' || coupon.percent) {
@@ -137,18 +176,6 @@ export const CartProvider = ({ children }) => {
 
     const upperCode = code.trim().toUpperCase();
 
-    // Default quick commerce coupons for instant delight
-    if (upperCode === 'SAVE25' || upperCode === 'WELCOME50' || upperCode === 'TRICELYN10') {
-      const discount = upperCode === 'WELCOME50' ? 50 : 25;
-      const newCoupon = {
-        code: upperCode,
-        discountAmount: discount,
-        description: `₹${discount} Instant Savings applied!`,
-      };
-      setCoupon(newCoupon);
-      return { success: true, message: `Coupon ${upperCode} applied! Saved ₹${discount}` };
-    }
-
     try {
       const res = await marketingService.validateCoupon(upperCode, subtotal);
       if (res.data && res.data.success) {
@@ -159,6 +186,16 @@ export const CartProvider = ({ children }) => {
         return { success: false, message: res.data?.message || 'Invalid coupon code' };
       }
     } catch (err) {
+      if (upperCode === 'SAVE25' || upperCode === 'WELCOME50' || upperCode === 'TRICELYN10') {
+        const discount = upperCode === 'WELCOME50' ? 50 : 25;
+        const newCoupon = {
+          code: upperCode,
+          discountAmount: discount,
+          description: `₹${discount} Instant Savings applied!`,
+        };
+        setCoupon(newCoupon);
+        return { success: true, message: `Coupon ${upperCode} applied! Saved ₹${discount}` };
+      }
       setCouponError(err.response?.data?.message || 'Invalid or expired coupon');
       return { success: false, message: err.response?.data?.message || 'Invalid coupon' };
     }
@@ -173,6 +210,9 @@ export const CartProvider = ({ children }) => {
     <CartContext.Provider
       value={{
         items,
+        storeGroups,
+        storeCount,
+        isMultiStore,
         addToCart,
         updateQuantity,
         removeFromCart,

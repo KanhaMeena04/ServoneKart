@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
 import '../services/restaurant_api_service.dart';
+import '../services/restaurant_auth_service.dart';
 import 'restaurant_dashboard_screen.dart';
 import 'order_history_screen.dart';
 import 'menu_management_screen.dart';
@@ -30,21 +33,43 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _isUploadingImage = false;
-  String _name = 'My Restaurant';
-  String _image = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+  String _name = 'My Store';
+  String _image = '';
   String _restaurantId = '';
   int _totalOrders = 0;
   double _totalRevenue = 0.0;
 
+  bool get _isGroceryMode =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
+
   @override
   void initState() {
     super.initState();
+    _name = _isGroceryMode ? 'My Grocery Store' : 'My Restaurant';
     _loadProfileData();
   }
 
+  String _resolveImageUrl(String? rawPath) {
+    final trimmed = (rawPath ?? '').trim();
+    if (trimmed.isEmpty || trimmed == 'null') return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    final baseOrigin = ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+    return trimmed.startsWith('/') ? '$baseOrigin$trimmed' : '$baseOrigin/$trimmed';
+  }
+
+  String _formatStoreBadgeId(String restId) {
+    final prefix = _isGroceryMode ? '#STR' : '#REST';
+    if (restId.isEmpty) return '$prefix-PARTNER';
+    final short = restId.length > 6 ? restId.substring(restId.length - 6) : restId;
+    return '$prefix-${short.toUpperCase()}';
+  }
+
   Future<void> _loadProfileData() async {
+    await RestaurantAuthService.hydrateRbacFromPrefs();
     final prefs = await SharedPreferences.getInstance();
     final restId = prefs.getString('restaurantId') ?? '';
     final phone = prefs.getString('userPhone') ?? '';
@@ -52,15 +77,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final storedName = prefs.getString('restaurantName') ?? '';
     final storedImage = prefs.getString('restaurantImage') ?? '';
 
-    setState(() {
-      _restaurantId = restId.isNotEmpty ? '#REST-${restId.substring(restId.length > 6 ? restId.length - 6 : 0).toUpperCase()}' : '#REST-PARTNER';
-      if (storedName.isNotEmpty && storedName != 'null') {
-        _name = storedName;
-      }
-      if (storedImage.isNotEmpty && storedImage != 'null') {
-        _image = storedImage;
-      }
-    });
+    if (mounted) {
+      setState(() {
+        _restaurantId = _formatStoreBadgeId(restId);
+        if (storedName.isNotEmpty && storedName != 'null') {
+          _name = storedName;
+        } else {
+          _name = _isGroceryMode ? 'My Grocery Store' : 'My Restaurant';
+        }
+        if (storedImage.isNotEmpty && storedImage != 'null') {
+          _image = _resolveImageUrl(storedImage);
+        }
+      });
+    }
 
     try {
       String profileUrl = '';
@@ -95,27 +124,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
-          final restObj = data['restaurant'] ?? data;
+          final Map<String, dynamic> restObj = data['restaurant'] is Map
+              ? Map<String, dynamic>.from(data['restaurant'] as Map)
+              : (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+
           String resolvedName = '';
           if (data['name'] != null && data['name'].toString().isNotEmpty) {
             final n = data['name'];
             resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
-          } else if (data['restaurant'] != null && data['restaurant']['name'] != null) {
-            final n = data['restaurant']['name'];
+          } else if (restObj['name'] != null) {
+            final n = restObj['name'];
             resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
           }
 
-          final fetchedImg = restObj['image'] ?? restObj['logo'] ?? restObj['profileImage'] ?? restObj['profilePic'];
+          final fetchedImg = _resolveImageUrl(
+            (restObj['image'] ?? restObj['logo'] ?? restObj['profileImage'] ?? restObj['profilePic'] ?? data['image'])?.toString(),
+          );
+          final rawBType = (data['businessType'] ?? restObj['businessType'] ?? data['vertical'] ?? restObj['vertical'])?.toString();
+          final rawVertical = (data['vertical'] ?? restObj['vertical'])?.toString();
+          final rawRole = (data['assignedRole'] ?? restObj['assignedRole'])?.toString();
+          final rawPerms = data['permissions'] ?? restObj['permissions'];
+          final rawMode = data['platformMode'] ?? restObj['platformMode'];
 
+          await RestaurantAuthService.saveRbacContext(
+            assignedRole: rawRole,
+            permissions: rawPerms is List ? rawPerms : null,
+            businessType: rawBType,
+            vertical: rawVertical,
+            platformMode: rawMode?.toString(),
+          );
+
+          final extractedRestId = (restObj['_id'] ?? data['_id'] ?? data['restaurantId'] ?? restId).toString();
           if (mounted) {
             setState(() {
+              _restaurantId = _formatStoreBadgeId(extractedRestId);
               if (resolvedName.isNotEmpty && resolvedName != 'null') {
                 _name = resolvedName;
                 prefs.setString('restaurantName', resolvedName);
               }
-              if (fetchedImg != null && fetchedImg.toString().isNotEmpty) {
-                _image = fetchedImg.toString();
-                prefs.setString('restaurantImage', _image);
+              if (fetchedImg.isNotEmpty) {
+                _image = fetchedImg;
+                prefs.setString('restaurantImage', fetchedImg);
               }
             });
           }
@@ -173,9 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _handleLogout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    ApiConstants.clearAuthenticatedSession();
+    await RestaurantAuthService.logout();
 
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -307,265 +354,377 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildProfileAvatar(bool isGrocery) {
+    Widget fallbackIcon() => Container(
+          width: 70,
+          height: 70,
+          color: const Color(0xFF248C70).withValues(alpha: 0.1),
+          child: Icon(
+            isGrocery ? Icons.storefront_rounded : Icons.restaurant_rounded,
+            color: const Color(0xFF248C70),
+            size: 32,
+          ),
+        );
+
+    Widget imageContent;
+    if (_isUploadingImage) {
+      imageContent = Container(
+        width: 70,
+        height: 70,
+        color: Colors.grey[100],
+        child: const Center(
+          child: CircularProgressIndicator(color: Color(0xFF248C70), strokeWidth: 3),
+        ),
+      );
+    } else if (_image.startsWith('http://') || _image.startsWith('https://')) {
+      imageContent = Image.network(
+        _image,
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallbackIcon(),
+      );
+    } else if (_image.isNotEmpty && !kIsWeb && File(_image).existsSync()) {
+      imageContent = Image.file(
+        File(_image),
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallbackIcon(),
+      );
+    } else {
+      imageContent = fallbackIcon();
+    }
+
+    return ClipOval(child: imageContent);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5FAF8),
-      appBar: AppBar(
-        title: Text('My Profile', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 22)),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF2C2C2C),
-        elevation: 0,
-        centerTitle: false,
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Color(0xFF248C70)))
-        : SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Card
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))
-                ],
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: _isUploadingImage ? null : _showImagePickerModal,
-                    child: Stack(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFF248C70), width: 2),
-                          ),
-                          child: CircleAvatar(
-                            radius: 35,
-                            backgroundColor: Colors.grey[200],
-                            backgroundImage: _image.startsWith('http')
-                                ? NetworkImage(_image)
-                                : FileImage(File(_image)) as ImageProvider,
-                            child: _isUploadingImage
-                                ? const CircularProgressIndicator(color: Color(0xFF248C70), strokeWidth: 3)
-                                : null,
-                          ),
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, __) {
+        final bool isGrocery = _isGroceryMode;
+        final List<Widget> menuWidgets = [];
+
+        void addTile({
+          required IconData icon,
+          required String title,
+          String? subtitle,
+          required VoidCallback onTap,
+        }) {
+          if (menuWidgets.isNotEmpty) {
+            menuWidgets.add(const Divider(height: 1, indent: 60));
+          }
+          menuWidgets.add(
+            _buildMenuItem(
+              icon: icon,
+              title: title,
+              subtitle: subtitle,
+              onTap: onTap,
+            ),
+          );
+        }
+
+        if (RestaurantAuthService.hasPermission('settings')) {
+          addTile(
+            icon: Icons.storefront_outlined,
+            title: isGrocery ? 'Store Profile' : 'Restaurant Profile',
+            subtitle: isGrocery
+                ? 'View and update store details & operating hours'
+                : 'View and update restaurant details & hours',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantProfileScreen())),
+          );
+        }
+        if (RestaurantAuthService.hasPermission('analytics')) {
+          addTile(
+            icon: Icons.space_dashboard_outlined,
+            title: 'Dashboard & Analytics',
+            subtitle: 'Activity summary, sales & revenue analytics',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen())),
+          );
+        }
+        if (RestaurantAuthService.hasPermission('products')) {
+          addTile(
+            icon: isGrocery ? Icons.inventory_2_outlined : Icons.restaurant_menu,
+            title: isGrocery ? 'Catalog & SKU Inventory' : 'Menu Management',
+            subtitle: isGrocery
+                ? 'Add or edit grocery products, stock & prices'
+                : 'Add or edit items and prices',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuManagementScreen())),
+          );
+        }
+        if (RestaurantAuthService.hasPermission('orders')) {
+          addTile(
+            icon: Icons.tune_outlined,
+            title: isGrocery ? 'Packing & Order Rules' : 'Order Management',
+            subtitle: isGrocery
+                ? 'Auto-accept, order limits & packing times'
+                : 'Auto-accept, order limits & prep times',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderManagementSettingsScreen())),
+          );
+        }
+        addTile(
+          icon: Icons.notifications_none_outlined,
+          title: 'Notification Setting',
+          subtitle: isGrocery
+              ? 'Order alerts, packing status & rider alerts'
+              : 'Order alerts, prep status & delivery alerts',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
+        );
+        if (RestaurantAuthService.hasPermission('orders')) {
+          addTile(
+            icon: Icons.shopping_bag_outlined,
+            title: isGrocery ? 'Self-Pickup Orders' : 'Pickup Orders',
+            subtitle: 'Manage active customer pick-up orders',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PickupOrdersScreen())),
+          );
+          addTile(
+            icon: Icons.history,
+            title: 'Order History',
+            subtitle: 'View all past completed orders',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen())),
+          );
+          addTile(
+            icon: Icons.cancel_outlined,
+            title: 'Cancelled Orders',
+            subtitle: 'View all cancelled & refunded orders',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CancelledOrdersScreen())),
+          );
+        }
+        if (RestaurantAuthService.hasPermission('payouts')) {
+          addTile(
+            icon: Icons.account_balance_wallet,
+            title: isGrocery ? 'Store Wallet & Payouts' : 'Wallet & Payouts',
+            subtitle: 'Check balance and payouts',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantWalletScreen())),
+          );
+        }
+        addTile(
+          icon: Icons.help_outline,
+          title: 'Help & Support',
+          subtitle: 'Contact ${PlatformConfigService.appName} support team',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
+        );
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5FAF8),
+          appBar: AppBar(
+            title: Text(
+              isGrocery ? 'Store Profile' : 'My Profile',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 22),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF2C2C2C),
+            elevation: 0,
+            centerTitle: false,
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF248C70)))
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Profile Card
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))
+                          ],
                         ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF248C70),
-                              shape: BoxShape.circle,
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: _isUploadingImage ? null : _showImagePickerModal,
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: const Color(0xFF248C70), width: 2),
+                                    ),
+                                    child: _buildProfileAvatar(isGrocery),
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF248C70),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _name,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF2C2C2C),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF248C70).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          'ID: $_restaurantId',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF248C70),
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEEF2FF),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: const Color(0xFFC7D2FE)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.verified_user_rounded, size: 11, color: Color(0xFF4338CA)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              RestaurantAuthService.assignedRole,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF4338CA),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Performance Bar
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF248C70),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem('Total Orders', '$_totalOrders'),
+                            Container(height: 30, width: 1, color: Colors.white30),
+                            _buildStatItem('Total Sales', '₹${_totalRevenue.toStringAsFixed(0)}'),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Menu Items List (RBAC & Platform Mode Aware)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))
+                          ],
+                        ),
+                        child: Column(children: menuWidgets),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Legal & Policies Container
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildMenuItem(
+                              icon: Icons.description_outlined,
+                              title: 'Terms & Conditions',
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsConditionsScreen())),
+                            ),
+                            const Divider(height: 1, indent: 60),
+                            _buildMenuItem(
+                              icon: Icons.privacy_tip_outlined,
+                              title: 'Privacy Policy',
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                            ),
+                            const Divider(height: 1, indent: 60),
+                            _buildMenuItem(
+                              icon: Icons.payments_outlined,
+                              title: 'Payment Policy',
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentPolicyScreen())),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Logout Button
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton.icon(
+                            onPressed: _handleLogout,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[50],
+                              foregroundColor: Colors.red,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            icon: const Icon(Icons.logout, color: Colors.red),
+                            label: Text('Log Out', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _name,
-                          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF2C2C2C)),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF248C70).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'ID: $_restaurantId',
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF248C70)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                      ),
 
-            // Performance Bar
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF248C70),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem('Total Orders', '$_totalOrders'),
-                  Container(height: 30, width: 1, color: Colors.white30),
-                  _buildStatItem('Total Sales', '₹${_totalRevenue.toStringAsFixed(0)}'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Menu Items List
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    icon: Icons.storefront_outlined,
-                    title: 'Restaurant Profile',
-                    subtitle: 'View and update restaurant details & hours',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantProfileScreen())),
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.space_dashboard_outlined,
-                    title: 'Dashboard & Analytics',
-                    subtitle: 'Activity summary, earnings & revenue analytics',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.restaurant_menu,
-                    title: 'Menu Management',
-                    subtitle: 'Add or edit items and prices',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuManagementScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.tune_outlined,
-                    title: 'Order Management',
-                    subtitle: 'Auto-accept, order limits & prep times',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderManagementSettingsScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.notifications_none_outlined,
-                    title: 'Notification Setting',
-                    subtitle: 'Order alerts, prep status & delivery alerts',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.shopping_bag_outlined,
-                    title: 'Pickup Orders',
-                    subtitle: 'Manage active customer pick-up orders',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PickupOrdersScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.history,
-                    title: 'Order History',
-                    subtitle: 'View all past completed orders',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.cancel_outlined,
-                    title: 'Cancelled Orders',
-                    subtitle: 'View all cancelled & refunded orders',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CancelledOrdersScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.account_balance_wallet,
-                    title: 'Wallet & Payouts',
-                    subtitle: 'Check balance and payouts',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantWalletScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.help_outline,
-                    title: 'Help & Support',
-                    subtitle: 'Contact support team',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Legal & Policies Container
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    icon: Icons.description_outlined,
-                    title: 'Terms & Conditions',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsConditionsScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy Policy',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-                  ),
-                  const Divider(height: 1, indent: 60),
-                  _buildMenuItem(
-                    icon: Icons.payments_outlined,
-                    title: 'Payment Policy',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentPolicyScreen())),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: _handleLogout,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[50],
-                    foregroundColor: Colors.red,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  icon: const Icon(Icons.logout, color: Colors.red),
-                  label: Text('Log Out', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 

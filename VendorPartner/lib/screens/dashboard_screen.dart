@@ -7,7 +7,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
 import '../models/order_model.dart';
+import '../services/menu_api_service.dart';
+import '../services/platform_config_service.dart';
 import '../services/restaurant_api_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 import 'menu_management_screen.dart';
 import 'restaurant_dashboard_screen.dart';
@@ -30,8 +33,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _selectedStatusFilter = 'All'; // 'All', 'Placed', 'Preparing', 'Ready', 'Picked Up', 'Delivered'
 
   List<Order> _orders = [];
-  final Map<String, TextEditingController> _otpControllers = {};
-  Timer? _timer;
   Timer? _livePollingTimer;
   final AudioPlayer _audioPlayer = AudioPlayer();
   final Set<String> _knownOrderIds = {};
@@ -42,19 +43,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Timer? _ringtoneTimeoutTimer;
   int _ringPlayCount = 0;
 
-  // Dynamic Restaurant Profile & Stats
+  // Dynamic Partner Store Profile & Stats
   String _restaurantName = 'Loading...';
   String _restaurantImage = '';
   double _monthlyEarning = 0.0;
   String _currentMonth = 'Current Month';
   bool _isLoadingOrders = false;
   String _restaurantId = '';
-  String _businessType = 'restaurant';
+  String _businessType = 'grocery_store';
+
+  bool get _isGroceryMode {
+    if (PlatformConfigService.isGroceryPlatform) return true;
+    final bt = _businessType.toLowerCase();
+    if (bt == 'grocery_store' || bt == 'grocery' || bt == 'essentials' || bt == 'dairy_milk') {
+      return true;
+    }
+    return RestaurantAuthService.isGroceryStore;
+  }
 
   @override
   void initState() {
     super.initState();
     _initCurrentMonth();
+    PlatformConfigService.fetchSettings();
+    RestaurantAuthService.hydrateRbacFromPrefs();
     _loadLiveDashboardData();
     _setupSocketListener();
     _fetchUnreadNotificationCount();
@@ -74,12 +86,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     _stopOrderRingtone();
     _ringtoneTimeoutTimer?.cancel();
-    _timer?.cancel();
     _livePollingTimer?.cancel();
     _audioPlayer.dispose();
-    for (var controller in _otpControllers.values) {
-      controller.dispose();
-    }
     super.dispose();
   }
 
@@ -91,20 +99,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _currentMonth = months[DateTime.now().month - 1];
   }
 
+  String _resolveImageUrl(String? rawPath) {
+    final trimmed = (rawPath ?? '').trim();
+    if (trimmed.isEmpty || trimmed == 'null') return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('assets/')) return trimmed;
+    final baseOrigin = ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+    return trimmed.startsWith('/') ? '$baseOrigin$trimmed' : '$baseOrigin/$trimmed';
+  }
+
   Future<void> _loadLiveDashboardData() async {
     final prefs = await SharedPreferences.getInstance();
     _restaurantId = prefs.getString('restaurantId') ?? '';
     final savedPhone = prefs.getString('userPhone') ?? '';
     final storedName = prefs.getString('restaurantName') ?? '';
+    final storedImage = prefs.getString('restaurantImage') ?? '';
+    final storedBType = prefs.getString('businessType') ?? RestaurantAuthService.businessType;
     final token = prefs.getString('token') ?? '';
 
-    if (mounted && storedName.isNotEmpty && storedName != 'null') {
+    if (mounted) {
       setState(() {
-        _restaurantName = storedName;
+        if (storedName.isNotEmpty && storedName != 'null') {
+          _restaurantName = storedName;
+        }
+        if (storedImage.isNotEmpty && storedImage != 'null') {
+          _restaurantImage = _resolveImageUrl(storedImage);
+        }
+        if (storedBType.isNotEmpty && storedBType != 'null') {
+          _businessType = storedBType;
+        }
       });
     }
 
-    // 1. Fetch live Restaurant Profile from Backend
+    // 1. Fetch live Store / Partner Profile from Backend
     try {
       String profileUrl = '';
       if (_restaurantId.isNotEmpty) {
@@ -138,14 +167,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
+          final Map<String, dynamic> restObj = data['restaurant'] is Map
+              ? Map<String, dynamic>.from(data['restaurant'] as Map)
+              : (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+
           String resolvedName = '';
           if (data['name'] != null && data['name'].toString().isNotEmpty) {
             final n = data['name'];
             resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
-          } else if (data['restaurant'] != null && data['restaurant']['name'] != null) {
-            final n = data['restaurant']['name'];
+          } else if (restObj['name'] != null) {
+            final n = restObj['name'];
             resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
           }
+
+          final resolvedImg = _resolveImageUrl(
+            (restObj['image'] ?? restObj['logo'] ?? restObj['profileImage'] ?? restObj['profilePic'] ?? data['image'])?.toString(),
+          );
+          final rawBType = (data['businessType'] ?? restObj['businessType'] ?? data['vertical'] ?? restObj['vertical'] ?? prefs.getString('businessType') ?? 'grocery_store').toString();
+          final rawVertical = (data['vertical'] ?? restObj['vertical'] ?? prefs.getString('vertical') ?? (rawBType.toLowerCase().contains('restaurant') ? 'food' : 'grocery')).toString();
+          final rawRole = (data['assignedRole'] ?? restObj['assignedRole'] ?? prefs.getString('assignedRole') ?? RestaurantAuthService.assignedRole).toString();
+          final rawPerms = data['permissions'] ?? restObj['permissions'];
+          final rawMode = data['platformMode'] ?? restObj['platformMode'];
+
+          await RestaurantAuthService.saveRbacContext(
+            assignedRole: rawRole,
+            permissions: rawPerms is List ? rawPerms : null,
+            businessType: rawBType,
+            vertical: rawVertical,
+            platformMode: rawMode?.toString(),
+          );
 
           if (mounted) {
             setState(() {
@@ -153,14 +203,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _restaurantName = resolvedName;
                 prefs.setString('restaurantName', resolvedName);
               }
-              final rawBType = data['businessType'] ?? data['restaurant']?['businessType'] ?? data['vertical'] ?? prefs.getString('businessType') ?? 'restaurant';
-              _businessType = rawBType.toString();
+              if (resolvedImg.isNotEmpty) {
+                _restaurantImage = resolvedImg;
+                prefs.setString('restaurantImage', resolvedImg);
+              }
+              _businessType = rawBType;
               prefs.setString('businessType', _businessType);
               if (_restaurantName == 'Loading...') {
-                _restaurantName = storedName.isNotEmpty ? storedName : 'My Restaurant';
+                _restaurantName = storedName.isNotEmpty ? storedName : (_isGroceryMode ? 'My Grocery Store' : 'My Restaurant');
               }
-              _isOnline = data['isActive'] ?? data['restaurant']?['isActive'] ?? true;
-              final extractedRestId = data['restaurant']?['_id'] ?? data['_id'] ?? data['restaurantId'] ?? data['restaurant']?['id'] ?? data['id'];
+              _isOnline = data['isActive'] ?? restObj['isActive'] ?? true;
+              final extractedRestId = restObj['_id'] ?? data['_id'] ?? data['restaurantId'] ?? restObj['id'] ?? data['id'];
               if (extractedRestId != null && extractedRestId.toString().isNotEmpty && extractedRestId.toString() != 'null') {
                 _restaurantId = extractedRestId.toString();
                 prefs.setString('restaurantId', _restaurantId);
@@ -179,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           if (_restaurantName == 'Loading...') {
-            _restaurantName = storedName.isNotEmpty ? storedName : 'My Restaurant';
+            _restaurantName = storedName.isNotEmpty ? storedName : (_isGroceryMode ? 'My Grocery Store' : 'My Restaurant');
           }
         });
       }
@@ -456,8 +509,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           message = '${o.customerName} placed an order for ₹${o.totalAmount.toStringAsFixed(2)}';
           type = 'order_new';
         } else if (o.status == 'Preparing') {
-          title = '🍳 Order #${o.id} In Kitchen';
-          message = 'Food is currently being prepared.';
+          title = _isGroceryMode
+              ? '📦 Packing Order #${o.id}'
+              : '🍳 Order #${o.id} In Kitchen';
+          message = _isGroceryMode
+              ? 'Order items are currently being packed.'
+              : 'Food is currently being prepared.';
           type = 'order_preparing';
         } else if (o.status == 'Ready') {
           title = o.isSelfPickup ? '🛍️ Order #${o.id} Ready for Self-Pickup' : '🛵 Order #${o.id} Ready for Rider';
@@ -915,14 +972,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _acceptOrder(Order order) async {
-    int selectedPrepTime = 15;
+    final bool isGrocery = _isGroceryMode;
+    int selectedPrepTime = isGrocery ? 10 : 15;
     if (order.items.isNotEmpty) {
       for (var item in order.items) {
         if (item is Map) {
-          final pTime = int.tryParse(item['preparationTime']?.toString() ?? item['prepTime']?.toString() ?? '15') ?? 15;
+          final pTime = int.tryParse(item['preparationTime']?.toString() ?? item['prepTime']?.toString() ?? '') ?? 0;
           if (pTime > selectedPrepTime) selectedPrepTime = pTime;
         }
       }
+    }
+
+    final List<int> timeOptions = isGrocery
+        ? [5, 10, 15, 20, 30, 45]
+        : [15, 20, 25, 30, 45, 60];
+    if (!timeOptions.contains(selectedPrepTime)) {
+      selectedPrepTime = isGrocery ? 10 : 15;
     }
 
     showDialog(
@@ -933,17 +998,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (ctx, setDialogState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Text('Select Preparation Time', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+              title: Text(
+                isGrocery ? 'Select Packing Time' : 'Select Preparation Time',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Set food preparation time for Order #${order.id}:', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                  Text(
+                    isGrocery
+                        ? 'Set item packing time for Order #${order.id}:'
+                        : 'Set food preparation time for Order #${order.id}:',
+                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                  ),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: [15, 20, 25, 30, 45, 60].map((mins) {
+                    children: timeOptions.map((mins) {
                       final isSel = tempTime == mins;
                       return ChoiceChip(
                         label: Text('$mins mins'),
@@ -966,27 +1039,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(dialogCtx);
+                    final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
                     setState(() {
                       order.status = 'Preparing';
                       order.prepTimeMinutes = tempTime;
                     });
+                    bool prepared = false;
                     try {
-                      final token = (await SharedPreferences.getInstance()).getString('token') ?? '';
-                      await http.post(
-                        Uri.parse('${ApiConstants.baseUrl}/orders/restaurant/prepare/${order.backendId.isNotEmpty ? order.backendId : order.id}'),
+                      final prefs = await SharedPreferences.getInstance();
+                      final token = prefs.getString('token') ?? '';
+                      final resp = await http.post(
+                        Uri.parse('${ApiConstants.baseUrl}/orders/restaurant/prepare/$targetId'),
                         headers: {
                           'Content-Type': 'application/json',
                           if (token.isNotEmpty) 'Authorization': 'Bearer $token',
                         },
                         body: jsonEncode({'prepTime': tempTime, 'status': 'preparing'}),
-                      ).timeout(const Duration(seconds: 5));
+                      ).timeout(const Duration(seconds: 8));
+                      prepared = resp.statusCode >= 200 && resp.statusCode < 300;
                     } catch (_) {}
-                    await RestaurantApiService.prepareOrder(order.id);
+                    if (!prepared) {
+                      await RestaurantApiService.prepareOrder(targetId);
+                    }
                     _fetchLiveOrders(isSilent: true);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Order Accepted! Preparation time set to $tempTime mins.'),
+                          content: Text(
+                            isGrocery
+                                ? 'Order Accepted! Packing time set to $tempTime mins.'
+                                : 'Order Accepted! Preparation time set to $tempTime mins.',
+                          ),
                           backgroundColor: AppColors.primaryGreen,
                           duration: const Duration(seconds: 2),
                         ),
@@ -998,7 +1081,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-                  child: Text('ACCEPT & PREPARE', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    isGrocery ? 'ACCEPT & PACK' : 'ACCEPT & PREPARE',
+                    style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             );
@@ -1009,17 +1095,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _rejectOrder(Order order) async {
-    setState(() {
-      _orders.removeWhere((o) => o.id == order.id || o.backendId == order.backendId);
-    });
     final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
-    await RestaurantApiService.cancelOrder(targetId, 'Rejected by restaurant');
-    if (mounted) {
+    final res = await RestaurantApiService.cancelOrder(
+      targetId,
+      _isGroceryMode ? 'Rejected by partner store' : 'Rejected by restaurant',
+    );
+    if (res['success'] == true) {
+      if (mounted) {
+        setState(() {
+          _orders.removeWhere((o) => o.id == order.id || o.backendId == order.backendId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order rejected.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order rejected.'),
+        SnackBar(
+          content: Text(res['message']?.toString() ?? 'Failed to reject order'),
           backgroundColor: Colors.redAccent,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -1047,89 +1146,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        _orders.removeWhere((o) => o.id == order.id || o.backendId == order.backendId);
-      });
       final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
-      await RestaurantApiService.deleteOrder(targetId);
+      final res = await RestaurantApiService.deleteOrder(targetId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order permanently deleted.'),
-            backgroundColor: Colors.redAccent,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        if (res['success'] == true) {
+          setState(() {
+            _orders.removeWhere((o) => o.id == order.id || o.backendId == order.backendId);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Order permanently deleted.'),
+              backgroundColor: Colors.redAccent,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message']?.toString() ?? 'Failed to delete order'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
       }
     }
   }
 
-  void _markSearchingRider(Order order) {
-    _showSearchingRiderModal(order);
-  }
+  Future<void> _showSearchingRiderModal(Order order) async {
+    final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
+    bool dialogOpen = true;
+    BuildContext? activeDialogCtx;
 
-  void _showSearchingRiderModal(Order order) {
-    Timer? searchTimer;
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
-        // Auto assign rider after 3 seconds simulation
-        searchTimer = Timer(const Duration(seconds: 3), () async {
-          if (Navigator.canPop(dialogContext)) {
-            Navigator.pop(dialogContext);
-          }
-          await RestaurantApiService.markOrderReady(order.id);
-          if (mounted) {
-            setState(() {
-              order.status = 'Ready';
-              order.riderName = 'Ramesh Kumar (Rider)';
-              order.riderPhone = '+91 98765 43210';
-              if (!_otpControllers.containsKey(order.id)) {
-                _otpControllers[order.id] = TextEditingController();
-              }
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Rider Found! Assigned nearby rider Ramesh Kumar'),
-                backgroundColor: AppColors.primaryGreen,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        });
-
+        activeDialogCtx = dialogContext;
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 10,
           backgroundColor: Colors.white,
           child: Container(
-            width: 270,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            width: 280,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Searching Rider...',
+                  'Searching Riders...',
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 28),
-
-                // Animated Circular Progress with Scooter Icon matching Reference Image
+                const SizedBox(height: 24),
                 SizedBox(
-                  width: 124,
-                  height: 124,
+                  width: 120,
+                  height: 120,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Inner circular background tint
                       Container(
-                        width: 100,
-                        height: 100,
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.primaryGreen.withOpacity(0.12),
@@ -1137,16 +1217,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: const Center(
                           child: Icon(
                             Icons.delivery_dining_rounded,
-                            size: 54,
+                            size: 50,
                             color: AppColors.primaryGreen,
                           ),
                         ),
                       ),
-
-                      // Outer circular progress spinner ring
                       const SizedBox(
-                        width: 120,
-                        height: 120,
+                        width: 116,
+                        height: 116,
                         child: CircularProgressIndicator(
                           strokeWidth: 4.5,
                           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
@@ -1156,15 +1234,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-
+                const SizedBox(height: 20),
                 Text(
-                  'Connecting to nearby riders...',
+                  'Broadcasting order #${order.id} to nearby delivery partners...',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: Colors.grey[600],
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    if (dialogOpen && activeDialogCtx != null && Navigator.canPop(activeDialogCtx!)) {
+                      dialogOpen = false;
+                      Navigator.pop(activeDialogCtx!);
+                    }
+                  },
+                  child: Text('Hide', style: GoogleFonts.poppins(color: Colors.grey[700])),
                 ),
               ],
             ),
@@ -1172,68 +1259,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     ).then((_) {
-      searchTimer?.cancel();
+      dialogOpen = false;
     });
-  }
 
-  void _handlePickup(Order order) async {
-    final enteredOtp = _otpControllers[order.id]?.text.trim() ?? '';
-    if (enteredOtp.isEmpty) {
+    final res = await RestaurantApiService.searchRiders(targetId);
+    if (dialogOpen && activeDialogCtx != null && Navigator.canPop(activeDialogCtx!)) {
+      dialogOpen = false;
+      Navigator.pop(activeDialogCtx!);
+    }
+
+    await _fetchLiveOrders(isSilent: true);
+    if (!mounted) return;
+
+    if (res['success'] == true) {
+      final data = res['data'];
+      final riderName = (data is Map ? (data['riderName'] ?? data['rider']?['name']) : null)?.toString();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter 4-digit OTP'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: Text(
+            (riderName != null && riderName.isNotEmpty)
+                ? 'Rider Found: $riderName'
+                : (res['message']?.toString() ?? 'Nearby delivery partners notified!'),
+          ),
+          backgroundColor: AppColors.primaryGreen,
+          duration: const Duration(seconds: 3),
         ),
       );
-      return;
-    }
-    final res = await RestaurantApiService.verifyPickup(order.id, enteredOtp);
-    if (res['success'] == true) {
-      setState(() {
-        order.status = 'Picked Up';
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order picked up by rider!'),
-            backgroundColor: AppColors.primaryGreen,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Invalid Pickup OTP'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _markDelivered(Order order) async {
-    setState(() {
-      order.status = 'Delivered';
-    });
-    try {
-      final token = ApiConstants.authToken;
-      await http.put(
-        Uri.parse('${ApiConstants.baseUrl}/orders/${order.id}/status'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'status': 'delivered'}),
-      );
-    } catch (_) {}
-    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order marked as Delivered successfully!'),
-          backgroundColor: AppColors.primaryGreen,
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(res['message']?.toString() ?? 'Unable to search riders right now.'),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -1253,26 +1310,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).length;
   }
 
+  List<Map<String, dynamic>> _getVisibleTabs() {
+    final isGrocery = _isGroceryMode;
+    final tabs = <Map<String, dynamic>>[];
+    if (RestaurantAuthService.hasPermission('orders')) {
+      tabs.add({
+        'key': 'home',
+        'icon': Icons.home_rounded,
+        'label': 'Home',
+        'builder': () => _buildHomeScreenContent(),
+      });
+    }
+    if (RestaurantAuthService.hasPermission('products')) {
+      tabs.add({
+        'key': 'catalog',
+        'icon': isGrocery ? Icons.inventory_2_outlined : Icons.assignment_outlined,
+        'label': isGrocery ? 'Catalog' : 'Menu',
+        'builder': () => const MenuManagementScreen(),
+      });
+    }
+    if (RestaurantAuthService.hasPermission('analytics')) {
+      tabs.add({
+        'key': 'analytics',
+        'icon': Icons.space_dashboard_outlined,
+        'label': isGrocery ? 'Analytics' : 'Dashboard',
+        'builder': () => const RestaurantDashboardScreen(),
+      });
+    }
+    tabs.add({
+      'key': 'profile',
+      'icon': Icons.person_outline_rounded,
+      'label': 'Profile',
+      'builder': () => const ProfileScreen(),
+    });
+    return tabs;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: IndexedStack(
-          index: _currentBottomNavIndex,
-          children: [
-            _buildHomeScreenContent(),
-            const MenuManagementScreen(),
-            const RestaurantDashboardScreen(),
-            const ProfileScreen(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildReferenceBottomNavBar(),
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, __) {
+        final tabs = _getVisibleTabs();
+        final int safeIndex = _currentBottomNavIndex.clamp(0, tabs.length - 1);
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: IndexedStack(
+              index: safeIndex,
+              children: tabs
+                  .map<Widget>((t) => (t['builder'] as Widget Function())())
+                  .toList(),
+            ),
+          ),
+          bottomNavigationBar: _buildReferenceBottomNavBar(tabs, safeIndex),
+        );
+      },
     );
   }
 
   Widget _buildHomeScreenContent() {
+    final bool isGrocery = _isGroceryMode;
+    final tabs = _getVisibleTabs();
+    final int catalogTabIndex = tabs.indexWhere((t) => t['key'] == 'catalog');
+
     // Filter orders based on status filter & order type
     final filteredOrders = _orders.where((o) {
       final bool matchesType = _selectedOrderType == 'pickup' ? _isOrderPickupType(o) : !_isOrderPickupType(o);
@@ -1380,7 +1481,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: AppColors.primaryGreen.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.restaurant_menu_rounded, size: 40, color: AppColors.primaryGreen),
+                          child: Icon(
+                            isGrocery ? Icons.inventory_2_rounded : Icons.restaurant_menu_rounded,
+                            size: 40,
+                            color: AppColors.primaryGreen,
+                          ),
                         ),
                         const SizedBox(height: 14),
                         Text(
@@ -1393,16 +1498,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12),
                         ),
-                        const SizedBox(height: 16),
-                        OutlinedButton.icon(
-                          onPressed: () => setState(() => _currentBottomNavIndex = 1),
-                          icon: const Icon(Icons.menu_book_rounded, size: 18, color: AppColors.primaryGreen),
-                          label: Text('Manage / Add Menu Items', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryGreen)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.primaryGreen),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        if (catalogTabIndex >= 0) ...[
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () => setState(() => _currentBottomNavIndex = catalogTabIndex),
+                            icon: Icon(
+                              isGrocery ? Icons.add_business_rounded : Icons.menu_book_rounded,
+                              size: 18,
+                              color: AppColors.primaryGreen,
+                            ),
+                            label: Text(
+                              isGrocery ? 'Manage / Add Catalog Items' : 'Manage / Add Menu Items',
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.primaryGreen),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   )
@@ -1425,21 +1539,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Header Section matching Reference Image 1 with generated gourmet background image & safe error handling
-  
   Widget _buildPartnerTypeBadge() {
     Color bg;
     Color text;
     IconData icon;
     String label;
 
-    switch (_businessType.toLowerCase()) {
+    final String effectiveType = PlatformConfigService.isGroceryPlatform
+        ? 'grocery_store'
+        : _businessType.toLowerCase();
+
+    switch (effectiveType) {
       case 'grocery_store':
       case 'grocery':
         bg = const Color(0xFFE8F5E9);
         text = const Color(0xFF2E7D32);
         icon = Icons.shopping_basket_rounded;
-        label = 'Grocery Partner';
+        label = 'Grocery & Mart Partner';
         break;
       case 'pharmacy':
         bg = const Color(0xFFFCE7F3);
@@ -1499,10 +1615,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  
+  Widget _buildAssignedRoleBadge() {
+    final roleLabel = RestaurantAuthService.assignedRole;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF2FF),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFC7D2FE)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_user_rounded, size: 10, color: Color(0xFF4338CA)),
+          const SizedBox(width: 3),
+          Text(
+            roleLabel,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF4338CA),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _openPartnerOperationalSheet(String label, Color accentColor) {
     if (label.contains('Stock') || label.contains('Price') || label.contains('Inventory')) {
-      _showStockToggleSheet(accentColor);
+      _showStockToggleSheet(accentColor, onlyOutOfStock: label.contains('Out of Stock'));
     } else if (label.contains('Prescription') || label.contains('Rx') || label.contains('Medicine')) {
       _showRxReviewSheet(accentColor);
     } else if (label.contains('Booking') || label.contains('Quotation') || label.contains('OTP')) {
@@ -1512,80 +1654,241 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _showStockToggleSheet(Color accentColor) {
-    List<Map<String, dynamic>> items = [
-      {'name': 'Fresh Toned Milk 500ml', 'inStock': true, 'price': '₹27'},
-      {'name': 'Shudh Chakki Atta 5kg', 'inStock': true, 'price': '₹245'},
-      {'name': 'Farm Fresh Potatoes 1kg', 'inStock': false, 'price': '₹28'},
-      {'name': 'Red Onions (Pyaaz) 1kg', 'inStock': true, 'price': '₹38'},
-      {'name': 'English Oven Bread 400g', 'inStock': true, 'price': '₹50'},
-    ];
+  void _showStockToggleSheet(Color accentColor, {bool onlyOutOfStock = false}) {
+    bool isLoading = true;
+    String? errorMsg;
+    List<Map<String, dynamic>> items = [];
+    bool initiatedLoad = false;
+
+    Future<void> loadInventory(void Function(void Function()) setSheetState) async {
+      setSheetState(() {
+        isLoading = true;
+        errorMsg = null;
+      });
+      final invRes = await MenuApiService.fetchGroceryInventory(_restaurantId);
+      List<Map<String, dynamic>> rawItems = [];
+      if (invRes['success'] == true && invRes['items'] is List && (invRes['items'] as List).isNotEmpty) {
+        rawItems = List<Map<String, dynamic>>.from(invRes['items'] as List);
+      } else {
+        rawItems = await MenuApiService.fetchRestaurantMenu(_restaurantId);
+        if (rawItems.isEmpty && invRes['success'] != true) {
+          errorMsg = invRes['message']?.toString();
+        }
+      }
+
+      final normalized = rawItems.map<Map<String, dynamic>>((raw) {
+        final nameVal = raw['name'];
+        final name = nameVal is Map
+            ? (nameVal['en'] ?? (nameVal.values.isNotEmpty ? nameVal.values.first : 'Product')).toString()
+            : (nameVal ?? 'Product').toString();
+        final id = (raw['_id'] ?? raw['id'] ?? '').toString();
+        final price = double.tryParse(
+              (raw['sellingPrice'] ??
+                      raw['b2cSellingPrice'] ??
+                      raw['pricing']?['b2c']?['sellingPrice'] ??
+                      raw['price'] ??
+                      raw['basePrice'] ??
+                      0)
+                  .toString(),
+            ) ??
+            0.0;
+        final stockQty = int.tryParse((raw['stockQuantity'] ?? 0).toString()) ?? 0;
+        final inStock = raw['outOfStock'] == true
+            ? false
+            : (raw['inStock'] ?? raw['isAvailable'] ?? raw['available'] ?? true) == true;
+        final weight = (raw['weight'] ?? '').toString().trim();
+        final unit = (raw['unit'] ?? '').toString().trim();
+        final weightText = weight.isNotEmpty ? '$weight ${unit.isNotEmpty ? unit : ''}'.trim() : '';
+        return {
+          '_id': id,
+          'name': name,
+          'price': price,
+          'stockQuantity': stockQty,
+          'inStock': inStock,
+          'weightText': weightText,
+          'sku': (raw['sku'] ?? '').toString().trim(),
+        };
+      }).where((item) {
+        if (onlyOutOfStock) {
+          return item['inStock'] != true || ((item['stockQuantity'] as int) <= 0 && item['inStock'] != true);
+        }
+        return true;
+      }).toList();
+
+      setSheetState(() {
+        items = normalized;
+        isLoading = false;
+      });
+    }
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        builder: (sheetCtx, setSheetState) {
+          if (!initiatedLoad) {
+            initiatedLoad = true;
+            Future.microtask(() => loadInventory(setSheetState));
+          }
+          final maxHeight = MediaQuery.of(context).size.height * 0.72;
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.inventory_2_rounded, color: accentColor),
-                      const SizedBox(width: 8),
-                      Text('Quick Stock Switcher', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          Icon(Icons.inventory_2_rounded, color: accentColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            onlyOutOfStock ? 'Out-of-Stock Products' : 'Quick Stock Switcher',
+                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.refresh_rounded, color: accentColor),
+                            onPressed: () => loadInventory(setSheetState),
+                          ),
+                          IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                        ],
+                      ),
                     ],
                   ),
-                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  Text(
+                    'Toggle live product availability synced with ${PlatformConfigService.appName} customer apps:',
+                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 12),
+                  if (isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (errorMsg != null && items.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          errorMsg!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.redAccent),
+                        ),
+                      ),
+                    )
+                  else if (items.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          onlyOutOfStock
+                              ? 'All products in your store catalog are currently in stock.'
+                              : 'No catalog products found for this store yet. Add SKUs in the Catalog tab.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (itemCtx, idx) {
+                          final item = items[idx];
+                          final id = item['_id'].toString();
+                          final bool inStock = item['inStock'] == true;
+                          final int stockQty = item['stockQuantity'] as int;
+                          final String weightText = item['weightText'].toString();
+                          final double price = (item['price'] as num).toDouble();
+                          final String subtitleText = [
+                            '₹${price.toStringAsFixed(0)}',
+                            if (weightText.isNotEmpty) weightText,
+                            'Stock: $stockQty',
+                          ].join(' • ');
+
+                          return SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              item['name'].toString(),
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              subtitleText,
+                              style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600]),
+                            ),
+                            value: inStock,
+                            activeThumbColor: accentColor,
+                            onChanged: id.isEmpty
+                                ? null
+                                : (val) async {
+                                    setSheetState(() => item['inStock'] = val);
+                                    final int targetQty = val ? (stockQty > 0 ? stockQty : 10) : stockQty;
+                                    final res = await MenuApiService.updateGroceryInventory(id, {
+                                      'inStock': val,
+                                      'outOfStock': !val,
+                                      'isAvailable': val,
+                                      'stockQuantity': targetQty,
+                                    });
+                                    bool succeeded = res['success'] == true;
+                                    if (!succeeded && _restaurantId.isNotEmpty) {
+                                      succeeded = await MenuApiService.toggleAvailability(_restaurantId, id);
+                                    }
+                                    if (!succeeded) {
+                                      setSheetState(() => item['inStock'] = !val);
+                                    } else {
+                                      setSheetState(() => item['stockQuantity'] = targetQty);
+                                    }
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          succeeded
+                                              ? '${item['name']} is now ${val ? "IN STOCK" : "OUT OF STOCK"}'
+                                              : (res['message']?.toString() ?? 'Failed to update stock'),
+                                        ),
+                                        backgroundColor: succeeded
+                                            ? (val ? Colors.green[700] : Colors.redAccent)
+                                            : Colors.redAccent,
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
-              Text('Toggle out-of-stock items so Indore customers do not order unavailable products:',
-                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
-              const SizedBox(height: 12),
-              ...items.map((item) {
-                return SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(item['name'], style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: Text(item['price'], style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)),
-                  value: item['inStock'] as bool,
-                  activeColor: accentColor,
-                  onChanged: (val) {
-                    setSheetState(() => item['inStock'] = val);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${item['name']} is now ${val ? "IN STOCK" : "OUT OF STOCK"} on Indore App'),
-                        backgroundColor: val ? Colors.green[700] : Colors.redAccent,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                );
-              }),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
   void _showRxReviewSheet(Color accentColor) {
-    final billCtrl = TextEditingController(text: '340');
+    final pendingOrders = _orders.where((o) {
+      final s = o.status.toLowerCase();
+      return s == 'placed' || s == 'pending' || s == 'preparing';
+    }).toList();
+
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1598,74 +1901,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  const Icon(Icons.person_pin, color: Colors.redAccent),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Patient: Ramesh Sharma (Vijay Nagar)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                        Text('Doctor: Dr. K.K. Verma • 3 medicines detected', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: billCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Total Calculated Bill Amount (₹)',
-                prefixText: '₹ ',
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Reject Slip'),
-                  ),
+            if (pendingOrders.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
+                child: Text(
+                  'No pending prescription or pharmacy verification orders right now.',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
+              )
+            else
+              ...pendingOrders.take(4).map((o) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: accentColor.withOpacity(0.12),
+                      child: Icon(Icons.medical_services_outlined, color: accentColor, size: 18),
+                    ),
+                    title: Text('${o.customerName} (#${o.id})', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text('₹${o.totalAmount.toStringAsFixed(0)} • ${o.status}', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Prescription approved! Bill sent to customer for one-tap checkout.'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsScreen(order: o)))
+                          .then((_) => _fetchLiveOrders(isSilent: true));
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Approve & Bill'),
-                  ),
-                ),
-              ],
+                  )),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.white),
+                child: const Text('Close'),
+              ),
             ),
           ],
         ),
@@ -1674,18 +1943,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showTechnicianJobSheet(Color accentColor) {
-    final otpCtrl = TextEditingController();
+    final activeJobs = _orders.where((o) {
+      final s = o.status.toLowerCase();
+      return s == 'placed' || s == 'pending' || s == 'preparing' || s == 'ready';
+    }).toList();
+
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1694,56 +1961,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Icon(Icons.handyman_rounded, color: accentColor),
                 const SizedBox(width: 8),
-                Text('Scheduled Appointments', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Scheduled Service Bookings', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('AC Deep Cleaning & Gas Check', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text('Customer: Sunita Joshi • Scheme No 54, Vijay Nagar', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
-                  const SizedBox(height: 4),
-                  Text('Time: Today, 02:00 PM - 04:00 PM • Inspection Fee: ₹99', style: GoogleFonts.poppins(fontSize: 11, color: Colors.blue[800], fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: otpCtrl,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: InputDecoration(
-                labelText: 'Enter Customer 4-Digit Completion OTP',
-                counterText: '',
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 14),
+            if (activeJobs.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(12)),
+                child: Text(
+                  'No active service bookings right now. Incoming bookings appear here in real time.',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+                ),
+              )
+            else
+              ...activeJobs.take(4).map((o) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: accentColor.withOpacity(0.12),
+                      child: Icon(Icons.calendar_today_rounded, color: accentColor, size: 18),
+                    ),
+                    title: Text('${o.customerName} (#${o.id})', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text('${o.address} • ${o.status}', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsScreen(order: o)))
+                          .then((_) => _fetchLiveOrders(isSilent: true));
+                    },
+                  )),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 46,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Job closed successfully! Customer OTP verified.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text('Verify OTP & Mark Job Completed'),
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.white),
+                child: const Text('Close'),
               ),
             ),
           ],
@@ -1764,8 +2018,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Text(label, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Operational orders and queue items are in sync with ECDKART central backend.',
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
+            Text(
+              'Operational orders and queue items are in sync with ${PlatformConfigService.appName} Partner backend.',
+              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -1787,9 +2043,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     List<Map<String, dynamic>> actions;
     Color accentColor;
 
-    switch (_businessType.toLowerCase()) {
+    final String effectiveType = PlatformConfigService.isGroceryPlatform
+        ? 'grocery_store'
+        : _businessType.toLowerCase();
+
+    switch (effectiveType) {
       case 'grocery_store':
       case 'grocery':
+      case 'essentials':
+      case 'dairy_milk':
         title = 'Grocery & Mart Operations';
         subtitle = 'Manage live stock, weights & rapid fulfilment';
         accentColor = const Color(0xFF10B981);
@@ -1932,6 +2194,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHeaderSection() {
+    final bool isGrocery = _isGroceryMode;
+    final tabs = _getVisibleTabs();
+    final int profileTabIndex = tabs.indexWhere((t) => t['key'] == 'profile');
+
+    Widget buildDefaultAvatar() {
+      return Container(
+        color: AppColors.primaryGreen.withOpacity(0.1),
+        child: Icon(
+          isGrocery ? Icons.storefront_rounded : Icons.restaurant,
+          color: AppColors.primaryGreen,
+          size: 24,
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1943,90 +2220,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Background Header Image with safe errorBuilder fallback
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/restaurant_top_header_bg.jpg',
-              fit: BoxFit.cover,
-              color: Colors.white.withOpacity(0.92),
-              colorBlendMode: BlendMode.srcOver,
-              errorBuilder: (context, error, stackTrace) => Container(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Row(
+          children: [
+            // Partner Store Avatar with live backend photo or storefront icon fallback
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primaryGreen, width: 2),
                 color: Colors.white,
               ),
+              child: ClipOval(
+                child: (_restaurantImage.startsWith('http://') || _restaurantImage.startsWith('https://'))
+                    ? Image.network(
+                        _restaurantImage,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => buildDefaultAvatar(),
+                      )
+                    : buildDefaultAvatar(),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
 
-          // Header Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            child: Row(
-              children: [
-                // Restaurant Profile Avatar with safe fallback
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primaryGreen, width: 2),
-                    color: Colors.white,
+            // Store Name, Partner Badge, Role Pill & Edit Profile Link
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _restaurantName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/restaurant_login_header.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppColors.primaryGreen.withOpacity(0.1),
-                        child: const Icon(Icons.restaurant, color: AppColors.primaryGreen, size: 24),
+                  const SizedBox(height: 3),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _buildPartnerTypeBadge(),
+                      _buildAssignedRoleBadge(),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () {
+                      if (profileTabIndex >= 0) {
+                        setState(() => _currentBottomNavIndex = profileTabIndex);
+                      }
+                    },
+                    child: Text(
+                      isGrocery ? 'Edit Store Profile' : 'Edit Restaurant Profile',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppColors.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                ],
+              ),
+            ),
 
-                // Restaurant Name & Edit Profile Link
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _restaurantName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      _buildPartnerTypeBadge(),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() => _currentBottomNavIndex = 3); // Switch to Profile
-                        },
-                        child: Text(
-                          'Edit Restaurant Profile',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: AppColors.primaryGreen,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Online / Offline Switch
-                Switch(
-                  value: _isOnline,
-                  onChanged: (val) => _toggleOnlineStatus(val),
-                  activeThumbColor: AppColors.primaryGreen,
-                ),
-                const SizedBox(width: 4),
+            // Online / Offline Switch
+            Switch(
+              value: _isOnline,
+              onChanged: (val) => _toggleOnlineStatus(val),
+              activeThumbColor: AppColors.primaryGreen,
+            ),
+            const SizedBox(width: 4),
 
                 // Notification Bell Button
                 GestureDetector(
@@ -2075,10 +2345,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2377,7 +2645,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         borderRadius: BorderRadius.circular(8),
                         child: _buildOrderItemImage(
                           (order.items.isNotEmpty && order.items[0] is Map)
-                              ? (order.items[0]['image'] ?? (order.items[0]['product'] is Map ? order.items[0]['product']['image'] : null))
+                              ? _resolveImageUrl((order.items[0]['image'] ?? (order.items[0]['product'] is Map ? order.items[0]['product']['image'] : null))?.toString())
                               : null,
                         ),
                       ),
@@ -2399,9 +2667,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             Text(
-                              (order.items.isNotEmpty && order.items[0] is Map)
-                                  ? (order.items[0]['variant']?.toString() ?? (order.items[0]['isVeg'] == false ? 'Non-Veg' : 'Veg'))
-                                  : 'Standard',
+                              _formatOrderItemSubtitle(order.items.isNotEmpty ? order.items[0] : null),
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
                                 color: Colors.grey[500],
@@ -2424,7 +2690,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           borderRadius: BorderRadius.circular(8),
                           child: _buildOrderItemImage(
                             (order.items[1] is Map)
-                                ? (order.items[1]['image'] ?? (order.items[1]['product'] is Map ? order.items[1]['product']['image'] : null))
+                                ? _resolveImageUrl((order.items[1]['image'] ?? (order.items[1]['product'] is Map ? order.items[1]['product']['image'] : null))?.toString())
                                 : null,
                           ),
                         ),
@@ -2435,8 +2701,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Text(
                                 (order.items[1] is Map)
-                                    ? (order.items[1]['name']?.toString() ?? (order.items[1]['product'] is Map ? order.items[1]['product']['name']?.toString() : 'Dish') ?? 'Dish')
-                                    : 'Dish',
+                                    ? (order.items[1]['name']?.toString() ?? (order.items[1]['product'] is Map ? order.items[1]['product']['name']?.toString() : (_isGroceryMode ? 'Product' : 'Dish')) ?? (_isGroceryMode ? 'Product' : 'Dish'))
+                                    : (_isGroceryMode ? 'Product' : 'Dish'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.poppins(
@@ -2446,9 +2712,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               Text(
-                                (order.items[1] is Map)
-                                    ? (order.items[1]['variant']?.toString() ?? 'Regular')
-                                    : 'Regular',
+                                _formatOrderItemSubtitle(order.items[1]),
                                 style: GoogleFonts.poppins(
                                   fontSize: 10,
                                   color: Colors.grey[500],
@@ -2518,10 +2782,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  String _formatOrderItemSubtitle(dynamic rawItem) {
+    if (rawItem is! Map) return _isGroceryMode ? 'Qty: 1' : 'Standard';
+    final qty = rawItem['quantity'] ?? rawItem['qty'] ?? 1;
+    final weight = (rawItem['weight'] ?? (rawItem['product'] is Map ? rawItem['product']['weight'] : null) ?? '').toString().trim();
+    final unit = (rawItem['unit'] ?? (rawItem['product'] is Map ? rawItem['product']['unit'] : null) ?? '').toString().trim();
+    if (weight.isNotEmpty) {
+      return '$weight ${unit.isNotEmpty ? unit : ''} • Qty: $qty'.trim();
+    }
+    final variant = (rawItem['variant'] ?? '').toString().trim();
+    if (_isGroceryMode) {
+      if (variant.isNotEmpty && variant.toLowerCase() != 'standard' && variant.toLowerCase() != 'regular' && variant.toLowerCase() != 'veg' && variant.toLowerCase() != 'non-veg') {
+        return '$variant • Qty: $qty';
+      }
+      return 'Qty: $qty';
+    }
+    if (variant.isNotEmpty) return variant;
+    return rawItem['isVeg'] == false ? 'Non-Veg' : 'Veg';
+  }
+
   // State Action Section matching real backend order lifecycle
   Widget _buildCardActionArea(Order order) {
     final s = order.status.toLowerCase().trim();
     final bool isSelfPickup = order.isSelfPickup;
+    final bool isGrocery = _isGroceryMode;
     final isHandedOverOrPickedUp = s == 'picked_up' || s == 'picked up' || s == 'out_for_delivery' || s == 'out for delivery' || s == 'on_the_way' || s == 'on the way' || s == 'handed_over' || s == 'handed over' || s == 'handovered';
 
     // 1. Placed / Pending
@@ -2568,19 +2852,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '🍳 Kitchen Preparing Food',
+            isGrocery ? '📦 Packing Order Items' : '🍳 Kitchen Preparing Food',
             style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           ElevatedButton(
             onPressed: () async {
+              final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
               setState(() => order.status = 'Ready');
-              await RestaurantApiService.markOrderReady(order.id);
+              await RestaurantApiService.markOrderReady(targetId);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(isSelfPickup
-                      ? '✅ Food Marked Ready! Customer notified for self pickup.'
-                      : '✅ Food Marked Ready! Click "Search Rider" to notify nearby riders.'),
+                    content: Text(
+                      isGrocery
+                          ? (isSelfPickup
+                              ? '✅ Order Packed! Customer notified for store pickup.'
+                              : '✅ Order Packed! Click "Search Rider" to notify nearby riders.')
+                          : (isSelfPickup
+                              ? '✅ Food Marked Ready! Customer notified for self pickup.'
+                              : '✅ Food Marked Ready! Click "Search Rider" to notify nearby riders.'),
+                    ),
                     backgroundColor: AppColors.primaryGreen,
                   ),
                 );
@@ -2601,7 +2892,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    // 3. Picked Up / Handed Over to Rider (Delivery Flow - Completed from restaurant side)
+    // 3. Picked Up / Handed Over to Rider (Delivery Flow - Completed from store side)
     if (!isSelfPickup && (isHandedOverOrPickedUp || s == 'delivered' || s == 'completed')) {
       final riderNameStr = (order.riderName != null && order.riderName!.isNotEmpty) ? order.riderName : 'Delivery Partner';
       return Container(
@@ -2687,18 +2978,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '✅ Food Ready! Click Search Rider',
+            isGrocery ? '✅ Order Ready! Click Search Rider' : '✅ Food Ready! Click Search Rider',
             style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           ElevatedButton(
-            onPressed: () async {
-              final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🔍 Searching nearby delivery riders...'), backgroundColor: Colors.orange, duration: Duration(seconds: 2)),
-              );
-              await RestaurantApiService.searchRiders(targetId);
-              _fetchLiveOrders(isSilent: true);
-            },
+            onPressed: () => _showSearchingRiderModal(order),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange[800],
               elevation: 0,
@@ -2810,8 +3094,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Custom Bottom Navigation Bar with active indicator line matching Reference Image 3
-  Widget _buildReferenceBottomNavBar() {
+  // Custom Bottom Navigation Bar filtered by RBAC permissions & active platformMode
+  Widget _buildReferenceBottomNavBar(List<Map<String, dynamic>> tabs, int safeIndex) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -2825,19 +3109,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(0, Icons.home_rounded, 'Home'),
-          _buildNavItem(1, Icons.assignment_outlined, 'Menu'),
-          _buildNavItem(2, Icons.space_dashboard_outlined, 'Dashboard'),
-          _buildNavItem(3, Icons.person_outline_rounded, 'Profile'),
-        ],
+        children: List.generate(tabs.length, (idx) {
+          final t = tabs[idx];
+          return _buildNavItem(
+            idx,
+            t['icon'] as IconData,
+            t['label'] as String,
+            safeIndex == idx,
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentBottomNavIndex == index;
-
+  Widget _buildNavItem(int index, IconData icon, String label, bool isSelected) {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _currentBottomNavIndex = index),
@@ -2874,33 +3159,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildOrderItemImage(String? imagePath) {
+    Widget buildFallbackIcon() {
+      return Container(
+        width: 44,
+        height: 44,
+        color: Colors.grey[100],
+        child: Icon(
+          _isGroceryMode ? Icons.shopping_bag_rounded : Icons.fastfood_rounded,
+          size: 20,
+          color: AppColors.primaryGreen,
+        ),
+      );
+    }
+
     if (imagePath != null && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
       return Image.network(
         imagePath,
         width: 44,
         height: 44,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          width: 44,
-          height: 44,
-          color: Colors.grey[200],
-          child: const Icon(Icons.fastfood_rounded, size: 20, color: Colors.grey),
-        ),
+        errorBuilder: (context, error, stackTrace) => buildFallbackIcon(),
       );
     }
 
-    return Image.asset(
-      (imagePath != null && imagePath.isNotEmpty) ? imagePath : 'assets/images/restaurant_chicken_item.jpg',
-      width: 44,
-      height: 44,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Container(
+    if (imagePath != null && imagePath.startsWith('assets/')) {
+      return Image.asset(
+        imagePath,
         width: 44,
         height: 44,
-        color: Colors.grey[200],
-        child: const Icon(Icons.fastfood_rounded, size: 20, color: Colors.grey),
-      ),
-    );
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => buildFallbackIcon(),
+      );
+    }
+
+    return buildFallbackIcon();
   }
 
   String _formatOrderTime(DateTime? date) {

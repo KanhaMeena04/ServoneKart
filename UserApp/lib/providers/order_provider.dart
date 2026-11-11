@@ -108,6 +108,30 @@ class OrderProvider with ChangeNotifier {
     return {'success': false, 'message': result?['message'] ?? 'Failed to place order'};
   }
 
+  Future<Map<String, dynamic>> placeGroceryOrder(Map<String, dynamic> orderData) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await OrderApiService.placeGroceryOrder(orderData);
+    _isLoading = false;
+    notifyListeners();
+
+    if (result != null && result['success'] == true) {
+      await fetchOrders();
+      final primaryOrder = result['order'] ?? result['data'];
+      return {
+        'success': true,
+        'message': result['message'] ?? 'Grocery order placed successfully',
+        'fulfilmentGroup': result['fulfilmentGroup'],
+        'splitCount': result['splitCount'] ?? 1,
+        'order': primaryOrder,
+        'orders': result['orders'] ?? (primaryOrder != null ? [primaryOrder] : []),
+        'orderId': (primaryOrder is Map ? (primaryOrder['_id'] ?? primaryOrder['id'] ?? primaryOrder['orderNumber']) : null),
+      };
+    }
+    return {'success': false, 'message': result?['message'] ?? 'Failed to place grocery order'};
+  }
+
   Future<bool> verifyPayment(Map<String, dynamic> data) async {
     _isLoading = true;
     notifyListeners();

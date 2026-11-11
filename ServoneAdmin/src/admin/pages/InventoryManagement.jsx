@@ -83,13 +83,8 @@ export default function InventoryManagement() {
           setStores(res.data.data);
         }
       } catch (err) {
-        console.warn('Fallback store list:', err.message);
-        setStores([
-          { _id: 'store_tricelyn_indore_01', name: 'Tricelyn Supermart (Central Warehouse Hub)' },
-          { _id: 'store_tricelyn_indore_02', name: 'Fresh Farm Hub (Palasia Superstore)' },
-          { _id: 'store_tricelyn_indore_03', name: 'Apna Super Kirana (Saket Nagar)' },
-          { _id: 'store_tricelyn_indore_04', name: 'Malwa Daily Mart (Bhawarkua)' }
-        ]);
+        console.error('Failed to load store partners:', err.message);
+        setStores([]);
       }
     };
     fetchStores();

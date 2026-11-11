@@ -127,7 +127,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: const [
                                   Text(
-                                    'Account Frozen! ðŸš«',
+                                    'Account Frozen!',
                                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                                   ),
                                   SizedBox(height: 4),
@@ -453,16 +453,30 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
     String selectedMethod = 'upi'; // 'upi' | 'bank'
     bool isSubmitting = false;
 
-    // Retrieve initial profile details from AuthBloc
-    final defaultName = authState.user.name ?? 'Rider Partner';
-    final defaultUpi = authState.user.upi ?? '';
+    // Retrieve initial profile & bank details from AuthBloc (no fabricated defaults)
+    final savedBank = authState.user.bankDetails ?? const <String, dynamic>{};
+    final defaultName = (savedBank['accountHolderName'] ??
+            savedBank['accountHolder'] ??
+            authState.user.name ??
+            '')
+        .toString();
+    final defaultUpi = (authState.user.upi?.isNotEmpty == true
+            ? authState.user.upi
+            : (savedBank['upiId'] ?? savedBank['upi'] ?? ''))
+        .toString();
     final defaultPhone = authState.user.phone;
 
     final accountHolderController = TextEditingController(text: defaultName);
-    final bankNameController = TextEditingController(text: 'HDFC Bank');
-    final accountNumberController = TextEditingController(text: '50100234567890');
-    final ifscController = TextEditingController(text: 'HDFC0001234');
-    final upiController = TextEditingController(text: defaultUpi.isNotEmpty ? defaultUpi : 'rider@okhdfcbank');
+    final bankNameController = TextEditingController(
+      text: (savedBank['bankName'] ?? '').toString(),
+    );
+    final accountNumberController = TextEditingController(
+      text: (savedBank['accountNumber'] ?? '').toString(),
+    );
+    final ifscController = TextEditingController(
+      text: (savedBank['ifscCode'] ?? savedBank['ifsc'] ?? '').toString(),
+    );
+    final upiController = TextEditingController(text: defaultUpi);
 
     showModalBottomSheet(
       context: context,
@@ -681,11 +695,11 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                           style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey[600]),
                         ),
                         const SizedBox(height: 10),
-                        _buildInputField('UPI ID', upiController, Icons.payments_outlined, 'e.g. rider@okhdfcbank'),
+                        _buildInputField('UPI ID', upiController, Icons.payments_outlined, 'e.g. yourname@upi'),
                         const SizedBox(height: 10),
                         _buildInputField('Account Holder Name', accountHolderController, Icons.person_outline, 'Name as per bank'),
                         const SizedBox(height: 10),
-                        _buildInputField('Bank Name', bankNameController, Icons.account_balance_outlined, 'e.g. HDFC Bank'),
+                        _buildInputField('Bank Name', bankNameController, Icons.account_balance_outlined, 'Enter bank name'),
                         const SizedBox(height: 10),
                         Row(
                           children: [
@@ -734,14 +748,34 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                                 return;
                               }
 
+                              final upiVal = upiController.text.trim();
+                              final holderVal = accountHolderController.text.trim();
+                              final bankVal = bankNameController.text.trim();
+                              final accVal = accountNumberController.text.trim();
+                              final ifscVal = ifscController.text.trim();
+
+                              if (selectedMethod == 'upi' && !upiVal.contains('@')) {
+                                ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                  const SnackBar(content: Text('Please enter a valid UPI ID (e.g. name@bank)')),
+                                );
+                                return;
+                              }
+                              if (selectedMethod == 'bank' &&
+                                  (holderVal.isEmpty || bankVal.isEmpty || accVal.length < 8 || ifscVal.length < 8)) {
+                                ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                  const SnackBar(content: Text('Please fill complete valid bank account & IFSC details')),
+                                );
+                                return;
+                              }
+
                               setModalState(() => isSubmitting = true);
 
                               final bankPayload = {
-                                'accountHolder': accountHolderController.text.trim(),
-                                'bankName': bankNameController.text.trim(),
-                                'accountNumber': accountNumberController.text.trim(),
-                                'ifsc': ifscController.text.trim(),
-                                'upiId': upiController.text.trim(),
+                                'accountHolder': holderVal,
+                                'bankName': bankVal,
+                                'accountNumber': accVal,
+                                'ifsc': ifscVal,
+                                'upiId': upiVal,
                                 'phone': defaultPhone,
                               };
 

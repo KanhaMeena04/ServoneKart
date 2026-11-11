@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
 import '../models/order_model.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_api_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 import 'order_details_screen.dart';
 import 'cancelled_orders_screen.dart';
@@ -24,6 +27,9 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
   bool _isLoading = false;
   Timer? _pollingTimer;
 
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
+
   @override
   void initState() {
     super.initState();
@@ -39,11 +45,23 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
     super.dispose();
   }
 
+  String _resolveImageUrl(String? raw) {
+    final url = (raw ?? '').trim();
+    if (url.isEmpty || url == 'null' || url == 'undefined') return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    final origin = ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+    return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+  }
+
   Future<void> _fetchLivePickupOrders({bool isSilent = false}) async {
     if (!isSilent) setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
-    var restId = ApiConstants.restaurantId.isNotEmpty ? ApiConstants.restaurantId : (prefs.getString('restaurantId') ?? '');
-    final phone = prefs.getString('userPhone') ?? '8305370330';
+    var restId = ApiConstants.restaurantId.isNotEmpty
+        ? ApiConstants.restaurantId
+        : (prefs.getString('restaurantId') ?? '');
+    final phone = prefs.getString('userPhone') ?? '';
     if (restId.isEmpty) restId = phone;
     final token = prefs.getString('token') ?? '';
 
@@ -100,8 +118,14 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
   }
 
   int _getCountForStatus(String status) {
-    if (status == 'Arrived ??') {
-      return _pickupOrders.where((o) => o.customerArrived && o.status != 'Handed Over' && o.status != 'Picked Up').length;
+    if (status == 'Arrived 🔔') {
+      return _pickupOrders
+          .where((o) =>
+              o.customerArrived &&
+              o.status != 'Handed Over' &&
+              o.status != 'Picked Up' &&
+              o.status != 'Delivered')
+          .length;
     }
     if (status == 'Placed') {
       return _pickupOrders.where((o) => o.status == 'Placed' || o.status == 'Pending').length;
@@ -110,10 +134,14 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
       return _pickupOrders.where((o) => o.status == 'Ready' || o.status == 'Ready for Pickup').length;
     }
     if (status == 'Picked Up') {
-      return _pickupOrders.where((o) => o.status == 'Picked Up' || o.status == 'Delivered' || o.status == 'Handed Over').length;
+      return _pickupOrders
+          .where((o) =>
+              o.status == 'Picked Up' || o.status == 'Delivered' || o.status == 'Handed Over')
+          .length;
     }
     return _pickupOrders.where((o) => o.status == status).length;
   }
+
   void _acceptOrder(Order order) {
     int selectedTime = 15;
     int selectedBuffer = 0;
@@ -123,14 +151,14 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (modalContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (modalContext, setModalState) {
             final int totalTime = selectedTime + selectedBuffer;
 
             return Container(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 20,
                 top: 20,
                 left: 20,
                 right: 20,
@@ -153,16 +181,24 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text('Accept Pickup Order #${order.id}', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text('Select Preparation Time, Buffer & Reason', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                    Text(
+                      _isGrocery
+                          ? 'Select Packing Time, Buffer & Reason'
+                          : 'Select Preparation Time, Buffer & Reason',
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                    ),
                     const SizedBox(height: 16),
 
-                    // 1. Prep Time
-                    Text('Estimated Prep Time', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    // 1. Packing / Prep Time
+                    Text(
+                      _isGrocery ? 'Estimated Packing Time' : 'Estimated Prep Time',
+                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: [10, 15, 20, 25, 30, 45].map((mins) {
+                      children: [5, 10, 15, 20, 30, 45].map((mins) {
                         final isSelected = selectedTime == mins;
                         return ChoiceChip(
                           label: Text('$mins Mins', style: GoogleFonts.poppins(color: isSelected ? Colors.white : Colors.black87)),
@@ -174,10 +210,13 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 2. Preparation Buffer Time (Optional)
+                    // 2. Buffer Time (Optional)
                     Row(
                       children: [
-                        Text('Preparation Buffer Time ', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text(
+                          _isGrocery ? 'Packing Buffer Time ' : 'Preparation Buffer Time ',
+                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
                         Text('(Optional)', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
                       ],
                     ),
@@ -207,7 +246,9 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
                         maxLines: 2,
                         style: GoogleFonts.poppins(fontSize: 12),
                         decoration: InputDecoration(
-                          hintText: 'e.g. Peak hour rush in kitchen',
+                          hintText: _isGrocery
+                              ? 'e.g. Bulk grocery bagging or peak store rush'
+                              : 'e.g. Peak hour rush in kitchen',
                           hintStyle: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[400]),
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -227,7 +268,7 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '⏱️ Total Pickup Time: $totalTime Mins ($selectedTime mins prep + $selectedBuffer mins buffer)',
+                              '⏱️ Total Pickup Time: $totalTime Mins ($selectedTime mins ${_isGrocery ? 'pack' : 'prep'} + $selectedBuffer mins buffer)',
                               style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber[900]),
                             ),
                           ),
@@ -239,27 +280,44 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          setState(() {
-                            order.prepTimeMinutes = selectedTime;
-                            order.bufferTimeMinutes = selectedBuffer;
-                            order.bufferReason = bufferReasonCtrl.text.trim();
-                            order.status = 'Preparing';
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Order #${order.id} accepted! Total pickup time: $totalTime mins.'),
-                              backgroundColor: AppColors.primaryGreen,
-                            ),
-                          );
+                        onPressed: () async {
+                          final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
+                          final messenger = ScaffoldMessenger.of(context);
+                          Navigator.pop(modalContext);
+
+                          final res = await RestaurantApiService.prepareOrder(targetId);
+                          if (!mounted) return;
+                          if (res['success'] == true) {
+                            setState(() {
+                              order.prepTimeMinutes = selectedTime;
+                              order.bufferTimeMinutes = selectedBuffer;
+                              order.bufferReason = bufferReasonCtrl.text.trim();
+                              order.status = 'Preparing';
+                            });
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Order #${order.id} accepted! Total pickup time: $totalTime mins.'),
+                                backgroundColor: AppColors.primaryGreen,
+                              ),
+                            );
+                          } else {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(res['message']?.toString() ?? 'Failed to accept order #${order.id}'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryGreen,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text('Confirm & Start Preparing', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                        child: Text(
+                          _isGrocery ? 'Confirm & Start Packing' : 'Confirm & Start Preparing',
+                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
                       ),
                     ),
                   ],
@@ -272,30 +330,54 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
     );
   }
 
-  void _rejectOrder(Order order) {
-    setState(() {
-      _pickupOrders.removeWhere((o) => o.id == order.id);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pick-up Order rejected.'),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
+  Future<void> _rejectOrder(Order order) async {
+    final targetId = order.backendId.isNotEmpty ? order.backendId : order.id;
+    final res = await RestaurantApiService.cancelOrder(targetId, 'Rejected by partner store');
+    if (!mounted) return;
+    if (res['success'] == true) {
+      setState(() {
+        order.status = 'Cancelled';
+        order.cancellationReason = 'Rejected by partner store';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pick-up Order #${order.id} rejected.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message']?.toString() ?? 'Failed to reject order #${order.id}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   void _handlePickup(Order order) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => OrderDetailsScreen(order: order)),
-    ).then((_) => setState(() {}));
+    ).then((_) => _fetchLivePickupOrders(isSilent: true));
   }
 
   @override
   Widget build(BuildContext context) {
     final filteredOrders = _pickupOrders.where((o) {
       if (_selectedStatusFilter == 'All') return true;
-      if (_selectedStatusFilter == 'Arrived 🔔') return o.customerArrived && o.status != 'Handed Over' && o.status != 'Picked Up';
+      if (_selectedStatusFilter == 'Arrived 🔔') {
+        return o.customerArrived && o.status != 'Handed Over' && o.status != 'Picked Up' && o.status != 'Delivered';
+      }
+      if (_selectedStatusFilter == 'Placed') {
+        return o.status == 'Placed' || o.status == 'Pending';
+      }
+      if (_selectedStatusFilter == 'Ready') {
+        return o.status == 'Ready' || o.status == 'Ready for Pickup';
+      }
+      if (_selectedStatusFilter == 'Picked Up') {
+        return o.status == 'Picked Up' || o.status == 'Delivered' || o.status == 'Handed Over';
+      }
       return o.status == _selectedStatusFilter;
     }).toList();
 
@@ -386,28 +468,35 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
 
           // Pick-up Orders List
           Expanded(
-            child: filteredOrders.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 10),
-                        Text(
-                          'No Self Pickup orders found',
-                          style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
+            child: _isLoading && _pickupOrders.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                : filteredOrders.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 10),
+                            Text(
+                              'No Self Pickup orders found',
+                              style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredOrders.length,
-                    itemBuilder: (context, index) {
-                      final order = filteredOrders[index];
-                      return _buildPickupOrderCard(order);
-                    },
-                  ),
+                      )
+                    : RefreshIndicator(
+                        color: AppColors.primaryGreen,
+                        onRefresh: _fetchLivePickupOrders,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredOrders.length,
+                          itemBuilder: (context, index) {
+                            final order = filteredOrders[index];
+                            return _buildPickupOrderCard(order);
+                          },
+                        ),
+                      ),
           ),
         ],
       ),
@@ -517,35 +606,71 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
             const Divider(height: 20, color: Color(0xFFF0F0F0)),
 
             // Items Preview Row
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'assets/images/restaurant_chicken_item.jpg',
-                          width: 44,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(width: 44, height: 44, color: Colors.grey[300], child: const Icon(Icons.fastfood, size: 20, color: Colors.grey)),
-                        ),
+            Builder(
+              builder: (_) {
+                final Map<String, dynamic> firstItem = order.items.isNotEmpty && order.items[0] is Map
+                    ? Map<String, dynamic>.from(order.items[0] as Map)
+                    : <String, dynamic>{};
+                final imgUrl = _resolveImageUrl(firstItem['image']?.toString());
+                final weight = (firstItem['weight'] ?? '').toString().trim();
+                final unit = (firstItem['unit'] ?? '').toString().trim();
+                final variant = (firstItem['variant'] ?? '').toString().trim();
+                final packLabel = [
+                  if (weight.isNotEmpty || unit.isNotEmpty) '$weight$unit'.trim(),
+                  if (variant.isNotEmpty && variant.toLowerCase() != 'standard') variant,
+                  'Qty: ${order.quantity}',
+                ].where((e) => e.isNotEmpty).join(' • ');
+
+                return Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: imgUrl.isNotEmpty
+                          ? Image.network(
+                              imgUrl,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 44,
+                                height: 44,
+                                color: Colors.grey[100],
+                                child: Icon(
+                                  _isGrocery ? Icons.shopping_bag_outlined : Icons.fastfood,
+                                  size: 20,
+                                  color: AppColors.primaryGreen,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: 44,
+                              height: 44,
+                              color: Colors.grey[100],
+                              child: Icon(
+                                _isGrocery ? Icons.shopping_bag_outlined : Icons.fastfood,
+                                size: 20,
+                                color: AppColors.primaryGreen,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            order.orderName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                          ),
+                          Text(packLabel, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600])),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(order.orderName, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            Text('Standard', style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500])),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 14),
 
@@ -663,7 +788,7 @@ class _PickupOrdersScreenState extends State<PickupOrdersScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Food Handed Over & Order Completed', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87)),
+            Text('Order Handed Over & Completed', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87)),
             const Icon(Icons.check_circle, color: AppColors.primaryGreen, size: 20),
           ],
         ),

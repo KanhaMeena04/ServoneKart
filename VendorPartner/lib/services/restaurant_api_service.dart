@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../api_constants.dart';
+import 'platform_config_service.dart';
 import 'restaurant_auth_service.dart';
 
 class RestaurantApiService {
@@ -35,28 +36,28 @@ class RestaurantApiService {
           'phone': cleanPhone,
           'mobile': cleanPhone,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 12));
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300 && decoded is Map) {
         return {
           'success': true,
-          'message': data['message'] ?? 'OTP sent successfully (Code: ${data['testOtp'] ?? '123456'})',
-          'testOtp': data['testOtp'] ?? '123456',
-          'data': data,
+          'message': decoded['message'] ?? 'OTP sent successfully',
+          'testOtp': decoded['testOtp']?.toString(),
+          'data': decoded,
         };
       }
+      return {
+        'success': false,
+        'message': (decoded is Map ? decoded['message']?.toString() : null) ?? 'Failed to send OTP (${response.statusCode})',
+      };
     } catch (e) {
       debugPrint('Error sending OTP: $e');
+      return {
+        'success': false,
+        'message': 'Network error while sending OTP: $e',
+      };
     }
-
-    // Seamless offline/preview fallback so user is never blocked
-    return {
-      'success': true,
-      'message': 'OTP sent successfully! (Code: 123456)',
-      'testOtp': '123456',
-      'isFallback': true,
-    };
   }
 
   static Future<Map<String, dynamic>> verifyOtp(String phone, String otp) async {
@@ -72,19 +73,39 @@ class RestaurantApiService {
           'mobile': cleanPhone,
           'otp': cleanOtp,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 12));
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300 && data is Map) {
         final token = data['token'] ?? data['data']?['token'] ?? data['authToken'];
         final restaurant = data['restaurant'] ?? data['data']?['restaurant'];
         final restaurantId = (restaurant?['_id'] ?? restaurant?['id'] ?? data['restaurantId'] ?? data['data']?['restaurantId'] ?? '').toString();
+        final assignedRole = (data['assignedRole'] ?? data['user']?['assignedRole'] ?? restaurant?['assignedRole'] ?? 'Store Manager').toString();
+        final permissions = data['permissions'] ?? data['user']?['permissions'] ?? restaurant?['permissions'];
+        final businessType = (data['businessType'] ?? data['user']?['businessType'] ?? restaurant?['businessType'] ?? 'grocery_store').toString();
+        final vertical = (data['vertical'] ?? data['user']?['vertical'] ?? restaurant?['vertical'] ?? 'grocery').toString();
+        final platformMode = (data['platformMode'] ?? data['user']?['platformMode'] ?? 'grocery').toString();
 
-        if (token != null && restaurantId.isNotEmpty) {
+        await PlatformConfigService.setMode(platformMode);
+
+        if (token != null && token.toString().isNotEmpty && restaurantId.isNotEmpty) {
           await RestaurantAuthService.saveAuthSession(
             token: token.toString(),
             restaurantId: restaurantId,
-            vendorData: restaurant != null ? Map<String, dynamic>.from(restaurant) : null,
+            vendorData: restaurant is Map ? Map<String, dynamic>.from(restaurant) : null,
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
+          );
+        } else {
+          await RestaurantAuthService.saveRbacContext(
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
           );
         }
 
@@ -93,38 +114,27 @@ class RestaurantApiService {
           'token': token,
           'restaurantId': restaurantId,
           'restaurant': restaurant,
+          'isApproved': data['isApproved'] == true || data['restaurantApproved'] == true || data['approvalStatus'] == 'verified',
+          'name': data['name'],
+          'assignedRole': assignedRole,
+          'permissions': permissions,
+          'businessType': businessType,
+          'vertical': vertical,
+          'platformMode': platformMode,
           'data': data,
         };
       }
+      return {
+        'success': false,
+        'message': (data is Map ? data['message']?.toString() : null) ?? 'OTP verification failed (${response.statusCode})',
+      };
     } catch (e) {
       debugPrint('Error verifying OTP: $e');
+      return {
+        'success': false,
+        'message': 'Network error verifying OTP: $e',
+      };
     }
-
-    // Seamless fallback for testing and offline environments
-    const mockToken = 'mock_jwt_vendor_session_token_2026';
-    const mockRestId = '654321000000000000000001';
-    final mockVendor = {
-      '_id': mockRestId,
-      'name': 'ECDKART Partner Kitchen',
-      'contactNumber': cleanPhone,
-      'email': 'vendor_$cleanPhone@ecdkart.com',
-      'address': '101 Commercial Street',
-      'city': 'Indore',
-    };
-
-    await RestaurantAuthService.saveAuthSession(
-      token: mockToken,
-      restaurantId: mockRestId,
-      vendorData: mockVendor,
-    );
-
-    return {
-      'success': true,
-      'token': mockToken,
-      'restaurantId': mockRestId,
-      'restaurant': mockVendor,
-      'isFallback': true,
-    };
   }
 
   // ==================== ONBOARDING REGISTRATION ====================
@@ -290,7 +300,7 @@ class RestaurantApiService {
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/orders/restaurant/cancel/$orderId'),
         headers: _getHeaders(),
-        body: jsonEncode({'reason': reason ?? 'Cancelled by restaurant'}),
+        body: jsonEncode({'reason': reason ?? 'Cancelled by partner store'}),
       ).timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(response.body);

@@ -173,7 +173,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                             color: Colors.white,
                             letterSpacing: 2.5,
                           ),
-                          child: const Text('ECDKART RIDER'),
+                          child: const Text('TRICELYN RIDER'),
                         ),
                       ],
                     ),

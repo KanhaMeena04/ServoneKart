@@ -36,6 +36,8 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _pinController = TextEditingController();
+  bool _isVerifying = false;
+  bool _isResending = false;
   static const Color primaryGreen = Color(0xFF248C70);
 
   Future<void> _onVerify() async {
@@ -46,27 +48,49 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               VerifyOtpRequested(phone: widget.phone, otp: otp, pin: widget.pin),
             );
       } else {
-        // Authenticate / verify with backend and proceed to vehicle details
+        if (_isVerifying) return;
+        setState(() => _isVerifying = true);
         try {
-          await ApiService.verifyOtp(
+          final res = await ApiService.verifyOtp(
             widget.phone,
             otp,
             pin: widget.pin,
           );
-        } catch (_) {}
-        await AuthService.registerPhone(widget.phone);
-        if (!mounted) return;
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => VehicleDetailsScreen(
-              name: widget.name,
-              email: widget.email,
-              phone: widget.phone,
-              pin: widget.pin,
-              profileImageBase64: widget.profileImageBase64,
+          if (!mounted) return;
+          if (res['success'] != true) {
+            setState(() => _isVerifying = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text((res['message'] ?? 'Invalid OTP code').toString()),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            return;
+          }
+          await AuthService.registerPhone(widget.phone);
+          if (!mounted) return;
+          setState(() => _isVerifying = false);
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => VehicleDetailsScreen(
+                name: widget.name,
+                email: widget.email,
+                phone: widget.phone,
+                pin: widget.pin,
+                profileImageBase64: widget.profileImageBase64,
+              ),
             ),
-          ),
-        );
+          );
+        } catch (e) {
+          if (!mounted) return;
+          setState(() => _isVerifying = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Verification failed: $e'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,6 +99,38 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           backgroundColor: Colors.redAccent,
         ),
       );
+    }
+  }
+
+  Future<void> _onResendOtp() async {
+    if (_isResending) return;
+    setState(() => _isResending = true);
+    try {
+      final res = await ApiService.sendOtp(widget.phone);
+      if (!mounted) return;
+      final ok = res['success'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            (res['message'] ??
+                    (ok
+                        ? 'New OTP sent to +91 ${widget.phone}!'
+                        : 'Failed to resend OTP'))
+                .toString(),
+          ),
+          backgroundColor: ok ? primaryGreen : Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Network error sending OTP: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isResending = false);
     }
   }
 
@@ -263,7 +319,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     // Action Button (Get Started / Verify & Login)
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
-                        final isLoading = state is AuthLoading;
+                        final isLoading = state is AuthLoading || _isVerifying;
                         return SizedBox(
                           width: double.infinity,
                           height: 52,
@@ -313,20 +369,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('New OTP sent to your mobile number!'),
-                                backgroundColor: primaryGreen,
-                              ),
-                            );
-                          },
+                          onTap: _isResending ? null : _onResendOtp,
                           child: Text(
-                            'Resend',
+                            _isResending ? 'Sending...' : 'Resend',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: primaryGreen,
+                              color: _isResending ? Colors.grey : primaryGreen,
                             ),
                           ),
                         ),

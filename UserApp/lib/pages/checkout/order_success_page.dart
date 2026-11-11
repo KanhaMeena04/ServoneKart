@@ -50,7 +50,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with TickerProvider
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage(initialIndex: 1)),
+        MaterialPageRoute(builder: (_) => const HomePage(initialIndex: 2)),
         (route) => false,
       );
     }
@@ -103,7 +103,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with TickerProvider
             ),
             const SizedBox(height: 12),
             Text(
-              'Your delicious food is being prepared.',
+              'Your order is confirmed and being packed.',
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey[600],

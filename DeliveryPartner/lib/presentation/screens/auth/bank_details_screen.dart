@@ -60,6 +60,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
   final _accountNumberController = TextEditingController();
   final _ifscCodeController = TextEditingController();
   final _upiIdController = TextEditingController();
+  bool _isSubmitting = false;
 
   static const Color primaryGreen = Color(0xFF248C70);
 
@@ -70,96 +71,117 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
   }
 
   Future<void> _onSubmit() async {
+    if (_isSubmitting) return;
     if (_formKey.currentState!.validate()) {
-      if (widget.phone != null && widget.phone!.isNotEmpty) {
-        await AuthService.registerPhone(widget.phone!);
-      }
+      setState(() => _isSubmitting = true);
+      try {
+        if (widget.phone != null && widget.phone!.isNotEmpty) {
+          await AuthService.registerPhone(widget.phone!);
+        }
 
-      final payload = {
-        'name': widget.name,
-        'email': widget.email,
-        'phone': widget.phone,
-        'mobile': widget.phone,
-        'pin': widget.pin,
-        'profilePic': widget.profileImageBase64 != null ? 'data:image/jpeg;base64,${widget.profileImageBase64}' : null,
-        'vehicle': {
-          'type': widget.vehicleType ?? 'Scooter / Motorcycle',
-          'brand': widget.vehicleBrand ?? '',
-          'model': widget.vehicleModel ?? '',
-          'year': widget.vehicleYear ?? '',
-          'number': widget.regNumber ?? '',
-          'regNumber': widget.regNumber ?? '',
-        },
-        'documents': {
-          'license': {
-            'number': widget.licenseNumber ?? '',
-            'expiryDate': widget.licenseExpiry ?? '',
-            'image': widget.licenseImageBase64 != null ? 'data:image/jpeg;base64,${widget.licenseImageBase64}' : null,
-            'frontImage': widget.licenseImageBase64 != null ? 'data:image/jpeg;base64,${widget.licenseImageBase64}' : null,
-          },
-          'panCard': {
-            'number': widget.panNumber ?? '',
-            'image': widget.panImageBase64 != null ? 'data:image/jpeg;base64,${widget.panImageBase64}' : null,
-          },
-          'aadharCard': {
-            'number': widget.aadhaarNumber ?? '',
-            'image': widget.aadhaarImageBase64 != null ? 'data:image/jpeg;base64,${widget.aadhaarImageBase64}' : null,
-            'frontImage': widget.aadhaarImageBase64 != null ? 'data:image/jpeg;base64,${widget.aadhaarImageBase64}' : null,
-          },
-          'rc': {
-            'number': widget.regNumber ?? '',
-          }
-        },
-        'bankDetails': {
+        final bankDetailsMap = {
           'accountHolderName': _accountHolderNameController.text.trim(),
           'bankName': _bankNameController.text.trim(),
           'accountNumber': _accountNumberController.text.trim(),
           'ifscCode': _ifscCodeController.text.trim(),
           'upiId': _upiIdController.text.trim(),
-        },
-      };
-      final onboardingRes = await ApiService.completeRiderOnboarding(payload);
-      final responseData = onboardingRes['data'] is Map ? onboardingRes['data'] : onboardingRes;
-      final existingToken = await AuthService.getToken();
-      final freshToken = responseData?['token']?.toString() ??
-          responseData?['authToken']?.toString() ??
-          existingToken ??
-          '';
+        };
 
-      final phone = widget.phone ?? '';
-      final cleanPhone = phone.replaceAll(RegExp(r'\D'), '').trim();
-      final newUser = UserModel(
-        id: responseData?['user']?['_id']?.toString() ??
-            'RIDER_${cleanPhone.isNotEmpty ? cleanPhone : DateTime.now().millisecondsSinceEpoch}',
-        phone: cleanPhone.isNotEmpty ? '+91$cleanPhone' : '+919876543210',
-        name: widget.name ?? 'Rider Partner',
-        email: widget.email,
-        role: 'driver',
-        isVerified: false, // Pending admin verification
-        hasPinSet: widget.pin != null && widget.pin!.isNotEmpty,
-        isOnline: false,
-        isReturning: false,
-        upi: _upiIdController.text.trim(),
-        createdAt: DateTime.now(),
-      );
+        final payload = {
+          'name': widget.name,
+          'email': widget.email,
+          'phone': widget.phone,
+          'mobile': widget.phone,
+          'pin': widget.pin,
+          'profilePic': widget.profileImageBase64 != null ? 'data:image/jpeg;base64,${widget.profileImageBase64}' : null,
+          'vehicle': {
+            'type': widget.vehicleType ?? 'Scooter / Motorcycle',
+            'brand': widget.vehicleBrand ?? '',
+            'model': widget.vehicleModel ?? '',
+            'year': widget.vehicleYear ?? '',
+            'number': widget.regNumber ?? '',
+            'regNumber': widget.regNumber ?? '',
+          },
+          'documents': {
+            'license': {
+              'number': widget.licenseNumber ?? '',
+              'expiryDate': widget.licenseExpiry ?? '',
+              'image': widget.licenseImageBase64 != null ? 'data:image/jpeg;base64,${widget.licenseImageBase64}' : null,
+              'frontImage': widget.licenseImageBase64 != null ? 'data:image/jpeg;base64,${widget.licenseImageBase64}' : null,
+            },
+            'panCard': {
+              'number': widget.panNumber ?? '',
+              'image': widget.panImageBase64 != null ? 'data:image/jpeg;base64,${widget.panImageBase64}' : null,
+            },
+            'aadharCard': {
+              'number': widget.aadhaarNumber ?? '',
+              'image': widget.aadhaarImageBase64 != null ? 'data:image/jpeg;base64,${widget.aadhaarImageBase64}' : null,
+              'frontImage': widget.aadhaarImageBase64 != null ? 'data:image/jpeg;base64,${widget.aadhaarImageBase64}' : null,
+            },
+            'rc': {
+              'number': widget.regNumber ?? '',
+            }
+          },
+          'bankDetails': bankDetailsMap,
+        };
+        final onboardingRes = await ApiService.completeRiderOnboarding(payload);
+        if (!mounted) return;
+        if (onboardingRes['success'] != true) {
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text((onboardingRes['message'] ?? 'Onboarding submission failed').toString()),
+              backgroundColor: Colors.red[700],
+            ),
+          );
+          return;
+        }
 
-      if (freshToken.isNotEmpty) {
-        await AuthService.saveTokens(
-          freshToken,
-          freshToken,
-          cleanPhone.isNotEmpty ? cleanPhone : '9876543210',
-          hasPin: widget.pin != null && widget.pin!.isNotEmpty,
+        final responseData = onboardingRes['data'] is Map ? onboardingRes['data'] : onboardingRes;
+        final existingToken = await AuthService.getToken();
+        final freshToken = responseData?['token']?.toString() ??
+            responseData?['authToken']?.toString() ??
+            existingToken ??
+            '';
+
+        final phone = widget.phone ?? '';
+        final cleanPhone = phone.replaceAll(RegExp(r'\D'), '').trim();
+        final newUser = UserModel(
+          id: responseData?['user']?['_id']?.toString() ??
+              responseData?['user']?['id']?.toString() ??
+              responseData?['rider']?['_id']?.toString() ??
+              '',
+          phone: cleanPhone.isNotEmpty ? '+91$cleanPhone' : phone,
+          name: widget.name ?? 'Rider Partner',
+          email: widget.email,
+          role: 'driver',
+          isVerified: false, // Pending admin verification
+          hasPinSet: widget.pin != null && widget.pin!.isNotEmpty,
+          isOnline: false,
+          isReturning: false,
+          upi: _upiIdController.text.trim(),
+          bankDetails: bankDetailsMap,
+          createdAt: DateTime.now(),
         );
-      }
-      if (cleanPhone.isNotEmpty) {
-        await AuthService.registerPhone(cleanPhone);
-      }
 
-      if (!mounted) return;
+        if (freshToken.isNotEmpty && cleanPhone.isNotEmpty) {
+          await AuthService.saveTokens(
+            freshToken,
+            freshToken,
+            cleanPhone,
+            hasPin: widget.pin != null && widget.pin!.isNotEmpty,
+          );
+        }
+        if (cleanPhone.isNotEmpty) {
+          await AuthService.registerPhone(cleanPhone);
+        }
 
-      context.read<AuthBloc>().add(UpdateUserData(user: newUser));
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
 
-      showDialog(
+        context.read<AuthBloc>().add(UpdateUserData(user: newUser));
+
+        showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
@@ -213,6 +235,17 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           ),
         ),
       );
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to submit onboarding: $e'),
+              backgroundColor: Colors.red[700],
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -445,11 +478,11 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 4. IFSC Code (replaces BIC / Swift Code)
+                      // 4. IFSC Code
                       _buildTextField(
                         label: 'IFSC Code',
                         controller: _ifscCodeController,
-                        hint: 'Enter 11-digit IFSC code (e.g. HDFC0001234)',
+                        hint: 'Enter 11-character IFSC code',
                         icon: Icons.pin_outlined,
                         textCapitalization: TextCapitalization.characters,
                         validator: (value) {
@@ -468,7 +501,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                       _buildTextField(
                         label: 'UPI ID (Optional)',
                         controller: _upiIdController,
-                        hint: 'e.g. name@okhdfcbank or 9876543210@paytm',
+                        hint: 'e.g. yourname@okicici or number@upi',
                         icon: Icons.payments_outlined,
                         isOptional: true,
                         keyboardType: TextInputType.emailAddress,
@@ -491,7 +524,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _onSubmit,
+                  onPressed: _isSubmitting ? null : _onSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryGreen,
                     foregroundColor: Colors.white,
@@ -501,13 +534,19 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Text(
-                    'Next',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : Text(
+                          'Next',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ),

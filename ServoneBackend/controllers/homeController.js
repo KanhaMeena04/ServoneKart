@@ -244,6 +244,29 @@ exports.getHomeData = async (req, res) => {
     let preferredCuisines = new Set();
     let recentRestaurants = [];
     const { isRestaurantOpenNow } = require('../utils/restaurantAvailability');
+    const { ensureSettings, computeVerticalFlags } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings();
+    const modeFlags = computeVerticalFlags(sysSettings?.platformMode);
+    const hideFood = modeFlags.platformMode === 'grocery';
+    // GroceryCategoryHomeFilter: scope home sections strictly by active platformMode
+    if (hideFood) {
+      restaurantQuery.$and = restaurantQuery.$and || [];
+      restaurantQuery.$and.push({
+        $or: [
+          { vertical: { $in: ['grocery', 'essentials', 'gifts_bakery'] } },
+          { businessType: { $in: ['grocery_store', 'water_dairy_supplier', 'bakery_gifts'] } },
+        ]
+      });
+    } else if (modeFlags.platformMode === 'food') {
+      restaurantQuery.$and = restaurantQuery.$and || [];
+      restaurantQuery.$and.push({
+        $or: [
+          { vertical: 'food' },
+          { vertical: { $exists: false } },
+          { businessType: 'restaurant' }
+        ]
+      });
+    }
     if (userId) {
       const lastOrders = await Order.find({ customer: userId })
         .sort({ createdAt: -1 })
@@ -425,10 +448,49 @@ exports.getHomeData = async (req, res) => {
       userLat: lat,
       userLong: lng,
     });
+    const allServices = Object.values(VERTICAL_METADATA);
+    let orderedServices = allServices;
+    if (hideFood) {
+      orderedServices = allServices.filter((s) => s.slug !== 'food');
+    } else if (modeFlags.platformMode === 'food') {
+      orderedServices = allServices.filter((s) => s.slug !== 'grocery' && s.slug !== 'essentials');
+    }
+    orderedServices.sort((a, b) => {
+      if (modeFlags.platformMode === 'food') {
+        if (a.slug === 'food') return -1;
+        if (b.slug === 'food') return 1;
+      } else {
+        if (a.slug === 'grocery') return -1;
+        if (b.slug === 'grocery') return 1;
+      }
+      return 0;
+    });
+
+    let homeCategories = cuisines;
+    if (hideFood) {
+      const CategoryModel = require('../models/Category');
+      const gCats = await CategoryModel.find({
+        vertical: { $in: ['grocery', 'essentials'] },
+        isActive: { $ne: false }
+      }).sort({ position: 1 }).limit(12).lean();
+      homeCategories = gCats.map((c) => ({
+        _id: c._id,
+        id: c._id,
+        name: typeof c.name === 'object' ? (c.name.en || Object.values(c.name)[0] || 'Grocery') : (c.name || 'Grocery'),
+        image: c.image || 'assets/static/c5.png',
+        slug: c.slug,
+        vertical: c.vertical || 'grocery',
+      }));
+    }
+
     res.status(200).json({
-      services: Object.values(VERTICAL_METADATA),
+      platformMode: modeFlags.platformMode,
+      primaryVertical: modeFlags.primaryVertical,
+      enableFoodDelivery: modeFlags.enableFoodDelivery,
+      enableGroceryDelivery: modeFlags.enableGroceryDelivery,
+      services: orderedServices,
       banners,
-      categories: cuisines, // Pizza, Chicken, Burgers, Cakes
+      categories: homeCategories,
       sections: {
         recentRestaurants: formattedRecentRestaurants,
         recommendedForYou: formattedRecommendations,
@@ -438,8 +500,10 @@ exports.getHomeData = async (req, res) => {
         freeDelivery: formattedFreeDelivery,
         newOnPlatform: formattedNewRestaurants,
       },
-      tabs: ["Restaurants", "Offers", "Pick-up"], // Available tabs
+      tabs: hideFood ? ["Grocery", "Dark Stores", "Express"] : ["Restaurants", "Offers", "Pick-up"],
       metadata: {
+        platformMode: modeFlags.platformMode,
+        primaryVertical: modeFlags.primaryVertical,
         locationBased: useLocationFilter,
         radiusKm: useLocationFilter ? radiusKm : null,
         coordinates: useLocationFilter ? { lat, lng } : null,
@@ -456,10 +520,14 @@ exports.getHomeData = async (req, res) => {
   } catch (error) {
     console.error("Get Home Data Error:", error);
     res.status(200).json({
+      platformMode: 'grocery',
+      primaryVertical: 'grocery',
+      enableFoodDelivery: false,
+      enableGroceryDelivery: true,
       banners: [],
       categories: [
-        { _id: 'cat_1', id: 'cat_1', name: 'North Indian', title: 'North Indian', image: 'assets/static/c1.png' },
-        { _id: 'cat_2', id: 'cat_2', name: 'Fast Food', title: 'Fast Food', image: 'assets/static/c2.png' }
+        { _id: 'cat_1', id: 'cat_1', name: 'Fruits & Vegetables', title: 'Fruits & Vegetables', image: 'assets/static/c5.png' },
+        { _id: 'cat_2', id: 'cat_2', name: 'Dairy, Bread & Eggs', title: 'Dairy, Bread & Eggs', image: 'assets/static/c5.png' }
       ],
       sections: {
         recentRestaurants: [],
@@ -470,23 +538,37 @@ exports.getHomeData = async (req, res) => {
         freeDelivery: [],
         newOnPlatform: []
       },
-      tabs: ["Restaurants", "Offers", "Pick-up"],
-      metadata: { locationBased: false }
+      tabs: ["Grocery", "Dark Stores", "Express"],
+      metadata: { platformMode: 'grocery', primaryVertical: 'grocery', locationBased: false }
     });
   }
 };
 exports.getCategories = async (req, res) => {
+  const groceryFallback = [
+    { _id: 'cat_1', id: 'cat_1', name: 'Fruits & Vegetables', title: 'Fruits & Vegetables', image: 'assets/static/c5.png', position: 1, isFeatured: true, vertical: 'grocery' },
+    { _id: 'cat_2', id: 'cat_2', name: 'Dairy, Bread & Eggs', title: 'Dairy, Bread & Eggs', image: 'assets/static/c5.png', position: 2, isFeatured: true, vertical: 'grocery' },
+    { _id: 'cat_3', id: 'cat_3', name: 'Atta, Rice & Dal', title: 'Atta, Rice & Dal', image: 'assets/static/c5.png', position: 3, isFeatured: true, vertical: 'grocery' }
+  ];
   try {
+    const { ensureSettings, computeVerticalFlags } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings().catch(() => null);
+    const modeFlags = computeVerticalFlags(sysSettings?.platformMode);
+    const hideFood = modeFlags.platformMode === 'grocery';
+
     if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json([
-        { _id: 'cat_1', id: 'cat_1', name: 'North Indian', title: 'North Indian', image: 'assets/static/c1.png', position: 1, isFeatured: true },
-        { _id: 'cat_2', id: 'cat_2', name: 'Fast Food', title: 'Fast Food', image: 'assets/static/c2.png', position: 2, isFeatured: true }
-      ]);
+      return res.status(200).json(groceryFallback);
     }
     const Category = require('../models/Category');
     const Cuisine = require('../models/Cuisine');
 
-    const dbCategories = await Category.find({ isActive: true, userAppVisible: { $ne: false } })
+    const catQuery = { isActive: true, userAppVisible: { $ne: false } };
+    if (hideFood) {
+      catQuery.vertical = { $in: ['grocery', 'essentials', 'medicine', 'gifts_bakery'] };
+    } else if (modeFlags.platformMode === 'food') {
+      catQuery.vertical = { $nin: ['grocery'] };
+    }
+
+    const dbCategories = await Category.find(catQuery)
       .sort({ position: 1 })
       .lean();
 
@@ -505,10 +587,12 @@ exports.getCategories = async (req, res) => {
         image: c.image || 'assets/static/c5.png',
         position: c.position || 0,
         isFeatured: c.isFeatured || false,
+        vertical: c.vertical || 'grocery',
+        slug: c.slug,
       };
     });
 
-    if (list.length === 0) {
+    if (list.length === 0 && !hideFood) {
       const dbCuisines = await Cuisine.find({ isActive: true }).lean();
       list = dbCuisines.map(c => ({
         _id: c._id ? c._id.toString() : '',
@@ -522,19 +606,13 @@ exports.getCategories = async (req, res) => {
     }
 
     if (list.length === 0) {
-      list = [
-        { _id: 'cat_1', id: 'cat_1', name: 'North Indian', title: 'North Indian', image: 'assets/static/c1.png', position: 1, isFeatured: true },
-        { _id: 'cat_2', id: 'cat_2', name: 'Fast Food', title: 'Fast Food', image: 'assets/static/c2.png', position: 2, isFeatured: true }
-      ];
+      list = groceryFallback;
     }
 
     res.status(200).json(list);
   } catch (error) {
     console.error("Get Categories Error:", error);
-    res.status(200).json([
-      { _id: 'cat_1', id: 'cat_1', name: 'North Indian', title: 'North Indian', image: 'assets/static/c1.png', position: 1, isFeatured: true },
-      { _id: 'cat_2', id: 'cat_2', name: 'Fast Food', title: 'Fast Food', image: 'assets/static/c2.png', position: 2, isFeatured: true }
-    ]);
+    res.status(200).json(groceryFallback);
   }
 };
 
@@ -748,11 +826,19 @@ exports.getPopularDishes = async (req, res) => {
     }
 
     let products = [];
+    const { ensureSettings, computeVerticalFlags } = require('./adminSettingsController');
+    const popSettings = await ensureSettings().catch(() => null);
+    const popModeFlags = computeVerticalFlags(popSettings?.platformMode);
     const baseProductFilter = {
       available: { $ne: false },
       outOfStock: { $ne: true },
       isApproved: { $ne: false }
     };
+    if (popModeFlags.platformMode === 'grocery') {
+      baseProductFilter.vertical = { $in: ['grocery', 'essentials', 'gifts_bakery'] };
+    } else if (popModeFlags.platformMode === 'food') {
+      baseProductFilter.vertical = { $nin: ['grocery'] };
+    }
     if (nearbyRestIds) {
       baseProductFilter.restaurant = { $in: nearbyRestIds };
     }
@@ -849,6 +935,10 @@ exports.getRecommendedRestaurants = async (req, res) => {
         .lean();
     }
     const { isRestaurantOpenNow } = require('../utils/restaurantAvailability');
+    const { ensureSettings, computeVerticalFlags } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings();
+    const modeFlags = computeVerticalFlags(sysSettings?.platformMode);
+    const hideFood = modeFlags.platformMode === 'grocery';
     const openRestaurants = restaurants.filter(r => isRestaurantOpenNow(r));
     const restaurantIds = collectRestaurantIds([openRestaurants]).map((id) =>
       new mongoose.Types.ObjectId(id)
@@ -947,6 +1037,10 @@ exports.getExploreRestaurants = async (req, res) => {
       .select("name image bannerImage rating deliveryTime address city area cuisine isFreeDelivery minOrderValue location isActive isTemporarilyClosed menuApproved verificationStatus timing priceRange")
       .lean();
     const { isRestaurantOpenNow } = require('../utils/restaurantAvailability');
+    const { ensureSettings, computeVerticalFlags } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings();
+    const modeFlags = computeVerticalFlags(sysSettings?.platformMode);
+    const hideFood = modeFlags.platformMode === 'grocery';
     const openRestaurants = restaurants.filter(r => isRestaurantOpenNow(r));
     const restaurantIds = collectRestaurantIds([openRestaurants]).map((id) =>
       new mongoose.Types.ObjectId(id)

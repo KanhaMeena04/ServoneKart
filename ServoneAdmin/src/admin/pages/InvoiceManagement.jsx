@@ -25,6 +25,7 @@ import {
   Store
 } from '@mui/icons-material';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../../utils/utils';
 
 export default function InvoiceManagement() {
@@ -47,82 +48,12 @@ export default function InvoiceManagement() {
         } catch (_) {
           res = await axios.get(`${API_BASE_URL}/api/admin/orders?limit=50`, { headers, withCredentials: true });
         }
-        if (res.data?.orders || Array.isArray(res.data)) {
-          setOrders(res.data?.orders || res.data);
-        } else {
-          // Default mock orders for Indore dark stores
-          setOrders([
-            {
-              _id: 'ord_indore_9021',
-              createdAt: new Date().toISOString(),
-              customerName: 'Rahul Sharma',
-              customerPhone: '+91 98260 45123',
-              address: 'Flat 402, Shalimar Palms, Pipliyahana, Indore',
-              itemsCount: 4,
-              totalAmount: 284,
-              paymentMethod: 'UPI (PhonePe)',
-              paymentStatus: 'PAID',
-              orderStatus: 'Delivered',
-              storeName: 'Tricelyn Express Mart (Vijay Nagar Hub)'
-            },
-            {
-              _id: 'ord_indore_9022',
-              createdAt: new Date(Date.now() - 3600000).toISOString(),
-              customerName: 'Priya Verma',
-              customerPhone: '+91 94250 89110',
-              address: '12-B, Old Palasia Main Road, Indore',
-              itemsCount: 2,
-              totalAmount: 145,
-              paymentMethod: 'UPI (Google Pay)',
-              paymentStatus: 'PAID',
-              orderStatus: 'Delivered',
-              storeName: 'Fresh Farm Hub (Palasia Superstore)'
-            },
-            {
-              _id: 'ord_indore_9023',
-              createdAt: new Date(Date.now() - 7200000).toISOString(),
-              customerName: 'Amit Patel',
-              customerPhone: '+91 98930 77123',
-              address: 'Row House 45, Treasure Fantasy, CAT Road, Indore',
-              itemsCount: 6,
-              totalAmount: 512,
-              paymentMethod: 'Cash on Delivery',
-              paymentStatus: 'PAID',
-              orderStatus: 'Delivered',
-              storeName: 'Apna Super Kirana (Saket Nagar)'
-            }
-          ]);
-        }
+        const rawList = res.data?.orders || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        setOrders(Array.isArray(rawList) ? rawList : []);
       } catch (err) {
-        console.warn('Orders fallback:', err.message);
-        setOrders([
-          {
-            _id: 'ord_indore_9021',
-            createdAt: new Date().toISOString(),
-            customerName: 'Rahul Sharma',
-            customerPhone: '+91 98260 45123',
-            address: 'Flat 402, Shalimar Palms, Pipliyahana, Indore',
-            itemsCount: 4,
-            totalAmount: 284,
-            paymentMethod: 'UPI (PhonePe)',
-            paymentStatus: 'PAID',
-            orderStatus: 'Delivered',
-            storeName: 'Tricelyn Express Mart (Vijay Nagar Hub)'
-          },
-          {
-            _id: 'ord_indore_9022',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            customerName: 'Priya Verma',
-            customerPhone: '+91 94250 89110',
-            address: '12-B, Old Palasia Main Road, Indore',
-            itemsCount: 2,
-            totalAmount: 145,
-            paymentMethod: 'UPI (Google Pay)',
-            paymentStatus: 'PAID',
-            orderStatus: 'Delivered',
-            storeName: 'Fresh Farm Hub (Palasia Superstore)'
-          }
-        ]);
+        console.error('Failed to load invoice orders:', err.message);
+        toast.error('Failed to load orders for billing & GST invoicing');
+        setOrders([]);
       } finally {
         setLoading(false);
       }
@@ -131,6 +62,7 @@ export default function InvoiceManagement() {
   }, []);
 
   const openInvoice = async (orderId) => {
+    setSelectedInvoice(null);
     setInvoiceLoading(true);
     setModalOpen(true);
     try {
@@ -139,9 +71,14 @@ export default function InvoiceManagement() {
       const res = await axios.get(`${API_BASE_URL}/api/grocery/orders/${orderId}/invoice`, { headers, withCredentials: true });
       if (res.data?.invoice) {
         setSelectedInvoice(res.data.invoice);
+      } else {
+        toast.error(res.data?.message || 'Invoice data not available');
+        setModalOpen(false);
       }
     } catch (err) {
       console.error('Invoice error:', err);
+      toast.error(err.response?.data?.message || 'Unable to load tax invoice');
+      setModalOpen(false);
     } finally {
       setInvoiceLoading(false);
     }
@@ -153,9 +90,10 @@ export default function InvoiceManagement() {
 
   const filtered = orders.filter(o => {
     const s = search.toLowerCase();
-    const id = (o._id || o.id || '').toLowerCase();
-    const name = (o.customerName || o.user?.name || '').toLowerCase();
-    return id.includes(s) || name.includes(s);
+    const id = String(o._id || o.id || '').toLowerCase();
+    const orderNum = String(o.orderNumber || '').toLowerCase();
+    const name = String(o.customerName || o.user?.name || '').toLowerCase();
+    return id.includes(s) || orderNum.includes(s) || name.includes(s);
   });
 
   return (
@@ -218,36 +156,46 @@ export default function InvoiceManagement() {
             </TableHead>
 
             <TableBody>
-              {filtered.map((ord) => {
-                const id = ord._id || ord.id;
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" className="py-10 text-xs text-gray-500 font-semibold">
+                    No customer orders found matching your search. Orders placed across partner stores will appear here for GST tax invoicing.
+                  </TableCell>
+                </TableRow>
+              ) : filtered.map((ord) => {
+                const id = String(ord._id || ord.id || '');
                 const date = ord.createdAt ? new Date(ord.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Today';
                 const custName = ord.customerName || ord.user?.name || ord.deliveryAddress?.name || 'Customer';
-                const total = ord.totalAmount || ord.total || 0;
+                const custAddr = ord.deliveryAddress?.addressLine || ord.deliveryAddress?.fullAddress || ord.address || 'Address unavailable';
+                const rawStore = ord.storeName || ord.restaurantName || ord.restaurant?.name;
+                const storeDisplay = typeof rawStore === 'object' ? (rawStore?.en || Object.values(rawStore || {})[0] || 'Partner Store') : (rawStore || 'Partner Store');
+                const total = ord.totalAmount ?? ord.total ?? 0;
+                const statusLabel = ord.orderStatus || ord.status || 'Placed';
 
                 return (
                   <TableRow key={id} hover>
                     <TableCell>
                       <div className="font-mono font-bold text-xs text-blue-700">
-                        #{id.slice(-8).toUpperCase()}
+                        {ord.orderNumber || `#${id.slice(-8).toUpperCase()}`}
                       </div>
                       <div className="text-[10px] text-gray-400">{date}</div>
                     </TableCell>
 
                     <TableCell>
                       <div className="font-bold text-xs text-gray-900">{custName}</div>
-                      <div className="text-[10px] text-gray-500 truncate max-w-xs">{ord.address || 'Indore'}</div>
+                      <div className="text-[10px] text-gray-500 truncate max-w-xs">{custAddr}</div>
                     </TableCell>
 
                     <TableCell>
                       <div className="flex items-center gap-1 text-xs text-gray-700 font-medium">
                         <Store className="text-gray-400 text-xs" />
-                        <span>{ord.storeName || 'Tricelyn Indore Hub'}</span>
+                        <span>{storeDisplay}</span>
                       </div>
                     </TableCell>
 
                     <TableCell>
                       <Chip
-                        label={ord.paymentMethod || 'Online'}
+                        label={(ord.paymentMethod || 'Online').toUpperCase()}
                         size="small"
                         className="bg-gray-100 text-gray-700 font-bold text-[10px]"
                       />
@@ -262,9 +210,9 @@ export default function InvoiceManagement() {
                     <TableCell>
                       <Chip
                         icon={<CheckCircle style={{ fontSize: 12 }} />}
-                        label={ord.orderStatus || 'Delivered'}
+                        label={statusLabel}
                         size="small"
-                        className="bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200"
+                        className="bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200 capitalize"
                       />
                     </TableCell>
 
@@ -436,7 +384,7 @@ export default function InvoiceManagement() {
 
               {/* Footer Note */}
               <div className="border-t pt-4 text-[10px] text-gray-400 text-center leading-relaxed">
-                This is a computer-generated invoice and requires no physical signature. Thank you for shopping with Tricelyn Quick Commerce Indore! For support, write to <strong>care@tricelyn.com</strong> or call <strong>+91 731-4099880</strong>.
+                This is a computer-generated invoice and requires no physical signature. Thank you for shopping with Tricelyn Quick Commerce! For support, write to <strong>care@tricelyn.com</strong> or call <strong>+91 731-4099880</strong>.
               </div>
 
             </div>

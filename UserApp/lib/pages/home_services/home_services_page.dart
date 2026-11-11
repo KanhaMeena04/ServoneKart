@@ -270,7 +270,7 @@ class _HomeServicesPageState extends State<HomeServicesPage> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ECDKART Home Services', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Tricelyn Home Services', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             Text('Verified Technicians • Managed live from Admin Tower', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),

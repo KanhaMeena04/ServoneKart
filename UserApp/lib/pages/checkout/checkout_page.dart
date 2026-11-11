@@ -13,6 +13,9 @@ import '../../providers/address_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../routes/app_routes.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/platform_config_provider.dart';
+import '../../providers/user_provider.dart';
+import '../../services/payment_service.dart';
 
 class CheckoutFlow extends StatefulWidget {
   final double subtotal;
@@ -33,8 +36,7 @@ class CheckoutFlow extends StatefulWidget {
 class _CheckoutFlowState extends State<CheckoutFlow> {
   int _step = 0; // 0=Address, 1=Summary, 2=Payment
 
-  // â”€â”€ Address state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // â”€â”€ Address state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Address state
   int _selectedAddressIndex = 0;
   bool _isAddressesLoaded = false;
   String? _deliveryPhone;
@@ -46,7 +48,7 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
     }
   }
 
-  // â”€â”€ Payment state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Payment state
   int _selectedPayment = 0; // 0=COD, 1=UPI, 2=Card
   final _upiCtrl = TextEditingController();
   final _cardNumCtrl = TextEditingController();
@@ -56,9 +58,8 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
   bool _isPlacingOrder = false;
   bool _isSelfPickup = false;
 
-  // â”€â”€ Razorpay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Razorpay
   late Razorpay _razorpay;
-  // TODO: Replace with your actual Razorpay Test Key from https://dashboard.razorpay.com
   static const String _razorpayKey = AppConstants.razorpayKey;
 
   @override
@@ -82,28 +83,25 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
     super.dispose();
   }
 
-  // â”€â”€ Razorpay payment handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Razorpay payment handlers
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     if (!mounted) return;
-    
-    final success = await context.read<OrderProvider>().verifyPayment({
-      'razorpay_payment_id': response.paymentId,
-      'razorpay_order_id': response.orderId,
-      'razorpay_signature': response.signature,
-    });
 
-    if (mounted) {
+    final result = await PaymentService.verifyPayment(
+      razorpayOrderId: response.orderId ?? '',
+      razorpayPaymentId: response.paymentId ?? '',
+      razorpaySignature: response.signature ?? '',
+    );
+
+    if (!mounted) return;
+    if (result != null && result['success'] == true) {
+      await _submitOrderToBackend(
+        paymentStatus: 'paid',
+        transactionId: response.paymentId,
+      );
+    } else {
       setState(() => _isPlacingOrder = false);
-      if (success) {
-        context.read<CartProvider>().clear();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const OrderSuccessPage()),
-          (route) => false,
-        );
-      } else {
-        _showError('Payment verification failed. Please contact support.');
-      }
+      _showError(result?['message'] ?? 'Payment verification failed. Please contact support.');
     }
   }
 
@@ -132,30 +130,34 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
     );
   }
 
-  void _openRazorpayUPI(String razorpayOrderId) {
-    final amountInPaise = (widget.total * 100).toInt();
+  void _openRazorpayUPI(String razorpayOrderId, {String? overrideKey, int? amountPaise}) {
+    final cfg = context.read<PlatformConfigProvider>();
+    final user = context.read<UserProvider>();
+    final int payablePaise = amountPaise ?? ((widget.total * 100).round());
     final options = {
-      'key': _razorpayKey,
-      'amount': amountInPaise,
+      'key': overrideKey ?? _razorpayKey,
+      'amount': payablePaise,
       'order_id': razorpayOrderId,
-      'name': 'ECDKART',
-      'description': 'Food Order Payment',
+      'name': cfg.appName,
+      'description': cfg.isGroceryActive ? 'Grocery Order Payment' : 'Order Payment',
       'prefill': {
-        'contact': '9999999999',
-        'email': 'customer@ecdkart.com',
-        'method': 'upi',
+        'contact': user.phone.isNotEmpty ? user.phone : '9999999999',
+        'email': user.email.isNotEmpty ? user.email : 'customer@tricelyn.com',
+        if (_selectedPayment == 1) 'method': 'upi',
       },
-      'method': {
-        'upi': true,
-        'card': false,
-        'netbanking': false,
-        'wallet': false,
-      },
-      'theme': {'color': '#2E7D32'},
+      if (_selectedPayment == 1)
+        'method': {
+          'upi': true,
+          'card': false,
+          'netbanking': false,
+          'wallet': false,
+        },
+      'theme': {'color': '#248C70'},
     };
     try {
       _razorpay.open(options);
     } catch (e) {
+      setState(() => _isPlacingOrder = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Could not open payment: $e'),
@@ -166,63 +168,105 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
     }
   }
 
-  void _placeOrder() async {
+  Future<void> _submitOrderToBackend({
+    String? paymentStatus,
+    String? transactionId,
+  }) async {
     final cart = context.read<CartProvider>();
+    final cfg = context.read<PlatformConfigProvider>();
+    final user = context.read<UserProvider>();
     final addressProvider = context.read<AddressProvider>();
+    final isGrocery = cart.hasGroceryItems || cfg.isGroceryActive;
 
-    if (addressProvider.addresses.isEmpty) {
-      _showError('Please add a delivery address');
-      return;
+    final safeIdx = addressProvider.addresses.isEmpty
+        ? 0
+        : _selectedAddressIndex.clamp(0, addressProvider.addresses.length - 1);
+    final selectedAddress = addressProvider.addresses.isNotEmpty
+        ? addressProvider.addresses[safeIdx]
+        : null;
+    final locLat = selectedAddress?.latitude ?? 22.7196;
+    final locLng = selectedAddress?.longitude ?? 75.8577;
+    final payableTotal = _isSelfPickup
+        ? (widget.total - widget.deliveryFee).clamp(0.0, 99999.0)
+        : widget.total;
+
+    Map<String, dynamic> result;
+    if (isGrocery) {
+      final groceryPayload = {
+        if (cart.restaurantId != null && cart.restaurantId!.isNotEmpty)
+          'storeId': cart.restaurantId,
+        if (cart.restaurantName != null && cart.restaurantName!.isNotEmpty)
+          'storeName': cart.restaurantName,
+        'orderType': _isSelfPickup ? 'self_pickup' : 'delivery',
+        'isSelfPickup': _isSelfPickup,
+        'items': cart.items
+            .map((i) => {
+                  'productId': i.product.id,
+                  'name': i.product.name,
+                  'image': i.product.image,
+                  'quantity': i.quantity,
+                  'price': i.product.price,
+                  if (i.product.unit != null) 'unit': i.product.unit,
+                  if (i.product.weight != null) 'weight': i.product.weight,
+                  'storeId': (i.product.storeId?.isNotEmpty == true)
+                      ? i.product.storeId
+                      : (i.product.restaurantId ?? cart.restaurantId ?? ''),
+                  'storeName': (i.product.storeName?.isNotEmpty == true)
+                      ? i.product.storeName
+                      : (i.product.restaurantName ?? cart.restaurantName ?? 'Partner Mart'),
+                })
+            .toList(),
+        if (selectedAddress != null) 'addressId': selectedAddress.id,
+        'deliveryAddress': {
+          'addressLine': selectedAddress?.fullAddress ?? 'Selected Delivery Address',
+          'coordinates': [locLng, locLat],
+          'name': user.name,
+          'phone': (_deliveryPhone?.isNotEmpty == true) ? _deliveryPhone : user.phone,
+        },
+        'paymentMethod': _selectedPayment == 1 ? 'online' : (_selectedPayment == 2 ? 'card' : 'cod'),
+        if (paymentStatus != null) 'paymentStatus': paymentStatus,
+        if (transactionId != null) 'transactionId': transactionId,
+        'totalPrice': payableTotal,
+        'tip': _isSelfPickup ? 0.0 : cart.tipAmount,
+      };
+      result = await context.read<OrderProvider>().placeGroceryOrder(groceryPayload);
+    } else {
+      final orderData = {
+        'restaurantId': cart.restaurantId,
+        'orderType': _isSelfPickup ? 'self_pickup' : 'delivery',
+        'isSelfPickup': _isSelfPickup,
+        'items': cart.items
+            .map((i) => {
+                  'productId': i.product.id,
+                  'quantity': i.quantity,
+                  'price': i.product.price,
+                })
+            .toList(),
+        'addressId': selectedAddress?.id ?? '',
+        'address': selectedAddress?.id ?? '',
+        if (_deliveryPhone != null && _deliveryPhone!.isNotEmpty) 'deliveryPhone': _deliveryPhone,
+        'paymentMethod': _selectedPayment == 1 ? 'online' : (_selectedPayment == 2 ? 'card' : 'cod'),
+        if (paymentStatus != null) 'paymentStatus': paymentStatus,
+        if (transactionId != null) 'transactionId': transactionId,
+        'totalPrice': payableTotal,
+        'deliveryFee': _isSelfPickup ? 0.0 : widget.deliveryFee,
+        'tipAmount': _isSelfPickup ? 0.0 : cart.tipAmount,
+        'status': 'pending',
+      };
+      result = await context.read<OrderProvider>().placeOrder(orderData);
     }
 
-    setState(() => _isPlacingOrder = true);
-
-    final orderData = {
-      'restaurantId': cart.restaurantId,
-      'orderType': _isSelfPickup ? 'self_pickup' : 'delivery',
-      'isSelfPickup': _isSelfPickup,
-      'items': cart.items
-          .map((i) => {
-                'productId': i.product.id,
-                'quantity': i.quantity,
-                'price': i.product.price,
-              })
-          .toList(),
-      'addressId': addressProvider.addresses.isNotEmpty ? addressProvider.addresses[_selectedAddressIndex].id : '',
-      'address': addressProvider.addresses.isNotEmpty ? addressProvider.addresses[_selectedAddressIndex].id : '',
-      if (_deliveryPhone != null && _deliveryPhone!.isNotEmpty) 'deliveryPhone': _deliveryPhone,
-      'paymentMethod': _selectedPayment == 1 ? 'online' : (_selectedPayment == 2 ? 'card' : 'cod'),
-      'totalPrice': _isSelfPickup ? (widget.total - widget.deliveryFee).clamp(0.0, 99999.0) : widget.total,
-      'deliveryFee': _isSelfPickup ? 0.0 : widget.deliveryFee,
-      'tipAmount': _isSelfPickup ? 0.0 : cart.tipAmount,
-      'status': 'pending',
-    };
-
-    final result = await context.read<OrderProvider>().placeOrder(orderData);
     if (!mounted) return;
+    setState(() => _isPlacingOrder = false);
 
-    if (result['success']) {
-      if (_selectedPayment == 1 || _selectedPayment == 2) {
-        // Online Payment -> Open Razorpay
-        final razorpayOrderId = result['razorpayOrderId'];
-        if (razorpayOrderId != null) {
-          _openRazorpayUPI(razorpayOrderId);
-        } else {
-          setState(() => _isPlacingOrder = false);
-          _showError('Failed to initialize payment gateway.');
-        }
-      } else {
-        // Cash on Delivery
-        setState(() => _isPlacingOrder = false);
-        cart.clear();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const OrderSuccessPage()),
-          (route) => false,
-        );
-      }
+    if (result['success'] == true) {
+      cart.clear();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const OrderSuccessPage()),
+        (route) => false,
+      );
     } else {
-      setState(() => _isPlacingOrder = false);
       final String msg = result['message'] ?? result['reason'] ?? result['error'] ?? 'Failed to place order.';
       if (msg.contains('geofence') || msg.contains('outside') || result['type'] == 'out_of_geofence') {
         showDialog(
@@ -247,7 +291,7 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
                   Navigator.pop(context);
                   setState(() => _isSelfPickup = true);
                 },
-                child: const Text('Switch to Self-Pickup ðŸ›ï¸', style: TextStyle(color: Colors.white)),
+                child: const Text('Switch to Self-Pickup', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -256,6 +300,78 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
         _showError(msg);
       }
     }
+  }
+
+  void _placeOrder() async {
+    final addressProvider = context.read<AddressProvider>();
+    if (!_isSelfPickup && addressProvider.addresses.isEmpty) {
+      _showError('Please add a delivery address');
+      return;
+    }
+
+    setState(() => _isPlacingOrder = true);
+
+    if (_selectedPayment == 1 || _selectedPayment == 2) {
+      final payableTotal = _isSelfPickup
+          ? (widget.total - widget.deliveryFee).clamp(1.0, 99999.0)
+          : widget.total;
+      final rzpRes = await PaymentService.createOrder(payableTotal);
+      if (!mounted) return;
+
+      if (rzpRes == null || rzpRes['success'] != true || rzpRes['id'] == null) {
+        setState(() => _isPlacingOrder = false);
+        _showError(rzpRes?['message'] ?? 'Failed to initialize payment gateway.');
+        return;
+      }
+
+      final rzpOrderId = rzpRes['id'].toString();
+      if (rzpRes['isSandbox'] == true) {
+        setState(() => _isPlacingOrder = false);
+        final confirmed = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dlgCtx) => AlertDialog(
+            title: const Text('Confirm Test Sandbox Payment'),
+            content: Text(
+              'Live gateway keys are not active. Confirm test payment of ₹${payableTotal.toStringAsFixed(2)} for Order #$rzpOrderId?',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dlgCtx, false), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: () => Navigator.pop(dlgCtx, true),
+                child: const Text('Confirm Payment', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+        setState(() => _isPlacingOrder = true);
+        final sandboxPayId = 'pay_sandbox_${DateTime.now().millisecondsSinceEpoch}';
+        final verifyRes = await PaymentService.verifyPayment(
+          razorpayOrderId: rzpOrderId,
+          razorpayPaymentId: sandboxPayId,
+          razorpaySignature: 'sandbox_confirm',
+          isSandboxConfirm: true,
+        );
+        if (!mounted) return;
+        if (verifyRes != null && verifyRes['success'] == true) {
+          await _submitOrderToBackend(paymentStatus: 'paid', transactionId: sandboxPayId);
+        } else {
+          setState(() => _isPlacingOrder = false);
+          _showError(verifyRes?['message'] ?? 'Sandbox payment verification failed');
+        }
+      } else {
+        _openRazorpayUPI(
+          rzpOrderId,
+          overrideKey: rzpRes['keyId']?.toString(),
+          amountPaise: (rzpRes['amountPaise'] as num?)?.toInt(),
+        );
+      }
+      return;
+    }
+
+    await _submitOrderToBackend(paymentStatus: 'pending');
   }
 
   void _showError(String msg) {
@@ -321,7 +437,7 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
                           children: [
                             Icon(Icons.two_wheeler, size: 18, color: !_isSelfPickup ? Colors.white : Colors.grey.shade700),
                             const SizedBox(width: 6),
-                            Text('Delivery ðŸš´', style: TextStyle(color: !_isSelfPickup ? Colors.white : Colors.grey.shade800, fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text('Delivery', style: TextStyle(color: !_isSelfPickup ? Colors.white : Colors.grey.shade800, fontWeight: FontWeight.bold, fontSize: 13)),
                           ],
                         ),
                       ),
@@ -341,7 +457,7 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
                           children: [
                             Icon(Icons.shopping_bag_outlined, size: 18, color: _isSelfPickup ? Colors.white : Colors.grey.shade700),
                             const SizedBox(width: 6),
-                            Text('Self Pickup ðŸ›ï¸', style: TextStyle(color: _isSelfPickup ? Colors.white : Colors.grey.shade800, fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text('Self Pickup', style: TextStyle(color: _isSelfPickup ? Colors.white : Colors.grey.shade800, fontWeight: FontWeight.bold, fontSize: 13)),
                           ],
                         ),
                       ),
@@ -796,8 +912,12 @@ class _SummaryStep extends StatelessWidget {
                       decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.fastfood,
-                          color: AppColors.primary, size: 18)),
+                      child: Icon(
+                          (item.product.vertical == 'grocery' || (item.product.storeId?.isNotEmpty ?? false))
+                              ? Icons.local_grocery_store_rounded
+                              : Icons.fastfood,
+                          color: AppColors.primary,
+                          size: 18)),
                   const SizedBox(width: 10),
                   Expanded(
                       child: Text(item.product.name,
@@ -830,7 +950,7 @@ class _SummaryStep extends StatelessWidget {
           child: Column(children: [
             _summaryRow('Subtotal', '₹${subtotal.toInt()}'),
             const SizedBox(height: 8),
-            _summaryRow('Delivery Fee', '₹${deliveryFee.toInt()}'),
+            _summaryRow('Delivery', '₹${deliveryFee.toInt()}'),
             const Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 child: Divider(height: 1, color: Color(0xFFF3F4F6))),

@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ecdkart_logo.dart';
 import '../widgets/welcome_back_logo.dart';
@@ -68,29 +70,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final List<FocusNode> _loginOtpFocusNodes =
       List.generate(6, (_) => FocusNode());
 
-  // Known registered demo restaurant phone numbers for instant login
-  static final Set<String> _knownRestaurantPhones = {
-    '9876543210',
-    '9999999999',
-    '8888888888',
-    '7777777777',
-    '9123456789',
-    '9811122233',
-    '1234567890',
-  };
-
-  Future<bool> _isExistingRestaurant(String phone) async {
-    final cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
-    if (_knownRestaurantPhones.contains(cleanPhone)) return true;
-    final prefs = await SharedPreferences.getInstance();
-    final registeredList =
-        prefs.getStringList('registered_restaurant_phones') ?? [];
-    return registeredList.contains(cleanPhone);
-  }
-
-  // Restaurant Details Controllers (Step 1 - clean blank fields)
+  // Store / Partner Details Controllers (Step 1 - clean blank fields)
   final _tradeNameController = TextEditingController();
-  String _selectedRestaurantType = 'Both (Veg & Non-Veg)';
+  late String _selectedRestaurantType;
   final _aboutRestaurantController = TextEditingController();
 
   // Google Maps & Location State
@@ -124,20 +106,23 @@ class _LoginScreenState extends State<LoginScreen> {
   // Operational Details State Variables (Step 5)
   bool _masterHoursEnabled = true;
   final List<Map<String, dynamic>> _daysSchedule = [
-    {'day': 'Monday', 'enabled': true, 'from': '09:00 AM', 'to': '05:30 PM'},
-    {'day': 'Tuesday', 'enabled': true, 'from': '09:00 AM', 'to': '05:30 PM'},
-    {'day': 'Wednesday', 'enabled': true, 'from': '09:00 AM', 'to': '05:30 PM'},
-    {'day': 'Thursday', 'enabled': true, 'from': '09:00 AM', 'to': '05:30 PM'},
-    {'day': 'Friday', 'enabled': true, 'from': '09:00 AM', 'to': '05:30 PM'},
-    {'day': 'Saturday', 'enabled': false, 'from': 'Closed', 'to': 'Closed'},
-    {'day': 'Sunday', 'enabled': false, 'from': 'Closed', 'to': 'Closed'},
+    {'day': 'Monday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
+    {'day': 'Tuesday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
+    {'day': 'Wednesday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
+    {'day': 'Thursday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
+    {'day': 'Friday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
+    {'day': 'Saturday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
+    {'day': 'Sunday', 'enabled': true, 'from': '09:00 AM', 'to': '09:00 PM'},
   ];
 
-  // Add Menu Controllers & State (Step 6 - clean blank fields)
+  // Add Catalog / Menu Controllers & State (Step 6 - clean blank fields)
   final _menuItemNameController = TextEditingController();
   final _menuBasePriceController = TextEditingController();
   final _menuDescriptionController = TextEditingController();
-  String _selectedMenuCategory = 'Main Course';
+  final _menuWeightController = TextEditingController();
+  final _menuStockController = TextEditingController(text: '25');
+  String _selectedMenuUnit = 'pack';
+  late String _selectedMenuCategory;
   String _selectedFoodType = 'Veg';
   String? _uploadedMenuItemImage;
   String? _uploadedMenuItemImageData;
@@ -163,6 +148,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _currentMode = widget.isLoggedOut ? AuthMode.welcomeBack : AuthMode.phone;
+    final bool isGrocery = PlatformConfigService.isGroceryPlatform;
+    _selectedRestaurantType = isGrocery ? 'Grocery Dark Store' : 'Veg & Non-Veg Kitchen';
+    _selectedMenuCategory = isGrocery ? 'Staples & Grains' : 'Main Course';
+    PlatformConfigService.fetchSettings();
   }
 
   @override
@@ -184,6 +173,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _menuItemNameController.dispose();
     _menuBasePriceController.dispose();
     _menuDescriptionController.dispose();
+    _menuWeightController.dispose();
+    _menuStockController.dispose();
     _createPinController.dispose();
     _confirmPinController.dispose();
     for (var c in _regOtpControllers) {
@@ -384,7 +375,6 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _isLoading = false;
         _currentMode = AuthMode.registerOtp;
-        _regOtpControllers[0].text = '5';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -414,9 +404,12 @@ class _LoginScreenState extends State<LoginScreen> {
         _currentMode = AuthMode.restaurantDetails;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
             content: Text(
-                'OTP Verified Successfully! Please fill in your Restaurant Details.'),
+              PlatformConfigService.isGroceryPlatform
+                  ? 'OTP Verified! Please fill in your Store Details.'
+                  : 'OTP Verified! Please fill in your Partner Details.',
+            ),
             backgroundColor: AppTheme.primaryGreen),
       );
     }
@@ -559,7 +552,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final url = Uri.parse(
           'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&addressdetails=1',
         );
-        final res = await http.get(url, headers: {'User-Agent': 'EcdkartRestaurantApp/1.0'}).timeout(const Duration(seconds: 5));
+        final res = await http.get(url, headers: {'User-Agent': 'TricelynPartnerApp/1.0'}).timeout(const Duration(seconds: 5));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           formattedAddress = data['display_name'] ?? '';
@@ -767,7 +760,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Select Restaurant Pin',
+                                  PlatformConfigService.isGroceryPlatform
+                                      ? 'Select Store Location Pin'
+                                      : 'Select Outlet Location Pin',
                                   style: GoogleFonts.poppins(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -1169,9 +1164,12 @@ class _LoginScreenState extends State<LoginScreen> {
         _currentMode = AuthMode.restaurantDocuments;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
             content: Text(
-                'Location Saved! Step 3: Please upload your Restaurant Documents.'),
+              PlatformConfigService.isGroceryPlatform
+                  ? 'Location Saved! Step 3: Please upload your Store Documents.'
+                  : 'Location Saved! Step 3: Please upload your Business Documents.',
+            ),
             backgroundColor: AppTheme.primaryGreen),
       );
     }
@@ -1240,9 +1238,12 @@ class _LoginScreenState extends State<LoginScreen> {
         _currentMode = AuthMode.restaurantAddMenu;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
             content: Text(
-                'Operational Details Saved! Step 6: Please add Menu Items.'),
+              PlatformConfigService.isGroceryPlatform
+                  ? 'Operational Details Saved! Step 6: Add your initial Catalog Products.'
+                  : 'Operational Details Saved! Step 6: Please add Catalog Items.',
+            ),
             backgroundColor: AppTheme.primaryGreen),
       );
     }
@@ -1256,19 +1257,27 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:
-              Text('Please enter Item Name and Base Price to add this item.'),
+              Text('Please enter Product Name and Selling Price to add this item.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
+    final bool isGrocery = PlatformConfigService.isGroceryPlatform;
+    final int stockVal = int.tryParse(_menuStockController.text.trim()) ?? 25;
+
     setState(() {
       _addedMenuItems.add({
         'name': itemName,
         'category': _selectedMenuCategory,
-        'foodType': _selectedFoodType,
+        'foodType': isGrocery ? 'Veg' : _selectedFoodType,
         'price': price,
+        'weight': _menuWeightController.text.trim(),
+        'unit': _selectedMenuUnit,
+        'stockQuantity': stockVal,
+        'inStock': stockVal > 0,
+        'vertical': isGrocery ? 'grocery' : 'food',
         'description': _menuDescriptionController.text.trim(),
         'image': _uploadedMenuItemImageData ?? _uploadedMenuItemImage,
         'flavours': List<String>.from(_flavourVariants),
@@ -1278,6 +1287,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _menuItemNameController.clear();
       _menuBasePriceController.clear();
       _menuDescriptionController.clear();
+      _menuWeightController.clear();
+      _menuStockController.text = '25';
       _uploadedMenuItemImage = null;
       _uploadedMenuItemImageData = null;
       _flavourVariants.clear();
@@ -1287,7 +1298,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-            'Item $itemName added to Menu! (${_addedMenuItems.length} total) Add more items or tap Next.'),
+            'Item $itemName added! (${_addedMenuItems.length} total) Add more or tap Next.'),
         backgroundColor: AppTheme.primaryGreen,
       ),
     );
@@ -1296,12 +1307,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleSaveRestaurantAddMenu() async {
     final itemName = _menuItemNameController.text.trim();
     final price = _menuBasePriceController.text.trim();
+    final bool isGrocery = PlatformConfigService.isGroceryPlatform;
     if (itemName.isNotEmpty && price.isNotEmpty) {
+      final int stockVal = int.tryParse(_menuStockController.text.trim()) ?? 25;
       _addedMenuItems.add({
         'name': itemName,
         'category': _selectedMenuCategory,
-        'foodType': _selectedFoodType,
+        'foodType': isGrocery ? 'Veg' : _selectedFoodType,
         'price': price,
+        'weight': _menuWeightController.text.trim(),
+        'unit': _selectedMenuUnit,
+        'stockQuantity': stockVal,
+        'inStock': stockVal > 0,
+        'vertical': isGrocery ? 'grocery' : 'food',
         'description': _menuDescriptionController.text.trim(),
         'image': _uploadedMenuItemImageData ?? _uploadedMenuItemImage,
         'flavours': List<String>.from(_flavourVariants),
@@ -1310,14 +1328,20 @@ class _LoginScreenState extends State<LoginScreen> {
       _menuItemNameController.clear();
       _menuBasePriceController.clear();
       _menuDescriptionController.clear();
+      _menuWeightController.clear();
+      _menuStockController.text = '25';
       _uploadedMenuItemImage = null;
       _uploadedMenuItemImageData = null;
     }
 
     if (_addedMenuItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please add at least 1 menu item to continue'),
+        SnackBar(
+            content: Text(
+              isGrocery
+                  ? 'Please add at least 1 product to continue'
+                  : 'Please add at least 1 catalog item to continue',
+            ),
             backgroundColor: Colors.red),
       );
       return;
@@ -1327,8 +1351,12 @@ class _LoginScreenState extends State<LoginScreen> {
       _currentMode = AuthMode.restaurantSetPin;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Menu Saved! Step 7: Set your 4-Digit Login PIN.'),
+      SnackBar(
+          content: Text(
+            isGrocery
+                ? 'Catalog Saved! Step 7: Set your 4-Digit Login PIN.'
+                : 'Items Saved! Step 7: Set your 4-Digit Login PIN.',
+          ),
           backgroundColor: AppTheme.primaryGreen),
     );
   }
@@ -1369,20 +1397,40 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleFinalRestaurantSubmit() async {
-    setState(() => _isLoading = true);
     final phone = _mobileController.text.trim().isNotEmpty
         ? _mobileController.text.trim().replaceAll(RegExp(r'\D'), '')
-        : (_regMobileController.text.trim().isNotEmpty
-            ? _regMobileController.text.trim().replaceAll(RegExp(r'\D'), '')
-            : '8305370330');
-    final nameStr = _tradeNameController.text.trim().isNotEmpty
-        ? _tradeNameController.text.trim()
-        : 'New Restaurant';
+        : _regMobileController.text.trim().replaceAll(RegExp(r'\D'), '');
+    if (phone.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Valid 10-digit mobile number is required to submit application.'),
+            backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     final pinStr = _createPinController.text.trim().isNotEmpty
         ? _createPinController.text.trim()
-        : (_pinController.text.trim().isNotEmpty
-            ? _pinController.text.trim()
-            : '1234');
+        : _pinController.text.trim();
+    if (pinStr.length != 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please set your 4-digit security PIN before submitting.'),
+            backgroundColor: Colors.red),
+      );
+      setState(() => _currentMode = AuthMode.restaurantSetPin);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final bool isGrocery = PlatformConfigService.isGroceryPlatform ||
+        _selectedRestaurantType.toLowerCase().contains('grocery') ||
+        _selectedRestaurantType.toLowerCase().contains('mart') ||
+        _selectedRestaurantType.toLowerCase().contains('dairy') ||
+        _selectedRestaurantType.toLowerCase().contains('kirana');
+    final nameStr = _tradeNameController.text.trim().isNotEmpty
+        ? _tradeNameController.text.trim()
+        : (isGrocery ? 'New Partner Store' : 'New Partner Outlet');
     final fullName =
         '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
             .trim();
@@ -1394,8 +1442,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final ownerEmail = _regEmailController.text.trim().isNotEmpty
         ? _regEmailController.text.trim()
         : (phone.isNotEmpty
-            ? 'vendor_$phone@ecdkart.com'
-            : 'vendor_${DateTime.now().millisecondsSinceEpoch}@ecdkart.com');
+            ? 'vendor_$phone@tricelyn.com'
+            : 'vendor_${DateTime.now().millisecondsSinceEpoch}@tricelyn.com');
 
     try {
       final payload = {
@@ -1407,6 +1455,8 @@ class _LoginScreenState extends State<LoginScreen> {
         'name': {'en': nameStr},
         'description': {'en': _aboutRestaurantController.text.trim()},
         'restaurantType': _selectedRestaurantType,
+        'businessType': isGrocery ? 'grocery_store' : 'restaurant',
+        'vertical': isGrocery ? 'grocery' : 'food',
         'contactNumber': phone,
         'email': ownerEmail,
         'address': _addressController.text.trim(),
@@ -1449,18 +1499,20 @@ class _LoginScreenState extends State<LoginScreen> {
         final resData = jsonDecode(response.body);
         final restObj = resData['restaurant'];
         final restaurantId =
-            resData['restaurantId'] ?? restObj?['_id'] ?? restObj?['id'] ?? '';
-        final token = resData['token'] ?? resData['authToken'] ?? '';
+            (resData['restaurantId'] ?? restObj?['_id'] ?? restObj?['id'] ?? '').toString();
+        final token = (resData['token'] ?? resData['authToken'] ?? '').toString();
 
         if (restaurantId.isNotEmpty && token.isNotEmpty) {
-          ApiConstants.setAuthenticatedSession(
+          await RestaurantAuthService.saveAuthSession(
+            token: token,
             restaurantId: restaurantId,
-            authToken: token,
+            vendorData: restObj is Map ? Map<String, dynamic>.from(restObj) : null,
+            businessType: isGrocery ? 'grocery_store' : 'restaurant',
+            vertical: isGrocery ? 'grocery' : 'food',
           );
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('restaurantId', restaurantId);
-          await prefs.setString('token', token);
           await prefs.setString('userPhone', phone);
+          await prefs.setString('restaurantName', nameStr);
         }
 
         if (mounted) {
@@ -1625,45 +1677,64 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final token = data['token'] ?? data['authToken'] ?? '';
+        final token = (data['token'] ?? data['authToken'] ?? '').toString();
         final restaurantId =
-            data['restaurantId'] ?? data['restaurant']?['_id'] ?? '';
+            (data['restaurantId'] ?? data['restaurant']?['_id'] ?? '').toString();
         final bool isApproved =
             data['isApproved'] == true || data['restaurantApproved'] == true;
         final bool hasRestaurant =
             data['restaurant'] != null || restaurantId.isNotEmpty;
+        final restaurantMap = data['restaurant'] is Map
+            ? Map<String, dynamic>.from(data['restaurant'] as Map)
+            : null;
+        final assignedRole = (data['assignedRole'] ?? data['user']?['assignedRole'] ?? restaurantMap?['assignedRole'] ?? 'Store Manager').toString();
+        final permissions = data['permissions'] ?? data['user']?['permissions'] ?? restaurantMap?['permissions'];
+        final businessType = (data['businessType'] ?? data['user']?['businessType'] ?? restaurantMap?['businessType'] ?? 'grocery_store').toString();
+        final vertical = (data['vertical'] ?? data['user']?['vertical'] ?? restaurantMap?['vertical'] ?? 'grocery').toString();
+        final platformMode = (data['platformMode'] ?? data['user']?['platformMode'] ?? 'grocery').toString();
 
         String restName = '';
         if (data['name'] != null && data['name'].toString().isNotEmpty) {
           final n = data['name'];
           restName = (n is Map ? (n['en'] ?? '') : n).toString();
-        } else if (data['restaurant'] != null &&
-            data['restaurant']['name'] != null) {
-          final n = data['restaurant']['name'];
+        } else if (restaurantMap != null && restaurantMap['name'] != null) {
+          final n = restaurantMap['name'];
           restName = (n is Map ? (n['en'] ?? '') : n).toString();
         } else if (data['user'] != null && data['user']['name'] != null) {
           restName = data['user']['name'].toString();
         }
 
         if (token.isNotEmpty && restaurantId.isNotEmpty) {
-          ApiConstants.setAuthenticatedSession(
+          await RestaurantAuthService.saveAuthSession(
+            token: token,
             restaurantId: restaurantId,
-            authToken: token,
+            vendorData: restaurantMap,
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
           );
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('restaurantId', restaurantId);
-          await prefs.setString('token', token);
           await prefs.setString('userPhone', phone);
           if (restName.isNotEmpty && restName != 'null') {
             await prefs.setString('restaurantName', restName);
           }
+        } else {
+          await RestaurantAuthService.saveRbacContext(
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
+          );
         }
 
         if (mounted) {
           setState(() => _isLoading = false);
 
           if (!hasRestaurant) {
-            // New Restaurant Partner -> Go to onboarding
+            // New Store Partner -> Go to onboarding
             _regMobileController.text = phone;
             setState(() => _currentMode = AuthMode.restaurantDetails);
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1673,6 +1744,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   backgroundColor: AppTheme.primaryGreen),
             );
           } else if (!isApproved) {
+            final bool isGrocery = PlatformConfigService.isGroceryPlatform;
             // Pending Approval -> Go to Waiting Screen
             Navigator.pushReplacement(
               context,
@@ -1683,7 +1755,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? restName
                       : (data['restaurant']?['name']?['en'] ??
                           data['restaurant']?['name'] ??
-                          'Your Restaurant'),
+                          (isGrocery ? 'Your Store' : 'Your Outlet')),
                   mobile: phone,
                 ),
               ),
@@ -1757,40 +1829,67 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final token = data['token'] ?? data['authToken'] ?? '';
+        final token = (data['token'] ?? data['authToken'] ?? '').toString();
         final restaurantId =
-            data['restaurantId'] ?? data['restaurant']?['_id'] ?? '';
+            (data['restaurantId'] ?? data['restaurant']?['_id'] ?? '').toString();
         final bool isApproved =
             data['isApproved'] == true || data['restaurantApproved'] == true;
+        final restaurantMap = data['restaurant'] is Map
+            ? Map<String, dynamic>.from(data['restaurant'] as Map)
+            : null;
+        final assignedRole = (data['assignedRole'] ?? data['user']?['assignedRole'] ?? restaurantMap?['assignedRole'] ?? 'Store Manager').toString();
+        final permissions = data['permissions'] ?? data['user']?['permissions'] ?? restaurantMap?['permissions'];
+        final businessType = (data['businessType'] ?? data['user']?['businessType'] ?? restaurantMap?['businessType'] ?? 'grocery_store').toString();
+        final vertical = (data['vertical'] ?? data['user']?['vertical'] ?? restaurantMap?['vertical'] ?? 'grocery').toString();
+        final platformMode = (data['platformMode'] ?? data['user']?['platformMode'] ?? 'grocery').toString();
 
         String restName = '';
         if (data['name'] != null && data['name'].toString().isNotEmpty) {
           final n = data['name'];
           restName = (n is Map ? (n['en'] ?? '') : n).toString();
-        } else if (data['restaurant'] != null &&
-            data['restaurant']['name'] != null) {
-          final n = data['restaurant']['name'];
+        } else if (restaurantMap != null && restaurantMap['name'] != null) {
+          final n = restaurantMap['name'];
           restName = (n is Map ? (n['en'] ?? '') : n).toString();
         } else if (data['user'] != null && data['user']['name'] != null) {
           restName = data['user']['name'].toString();
         }
 
         if (token.isNotEmpty && restaurantId.isNotEmpty) {
-          ApiConstants.setAuthenticatedSession(
+          await RestaurantAuthService.saveAuthSession(
+            token: token,
             restaurantId: restaurantId,
-            authToken: token,
+            vendorData: restaurantMap,
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
           );
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('restaurantId', restaurantId);
-          await prefs.setString('token', token);
           await prefs.setString('userPhone', phone);
           if (restName.isNotEmpty && restName != 'null') {
             await prefs.setString('restaurantName', restName);
           }
+        } else {
+          await RestaurantAuthService.saveRbacContext(
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
+          );
         }
 
         if (mounted) {
           setState(() => _isLoading = false);
+          if (token.isEmpty || restaurantId.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('No store profile is linked with this PIN yet. Please register or contact Super Admin.'),
+                  backgroundColor: Colors.red),
+            );
+            return;
+          }
 
           if (!isApproved) {
             Navigator.pushReplacement(
@@ -1798,8 +1897,11 @@ class _LoginScreenState extends State<LoginScreen> {
               MaterialPageRoute(
                 builder: (context) => WaitingForApprovalScreen(
                   restaurantId: restaurantId,
-                  restaurantName: data['restaurant']?['name']?['en'] ??
-                      data['restaurant']?['name'],
+                  restaurantName: restName.isNotEmpty
+                      ? restName
+                      : (data['restaurant']?['name']?['en'] ??
+                          data['restaurant']?['name'] ??
+                          'Your Store'),
                   mobile: phone,
                 ),
               ),
@@ -1897,7 +1999,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     _showMediaPickerBottomSheet(
-      title: 'Add Restaurant Photo',
+      title: PlatformConfigService.isGroceryPlatform
+          ? 'Add Store Photo'
+          : 'Add Outlet Photo',
       onSelected: (name, base64Data) {
         setState(() {
           _restaurantImages.add(base64Data);
@@ -2126,14 +2230,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Upload Image Card
                         GestureDetector(
                           onTap: () {
-                            setModalState(() {
-                              uploadedAddOnDoc = 'addon_image.jpg';
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Add-on Image Uploaded Successfully!'),
-                                  backgroundColor: AppTheme.primaryGreen),
+                            _showMediaPickerBottomSheet(
+                              title: 'Select Add-on Image',
+                              onSelected: (name, _) {
+                                setModalState(() {
+                                  uploadedAddOnDoc = name;
+                                });
+                              },
                             );
                           },
                           child: Container(
@@ -2292,9 +2395,87 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  BoxDecoration _buildTopHeaderDecoration(bool isGrocery) {
+    if (isGrocery) {
+      return const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0055FF), Color(0xFF00B4D8), Color(0xFFECFDF5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      );
+    }
+    return BoxDecoration(
+      color: AppTheme.offWhiteBg,
+      image: DecorationImage(
+        image: AssetImage(_getHeaderImageAsset()),
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, __) {
+        final bool isGrocery = PlatformConfigService.isGroceryPlatform;
+        final List<String> storeTypeOptions = isGrocery
+            ? [
+                'Grocery Dark Store',
+                'Supermarket & Daily Needs',
+                'Fresh Produce & Dairy',
+                'Kirana / Essentials Store',
+              ]
+            : (PlatformConfigService.isBothMode
+                ? [
+                    'Grocery Dark Store',
+                    'Supermarket & Daily Needs',
+                    'Fresh Produce & Dairy',
+                    'Veg & Non-Veg Kitchen',
+                    'Veg Only Kitchen',
+                  ]
+                : [
+                    'Veg',
+                    'Non-Veg',
+                    'Veg & Non-Veg Kitchen',
+                  ]);
+        final List<String> catalogCategories = isGrocery
+            ? [
+                'Staples & Grains',
+                'Dairy & Bread',
+                'Fruits & Vegetables',
+                'Beverages',
+                'Snacks & Packaged',
+                'Personal & Home Care',
+              ]
+            : (PlatformConfigService.isBothMode
+                ? [
+                    'Staples & Grains',
+                    'Dairy & Bread',
+                    'Fruits & Vegetables',
+                    'Beverages',
+                    'Snacks & Packaged',
+                    'Starters',
+                    'Main Course',
+                    'Fast Food',
+                    'Desserts',
+                  ]
+                : [
+                    'Starters',
+                    'Main Course',
+                    'Fast Food',
+                    'Beverages',
+                    'Desserts',
+                  ]);
+        final String activeStoreType = storeTypeOptions.contains(_selectedRestaurantType)
+            ? _selectedRestaurantType
+            : storeTypeOptions.first;
+        final String activeCatalogCategory = catalogCategories.contains(_selectedMenuCategory)
+            ? _selectedMenuCategory
+            : catalogCategories.first;
+
+        return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Column(
@@ -2307,13 +2488,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -2407,13 +2582,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -2509,13 +2678,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -2577,7 +2740,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Add Menu',
+                                isGrocery ? 'Add Catalog' : 'Add Items',
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
@@ -2618,13 +2781,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -2725,13 +2882,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -2832,13 +2983,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -2939,13 +3084,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -3046,13 +3185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
                       decoration: BoxDecoration(
@@ -3113,7 +3246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Restaurant Details',
+                                isGrocery ? 'Store Details' : 'Outlet Details',
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
@@ -3277,13 +3410,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     height: 220,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhiteBg,
-                      image: DecorationImage(
-                        image: AssetImage(_getHeaderImageAsset()),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    decoration: _buildTopHeaderDecoration(isGrocery),
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -3357,11 +3484,13 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // MODE 14: RESTAURANT ONBOARDING STEP 8 - REVIEW DETAILS & SUBMIT (NEW)
+                  // MODE 14: STORE PARTNER ONBOARDING STEP 8 - REVIEW DETAILS & SUBMIT
                   if (_currentMode == AuthMode.restaurantReview) ...[
                     // Review Header Subtitle
                     Text(
-                      'Review Your Restaurant Application',
+                      isGrocery
+                          ? 'Review Your Store Application'
+                          : 'Review Your Partner Application',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -3626,7 +3755,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Menu & Login PIN',
+                              Text(isGrocery ? 'Catalog & Login PIN' : 'Items & Login PIN',
                                   style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -3647,7 +3776,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const Divider(height: 12),
                           Text(
-                              'Dishes Added: ${_addedMenuItems.length} Menu Items',
+                              isGrocery
+                                  ? 'Products Added: ${_addedMenuItems.length} Catalog SKUs'
+                                  : 'Items Added: ${_addedMenuItems.length} Catalog Items',
                               style: GoogleFonts.poppins(
                                   fontSize: 13, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 3),
@@ -3788,14 +3919,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ]
 
-                  // MODE 12: RESTAURANT ONBOARDING STEP 6 - ADD MENU (MATCHING REFERENCE UI)
+                  // MODE 12: STORE / PARTNER ONBOARDING STEP 6 - ADD CATALOG ITEMS
                   else if (_currentMode == AuthMode.restaurantAddMenu) ...[
-                    // Item Name Field
-                    _buildFormLabel('Item Name'),
+                    // Item / Product Name Field
+                    _buildFormLabel(isGrocery ? 'Product Name' : 'Item Name'),
                     const SizedBox(height: 6),
                     _buildCustomTextField(
                       controller: _menuItemNameController,
-                      hintText: 'Enter Item Name',
+                      hintText: isGrocery ? 'e.g. Aashirvaad Atta' : 'Enter Item Name',
                     ),
 
                     const SizedBox(height: 16),
@@ -3804,7 +3935,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     GestureDetector(
                       onTap: () {
                         _showMediaPickerBottomSheet(
-                          title: 'Upload Dish Image',
+                          title: isGrocery ? 'Upload Product Image' : 'Upload Item Image',
                           onSelected: (name, base64Data) {
                             setState(() {
                               _uploadedMenuItemImage = name;
@@ -3812,7 +3943,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content: Text('Dish image $name uploaded!'),
+                                  content: Text('Image $name uploaded!'),
                                   backgroundColor: AppTheme.primaryGreen),
                             );
                           },
@@ -3850,7 +3981,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               _uploadedMenuItemImage != null
                                   ? 'Image Selected: $_uploadedMenuItemImage'
-                                  : 'Upload Item Image (Camera or Gallery)',
+                                  : (isGrocery
+                                      ? 'Upload Product Image (Camera or Gallery)'
+                                      : 'Upload Item Image (Camera or Gallery)'),
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -3879,17 +4012,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: _selectedMenuCategory,
+                          value: activeCatalogCategory,
                           isExpanded: true,
                           icon: const Icon(Icons.keyboard_arrow_down_rounded,
                               color: AppTheme.darkBlack),
-                          items: [
-                            'Starters',
-                            'Main Course',
-                            'Fast Food',
-                            'Beverages',
-                            'Desserts'
-                          ].map((String cat) {
+                          items: catalogCategories.map((String cat) {
                             return DropdownMenuItem<String>(
                               value: cat,
                               child: Text(cat,
@@ -3908,103 +4035,172 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Food Type (Veg vs Non-Veg Pill Toggle with Green Active State)
-                    Row(
-                      children: [
-                        Text('Store Type',
-                            style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.darkBlack)),
-                        const Spacer(),
-                        // Veg Button
-                        InkWell(
-                          onTap: () =>
-                              setState(() => _selectedFoodType = 'Veg'),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _selectedFoodType == 'Veg'
-                                  ? AppTheme.primaryGreen
-                                      .withValues(alpha: 0.08)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
+                    if (isGrocery) ...[
+                      // Pack Weight / Unit & Stock Quantity row for Grocery
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFormLabel('Pack Weight / Size'),
+                                const SizedBox(height: 6),
+                                _buildCustomTextField(
+                                  controller: _menuWeightController,
+                                  hintText: 'e.g. 500 or 1',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFormLabel('Unit'),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: _selectedMenuUnit,
+                                      isExpanded: true,
+                                      items: ['g', 'kg', 'ml', 'L', 'pack', 'piece', 'dozen']
+                                          .map((u) => DropdownMenuItem(value: u, child: Text(u, style: GoogleFonts.poppins(fontSize: 14))))
+                                          .toList(),
+                                      onChanged: (val) {
+                                        if (val != null) setState(() => _selectedMenuUnit = val);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFormLabel('Stock Qty'),
+                                const SizedBox(height: 6),
+                                _buildCustomTextField(
+                                  controller: _menuStockController,
+                                  hintText: '25',
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      // Food Type (Veg vs Non-Veg Pill Toggle)
+                      Row(
+                        children: [
+                          Text('Food Type',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkBlack)),
+                          const Spacer(),
+                          // Veg Button
+                          InkWell(
+                            onTap: () =>
+                                setState(() => _selectedFoodType = 'Veg'),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
                                 color: _selectedFoodType == 'Veg'
                                     ? AppTheme.primaryGreen
-                                    : Colors.grey[350]!,
-                                width: 1.5,
+                                        .withValues(alpha: 0.08)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _selectedFoodType == 'Veg'
+                                      ? AppTheme.primaryGreen
+                                      : Colors.grey[350]!,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _selectedFoodType == 'Veg'
+                                        ? Icons.radio_button_checked
+                                        : Icons.radio_button_off,
+                                    color: AppTheme.primaryGreen,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text('Veg',
+                                      style: GoogleFonts.poppins(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.darkBlack)),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _selectedFoodType == 'Veg'
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_off,
-                                  color: AppTheme.primaryGreen,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Text('Veg',
-                                    style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.darkBlack)),
-                              ],
-                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Non-Veg Button
-                        InkWell(
-                          onTap: () =>
-                              setState(() => _selectedFoodType = 'Non-Veg'),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _selectedFoodType == 'Non-Veg'
-                                  ? AppTheme.primaryGreen
-                                      .withValues(alpha: 0.08)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
+                          const SizedBox(width: 10),
+                          // Non-Veg Button
+                          InkWell(
+                            onTap: () =>
+                                setState(() => _selectedFoodType = 'Non-Veg'),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
                                 color: _selectedFoodType == 'Non-Veg'
                                     ? AppTheme.primaryGreen
-                                    : Colors.grey[350]!,
-                                width: 1.5,
+                                        .withValues(alpha: 0.08)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _selectedFoodType == 'Non-Veg'
+                                      ? AppTheme.primaryGreen
+                                      : Colors.grey[350]!,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _selectedFoodType == 'Non-Veg'
+                                        ? Icons.radio_button_checked
+                                        : Icons.radio_button_off,
+                                    color: AppTheme.primaryGreen,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text('Non-Veg',
+                                      style: GoogleFonts.poppins(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.darkBlack)),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _selectedFoodType == 'Non-Veg'
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_off,
-                                  color: AppTheme.primaryGreen,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Text('Non-Veg',
-                                    style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.darkBlack)),
-                              ],
-                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 16),
 
-                    // Base Price
-                    _buildFormLabel('Base Price'),
+                    // Selling Price
+                    _buildFormLabel(isGrocery ? 'Selling Price (₹)' : 'Base Price'),
                     const SizedBox(height: 6),
                     _buildCustomTextField(
                       controller: _menuBasePriceController,
@@ -4019,134 +4215,136 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 6),
                     _buildCustomTextField(
                       controller: _menuDescriptionController,
-                      hintText: 'Enter description',
+                      hintText: isGrocery ? 'Brand, quality or pack highlights' : 'Enter description',
                       maxLines: 3,
                     ),
 
-                    const SizedBox(height: 20),
+                    if (!isGrocery) ...[
+                      const SizedBox(height: 20),
 
-                    // Add Flavour Variants (Optional)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Add Flavour Variants (Optional)',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.darkBlack),
-                              ),
-                              Text(
-                                'Optional: Add flavour options that customers can choose from',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 10, color: Colors.grey[600]),
-                              ),
-                            ],
+                      // Add Flavour Variants (Optional)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Add Flavour Variants (Optional)',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.darkBlack),
+                                ),
+                                Text(
+                                  'Optional: Add flavour options that customers can choose from',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 10, color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline_rounded,
-                              color: AppTheme.darkBlack, size: 24),
-                          onPressed: _showAddFlavourVariantBottomSheet,
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline_rounded,
+                                color: AppTheme.darkBlack, size: 24),
+                            onPressed: _showAddFlavourVariantBottomSheet,
+                          ),
+                        ],
+                      ),
+
+                      if (_flavourVariants.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: _flavourVariants.map((flavour) {
+                            return Chip(
+                              backgroundColor:
+                                  AppTheme.primaryGreen.withValues(alpha: 0.1),
+                              side: const BorderSide(
+                                  color: AppTheme.primaryGreen, width: 1),
+                              label: Text(
+                                flavour,
+                                style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primaryGreen),
+                              ),
+                              deleteIcon: const Icon(Icons.cancel_rounded,
+                                  size: 16, color: AppTheme.primaryGreen),
+                              onDeleted: () {
+                                setState(() {
+                                  _flavourVariants.remove(flavour);
+                                });
+                              },
+                            );
+                          }).toList(),
                         ),
                       ],
-                    ),
 
-                    if (_flavourVariants.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: _flavourVariants.map((flavour) {
-                          return Chip(
-                            backgroundColor:
-                                AppTheme.primaryGreen.withValues(alpha: 0.1),
-                            side: const BorderSide(
-                                color: AppTheme.primaryGreen, width: 1),
-                            label: Text(
-                              flavour,
-                              style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryGreen),
+                      const SizedBox(height: 16),
+
+                      // Add Add-ons (Optional)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Add Add-ons (Optional)',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.darkBlack),
+                                ),
+                                Text(
+                                  'Optional: Add addon options that customers can choose from',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 10, color: Colors.grey[600]),
+                                ),
+                              ],
                             ),
-                            deleteIcon: const Icon(Icons.cancel_rounded,
-                                size: 16, color: AppTheme.primaryGreen),
-                            onDeleted: () {
-                              setState(() {
-                                _flavourVariants.remove(flavour);
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    // Add Add-ons (Optional)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Add Add-ons (Optional)',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.darkBlack),
-                              ),
-                              Text(
-                                'Optional: Add addon options that customers can choose from',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 10, color: Colors.grey[600]),
-                              ),
-                            ],
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline_rounded,
-                              color: AppTheme.darkBlack, size: 24),
-                          onPressed: _showAddAddOnBottomSheet,
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline_rounded,
+                                color: AppTheme.darkBlack, size: 24),
+                            onPressed: _showAddAddOnBottomSheet,
+                          ),
+                        ],
+                      ),
+
+                      if (_addOnsList.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: _addOnsList.map((addon) {
+                            return Chip(
+                              backgroundColor:
+                                  AppTheme.primaryGreen.withValues(alpha: 0.1),
+                              side: const BorderSide(
+                                  color: AppTheme.primaryGreen, width: 1),
+                              label: Text(
+                                addon,
+                                style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primaryGreen),
+                              ),
+                              deleteIcon: const Icon(Icons.cancel_rounded,
+                                  size: 16, color: AppTheme.primaryGreen),
+                              onDeleted: () {
+                                setState(() {
+                                  _addOnsList.remove(addon);
+                                });
+                              },
+                            );
+                          }).toList(),
                         ),
                       ],
-                    ),
-
-                    if (_addOnsList.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: _addOnsList.map((addon) {
-                          return Chip(
-                            backgroundColor:
-                                AppTheme.primaryGreen.withValues(alpha: 0.1),
-                            side: const BorderSide(
-                                color: AppTheme.primaryGreen, width: 1),
-                            label: Text(
-                              addon,
-                              style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryGreen),
-                            ),
-                            deleteIcon: const Icon(Icons.cancel_rounded,
-                                size: 16, color: AppTheme.primaryGreen),
-                            onDeleted: () {
-                              setState(() {
-                                _addOnsList.remove(addon);
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
                     ],
 
                     const SizedBox(height: 24),
@@ -4185,7 +4383,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Added Menu Items (${_addedMenuItems.length})',
+                            isGrocery
+                                ? 'Added Catalog Products (${_addedMenuItems.length})'
+                                : 'Added Catalog Items (${_addedMenuItems.length})',
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -4776,21 +4976,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // MODE 9: RESTAURANT ONBOARDING STEP 3 - DOCUMENTS (MATCHING REFERENCE UI)
                   else if (_currentMode == AuthMode.restaurantDocuments) ...[
-                    // Food License Number (Optional)
-                    _buildFormLabel('Food License Number (Optional)'),
+                    // Store / Trade License Number (Optional)
+                    _buildFormLabel(
+                      isGrocery
+                          ? 'Store / Trade / FSSAI License Number (Optional)'
+                          : 'Food License Number (Optional)',
+                    ),
                     const SizedBox(height: 6),
                     _buildCustomTextField(
                       controller: _foodLicenseController,
-                      hintText: 'Enter Food License Number (Optional)',
+                      hintText: isGrocery
+                          ? 'Enter Store / FSSAI License Number (Optional)'
+                          : 'Enter Food License Number (Optional)',
                     ),
 
                     const SizedBox(height: 12),
 
-                    // Upload Food License Document Card (Optional)
+                    // Upload Store License Document Card (Optional)
                     GestureDetector(
                       onTap: () {
                         _showMediaPickerBottomSheet(
-                          title: 'Upload Food License Document',
+                          title: isGrocery
+                              ? 'Upload Store License Document'
+                              : 'Upload Food License Document',
                           onSelected: (name, base64Data) {
                             setState(() {
                               _uploadedFoodLicenseDoc = name;
@@ -4830,8 +5038,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 6),
                             Text(
                               _uploadedFoodLicenseDoc != null
-                                  ? 'Food License Selected: $_uploadedFoodLicenseDoc'
-                                  : 'Upload Food License Document (Camera or Gallery)',
+                                  ? 'License Document Selected: $_uploadedFoodLicenseDoc'
+                                  : (isGrocery
+                                      ? 'Upload Store / FSSAI Document (Camera or Gallery)'
+                                      : 'Upload License Document (Camera or Gallery)'),
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -5029,8 +5239,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Restaurant Address Field (Manual & Auto)
-                    _buildFormLabel('Restaurant Full Address'),
+                    // Store / Outlet Full Address Field (Manual & Auto)
+                    _buildFormLabel(isGrocery ? 'Store Full Address' : 'Outlet Full Address'),
                     const SizedBox(height: 6),
                     _buildCustomTextField(
                       controller: _addressController,
@@ -5304,21 +5514,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ]
 
-                  // MODE 7: RESTAURANT ONBOARDING STEP 1 - RESTAURANT DETAILS (MATCHING REFERENCE UI)
+                  // MODE 7: STORE PARTNER ONBOARDING STEP 1
                   else if (_currentMode == AuthMode.restaurantDetails) ...[
-                    // Restaurant Name
-                    _buildFormLabel('Restaurant Name'),
+                    // Store / Partner Name
+                    _buildFormLabel(isGrocery ? 'Store / Mart Name' : 'Partner / Outlet Name'),
                     const SizedBox(height: 6),
                     _buildCustomTextField(
                       controller: _tradeNameController,
-                      hintText: 'Enter Name',
+                      hintText: isGrocery ? 'e.g. FreshMart Grocery Hub' : 'Enter Outlet Name',
                       keyboardType: TextInputType.name,
                     ),
 
                     const SizedBox(height: 16),
 
-                    // Restaurant Type (Dropdown: Veg, Non-Veg, Both Non-Veg and Veg)
-                    _buildFormLabel('Restaurant Type'),
+                    // Business / Store Type
+                    _buildFormLabel(isGrocery ? 'Store Category / Type' : 'Business Type'),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -5329,12 +5539,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: _selectedRestaurantType,
+                          value: activeStoreType,
                           isExpanded: true,
                           icon: const Icon(Icons.keyboard_arrow_down_rounded,
                               color: AppTheme.darkBlack),
-                          items: ['Veg', 'Non-Veg', 'Both (Veg & Non-Veg)']
-                              .map((String type) {
+                          items: storeTypeOptions.map((String type) {
                             return DropdownMenuItem<String>(
                               value: type,
                               child: Text(type,
@@ -5353,8 +5562,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // About Restaurant
-                    _buildFormLabel('About Restaurant'),
+                    // About Store / Outlet
+                    _buildFormLabel(isGrocery ? 'About Store' : 'About Business'),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _aboutRestaurantController,
@@ -5362,7 +5571,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.poppins(
                           fontSize: 14, color: AppTheme.darkBlack),
                       decoration: InputDecoration(
-                        hintText: 'Enter Name',
+                        hintText: isGrocery
+                            ? 'Fresh produce, dairy & daily staples...'
+                            : 'Brief description of your store or outlet...',
                         hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
                         contentPadding: const EdgeInsets.all(16),
                         filled: true,
@@ -5385,8 +5596,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Restaurant Images Section Header
-                    _buildFormLabel('Restaurant Images'),
+                    // Store Images Section Header
+                    _buildFormLabel(isGrocery ? 'Store Photos' : 'Outlet Photos'),
                     const SizedBox(height: 2),
                     Align(
                       alignment: Alignment.centerLeft,
@@ -5740,7 +5951,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Sign up to explore delicious meals and get them delivered to your location',
+                      isGrocery
+                          ? 'Register your grocery store or mart to reach hyperlocal customers'
+                          : 'Sign up to manage your partner store and accept live customer orders',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -6015,7 +6228,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           const WelcomeBackLogo(height: 72),
                           const SizedBox(height: 6),
                           Text(
-                            'Sign in to manage your restaurant orders & menu',
+                            isGrocery
+                                ? 'Sign in to manage your store orders & SKU inventory'
+                                : 'Sign in to manage your orders, catalog & inventory',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
@@ -6055,7 +6270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ? [
                                           BoxShadow(
                                               color: Colors.black
-                                                  .withOpacity(0.06),
+                                                  .withValues(alpha: 0.06),
                                               blurRadius: 4,
                                               offset: const Offset(0, 2))
                                         ]
@@ -6104,7 +6319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ? [
                                           BoxShadow(
                                               color: Colors.black
-                                                  .withOpacity(0.06),
+                                                  .withValues(alpha: 0.06),
                                               blurRadius: 4,
                                               offset: const Offset(0, 2))
                                         ]
@@ -6451,7 +6666,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ECDKART Restaurant Partner Value Proposition & Features
+                    // Tricelyn Partner Value Proposition & Features
                     _buildRestaurantPartnerContent(),
 
                     const SizedBox(height: 24),
@@ -6619,6 +6834,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+      },
+    );
   }
 
   Widget _buildFormLabel(String label) {
@@ -6677,6 +6894,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildRestaurantPartnerContent() {
+    final bool isGrocery = PlatformConfigService.isGroceryPlatform;
+    final String brandName = PlatformConfigService.appName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -6687,7 +6906,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'WHY PARTNER WITH ECD KART',
+                'WHY PARTNER WITH ${brandName.toUpperCase()}',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -6735,7 +6954,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Grow Your Kitchen Sales in Sohna',
+                      isGrocery ? 'Grow Your Grocery Store Sales' : 'Grow Your Partner Sales',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -6744,7 +6963,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Direct orders, fast delivery & 0% setup fee for local restaurants.',
+                      isGrocery
+                          ? 'Direct hyperlocal orders, express dark-store delivery & 0% setup fee for grocery stores.'
+                          : 'Direct orders, fast delivery & 0% setup fee for local partners.',
                       style: GoogleFonts.poppins(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
@@ -6763,9 +6984,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildPartnerFeatureRow(
           icon: Icons.delivery_dining_rounded,
           iconColor: const Color(0xFF248C70),
-          title: 'Hyperlocal Sohna Fleet',
-          subtitle:
-              'Dedicated rider network ensuring speedy 25-30 min door-to-door delivery.',
+          title: 'Hyperlocal Delivery Fleet',
+          subtitle: isGrocery
+              ? 'Dedicated rider network ensuring rapid 10-20 min doorstep grocery delivery.'
+              : 'Dedicated rider network ensuring speedy door-to-door delivery.',
         ),
         const SizedBox(height: 10),
         _buildPartnerFeatureRow(
@@ -6779,13 +7001,14 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildPartnerFeatureRow(
           icon: Icons.storefront_rounded,
           iconColor: const Color(0xFFE65100),
-          title: 'Live Order & Menu Control',
-          subtitle:
-              'Real-time loud audio alerts, instant item toggle & live price management.',
+          title: isGrocery ? 'Live Order & SKU Inventory Control' : 'Live Order & Catalog Control',
+          subtitle: isGrocery
+              ? 'Real-time loud audio alerts, instant SKU stock toggle & live price management.'
+              : 'Real-time loud audio alerts, instant item toggle & live price management.',
         ),
         const SizedBox(height: 16),
 
-        // Stats ribbon (50+ Partners • 10K+ Orders • 25 Min Delivery)
+        // Stats ribbon
         Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
@@ -6798,7 +7021,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               _buildStatItem('50+', 'Local Partners'),
               Container(width: 1, height: 24, color: Colors.grey[300]),
-              _buildStatItem('25 Min', 'Avg Delivery'),
+              _buildStatItem(isGrocery ? '15 Min' : '25 Min', 'Avg Delivery'),
               Container(width: 1, height: 24, color: Colors.grey[300]),
               _buildStatItem('100%', 'Safe Payouts'),
             ],
@@ -6821,7 +7044,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     size: 13, color: Colors.grey),
                 const SizedBox(width: 5),
                 Text(
-                  'ecdkart.co.in • Sohna, Gurugram (122103)',
+                  '${brandName.toLowerCase()}.com • Multi-Vendor Partner Hub',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,

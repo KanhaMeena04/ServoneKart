@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 
 class RestaurantDashboardScreen extends StatefulWidget {
@@ -19,21 +21,41 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
   bool _isLoading = false;
 
   // Dynamic Live Data
+  List<dynamic> _rawOrders = [];
   String _todayEarning = '₹0.00';
   int _todayOrders = 0;
+  String _periodEarning = '₹0.00';
+  int _periodOrders = 0;
   int _completedOrders = 0;
   int _cancelledOrders = 0;
   double _totalRevenue = 0.0;
   int _pickupCount = 0;
   int _deliveredCount = 0;
 
+  List<String> _chartMonths = ['-', '-', '-', '-', '-', '-'];
+  List<double> _chartBarValues = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
   List<Map<String, dynamic>> _earningHistory = [];
+
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _initChartMonthLabels();
     _loadLiveAnalytics();
+  }
+
+  void _initChartMonthLabels() {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final now = DateTime.now();
+    final labels = <String>[];
+    for (int offset = 5; offset >= 0; offset--) {
+      final dt = DateTime(now.year, now.month - offset, 1);
+      labels.add(monthNames[dt.month - 1]);
+    }
+    _chartMonths = labels;
   }
 
   @override
@@ -45,8 +67,10 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
   Future<void> _loadLiveAnalytics() async {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
-    var restId = ApiConstants.restaurantId.isNotEmpty ? ApiConstants.restaurantId : (prefs.getString('restaurantId') ?? '');
-    final phone = prefs.getString('userPhone') ?? '8305370330';
+    var restId = ApiConstants.restaurantId.isNotEmpty
+        ? ApiConstants.restaurantId
+        : (prefs.getString('restaurantId') ?? '');
+    final phone = prefs.getString('userPhone') ?? '';
     if (restId.isEmpty) restId = phone;
     final token = prefs.getString('token') ?? '';
 
@@ -73,92 +97,137 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
         } else if (data['orders'] is List) {
           rawOrders = data['orders'];
         }
-
-        final now = DateTime.now();
-        double todayEarn = 0.0;
-        int todayOrdCount = 0;
-        int completedCount = 0;
-        int cancelledCount = 0;
-        double totalRev = 0.0;
-        int pickup = 0;
-        int delivered = 0;
-        List<Map<String, dynamic>> history = [];
-
-        for (var o in rawOrders) {
-          final amt = double.tryParse((o['payableAmount'] ?? o['totalAmount'] ?? 0).toString()) ?? 0.0;
-          final status = (o['status'] ?? '').toString().toLowerCase();
-          final deliveryStatus = (o['deliveryStatus'] ?? '').toString().toLowerCase();
-          final isCancelled = status == 'cancelled' || status == 'failed';
-          final isCompleted = status == 'delivered' || deliveryStatus == 'delivered';
-          final orderType = (o['orderType'] ?? 'delivery').toString().toLowerCase();
-
-          DateTime orderDate = DateTime.now();
-          if (o['createdAt'] != null) {
-            orderDate = DateTime.tryParse(o['createdAt'].toString()) ?? DateTime.now();
-          }
-
-          final isSameDay = orderDate.year == now.year && orderDate.month == now.month && orderDate.day == now.day;
-
-          if (!isCancelled) {
-            totalRev += amt;
-            if (isSameDay) {
-              todayEarn += amt;
-              todayOrdCount++;
-            }
-          }
-
-          if (isCancelled) {
-            cancelledCount++;
-          } else if (isCompleted) {
-            completedCount++;
-          }
-
-          if (orderType == 'pickup') {
-            pickup++;
-          } else {
-            delivered++;
-          }
-
-          if (isCompleted || !isCancelled) {
-            final period = orderDate.hour >= 12 ? 'PM' : 'AM';
-            final hr = orderDate.hour > 12 ? orderDate.hour - 12 : (orderDate.hour == 0 ? 12 : orderDate.hour);
-            final min = orderDate.minute.toString().padLeft(2, '0');
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-              final rawOrdNum = o['orderNumber'] ?? o['orderId'];
-              final displayOrdId = rawOrdNum != null && rawOrdNum.toString().isNotEmpty
-                  ? rawOrdNum.toString().toUpperCase()
-                  : (o['_id'] != null && o['_id'].toString().length > 8
-                      ? 'ORD${o['_id'].toString().substring(o['_id'].toString().length - 4).toUpperCase()}'
-                      : o['_id']?.toString() ?? 'N/A');
-              history.add({
-                'amount': '₹${amt.toStringAsFixed(2)}',
-                'paymentMode': o['paymentMethod'] ?? (o['paymentStatus'] == 'paid' ? 'UPI Online' : 'Cash'),
-                'dateTime': '${orderDate.day} ${months[orderDate.month - 1]}, $hr:$min $period',
-                'orderId': 'Order #$displayOrdId',
-                'status': isCompleted ? 'Completed' : (status.isNotEmpty ? status[0].toUpperCase() + status.substring(1) : 'Processing'),
-              });
-          }
-        }
-
-        if (mounted) {
-          setState(() {
-            _todayEarning = '₹${todayEarn.toStringAsFixed(2)}';
-            _todayOrders = todayOrdCount;
-            _completedOrders = completedCount;
-            _cancelledOrders = cancelledCount;
-            _totalRevenue = totalRev;
-            _pickupCount = pickup;
-            _deliveredCount = delivered;
-            _earningHistory = history;
-            _isLoading = false;
-          });
-        }
+        _rawOrders = rawOrders;
+        _recomputeMetrics();
       } else {
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _recomputeMetrics() {
+    final now = DateTime.now();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    double todayEarn = 0.0;
+    int todayOrdCount = 0;
+    double periodEarn = 0.0;
+    int periodOrdCount = 0;
+    int completedCount = 0;
+    int cancelledCount = 0;
+    double totalRev = 0.0;
+    int pickup = 0;
+    int delivered = 0;
+    final List<Map<String, dynamic>> history = [];
+
+    // 6-month bucket totals ending this month
+    final List<DateTime> bucketMonths = List.generate(
+      6,
+      (idx) => DateTime(now.year, now.month - (5 - idx), 1),
+    );
+    final List<double> monthlyTotals = List.filled(6, 0.0);
+
+    for (final o in _rawOrders) {
+      final amt = double.tryParse((o['payableAmount'] ?? o['totalAmount'] ?? 0).toString()) ?? 0.0;
+      final status = (o['status'] ?? '').toString().toLowerCase();
+      final deliveryStatus = (o['deliveryStatus'] ?? '').toString().toLowerCase();
+      final isCancelled = status == 'cancelled' || status == 'failed';
+      final isCompleted = status == 'delivered' || deliveryStatus == 'delivered';
+      final orderType = (o['orderType'] ?? 'delivery').toString().toLowerCase();
+
+      DateTime orderDate = now;
+      if (o['createdAt'] != null) {
+        orderDate = DateTime.tryParse(o['createdAt'].toString()) ?? now;
+      }
+
+      final isSameDay = orderDate.year == now.year &&
+          orderDate.month == now.month &&
+          orderDate.day == now.day;
+
+      final bool inSelectedPeriod;
+      if (_selectedPeriod == 'Today') {
+        inSelectedPeriod = isSameDay;
+      } else if (_selectedPeriod == 'Weekly') {
+        inSelectedPeriod = now.difference(orderDate).inDays <= 7;
+      } else {
+        inSelectedPeriod = now.difference(orderDate).inDays <= 30;
+      }
+
+      if (!isCancelled) {
+        totalRev += amt;
+        if (isSameDay) {
+          todayEarn += amt;
+          todayOrdCount++;
+        }
+        for (int b = 0; b < bucketMonths.length; b++) {
+          if (orderDate.year == bucketMonths[b].year && orderDate.month == bucketMonths[b].month) {
+            monthlyTotals[b] += amt;
+          }
+        }
+      }
+
+      if (inSelectedPeriod) {
+        if (!isCancelled) {
+          periodEarn += amt;
+          periodOrdCount++;
+        }
+        if (isCancelled) {
+          cancelledCount++;
+        } else if (isCompleted) {
+          completedCount++;
+        }
+      }
+
+      if (orderType == 'pickup' || orderType == 'self_pickup' || o['isSelfPickup'] == true) {
+        pickup++;
+      } else {
+        delivered++;
+      }
+
+      if (isCompleted || !isCancelled) {
+        final period = orderDate.hour >= 12 ? 'PM' : 'AM';
+        final hr = orderDate.hour > 12 ? orderDate.hour - 12 : (orderDate.hour == 0 ? 12 : orderDate.hour);
+        final min = orderDate.minute.toString().padLeft(2, '0');
+
+        final rawOrdNum = o['orderNumber'] ?? o['orderId'];
+        final displayOrdId = rawOrdNum != null && rawOrdNum.toString().isNotEmpty
+            ? rawOrdNum.toString().toUpperCase()
+            : (o['_id'] != null && o['_id'].toString().length > 8
+                ? 'ORD${o['_id'].toString().substring(o['_id'].toString().length - 4).toUpperCase()}'
+                : o['_id']?.toString() ?? 'N/A');
+        history.add({
+          'amount': '₹${amt.toStringAsFixed(2)}',
+          'paymentMode': o['paymentMethod'] ?? (o['paymentStatus'] == 'paid' ? 'UPI Online' : 'Cash'),
+          'dateTime': '${orderDate.day} ${months[orderDate.month - 1]}, $hr:$min $period',
+          'orderId': 'Order #$displayOrdId',
+          'status': isCompleted ? 'Completed' : (status.isNotEmpty ? status[0].toUpperCase() + status.substring(1) : 'Processing'),
+        });
+      }
+    }
+
+    final maxMonthly = monthlyTotals.fold<double>(0.0, (m, v) => v > m ? v : m);
+    final normalizedBars = maxMonthly > 0
+        ? monthlyTotals.map((v) => (v / maxMonthly).clamp(0.0, 1.0)).toList()
+        : List<double>.filled(6, 0.0);
+
+    if (mounted) {
+      setState(() {
+        _todayEarning = '₹${todayEarn.toStringAsFixed(2)}';
+        _todayOrders = todayOrdCount;
+        _periodEarning = '₹${periodEarn.toStringAsFixed(2)}';
+        _periodOrders = periodOrdCount;
+        _completedOrders = completedCount;
+        _cancelledOrders = cancelledCount;
+        _totalRevenue = totalRev;
+        _pickupCount = pickup;
+        _deliveredCount = delivered;
+        _chartMonths = bucketMonths.map((d) => months[d.month - 1]).toList();
+        _chartBarValues = normalizedBars;
+        _earningHistory = history;
+        _isLoading = false;
+      });
     }
   }
 
@@ -240,7 +309,9 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
               ),
             ),
             Text(
-              'All your restaurant\'s activity for today in one place.',
+              _isGrocery
+                  ? "All your store's activity at a glance."
+                  : "All your restaurant's activity at a glance.",
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 color: Colors.grey[600],
@@ -249,11 +320,18 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.black87),
+            tooltip: 'Refresh Analytics',
+            onPressed: _loadLiveAnalytics,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.black,
           unselectedLabelColor: Colors.grey[500],
-          indicatorColor: AppColors.primaryGreen, // Brand Primary Green indicator
+          indicatorColor: AppColors.primaryGreen,
           indicatorWeight: 3,
           labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
           unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 14),
@@ -263,76 +341,84 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOverviewTab(),
-          _buildAnalyticsTab(),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildOverviewTab(),
+                _buildAnalyticsTab(),
+              ],
+            ),
     );
   }
 
   // TAB 1: Overview matching Reference Image 1
   Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Summary Header Row with Period Dropdown
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Summary',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedPeriod,
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedPeriod = val);
-                    },
-                    items: ['Today', 'Weekly', 'Monthly'].map((p) {
-                      return DropdownMenuItem(value: p, child: Text(p));
-                    }).toList(),
+    return RefreshIndicator(
+      color: AppColors.primaryGreen,
+      onRefresh: _loadLiveAnalytics,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Summary Header Row with Period Dropdown
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Summary',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedPeriod,
+                      icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                      onChanged: (val) {
+                        if (val != null) {
+                          _selectedPeriod = val;
+                          _recomputeMetrics();
+                        }
+                      },
+                      items: ['Today', 'Weekly', 'Monthly'].map((p) {
+                        return DropdownMenuItem(value: p, child: Text(p));
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-          // 2x2 Summary Stat Cards Grid matching Reference Image 1
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.8,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            children: [
-              _buildSummaryCard(_todayEarning, 'Today Earning'),
-              _buildSummaryCard('$_todayOrders', 'Today Orders'),
-              _buildSummaryCard('$_completedOrders', 'Completed Orders'),
-              _buildSummaryCard('$_cancelledOrders', 'Cancelled Orders'),
-            ],
-          ),
+            // 2x2 Summary Stat Cards Grid
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 1.8,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              children: [
+                _buildSummaryCard(_periodEarning, '$_selectedPeriod Earning'),
+                _buildSummaryCard('$_periodOrders', '$_selectedPeriod Orders'),
+                _buildSummaryCard('$_completedOrders', 'Completed Orders'),
+                _buildSummaryCard('$_cancelledOrders', 'Cancelled Orders'),
+              ],
+            ),
           const SizedBox(height: 24),
 
           // Earning History Section Title
@@ -441,8 +527,9 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // Summary Metric Card matching Reference Image 1 & Yellow Theme
   Widget _buildSummaryCard(String title, String subtitle) {
@@ -534,12 +621,15 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
                 ),
                 const SizedBox(height: 20),
 
-                // Custom Bar Chart Visualization with Trend Line
+                // Custom Bar Chart Visualization with Live Monthly Totals
                 SizedBox(
                   height: 180,
                   width: double.infinity,
                   child: CustomPaint(
-                    painter: RevenueChartPainter(),
+                    painter: RevenueChartPainter(
+                      months: _chartMonths,
+                      barValues: _chartBarValues,
+                    ),
                   ),
                 ),
               ],
@@ -615,7 +705,11 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
                     color: const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.takeout_dining, color: AppColors.primaryGreen, size: 18),
+                  child: Icon(
+                    _isGrocery ? Icons.local_mall_outlined : Icons.takeout_dining,
+                    color: AppColors.primaryGreen,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -655,13 +749,19 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
   }
 }
 
-// Custom Painter for Revenue Bar Chart matching Reference Image 2
+// Custom Painter for Revenue Bar Chart (Live Monthly Revenue Data)
 class RevenueChartPainter extends CustomPainter {
+  final List<String> months;
+  final List<double> barValues;
+
+  RevenueChartPainter({
+    required this.months,
+    required this.barValues,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    final barValues = [0.75, 0.25, 0.40, 0.28, 0.50, 0.85];
-    final lineValues = [0.80, 0.65, 0.78, 0.72, 0.76, 0.90];
+    if (months.isEmpty) return;
 
     const double barWidth = 24.0;
     final double spacing = (size.width - (months.length * barWidth)) / (months.length + 1);
@@ -691,20 +791,20 @@ class RevenueChartPainter extends CustomPainter {
     final List<Offset> linePoints = [];
 
     for (int i = 0; i < months.length; i++) {
+      final double normVal = i < barValues.length ? barValues[i].clamp(0.0, 1.0) : 0.0;
       final double x = spacing + i * (barWidth + spacing) + barWidth / 2;
-      final double barHeight = (size.height - 30) * barValues[i];
+      final double barHeight = (size.height - 30) * normVal;
       final double barTop = (size.height - 30) - barHeight;
 
-      // Draw Bar
-      final Rect barRect = Rect.fromLTWH(x - barWidth / 2, barTop, barWidth, barHeight);
-      final RRect roundedBar = RRect.fromRectAndRadius(barRect, const Radius.circular(4));
-      canvas.drawRRect(roundedBar, barPaint);
+      if (barHeight > 0) {
+        final Rect barRect = Rect.fromLTWH(x - barWidth / 2, barTop, barWidth, barHeight);
+        final RRect roundedBar = RRect.fromRectAndRadius(barRect, const Radius.circular(4));
+        canvas.drawRRect(roundedBar, barPaint);
+      }
 
-      // Save line point
-      final double lineY = (size.height - 30) * (1.0 - lineValues[i] * 0.8);
+      final double lineY = (size.height - 30) * (1.0 - normVal * 0.85);
       linePoints.add(Offset(x, lineY));
 
-      // Draw Month Label below
       textPainter.text = TextSpan(
         text: months[i],
         style: TextStyle(color: Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w500),
@@ -713,7 +813,6 @@ class RevenueChartPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - 20));
     }
 
-    // Draw Smooth Line Chart Curve
     final Path path = Path();
     if (linePoints.isNotEmpty) {
       path.moveTo(linePoints[0].dx, linePoints[0].dy);
@@ -726,7 +825,6 @@ class RevenueChartPainter extends CustomPainter {
       }
       canvas.drawPath(path, linePaint);
 
-      // Draw Dots on line
       for (final pt in linePoints) {
         canvas.drawCircle(pt, 4.5, dotPaint);
         canvas.drawCircle(pt, 4.5, dotBorderPaint);
@@ -735,5 +833,7 @@ class RevenueChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant RevenueChartPainter oldDelegate) {
+    return oldDelegate.months != months || oldDelegate.barValues != barValues;
+  }
 }

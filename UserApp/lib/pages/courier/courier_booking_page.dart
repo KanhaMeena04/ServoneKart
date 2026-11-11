@@ -224,7 +224,7 @@ class _CourierBookingPageState extends State<CourierBookingPage> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ECDKART Courier & Parcel', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Tricelyn Courier & Parcel', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             Text('Instant Pick & Drop in Indore • 30-45 mins', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),

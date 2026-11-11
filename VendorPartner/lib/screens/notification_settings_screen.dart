@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -23,6 +25,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   bool _riderAssignedAlert = true;
   bool _riderArrivedAlert = true;
   bool _orderPickedUpAlert = true;
+
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
 
   @override
   void initState() {
@@ -120,20 +125,24 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
                   const SizedBox(height: 16),
 
-                  // Preparation & Status Notifications Section
+                  // Preparation / Packing & Status Notifications Section
                   _buildSectionCard(
-                    title: 'Preparation & Status Notifications',
+                    title: _isGrocery ? 'Packing & Status Notifications' : 'Preparation & Status Notifications',
                     children: [
                       _buildNotificationRow(
-                        title: 'Food Ready Alert',
-                        subtitle: 'Notify when food is marked as ready.',
+                        title: _isGrocery ? 'Order Ready Alert' : 'Food Ready Alert',
+                        subtitle: _isGrocery
+                            ? 'Notify when groceries are packed and marked ready.'
+                            : 'Notify when food is marked as ready.',
                         value: _foodReadyAlert,
                         onChanged: (val) => setState(() => _foodReadyAlert = val),
                       ),
                       const Divider(height: 24, thickness: 0.8),
                       _buildNotificationRow(
                         title: 'Order Delay Alert',
-                        subtitle: 'Alerts if preparation or pickup is delayed.',
+                        subtitle: _isGrocery
+                            ? 'Alerts if packing or pickup is delayed.'
+                            : 'Alerts if preparation or pickup is delayed.',
                         value: _orderDelayAlert,
                         onChanged: (val) => setState(() => _orderDelayAlert = val),
                       ),
@@ -148,14 +157,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     children: [
                       _buildNotificationRow(
                         title: 'Rider Assigned Alert',
-                        subtitle: 'Alert when the rider reaches your restaurant.',
+                        subtitle: _isGrocery
+                            ? 'Alert when a delivery rider is assigned to your store.'
+                            : 'Alert when a delivery rider is assigned.',
                         value: _riderAssignedAlert,
                         onChanged: (val) => setState(() => _riderAssignedAlert = val),
                       ),
                       const Divider(height: 24, thickness: 0.8),
                       _buildNotificationRow(
                         title: 'Rider Arrived Alert',
-                        subtitle: 'Alert when the rider reaches your restaurant.',
+                        subtitle: _isGrocery
+                            ? 'Alert when the rider reaches your store.'
+                            : 'Alert when the rider reaches your restaurant.',
                         value: _riderArrivedAlert,
                         onChanged: (val) => setState(() => _riderArrivedAlert = val),
                       ),

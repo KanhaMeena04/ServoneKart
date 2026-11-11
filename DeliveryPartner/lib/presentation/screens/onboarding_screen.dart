@@ -27,7 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Welcome to ECD Kart',
+                  'Welcome to Tricelyn',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

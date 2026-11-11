@@ -695,64 +695,7 @@ exports.getVendorCredentials = async (req, res) => {
         .lean();
     }
 
-    if (!vendors || vendors.length === 0) {
-      vendors = [
-        {
-          _id: 'store_tricelyn_indore_01',
-          name: 'Tricelyn Supermart (Central Warehouse Hub)',
-          ownerName: 'Vikas Agrawal',
-          phone: '9826022002',
-          contactNumber: '9826022002',
-          email: 'freshmart@servonekart.com',
-          city: 'Indore',
-          pin: '1234',
-          assignedRole: 'Store Manager',
-          permissions: ['orders', 'inventory', 'products', 'payouts', 'settings'],
-          isActive: true
-        },
-        {
-          _id: 'store_tricelyn_indore_02',
-          name: 'Fresh Farm Hub (Palasia Superstore)',
-          ownerName: 'Rajesh Sharma',
-          phone: '9826011001',
-          contactNumber: '9826011001',
-          email: 'chappan@servonekart.com',
-          city: 'Indore',
-          pin: '1234',
-          assignedRole: 'Inventory Manager',
-          permissions: ['inventory', 'orders'],
-          isActive: true
-        },
-        {
-          _id: 'store_tricelyn_indore_03',
-          name: 'Apna Super Kirana (Saket Nagar)',
-          ownerName: 'Sanjay Gupta',
-          phone: '9893077123',
-          contactNumber: '9893077123',
-          email: 'apnakirana@servonekart.com',
-          city: 'Indore',
-          pin: '4321',
-          assignedRole: 'Store Manager',
-          permissions: ['orders', 'inventory', 'products', 'payouts'],
-          isActive: true
-        },
-        {
-          _id: 'store_tricelyn_indore_04',
-          name: 'Malwa Daily Mart (Bhawarkua)',
-          ownerName: 'Ramesh Patel',
-          phone: '9893055441',
-          contactNumber: '9893055441',
-          email: 'malwamart@servonekart.com',
-          city: 'Indore',
-          pin: '1234',
-          assignedRole: 'Order Dispatcher',
-          permissions: ['orders'],
-          isActive: true
-        }
-      ];
-    }
-
-    const formatted = vendors.map(v => {
+    const formatted = (vendors || []).map(v => {
       const nameStr = typeof v.name === 'object' ? (v.name.en || Object.values(v.name)[0] || 'Store Partner') : (v.name || 'Store Partner');
       return {
         _id: v._id.toString(),
@@ -761,8 +704,8 @@ exports.getVendorCredentials = async (req, res) => {
         ownerName: v.ownerName || 'Store Manager',
         phone: v.contactNumber || v.phone || '',
         email: v.email || '',
-        city: v.city || 'Indore',
-        pin: v.pin || v.ownerPin || '1234',
+        city: v.city || '',
+        pin: v.pin || v.ownerPin || '',
         assignedRole: v.assignedRole || 'Store Manager',
         permissions: v.permissions && v.permissions.length > 0 ? v.permissions : ['orders', 'inventory', 'products', 'payouts', 'settings'],
         isActive: v.isActive !== false,
@@ -819,10 +762,17 @@ exports.updateVendorCredentials = async (req, res) => {
       }
     }
 
+    if (!mongoose.isValidObjectId(id) || !updated) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store partner not found'
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Vendor credentials and permissions updated successfully',
-      data: updated || { _id: id, ...updateObj }
+      data: updated
     });
   } catch (error) {
     console.error('updateVendorCredentials error:', error);

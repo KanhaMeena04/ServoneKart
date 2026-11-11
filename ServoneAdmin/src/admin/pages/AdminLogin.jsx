@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../api/auth.js';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ShieldCheck, Clock, Store, Lock, User, Eye, EyeOff, CheckCircle2, ArrowRight } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Sparkles, Lock, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 const AdminLogin = () => {
   const { login, loading, error, success } = useAdminAuth();
   const navigate = useNavigate();
-  const { user, login: setAuth } = useAuth();
+  const { user } = useAuth();
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -38,38 +37,20 @@ const AdminLogin = () => {
     }
   };
 
-  // Direct One-Click Demo Admin Login: Attempts API, with instant fallback bypass if offline/buffering
+  // Direct One-Click Demo Super Admin Sign In (authenticates via real API)
   const handleDemoLogin = async () => {
     setLoginId("admin@gmail.com");
     setPassword("admin123");
 
-    // 1. Attempt API login
-    try {
-      const loggedUser = await login("admin@gmail.com", "admin123");
-      if (loggedUser) {
-        navigate("/dashboard");
-        return;
-      }
-    } catch (_) {
-      // Backend may be offline or buffering, fall through to instant direct bypass
+    const loggedUser = await login("admin@gmail.com", "admin123");
+    if (!loggedUser) return;
+    if (loggedUser.role === "admin") {
+      navigate("/dashboard");
+    } else if (loggedUser.role === "restaurant_owner" || loggedUser.role === "vendor") {
+      navigate("/vendor/portal");
+    } else {
+      navigate("/");
     }
-
-    // 2. Instant client-side fallback bypass so admin is never locked out
-    const demoAdminUser = {
-      _id: "660000000000000000000001",
-      id: "660000000000000000000001",
-      name: "Super Administrator",
-      email: "admin@gmail.com",
-      mobile: "+919999999999",
-      role: "admin",
-      roleName: "Super Admin",
-      permissions: ["all"],
-      isVerified: true
-    };
-    const demoToken = "demo_tricelyn_admin_jwt_" + Date.now();
-    setAuth(demoAdminUser, demoToken);
-    toast.success("Welcome, Super Admin! (Demo Console Active)");
-    navigate("/dashboard");
   };
 
   return (
@@ -85,33 +66,33 @@ const AdminLogin = () => {
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 border border-white/25 text-white text-xs font-bold tracking-wide backdrop-blur-sm shadow-sm">
             <span className="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
-            TRICELYN ADMIN CONSOLE · INDORE
+            TRICELYN MASTER SUPER ADMIN
           </div>
         </div>
 
         {/* Middle Main Content */}
         <div className="relative z-10 my-10 lg:my-0 max-w-xl">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white mb-5 font-heading">
-            Tricelyn Hyperlocal Quick-Commerce Platform
+            Tricelyn Multi-Vendor Grocery &amp; Quick-Commerce Control Tower
           </h1>
           <p className="text-sm sm:text-base text-blue-100 leading-relaxed font-normal">
-            Central operations hub for Indore: manage dark store fulfillment, multi-vendor partner supermarket catalog, live 10-15 minute rider fleet tracking, real-time inventory, and customer orders.
+            Master Super Admin operations hub: manage multi-vendor grocery stores, dark store inventory, RBAC partner credentials, dynamic delivery verticals, GST invoicing, and live rider fleet across regions.
           </p>
         </div>
 
         {/* Bottom Feature Badges */}
         <div className="relative z-10 pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
-            <div className="text-xl sm:text-2xl font-black text-white tracking-tight">25+ Stores</div>
-            <div className="text-xs text-blue-200 mt-0.5">Active Across Indore</div>
+            <div className="text-xl sm:text-2xl font-black text-white tracking-tight">Multi-Vendor</div>
+            <div className="text-xs text-blue-200 mt-0.5">Role-Based Access Control</div>
           </div>
           <div>
             <div className="text-xl sm:text-2xl font-black text-white tracking-tight">10-15 Mins</div>
             <div className="text-xs text-blue-200 mt-0.5">Live Rider Routing</div>
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-xl sm:text-2xl font-black text-white tracking-tight">100% Fresh</div>
-            <div className="text-xs text-blue-200 mt-0.5">Verified Dark Stores</div>
+            <div className="text-xl sm:text-2xl font-black text-white tracking-tight">100% Dynamic</div>
+            <div className="text-xs text-blue-200 mt-0.5">Real-Time Store &amp; Catalog Sync</div>
           </div>
         </div>
       </div>
@@ -133,10 +114,10 @@ const AdminLogin = () => {
               </div>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight font-heading">
-              Welcome Administrator
+              Welcome Super Admin
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">
-              Sign in to manage dark stores, orders, products &amp; rider fleet in Indore
+              Sign in as Master Super Admin to control stores, inventory, billing &amp; delivery operations
             </p>
           </div>
 
@@ -250,14 +231,15 @@ const AdminLogin = () => {
               )}
             </button>
 
-            {/* ONE-CLICK DEMO ADMIN LOGIN BUTTON (DIRECT BYPASS) */}
+            {/* ONE-CLICK DEMO SUPER ADMIN LOGIN BUTTON */}
             <button
               type="button"
               onClick={handleDemoLogin}
+              disabled={loading}
               className="w-full py-3 px-5 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-[#0055ff] border border-blue-200 transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-xs cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-[#0055ff]" />
-              <span>⚡ One-Click Demo Admin Login (Direct Bypass)</span>
+              <span>One-Click Demo Super Admin Sign In</span>
             </button>
           </form>
 

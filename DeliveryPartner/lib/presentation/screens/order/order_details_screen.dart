@@ -4,6 +4,7 @@ import '../../../logic/blocs/driver/driver_bloc.dart';
 import '../../../logic/blocs/driver/driver_event.dart';
 import '../../../logic/blocs/driver/driver_state.dart';
 import '../../../data/services/api_service.dart';
+import '../../../data/services/platform_config_service.dart';
 import 'order_tracking_screen.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
@@ -18,6 +19,24 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   bool get _isCourier => (_currentOrder['vertical'] == 'courier' || _currentOrder['parcelDetails'] != null);
 
+  bool get _isGroceryOrder {
+    if (_isCourier) return false;
+    final vertical = (_currentOrder['vertical'] ?? '').toString().trim().toLowerCase();
+    if (vertical == 'grocery') return true;
+    if (vertical == 'food' && PlatformConfigService.isFoodAllowed) return false;
+    if (vertical.isEmpty) {
+      final bType = (_currentOrder['restaurant']?['businessType'] ?? '').toString().toLowerCase();
+      if (bType == 'restaurant' && PlatformConfigService.isFoodAllowed) return false;
+      return true;
+    }
+    return PlatformConfigService.isGroceryPlatform;
+  }
+
+  String get _partnerShortLabel {
+    if (_isCourier) return 'Sender';
+    return _isGroceryOrder ? 'Store' : 'Restaurant';
+  }
+
   Widget _buildVerticalBadge(Map<String, dynamic> order) {
     String vertical = (order['vertical'] ?? '').toString().toLowerCase();
     if (vertical.isEmpty) {
@@ -28,7 +47,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       } else if (order['prescriptionUrl'] != null) {
         vertical = 'pharmacy';
       } else {
-        vertical = 'food';
+        final bType = (order['restaurant']?['businessType'] ?? '').toString().toLowerCase();
+        vertical = (bType == 'restaurant' && PlatformConfigService.isFoodAllowed)
+            ? 'food'
+            : 'grocery';
       }
     }
 
@@ -38,11 +60,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     String label;
 
     switch (vertical) {
-      case 'grocery':
-        bgColor = const Color(0xFFE8F5E9);
-        textColor = const Color(0xFF2E7D32);
-        icon = Icons.shopping_basket_rounded;
-        label = 'GROCERY';
+      case 'food':
+        bgColor = const Color(0xFFFFF3E0);
+        textColor = const Color(0xFFE65100);
+        icon = Icons.restaurant_rounded;
+        label = 'FOOD';
         break;
       case 'courier':
         bgColor = const Color(0xFFF3E8FF);
@@ -69,11 +91,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         icon = Icons.water_drop_rounded;
         label = 'ESSENTIALS';
         break;
+      case 'grocery':
       default:
-        bgColor = const Color(0xFFFFF3E0);
-        textColor = const Color(0xFFE65100);
-        icon = Icons.restaurant_rounded;
-        label = 'FOOD';
+        bgColor = const Color(0xFFE8F5E9);
+        textColor = const Color(0xFF2E7D32);
+        icon = Icons.shopping_basket_rounded;
+        label = 'GROCERY';
     }
 
     return Container(
@@ -136,33 +159,36 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final customer = _currentOrder['customer'] ?? {};
-    final address = _currentOrder['address'] ?? _currentOrder['deliveryAddress'] ?? {};
-    final items = _currentOrder['items'] as List? ?? [];
-    final restaurant = _currentOrder['restaurant'] ?? {};
-    final deliveryStatus = _currentOrder['deliveryStatus'] ?? 'Unknown';
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, _) {
+        final customer = _currentOrder['customer'] ?? {};
+        final address = _currentOrder['address'] ?? _currentOrder['deliveryAddress'] ?? {};
+        final items = _currentOrder['items'] as List? ?? [];
+        final restaurant = _currentOrder['restaurant'] ?? _currentOrder['store'] ?? {};
+        final deliveryStatus = _currentOrder['deliveryStatus'] ?? 'Unknown';
 
-    // Dynamic buttons depending on status
-    String actionBtnText = '';
-    Color actionBtnColor = primaryGreen;
-    bool showActionButton = true;
+        // Dynamic buttons depending on status
+        String actionBtnText = '';
+        Color actionBtnColor = primaryGreen;
+        bool showActionButton = true;
 
-    if (deliveryStatus == 'driver_notified') {
-      showActionButton = false;
-    } else if (deliveryStatus == 'accepted' || deliveryStatus == 'assigned') {
-      actionBtnText = 'Mark Reached Store';
-      actionBtnColor = Colors.orange[700]!;
-    } else if (deliveryStatus == 'reached_store') {
-      actionBtnText = 'Waiting for Restaurant';
-      actionBtnColor = Colors.orange[300]!;
-    } else if (deliveryStatus == 'picked_up') {
-      actionBtnText = 'Complete Delivery';
-      actionBtnColor = primaryGreen;
-    } else {
-      showActionButton = false;
-    }
+        if (deliveryStatus == 'driver_notified') {
+          showActionButton = false;
+        } else if (deliveryStatus == 'accepted' || deliveryStatus == 'assigned') {
+          actionBtnText = 'Mark Reached $_partnerShortLabel';
+          actionBtnColor = Colors.orange[700]!;
+        } else if (deliveryStatus == 'reached_store') {
+          actionBtnText = 'Waiting for $_partnerShortLabel';
+          actionBtnColor = Colors.orange[300]!;
+        } else if (deliveryStatus == 'picked_up') {
+          actionBtnText = 'Complete Delivery';
+          actionBtnColor = primaryGreen;
+        } else {
+          showActionButton = false;
+        }
 
-    return BlocListener<DriverBloc, DriverState>(
+        return BlocListener<DriverBloc, DriverState>(
       listener: (context, state) {
         if (state is OrderStatusUpdated) {
           setState(() {
@@ -319,15 +345,25 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         children: [
                           _buildDetailRow(
                             _isCourier ? Icons.person_pin_circle_rounded : Icons.storefront,
-                            _isCourier ? 'Sender / Contact' : 'Restaurant/Store',
-                            _isCourier ? (_currentOrder['senderName'] ?? restaurant['name'] ?? 'Indore Sender') : restaurant['name'],
+                            _isCourier
+                                ? 'Sender / Contact'
+                                : (_isGroceryOrder ? 'Grocery Store' : 'Partner Store'),
+                            _isCourier
+                                ? (_currentOrder['senderName'] ?? restaurant['name'] ?? 'Partner Sender')
+                                : restaurant['name'],
                           ),
                           if ((_currentOrder['restaurantId'] ?? restaurant['restaurantId']) != null) ...[
                             const SizedBox(height: 12),
                             _buildDetailRow(Icons.confirmation_number_outlined, 'Partner ID', '#${_currentOrder['restaurantId'] ?? restaurant['restaurantId']}'),
                           ],
                           const SizedBox(height: 12),
-                          _buildDetailRow(Icons.pin_drop_outlined, 'Pickup Location', restaurant['address'] ?? _currentOrder['pickupAddress']?['addressLine'] ?? 'Indore, MP'),
+                          _buildDetailRow(
+                            Icons.pin_drop_outlined,
+                            'Pickup Location',
+                            _parseAddressToString(restaurant['address']).isNotEmpty
+                                ? _parseAddressToString(restaurant['address'])
+                                : (_currentOrder['pickupAddress']?['addressLine'] ?? 'Pickup Location N/A'),
+                          ),
                         ],
                       ),
                     ),
@@ -568,7 +604,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                       );
                                 } else if (deliveryStatus == 'reached_store' || deliveryStatus == 'reached_restaurant') {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Please show your OTP to the restaurant so they can verify the pickup.')),
+                                    SnackBar(content: Text('Please show your OTP to the ${_partnerShortLabel.toLowerCase()} so they can verify the pickup.')),
                                   );
                                 }
                               },
@@ -610,7 +646,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       Text(
                         _isCourier
                             ? 'SENDER PICKUP OTP (CONFIRM BEFORE DISPATCH)'
-                            : 'SHOW THIS 4-DIGIT CODE TO RESTAURANT FOR PICKUP',
+                            : 'SHOW THIS 4-DIGIT CODE TO ${_partnerShortLabel.toUpperCase()} FOR PICKUP',
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 12),
                       ),
                       const SizedBox(height: 8),
@@ -638,6 +674,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 

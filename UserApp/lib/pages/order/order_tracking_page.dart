@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/platform_config_provider.dart';
 import '../../services/location_service.dart';
 import '../../services/order_api_service.dart';
 import '../../services/restaurant_api_service.dart';
@@ -915,36 +916,62 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
     return '15-20 mins';
   }
 
+  bool get _isGroceryOrder {
+    final v = (_trackingData?['vertical'] ?? _trackingData?['order']?['vertical'] ?? '').toString().toLowerCase();
+    if (v == 'grocery' || v == 'essentials') return true;
+    if (v == 'food') return false;
+    if (_displayOrderNumber.toUpperCase().startsWith('GRO')) return true;
+    try {
+      return context.read<PlatformConfigProvider>().isGroceryActive;
+    } catch (_) {
+      return true;
+    }
+  }
+
   String get _statusTitle {
     final status = _effectiveStatus;
     if (status == 'delivered' || status == 'completed' || status == 'handovered') return 'Order Completed!';
     if (status == 'out_for_delivery' || status == 'on_the_way' || status == 'reached_customer_location' || status == 'delivery_arrived') return 'Order is on the way';
     if (status == 'picked_up' || status == 'partner_picked') return 'Partner Picked Order';
-    if (status == 'ready' || status == 'ready_for_pickup') return 'Food Prepared & Ready';
-    if (status == 'preparing' || status == 'in_kitchen') return 'Order Preparing in Kitchen';
+    if (status == 'ready' || status == 'ready_for_pickup') {
+      return _isGroceryOrder ? 'Order Packed & Ready' : 'Food Prepared & Ready';
+    }
+    if (status == 'preparing' || status == 'in_kitchen') {
+      return _isGroceryOrder ? 'Packing at Partner Store' : 'Order Preparing in Kitchen';
+    }
     if (status == 'confirmed' || status == 'accepted' || status == 'assigned' || status == 'reached_restaurant' || status == 'reached_store') return 'Order Accepted & Rider Assigned';
     if (status == 'cancelled') return 'Order Cancelled';
-    return 'Waiting for Restaurant Acceptance';
+    return _isGroceryOrder ? 'Waiting for Store Confirmation' : 'Waiting for Restaurant Acceptance';
   }
 
   String get _statusSubtitle {
     final status = _effectiveStatus;
-    if (status == 'delivered' || status == 'completed') return 'Thank you! Enjoy your meal!';
+    if (status == 'delivered' || status == 'completed') {
+      return _isGroceryOrder ? 'Thank you for shopping with Tricelyn!' : 'Thank you! Enjoy your meal!';
+    }
     if (status == 'out_for_delivery' || status == 'on_the_way' || status == 'reached_customer_location' || status == 'delivery_arrived') {
       final etaStr = _formatETA(_trackingData?['estimatedDeliveryTime'] ?? _trackingData?['order']?['estimatedDeliveryTime']);
       return 'Arriving in $etaStr';
     }
     if (status == 'picked_up' || status == 'partner_picked') {
-      return 'Delivery partner has picked up order from restaurant & starting delivery soon!';
+      return _isGroceryOrder
+          ? 'Delivery partner has picked up your order from the partner store!'
+          : 'Delivery partner has picked up order from restaurant & starting delivery soon!';
     }
     if (status == 'ready' || status == 'ready_for_pickup') {
-      return _isSelfPickup ? 'Food is ready at counter! Show OTP or QR to pickup' : 'Delivery partner is picking up your order';
+      return _isSelfPickup
+          ? 'Order is ready at counter! Show OTP or QR to pickup'
+          : 'Delivery partner is picking up your order';
     }
     if (status == 'confirmed' || status == 'accepted' || status == 'preparing' || status == 'in_kitchen') {
-      return 'Kitchen is preparing your fresh meal';
+      return _isGroceryOrder
+          ? 'Partner dark store is packing your items'
+          : 'Kitchen is preparing your fresh meal';
     }
     if (status == 'cancelled') return 'This order was cancelled';
-    return 'Restaurant is reviewing your order details';
+    return _isGroceryOrder
+        ? 'Partner store is confirming your items'
+        : 'Restaurant is reviewing your order details';
   }
 
   Color get _statusBannerColor {
@@ -988,7 +1015,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
     List<Map<String, String>> chatMessages = [
       {
         'sender': 'support',
-        'text': 'Hello! Welcome to ECDKart Support. How can we help you with order #${widget.orderId}?'
+        'text': 'Hello! Welcome to Tricelyn Support. How can we help you with order #${widget.orderId}?'
       }
     ];
 
@@ -1259,28 +1286,34 @@ class _OrderTrackingPageState extends State<OrderTrackingPage>
     switch (_pickupStage) {
       case 0:
         statusTitle = 'Order Confirmed';
-        statusSubtitle = 'Restaurant received your self pickup order';
+        statusSubtitle = _isGroceryOrder
+            ? 'Partner store received your self pickup order'
+            : 'Restaurant received your self pickup order';
         statusColor = const Color(0xFF2563EB);
         break;
       case 1:
-        statusTitle = 'Kitchen is Preparing';
+        statusTitle = _isGroceryOrder ? 'Packing at Store' : 'Kitchen is Preparing';
         statusSubtitle = 'Smart Prep Buffer: ~15 mins remaining';
         statusColor = const Color(0xFFD97706);
         break;
       case 2:
-        statusTitle = '🎉 Ready for Pickup!';
-        statusSubtitle = 'Your food is fresh & hot at the counter!';
+        statusTitle = 'Ready for Pickup!';
+        statusSubtitle = _isGroceryOrder
+            ? 'Your order is packed & ready at the counter!'
+            : 'Your food is fresh & hot at the counter!';
         statusColor = const Color(0xFF059669);
         break;
       case 3:
-        statusTitle = '📍 Customer Arrived at Counter';
-        statusSubtitle = 'Staff is serving your order right now';
+        statusTitle = 'Arrived at Counter';
+        statusSubtitle = 'Staff is handing over your order right now';
         statusColor = const Color(0xFF7C3AED);
         break;
       case 4:
       default:
-        statusTitle = '✅ Handed Over & Completed';
-        statusSubtitle = 'Thank you! Enjoy your meal!';
+        statusTitle = 'Handed Over & Completed';
+        statusSubtitle = _isGroceryOrder
+            ? 'Thank you for shopping with Tricelyn!'
+            : 'Thank you! Enjoy your meal!';
         statusColor = const Color(0xFF16A34A);
         break;
     }

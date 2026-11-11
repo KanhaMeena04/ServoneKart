@@ -21,6 +21,8 @@ import ProductCard from '../components/ProductCard';
 import HeroBannerSlider from '../components/HeroBannerSlider';
 import PromoOfferBanners from '../components/PromoOfferBanners';
 import { groceryService } from '../services/api';
+import { usePlatform } from '../context/PlatformContext';
+import { useLocation } from '../context/LocationContext';
 import { CATEGORIES, BEST_SELLERS, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 
 // Quick-Commerce Mobile Category Groups (Matches Reference Screenshots 1 & 2)
@@ -64,6 +66,8 @@ const MOBILE_CATEGORY_GROUPS = [
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { platformMode, enableFoodDelivery } = usePlatform();
+  const { selectedLocation } = useLocation();
   const [categories, setCategories] = useState(CATEGORIES);
   const [bestSellers, setBestSellers] = useState(BEST_SELLERS);
   const [categorySections, setCategorySections] = useState([]);
@@ -75,12 +79,16 @@ const HomePage = () => {
     const loadHomeData = async () => {
       try {
         setLoading(true);
+        const storeParams =
+          selectedLocation?.lat && selectedLocation?.lng
+            ? { lat: selectedLocation.lat, lng: selectedLocation.lng }
+            : {};
         const [catsRes, bestRes, sectionsRes, bannersRes, storesRes] = await Promise.allSettled([
           groceryService.getCategories(),
           groceryService.getBestSellers(),
           groceryService.getCategorySections(),
           groceryService.getBanners(),
-          groceryService.getStores({ city: 'Indore' }),
+          groceryService.getStores(storeParams),
         ]);
 
         if (catsRes.status === 'fulfilled' && catsRes.value.data?.data && catsRes.value.data.data.length > 0) {
@@ -169,7 +177,7 @@ const HomePage = () => {
     };
 
     loadHomeData();
-  }, []);
+  }, [selectedLocation?.id, selectedLocation?.lat, selectedLocation?.lng]);
 
   // Delivery Priority Banner (Matches Master Design Mockup)
   const priorityBanner = bannersData?.priorityBanner || {
@@ -186,11 +194,24 @@ const HomePage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-10">
         
         {/* ============================================================
-            1. HERO & PROMO SHOWCASE (Matches Reference Screenshot)
-            - Top: Interactive 3-4 Slide Hero Banner Auto-Scroller
-            - Below: 3 Promotional Offer Banners (Pharmacy, Pet Care, Baby Care)
+            1. HERO & PROMO SHOWCASE
            ============================================================ */}
         <section className="space-y-3.5 sm:space-y-4">
+          {platformMode !== 'grocery' && enableFoodDelivery && (
+            <div className="bg-gradient-to-r from-[#0055ff] to-indigo-600 text-white rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs shadow-xs">
+              <div className="flex items-center gap-2 font-bold">
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>
+                  {platformMode === 'both'
+                    ? 'Multi-Vertical Mode Active: Quick Grocery & Food Delivery Available'
+                    : 'Food Delivery & Express Kitchens Active'}
+                </span>
+              </div>
+              <Link to="/stores" className="underline font-black text-white hover:text-blue-100 whitespace-nowrap ml-2">
+                Explore Partner Hubs →
+              </Link>
+            </div>
+          )}
           <HeroBannerSlider />
           <PromoOfferBanners />
         </section>
@@ -301,7 +322,11 @@ const HomePage = () => {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 font-medium">
-                  Verified partner grocery stores & supermarkets in Indore delivering to you
+                  Verified partner grocery stores & supermarkets near{' '}
+                  <span className="font-bold text-gray-700">
+                    {selectedLocation?.name || selectedLocation?.locality || 'your area'}
+                  </span>{' '}
+                  {loading ? '— refreshing hubs...' : 'delivering to you'}
                 </p>
               </div>
 
@@ -474,7 +499,8 @@ const HomePage = () => {
               Explore More Daily Essentials
             </h2>
             <p className="text-xs text-gray-500 font-medium">
-              Handpicked from Indore fulfillment dark stores
+              Handpicked from fulfillment dark stores near{' '}
+              {selectedLocation?.name || selectedLocation?.locality || 'you'}
             </p>
           </div>
 

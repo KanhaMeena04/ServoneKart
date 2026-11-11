@@ -52,10 +52,7 @@ const {
 const adminController = require("../controllers/adminController");
 const dashboardController = require("../controllers/dashboardController");
 const orderController = require("../controllers/orderController");
-const {
-  getAdminSettings,
-  updateAdminSettings,
-} = require("../controllers/adminSettingsController");
+const { getAdminSettings, updateAdminSettings, updatePlatformMode } = require("../controllers/adminSettingsController");
 const {
   addPromocode,
   getAllPromocodes,
@@ -210,6 +207,8 @@ router.put("/document-type/:id", protect, admin, updateDocumentType);
 router.delete("/document-type/:id", protect, admin, deleteDocumentType);
 router.get("/settings", protect, admin, getAdminSettings);
 router.put("/settings", protect, admin, updateAdminSettings);
+router.put("/settings/platform-mode", protect, admin, updatePlatformMode);
+router.patch("/settings/platform-mode", protect, admin, updatePlatformMode);
 router.post("/cancellation-reason", protect, admin, addCancellationReason);
 router.get("/cancellation-reason", protect, admin, getAllCancellationReasons);
 router.get("/cancellation-reason/:id", protect, admin, getCancellationReasonById);

@@ -1037,7 +1037,7 @@ exports.approveRestaurant = async (req, res) => {
       }
     }
 
-    const restName = (typeof restaurant.name === "object" ? restaurant.name.en : restaurant.name) || "Your Restaurant";
+    const restName = (typeof restaurant.name === "object" ? restaurant.name.en : restaurant.name) || "Tricelyn Partner Store";
 
     // 1. Send Push Notification & In-App Notification via Firebase & Socket
     if (ownerUser && ownerUser._id) {
@@ -1250,6 +1250,15 @@ exports.updateRestaurant = async (req, res) => {
       "isTemporarilyClosed",
       "autoAcceptOrders",
       "isSelfPickupEnabled",
+      "estimatedPreparationTime",
+      "prepBufferTimeMinutes",
+      "cancellationWindowMinutes",
+      "gracePeriodMinutes",
+      "orderScheduling",
+      "dailyOrderLimit",
+      "autoReadyNotification",
+      "pickupSlotDurationMinutes",
+      "maxPickupCapacity",
       "timing"
     ];
     const adminAllowed = ownerAllowed.concat([
@@ -3025,7 +3034,7 @@ exports.vendorSendOtp = async (req, res) => {
       const hashedPassword = await bcrypt.hash("1234", salt);
       user = await User.create({
         name: `Partner ${phone10.slice(-4)}`,
-        email: `partner_${phone10}@ecdkart.com`,
+        email: `partner_${phone10}@tricelyn.com`,
         mobile: phone10,
         password: hashedPassword,
         pin: "1234",
@@ -3109,9 +3118,19 @@ exports.vendorVerifyOtp = async (req, res) => {
     const jwt = require("jsonwebtoken");
     const token = jwt.sign({ _id: user._id, role: user.role, restaurantId: restaurantDoc?._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
+    const { ensureSettings } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings().catch(() => null);
+    const platformMode = sysSettings?.platformMode || 'grocery';
+    const assignedRole = restaurantDoc?.assignedRole || 'Store Manager';
+    const permissions = Array.isArray(restaurantDoc?.permissions) && restaurantDoc.permissions.length > 0
+      ? restaurantDoc.permissions
+      : ['orders', 'inventory', 'products', 'payouts', 'settings'];
+    const businessType = restaurantDoc?.businessType || 'grocery_store';
+    const vertical = restaurantDoc?.vertical || 'grocery';
+
     const restName = restaurantDoc
       ? ((typeof restaurantDoc.name === 'object' ? restaurantDoc.name.en : restaurantDoc.name) || restaurantDoc.name)
-      : (user.name || "My Restaurant");
+      : (user.name || "Tricelyn Partner Store");
 
     return res.status(200).json({
       success: true,
@@ -3122,12 +3141,22 @@ exports.vendorVerifyOtp = async (req, res) => {
       approvalStatus: restaurantDoc?.verificationStatus || (isApproved ? 'verified' : 'pending'),
       restaurantApproved: isApproved,
       name: restName,
+      assignedRole,
+      permissions,
+      businessType,
+      vertical,
+      platformMode,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         mobile: user.mobile,
         role: user.role,
+        assignedRole,
+        permissions,
+        businessType,
+        vertical,
+        platformMode,
         restaurantId: restaurantDoc ? restaurantDoc._id : null
       },
       restaurant: restaurantDoc || null,
@@ -3320,10 +3349,14 @@ exports.vendorAddMenuItem = async (req, res) => {
         if (foundCat) catObjId = foundCat._id;
       }
     }
+    const itemVertical = req.body.vertical || restaurantDoc.vertical || 'grocery';
+    const defaultCatName = itemVertical === 'grocery' ? 'Daily Essentials' : 'Main Course';
+    const defaultCatSlug = itemVertical === 'grocery' ? 'daily-essentials' : 'main-course';
+
     if (!catObjId) {
-      let defaultCat = await Category.findOne({ name: { $regex: '^Main Course$', $options: 'i' } }) || await Category.findOne({ isMaster: true });
+      let defaultCat = await Category.findOne({ name: { $regex: `^${defaultCatName}$`, $options: 'i' } }) || await Category.findOne({ isMaster: true });
       if (!defaultCat) {
-        defaultCat = await Category.create({ name: 'Main Course', isActive: true, isMaster: true, slug: 'main-course' }).catch(() => null);
+        defaultCat = await Category.create({ name: defaultCatName, isActive: true, isMaster: true, slug: defaultCatSlug }).catch(() => null);
       }
       if (!defaultCat) defaultCat = await Category.findOne({});
       catObjId = defaultCat?._id;
@@ -3365,9 +3398,25 @@ exports.vendorAddMenuItem = async (req, res) => {
     const finalMrp = Number(req.body.mrp ?? req.body.b2cMrp ?? norm.mrp ?? finalSellingPrice);
     const finalB2bPrice = Number(req.body.b2bPrice ?? norm.b2bPrice ?? finalBasePrice);
 
+    const itemStockQty = req.body.stockQuantity !== undefined ? Number(req.body.stockQuantity) : 100;
+    const itemInStock = req.body.inStock !== undefined ? Boolean(req.body.inStock) : itemStockQty > 0;
+    const itemSku = req.body.sku || `TRC-${Date.now().toString().slice(-6)}`;
+    const itemWeight = req.body.weight || '';
+    const itemUnit = req.body.unit || 'piece';
+    const itemLowStock = Number(req.body.lowStockThreshold ?? 10);
+
     const product = await Product.create({
       name: { en: (typeof name === 'string' ? name : (name?.en || 'New Item')) },
       description: { en: (typeof description === 'string' ? description : (description?.en || '')) },
+      vertical: itemVertical,
+      sku: itemSku,
+      barcode: req.body.barcode || '',
+      weight: itemWeight,
+      unit: itemUnit,
+      stockQuantity: itemStockQty,
+      lowStockThreshold: itemLowStock,
+      inStock: itemInStock,
+      outOfStock: !itemInStock,
       basePrice: finalBasePrice,
       sellingPrice: finalSellingPrice,
       mrp: finalMrp,
@@ -3403,7 +3452,7 @@ exports.vendorAddMenuItem = async (req, res) => {
         menu: {
           _id: product._id,
           name: product.name?.en || name,
-          category: foundCat?.name?.en || foundCat?.name || category || "Main Course",
+          category: foundCat?.name?.en || foundCat?.name || category || defaultCatName,
           subcategory: subcategory || "",
           price: finalBasePrice,
           basePrice: finalBasePrice,
@@ -3418,7 +3467,13 @@ exports.vendorAddMenuItem = async (req, res) => {
           variants: norm.variations,
           variations: norm.variations,
           addOns: norm.addOns,
-          isAvailable: true,
+          sku: itemSku,
+          weight: itemWeight,
+          unit: itemUnit,
+          stockQuantity: itemStockQty,
+          inStock: itemInStock,
+          vertical: itemVertical,
+          isAvailable: itemInStock,
           isApproved: shouldAutoApprove,
           approvalStatus: shouldAutoApprove ? "approved" : "pending"
         }
@@ -3488,9 +3543,12 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
     }
 
     const resolvedRestId = restaurantDoc._id;
-    let defaultCat = await Category.findOne({ name: { $regex: '^Main Course$', $options: 'i' } }) || await Category.findOne({ isMaster: true });
+    const defaultVertical = restaurantDoc.vertical || 'grocery';
+    const defaultCatName = defaultVertical === 'grocery' ? 'Daily Essentials' : 'Main Course';
+    const defaultCatSlug = defaultVertical === 'grocery' ? 'daily-essentials' : 'main-course';
+    let defaultCat = await Category.findOne({ name: { $regex: `^${defaultCatName}$`, $options: 'i' } }) || await Category.findOne({ isMaster: true });
     if (!defaultCat) {
-      defaultCat = await Category.create({ name: 'Main Course', slug: 'main-course', isActive: true, isMaster: true }).catch(() => null);
+      defaultCat = await Category.create({ name: defaultCatName, slug: defaultCatSlug, isActive: true, isMaster: true }).catch(() => null);
     }
     if (!defaultCat) defaultCat = await Category.findOne({});
 
@@ -3498,6 +3556,7 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
       (req.user && req.user.role === 'admin') ||
       restaurantDoc.autoApproveMenu === true
     );
+    const createdProducts = [];
 
     for (const item of items) {
       const itemName = (item.name || item.title || "").trim();
@@ -3550,6 +3609,13 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
         }
       }
 
+      const itemVertical = item.vertical || defaultVertical;
+      const itemSku = item.sku || `TRC-${Date.now().toString().slice(-6)}-${createdProducts.length}`;
+      const itemWeight = item.weight || '';
+      const itemUnit = item.unit || 'piece';
+      const itemStockQty = item.stockQuantity !== undefined ? Number(item.stockQuantity) : 100;
+      const itemInStock = item.inStock !== undefined ? Boolean(item.inStock) : (itemStockQty > 0);
+
       const product = await Product.create({
         restaurant: resolvedRestId,
         category: catObjId,
@@ -3564,10 +3630,18 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
           b2c: { mrp: itemMrp, sellingPrice: itemPrice, discountPercent: itemMrp > itemPrice ? Math.round(((itemMrp - itemPrice) / itemMrp) * 100) : 0 },
           b2b: { sellingPrice: b2bPrice, discountPercent: itemMrp > b2bPrice ? Math.round(((itemMrp - b2bPrice) / itemMrp) * 100) : 0 }
         },
+        vertical: itemVertical,
+        sku: itemSku,
+        weight: itemWeight,
+        unit: itemUnit,
+        stockQuantity: itemStockQty,
+        lowStockThreshold: Number(item.lowStockThreshold ?? 10),
+        inStock: itemInStock,
+        outOfStock: !itemInStock,
         foodType: foodType,
         isVeg: foodType === 'veg',
-        available: true,
-        isAvailable: true,
+        available: itemInStock,
+        isAvailable: itemInStock,
         preparationTime: Number(item.preparationTime || 15),
         image: itemImg,
         portionType: norm.portionType,
@@ -3586,7 +3660,7 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
       restaurantDoc.menu.push({
         _id: product._id,
         name: itemName,
-        category: item.category || "Main Course",
+        category: item.category || defaultCatName,
         subcategory: item.subcategory || "",
         price: itemPrice,
         basePrice: itemPrice,
@@ -3595,12 +3669,18 @@ exports.vendorBulkImportMenuItems = async (req, res) => {
         b2bPrice: b2bPrice,
         isVeg: foodType === 'veg',
         foodType: foodType,
+        sku: itemSku,
+        weight: itemWeight,
+        unit: itemUnit,
+        stockQuantity: itemStockQty,
+        inStock: itemInStock,
+        vertical: itemVertical,
         portionType: norm.portionType,
         portions: norm.portions,
         variants: norm.variations,
         variations: norm.variations,
         addOns: norm.addOns,
-        isAvailable: true,
+        isAvailable: itemInStock,
         isApproved: isApprovedByRest,
         approvalStatus: isApprovedByRest ? "approved" : "pending"
       });
@@ -3769,7 +3849,22 @@ exports.vendorEditMenuItem = async (req, res) => {
       }
     }
 
-    // If item was previously rejected or changes_requested, editing it resubmits for pending approval
+    if (req.body.sku !== undefined) product.sku = req.body.sku;
+    if (req.body.barcode !== undefined) product.barcode = req.body.barcode;
+    if (req.body.weight !== undefined) product.weight = req.body.weight;
+    if (req.body.unit !== undefined) product.unit = req.body.unit;
+    if (req.body.vertical !== undefined) product.vertical = req.body.vertical;
+    if (req.body.lowStockThreshold !== undefined) product.lowStockThreshold = Number(req.body.lowStockThreshold);
+    if (req.body.stockQuantity !== undefined) {
+      product.stockQuantity = Math.max(0, Number(req.body.stockQuantity));
+      product.inStock = req.body.inStock !== undefined ? Boolean(req.body.inStock) : product.stockQuantity > 0;
+      product.outOfStock = !product.inStock;
+    } else if (req.body.inStock !== undefined) {
+      product.inStock = Boolean(req.body.inStock);
+      product.outOfStock = !product.inStock;
+    }
+
+        // If item was previously rejected or changes_requested, editing it resubmits for pending approval
     if (product.approvalStatus === 'rejected' || product.approvalStatus === 'changes_requested') {
       product.approvalStatus = 'pending';
       product.isRejected = false;
@@ -3786,12 +3881,19 @@ exports.vendorEditMenuItem = async (req, res) => {
         { _id: restId, "menu._id": product._id },
         {
           $set: {
+            "menu.$.name": product.name?.en || product.name,
             "menu.$.price": product.sellingPrice || product.basePrice,
             "menu.$.basePrice": product.basePrice,
             "menu.$.sellingPrice": product.sellingPrice,
             "menu.$.mrp": product.mrp,
             "menu.$.b2bPrice": product.b2bPrice,
             "menu.$.image": product.image,
+            "menu.$.sku": product.sku,
+            "menu.$.weight": product.weight,
+            "menu.$.unit": product.unit,
+            "menu.$.stockQuantity": product.stockQuantity,
+            "menu.$.inStock": product.inStock,
+            "menu.$.vertical": product.vertical,
             "menu.$.portionType": product.portionType,
             "menu.$.portions": product.portions,
             "menu.$.variants": product.variations,
@@ -3963,7 +4065,7 @@ exports.vendorLoginWithPin = async (req, res) => {
       if (!user) {
         user = await User.create({
           name: typeof restaurantDoc.name === 'object' ? restaurantDoc.name.en : restaurantDoc.name,
-          email: restaurantDoc.email || `vendor_${phone10}@ecdkart.com`,
+          email: restaurantDoc.email || `vendor_${phone10}@tricelyn.com`,
           mobile: phone10,
           role: "restaurant_owner",
           isVerified: true,
@@ -3983,12 +4085,19 @@ exports.vendorLoginWithPin = async (req, res) => {
       return res.status(404).json({ message: "No restaurant account found with this mobile number. Please check the number or contact admin." });
     }
 
+    if (restaurantDoc && restaurantDoc.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Your partner store account is suspended. Please contact Super Admin."
+      });
+    }
+
     const bcrypt = require("bcryptjs");
-    const storedPin = user?.pin || restaurantDoc?.pin || restaurantDoc?.ownerPin || restaurantDoc?.restaurantKey || "1234";
+    const storedPin = restaurantDoc?.pin || restaurantDoc?.ownerPin || user?.pin || restaurantDoc?.restaurantKey || "1234";
     const storedPass = user?.password;
 
     let isMatch = (String(storedPin).trim() === String(inputPin).trim()) ||
-                  (inputPin === "1234");
+                  (user?.pin && String(user.pin).trim() === String(inputPin).trim());
 
     if (!isMatch && storedPass) {
       try {
@@ -4005,8 +4114,17 @@ exports.vendorLoginWithPin = async (req, res) => {
       await user.save();
     }
 
+    const { ensureSettings } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings().catch(() => null);
+    const platformMode = sysSettings?.platformMode || 'grocery';
+    const assignedRole = restaurantDoc?.assignedRole || 'Store Manager';
+    const permissions = Array.isArray(restaurantDoc?.permissions) && restaurantDoc.permissions.length > 0
+      ? restaurantDoc.permissions
+      : ['orders', 'inventory', 'products', 'payouts', 'settings'];
+    const businessType = restaurantDoc?.businessType || 'grocery_store';
+    const vertical = restaurantDoc?.vertical || 'grocery';
+
     const isApproved = Boolean(restaurantDoc && (restaurantDoc.restaurantApproved === true || restaurantDoc.verificationStatus === 'verified'));
-    const isPending = Boolean(restaurantDoc && (!restaurantDoc.restaurantApproved || restaurantDoc.verificationStatus === 'pending'));
 
     const jwt = require("jsonwebtoken");
     const token = jwt.sign(
@@ -4017,7 +4135,7 @@ exports.vendorLoginWithPin = async (req, res) => {
 
     const restName = restaurantDoc
       ? ((typeof restaurantDoc.name === 'object' ? restaurantDoc.name.en : restaurantDoc.name) || restaurantDoc.name)
-      : (user?.name || "My Restaurant");
+      : (user?.name || "Tricelyn Partner Store");
 
     return res.status(200).json({
       success: true,
@@ -4029,14 +4147,23 @@ exports.vendorLoginWithPin = async (req, res) => {
       restaurantApproved: isApproved,
       name: restName,
       restaurantName: restName,
+      assignedRole,
+      permissions,
+      businessType,
+      vertical,
+      platformMode,
       restaurantId: restaurantDoc ? restaurantDoc._id.toString() : null,
       user: user ? {
         _id: user._id,
         name: user.name,
         email: user.email,
         mobile: user.mobile,
-        pin: user.pin,
         role: user.role,
+        assignedRole,
+        permissions,
+        businessType,
+        vertical,
+        platformMode,
         restaurantId: restaurantDoc ? restaurantDoc._id : null
       } : null,
       restaurant: restaurantDoc || null
@@ -4089,7 +4216,7 @@ exports.getRestaurantProfileById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Restaurant not found" });
     }
     const rawRest = restaurant.toObject ? restaurant.toObject() : { ...restaurant };
-    const restName = (typeof restaurant.name === "object" ? restaurant.name.en : restaurant.name) || "Your Restaurant";
+    const restName = (typeof restaurant.name === "object" ? restaurant.name.en : restaurant.name) || "Tricelyn Partner Store";
     return res.status(200).json({
       success: true,
       name: restName,
@@ -4109,7 +4236,11 @@ exports.getRestaurantProfileById = async (req, res) => {
         ownerEmail: restaurant.owner?.email || rawRest.ownerEmail || "",
         ownerMobile: restaurant.owner?.mobile || rawRest.ownerMobile || restaurant.contactNumber || "",
         phone: restaurant.contactNumber || rawRest.phone || "",
-        pin: restaurant.owner?.pin || rawRest.pin || "1234"
+        pin: restaurant.owner?.pin || rawRest.pin || "1234",
+        vertical: rawRest.vertical || 'grocery',
+        businessType: rawRest.businessType || 'grocery_store',
+        assignedRole: rawRest.assignedRole || 'Store Manager',
+        permissions: Array.isArray(rawRest.permissions) && rawRest.permissions.length > 0 ? rawRest.permissions : ['orders', 'inventory', 'products', 'payouts', 'settings']
       }
     });
   } catch (error) {
@@ -4168,7 +4299,7 @@ exports.getRestaurantStatusCheck = async (req, res) => {
       );
     }
 
-    const restName = (typeof restaurant.name === "object" ? restaurant.name.en : restaurant.name) || "Your Restaurant";
+    const restName = (typeof restaurant.name === "object" ? restaurant.name.en : restaurant.name) || "Tricelyn Partner Store";
 
     return res.status(200).json({
       success: true,
@@ -4178,6 +4309,10 @@ exports.getRestaurantStatusCheck = async (req, res) => {
       verificationStatus: isApproved ? "verified" : (isRejected ? "rejected" : "pending"),
       isActive: Boolean(restaurant.isActive),
       menuApproved: Boolean(restaurant.menuApproved),
+      vertical: restaurant.vertical || 'grocery',
+      businessType: restaurant.businessType || 'grocery_store',
+      assignedRole: restaurant.assignedRole || 'Store Manager',
+      permissions: Array.isArray(restaurant.permissions) && restaurant.permissions.length > 0 ? restaurant.permissions : ['orders', 'inventory', 'products', 'payouts', 'settings'],
       rejectionReason: restaurant.rejectionReason || null,
       token,
       tracking: {

@@ -165,7 +165,7 @@ class UnserviceableLocationPage extends StatelessWidget {
                             height: 90,
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Text(
-                              'ECDKART',
+                              'TRICELYN',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w900,

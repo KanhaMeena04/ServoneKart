@@ -74,7 +74,7 @@ const AddRestaurantBannerForm = () => {
       fd.append('file', file);
       fd.append('fileName', `banner_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`);
       fd.append('publicKey', IMAGEKIT_PUBLIC_KEY);
-      fd.append('folder', '/ecdkart/banners');
+      fd.append('folder', '/tricelyn/banners');
 
       const res = await fetch(IMAGEKIT_UPLOAD_URL, {
         method: 'POST',

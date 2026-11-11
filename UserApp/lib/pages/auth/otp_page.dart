@@ -65,7 +65,7 @@ class _OtpPageState extends State<OtpPage> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() => _isLoading = false);
-        context.go(AppRoutes.categories);
+        context.go(AppRoutes.home);
       }
     });
   }
@@ -91,7 +91,7 @@ class _OtpPageState extends State<OtpPage> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.restaurant_menu,
+                    Icons.local_grocery_store_rounded,
                     size: 60,
                     color: AppColors.primary,
                   ),

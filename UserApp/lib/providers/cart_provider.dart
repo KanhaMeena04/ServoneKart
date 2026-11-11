@@ -22,7 +22,7 @@ class CartProvider with ChangeNotifier {
   // ── Order Type (Delivery / Pickup) & Slot Selection ────────────────────────
   String _orderType = 'delivery';
   String _pickupDate = '';
-  String _pickupTimeSlot = 'ASAP (~15-20 mins prep time)';
+  String _pickupTimeSlot = 'ASAP (~15-20 mins packing time)';
   String? _pickupTime;
   String _paymentMethod = 'Cash on Delivery';
 
@@ -136,6 +136,25 @@ class CartProvider with ChangeNotifier {
 
   List<CartItem> get items => _items;
   bool get isLoading => _isLoading;
+
+  bool get hasGroceryItems => _items.any((i) =>
+      i.product.vertical == 'grocery' ||
+      (i.product.storeId != null && i.product.storeId!.isNotEmpty));
+
+  Map<String, List<CartItem>> get storeGroups {
+    final Map<String, List<CartItem>> grouped = {};
+    for (final item in _items) {
+      final sid = (item.product.storeId != null && item.product.storeId!.isNotEmpty)
+          ? item.product.storeId!
+          : ((item.product.restaurantId != null && item.product.restaurantId!.isNotEmpty)
+              ? item.product.restaurantId!
+              : (_restaurantId ?? 'store_tricelyn_indore_01'));
+      grouped.putIfAbsent(sid, () => []).add(item);
+    }
+    return grouped;
+  }
+
+  int get storeCount => storeGroups.length;
 
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
@@ -424,7 +443,88 @@ class CartProvider with ChangeNotifier {
 
   // ── Check if adding from a different restaurant ────────────────────────────
   bool isFromDifferentRestaurant(String restaurantId) {
-    return _items.isNotEmpty && _restaurantId != restaurantId;
+    if (_items.isEmpty) return false;
+    // Allow multi-vendor cart when cart holds grocery items
+    if (hasGroceryItems) return false;
+    return _restaurantId != restaurantId;
+  }
+
+  // ── Add Multi-Vendor Grocery Item (never clears other partner stores) ─────
+  void addGroceryItem(
+    Product product, {
+    required String storeId,
+    required String storeName,
+    String storeImageUrl = '',
+    String? storeAddress,
+    int deliveryTimeMin = 15,
+  }) async {
+    _restaurantId ??= storeId;
+    _restaurantName ??= storeName;
+    if (_restaurantImageUrl == null && storeImageUrl.isNotEmpty) {
+      _restaurantImageUrl = storeImageUrl;
+    }
+    if (_restaurantAddress == null && storeAddress != null) {
+      _restaurantAddress = storeAddress;
+    }
+    if (deliveryTimeMin > 0) {
+      _restaurantDeliveryTimeMin = deliveryTimeMin;
+    }
+
+    final enrichedProduct = Product(
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      mrp: product.mrp,
+      image: product.image,
+      category: product.category,
+      rating: product.rating,
+      isVeg: product.isVeg,
+      weight: product.weight,
+      unit: product.unit,
+      vertical: 'grocery',
+      storeId: storeId,
+      storeName: storeName,
+      restaurantId: storeId,
+      restaurantName: storeName,
+      restaurantImageUrl: storeImageUrl,
+    );
+
+    final existingIndex =
+        _items.indexWhere((item) => item.product.id == enrichedProduct.id);
+    final apiProductId = enrichedProduct.id.contains('::')
+        ? enrichedProduct.id.split('::').first
+        : enrichedProduct.id;
+    final isMongoId = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(apiProductId);
+
+    if (existingIndex >= 0) {
+      _items[existingIndex].quantity++;
+      notifyListeners();
+      await _saveCartToPrefs();
+      if (isMongoId) {
+        try {
+          await CartApiService.updateCart(
+              apiProductId, _items[existingIndex].quantity);
+        } catch (_) {}
+      }
+    } else {
+      _items.add(CartItem(
+        product: enrichedProduct,
+        imageUrl: enrichedProduct.image,
+      ));
+      notifyListeners();
+      await _saveCartToPrefs();
+      if (isMongoId) {
+        try {
+          await CartApiService.addToCart(
+            apiProductId,
+            1,
+            customPrice: enrichedProduct.price,
+            customName: enrichedProduct.name,
+          );
+        } catch (_) {}
+      }
+    }
   }
 
   // ── Add item (with restaurant context) ────────────────────────────────────
@@ -589,24 +689,35 @@ class CartProvider with ChangeNotifier {
 
   // ── Coupon Methods ─────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> applyCoupon(String code) async {
-    if (_restaurantId == null) {
-       return {'success': false, 'message': 'Cannot apply coupon to empty cart'};
+    if (_items.isEmpty) {
+      return {'success': false, 'message': 'Cannot apply coupon to empty cart'};
     }
+    final storeId = _restaurantId ??
+        _items.first.product.storeId ??
+        _items.first.product.restaurantId ??
+        '';
 
     try {
       final result = await CouponApiService.applyCoupon(
         code: code,
-        storeId: _restaurantId!,
+        storeId: storeId,
         orderAmount: totalAmount,
       );
-      
-      if (result != null && result['valid'] == true) {
+
+      if (result != null &&
+          (result['valid'] == true || result['success'] == true)) {
         _appliedCoupon = result['coupon'];
-        _discountAmount = (result['discountAmount'] as num).toDouble();
+        _discountAmount = (result['discountAmount'] as num?)?.toDouble() ?? 0.0;
         notifyListeners();
-        return {'success': true, 'message': result['message'] ?? 'Coupon applied successfully!'};
+        return {
+          'success': true,
+          'message': result['message'] ?? 'Coupon applied successfully!'
+        };
       }
-      return {'success': false, 'message': result?['message'] ?? 'Failed to apply coupon'};
+      return {
+        'success': false,
+        'message': result?['message'] ?? 'Failed to apply coupon'
+      };
     } catch (e) {
       return {'success': false, 'message': 'Error applying coupon'};
     }
@@ -625,12 +736,21 @@ class CartProvider with ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (_restaurantId == null) return;
-    
+    final storeId = _restaurantId ??
+        (_items.isNotEmpty
+            ? (_items.first.product.storeId ?? _items.first.product.restaurantId)
+            : null);
+    if (storeId == null || storeId.isEmpty) return;
+
     try {
-      final result = await OrderApiService.calculateDeliveryFee(_restaurantId!, lat, lng);
+      final result =
+          await OrderApiService.calculateDeliveryFee(storeId, lat, lng);
       if (result != null && result['success'] == true) {
-        final fee = (result['deliveryCharge'] ?? result['deliveryFee'] ?? result['fee'] as num?)?.toDouble() ?? 40.0;
+        final fee = (result['deliveryCharge'] ??
+                result['deliveryFee'] ??
+                result['fee'] as num?)
+            ?.toDouble() ??
+            25.0;
         _deliveryFee = isSelfPickup ? 0.0 : fee;
         notifyListeners();
       }

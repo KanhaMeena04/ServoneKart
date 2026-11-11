@@ -96,57 +96,9 @@ export default function VendorCredentialsManagement() {
         setVendors(res.data.vendors);
       }
     } catch (err) {
-      console.warn('Fallback credentials list:', err.message);
-      setVendors([
-        {
-          _id: 'store_tricelyn_indore_01',
-          name: 'Tricelyn Supermart (Central Warehouse Hub)',
-          ownerName: 'Vikas Agrawal',
-          phone: '9826022002',
-          email: 'freshmart@servonekart.com',
-          city: 'Indore',
-          pin: '1234',
-          assignedRole: 'Full Store Manager',
-          permissions: ['orders', 'inventory', 'products', 'payouts', 'settings', 'analytics'],
-          isActive: true
-        },
-        {
-          _id: 'store_tricelyn_indore_02',
-          name: 'Fresh Farm Hub (Palasia Superstore)',
-          ownerName: 'Rajesh Sharma',
-          phone: '9826011001',
-          email: 'chappan@servonekart.com',
-          city: 'Indore',
-          pin: '1234',
-          assignedRole: 'Inventory Manager',
-          permissions: ['inventory', 'orders'],
-          isActive: true
-        },
-        {
-          _id: 'store_tricelyn_indore_03',
-          name: 'Apna Super Kirana (Saket Nagar)',
-          ownerName: 'Sanjay Gupta',
-          phone: '9893077123',
-          email: 'apnakirana@servonekart.com',
-          city: 'Indore',
-          pin: '4321',
-          assignedRole: 'Full Store Manager',
-          permissions: ['orders', 'inventory', 'products', 'payouts'],
-          isActive: true
-        },
-        {
-          _id: 'store_tricelyn_indore_04',
-          name: 'Malwa Daily Mart (Bhawarkua)',
-          ownerName: 'Ramesh Patel',
-          phone: '9893055441',
-          email: 'malwamart@servonekart.com',
-          city: 'Indore',
-          pin: '1234',
-          assignedRole: 'Order Dispatcher',
-          permissions: ['orders'],
-          isActive: true
-        }
-      ]);
+      console.error('Failed to load vendor credentials:', err.message);
+      toast.error('Failed to load vendor credentials');
+      setVendors([]);
     } finally {
       setLoading(false);
     }
@@ -381,7 +333,7 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
                         {v.name}
                       </div>
                       <span className="text-[10px] text-gray-500">
-                        📍 {v.city || 'Indore Region'}
+                        {v.city || 'Region Unassigned'}
                       </span>
                     </TableCell>
 
@@ -400,12 +352,14 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
                     {/* Login Mobile Number */}
                     <TableCell>
                       <div className="flex items-center gap-1 font-mono text-xs font-bold text-blue-700">
-                        <span>{v.phone || '98260XXXXX'}</span>
-                        <Tooltip title="Copy Mobile">
-                          <IconButton size="small" onClick={() => copyToClipboard(v.phone, 'Mobile Number')} className="text-gray-400 hover:text-blue-600 p-0.5">
-                            <ContentCopy style={{ fontSize: 13 }} />
-                          </IconButton>
-                        </Tooltip>
+                        <span>{v.phone || 'Not Set'}</span>
+                        {v.phone && (
+                          <Tooltip title="Copy Mobile">
+                            <IconButton size="small" onClick={() => copyToClipboard(v.phone, 'Mobile Number')} className="text-gray-400 hover:text-blue-600 p-0.5">
+                              <ContentCopy style={{ fontSize: 13 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </div>
                     </TableCell>
 

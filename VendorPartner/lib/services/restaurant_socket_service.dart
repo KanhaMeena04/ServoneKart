@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../api_constants.dart';
+import 'platform_config_service.dart';
 
 class RestaurantSocketService {
   static IO.Socket? _socket;
@@ -60,6 +61,8 @@ class RestaurantSocketService {
       _socket?.on('restaurantStatusUpdated', (data) => _notifyStatusListeners(data));
       _socket?.on('restaurant:status_changed', (data) => _notifyStatusListeners(data));
       _socket?.on('restaurant:status_update', (data) => _notifyStatusListeners(data));
+      _socket?.on('platformModeUpdated', (data) => PlatformConfigService.applySocketUpdate(data));
+      _socket?.on('settingsUpdated', (data) => PlatformConfigService.applySocketUpdate(data));
 
       _socket?.connect();
       _isInitialized = true;
@@ -72,6 +75,7 @@ class RestaurantSocketService {
     if (_currentRestaurantId.isNotEmpty && _socket?.connected == true) {
       _socket?.emit('joinOrder', 'restaurant_$_currentRestaurantId');
       _socket?.emit('joinRoom', 'restaurant_$_currentRestaurantId');
+      _socket?.emit('joinVendorPartner', _currentRestaurantId);
       debugPrint('[RestaurantSocket] Joined room: restaurant_$_currentRestaurantId');
     }
   }

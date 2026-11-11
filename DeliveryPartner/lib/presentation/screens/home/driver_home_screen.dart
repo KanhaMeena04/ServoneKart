@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import '../../../data/models/user_models.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/notification_service.dart';
+import '../../../data/services/platform_config_service.dart';
+import '../../../data/services/rider_socket_service.dart';
 import '../../../logic/blocs/auth/auth_bloc.dart';
 import '../../../logic/blocs/auth/auth_event.dart';
 import '../../../logic/blocs/auth/auth_state.dart';
@@ -42,10 +44,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
   Timer? _pollingTimer;
   Timer? _statusSyncTimer;
   StreamSubscription? _notificationSub;
+  StreamSubscription<Map<String, dynamic>>? _socketSub;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isRingtonePlaying = false;
 
-  // ECD Kart brand colors
+  // Tricelyn brand colors
   static const Color primaryGreen = Color(0xFF248C70);
   static const Color lightGreen = Color(0xFFE8F5E9);
   static const Color darkBlack = Color(0xFF1E2022);
@@ -53,8 +56,33 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
+    PlatformConfigService.fetchSettings();
+    RiderSocketService.connect();
     _initializeDriverStatus();
     _checkLocationPermission();
+
+    _socketSub = RiderSocketService.onOrderEvent.listen((event) {
+      if (!mounted) return;
+      final evtName = (event['event'] ?? '').toString();
+      if (evtName == 'rider:duty_status' || evtName == 'duty_status_changed') {
+        if (event['isOnline'] != null) {
+          final remoteOnline = event['isOnline'] == true;
+          if (_isOnline != remoteOnline) {
+            setState(() => _isOnline = remoteOnline);
+            if (remoteOnline) {
+              _startLocationTracking();
+              context.read<DriverBloc>().add(const LoadActiveOrders());
+              _startPollingActiveOrders();
+            } else {
+              _stopLocationTracking();
+              _pollingTimer?.cancel();
+            }
+          }
+        }
+      } else {
+        context.read<DriverBloc>().add(const LoadActiveOrders(isSilent: true));
+      }
+    });
 
     // Initialize Push Notifications (FCM) & In-App notification listener
     NotificationService.initialize();
@@ -253,6 +281,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
   void _initializeDriverStatus() {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
+      final rid = (authState.user.riderId != null && authState.user.riderId!.isNotEmpty)
+          ? authState.user.riderId!
+          : authState.user.id;
+      if (rid.isNotEmpty) {
+        RiderSocketService.joinRiderRoom(rid);
+      }
       final isVerified = authState.user.isVerified;
       setState(() {
         _isOnline = isVerified ? authState.user.isOnline : false;
@@ -428,6 +462,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
   @override
   void dispose() {
     _stopOrderRingtone();
+    _socketSub?.cancel();
     _notificationSub?.cancel();
     _stopLocationTracking();
     _timerController.dispose();
@@ -449,6 +484,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                 (route) => false,
               );
             } else if (state is Authenticated) {
+              final rid = (state.user.riderId != null && state.user.riderId!.isNotEmpty)
+                  ? state.user.riderId!
+                  : state.user.id;
+              if (rid.isNotEmpty) {
+                RiderSocketService.joinRiderRoom(rid);
+              }
               setState(() {
                 _isOnline = state.user.isVerified ? state.user.isOnline : false;
                 _isReturning = state.user.isReturning;
@@ -758,30 +799,33 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'ECD KART',
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13,
-                                    color: Colors.white,
-                                    height: 1.1,
+                            ValueListenableBuilder<String>(
+                              valueListenable: PlatformConfigService.modeNotifier,
+                              builder: (context, mode, _) => Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'TRICELYN',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: Colors.white,
+                                      height: 1.1,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  'RIDER PARTNER',
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 8,
-                                    letterSpacing: 1.2,
-                                    color: const Color(0xFF70E000),
-                                    height: 1.1,
+                                  Text(
+                                    mode == 'grocery' ? 'GROCERY FLEET' : 'RIDER PARTNER',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 8,
+                                      letterSpacing: 1.2,
+                                      color: const Color(0xFF70E000),
+                                      height: 1.1,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -990,7 +1034,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
         final activeOrder = incomingIndex != -1 ? state.orders[incomingIndex] : (state.orders.isNotEmpty ? state.orders.first : null);
         if (activeOrder == null) return const SizedBox.shrink();
 
-        final storeName = activeOrder['store']?['name'] ?? activeOrder['restaurant']?['name'] ?? 'FreshNow Store';
+        final bool isGrocery = _isGroceryOrder(Map<String, dynamic>.from(activeOrder));
+        final storeName = activeOrder['store']?['name'] ??
+            activeOrder['restaurant']?['name'] ??
+            (isGrocery ? 'Grocery Store' : 'Tricelyn Partner Store');
         final rawStoreAddr = _parseAddressToString(activeOrder['store']?['address'] ?? activeOrder['restaurant']?['address']);
         final storeAddress = rawStoreAddr.isNotEmpty ? rawStoreAddr : 'Store Location';
 
@@ -998,8 +1045,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
           activeOrder['deliveryAddress'] ?? activeOrder['address'] ?? activeOrder['customer']?['address']
         );
         final deliveryAddress = rawDeliveryAddr.isNotEmpty ? rawDeliveryAddr : 'Customer Location';
-        final earnings = ((activeOrder['driverEarnings'] ?? activeOrder['riderEarning'] ?? activeOrder['deliveryFee'] ?? activeOrder['deliveryCharge'] ?? 0.0) as num).toDouble().toStringAsFixed(2);
-        final orderAmount = (activeOrder['payableAmount'] ?? activeOrder['totalAmount'] ?? 0.0).toStringAsFixed(2);
+        final rawEarnVal = activeOrder['driverEarnings'] ?? activeOrder['riderEarning'] ?? activeOrder['deliveryFee'] ?? activeOrder['deliveryCharge'] ?? 0.0;
+        final double parsedEarnings = (rawEarnVal is num) ? rawEarnVal.toDouble() : (double.tryParse(rawEarnVal.toString()) ?? 0.0);
+        final earnings = parsedEarnings.toStringAsFixed(2);
+        final rawOrderAmt = activeOrder['payableAmount'] ?? activeOrder['totalAmount'] ?? 0.0;
+        final double parsedOrderAmt = (rawOrderAmt is num) ? rawOrderAmt.toDouble() : (double.tryParse(rawOrderAmt.toString()) ?? 0.0);
+        final orderAmount = parsedOrderAmt.toStringAsFixed(2);
         final customerName = activeOrder['customer']?['name'] ?? 'Customer';
         final paymentMode = (activeOrder['paymentTransaction'] != null && (activeOrder['paymentTransaction']['provider'] == 'cod' || activeOrder['paymentTransaction']['provider'] == 'Cash on Delivery')) || activeOrder['paymentMethod'] == 'Cash on Delivery' || activeOrder['paymentMethod'] == 'COD' ? 'Cash on Delivery' : 'Online / UPI';
 
@@ -1931,7 +1982,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
           ),
           const SizedBox(height: 14),
 
-          BlocBuilder<DriverBloc, DriverState>(
+          ValueListenableBuilder<String>(
+            valueListenable: PlatformConfigService.modeNotifier,
+            builder: (context, _, _) => BlocBuilder<DriverBloc, DriverState>(
             builder: (context, state) {
               if (state is DriverLoading && state.orders.isEmpty) {
                 return const Center(
@@ -1992,6 +2045,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                 child: _buildNoOrdersWidget(),
               );
             },
+          ),
           ),
         ],
       ),
@@ -2069,17 +2123,31 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
     );
   }
 
+  bool _isGroceryOrder(Map<String, dynamic> order) {
+    final vertical = (order['vertical'] ?? '').toString().trim().toLowerCase();
+    if (vertical == 'grocery') return true;
+    if (vertical == 'food' && PlatformConfigService.isFoodAllowed) return false;
+    if (vertical.isEmpty) {
+      final bType = (order['restaurant']?['businessType'] ?? order['store']?['businessType'] ?? '').toString().toLowerCase();
+      if (bType == 'restaurant' && PlatformConfigService.isFoodAllowed) return false;
+      return true;
+    }
+    return PlatformConfigService.isGroceryPlatform;
+  }
+
   Widget _buildOrderCard(dynamic rawOrder, {bool isHistorical = false}) {
     if (rawOrder == null || rawOrder is! Map) return const SizedBox.shrink();
     final order = Map<String, dynamic>.from(rawOrder);
 
+    final bool isGrocery = _isGroceryOrder(order);
+    final String defaultPartnerName = isGrocery ? 'Grocery Store' : 'Partner Store';
     final rawStoreName = order['store']?['name'] ?? order['restaurant']?['name'] ?? order['storeName'] ?? order['restaurantName'];
-    String storeName = 'Restaurant';
-    if (rawStoreName is String) {
+    String storeName = defaultPartnerName;
+    if (rawStoreName is String && rawStoreName.trim().isNotEmpty) {
       storeName = rawStoreName;
     } else if (rawStoreName is Map) {
-      storeName = (rawStoreName['en'] ?? rawStoreName['hi'] ?? (rawStoreName.values.isNotEmpty ? rawStoreName.values.first : 'Restaurant')).toString();
-    } else if (rawStoreName != null) {
+      storeName = (rawStoreName['en'] ?? rawStoreName['hi'] ?? (rawStoreName.values.isNotEmpty ? rawStoreName.values.first : defaultPartnerName)).toString();
+    } else if (rawStoreName != null && rawStoreName.toString().trim().isNotEmpty) {
       storeName = rawStoreName.toString();
     }
 
@@ -2307,7 +2375,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
       } else if (order['prescriptionUrl'] != null) {
         vertical = 'pharmacy';
       } else {
-        vertical = 'food';
+        final bType = (order['restaurant']?['businessType'] ?? order['store']?['businessType'] ?? '').toString().toLowerCase();
+        vertical = (bType == 'restaurant' && PlatformConfigService.isFoodAllowed)
+            ? 'food'
+            : 'grocery';
       }
     }
 
@@ -2317,11 +2388,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
     String label;
 
     switch (vertical) {
-      case 'grocery':
-        bgColor = const Color(0xFFE8F5E9);
-        textColor = const Color(0xFF2E7D32);
-        icon = Icons.shopping_basket_rounded;
-        label = 'GROCERY';
+      case 'food':
+        bgColor = const Color(0xFFFFF3E0);
+        textColor = const Color(0xFFE65100);
+        icon = Icons.restaurant_rounded;
+        label = 'FOOD';
         break;
       case 'courier':
         bgColor = const Color(0xFFF3E8FF);
@@ -2348,11 +2419,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
         icon = Icons.water_drop_rounded;
         label = 'ESSENTIALS';
         break;
+      case 'grocery':
       default:
-        bgColor = const Color(0xFFFFF3E0);
-        textColor = const Color(0xFFE65100);
-        icon = Icons.restaurant_rounded;
-        label = 'FOOD';
+        bgColor = const Color(0xFFE8F5E9);
+        textColor = const Color(0xFF2E7D32);
+        icon = Icons.shopping_basket_rounded;
+        label = 'GROCERY';
     }
 
     return Container(

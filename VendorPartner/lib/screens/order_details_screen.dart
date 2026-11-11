@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../api_constants.dart';
 import '../models/order_model.dart';
+import '../services/platform_config_service.dart';
 import '../services/restaurant_api_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 
 import 'package:url_launcher/url_launcher.dart';
@@ -29,6 +31,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   bool _otpError = false;
   Timer? _refreshTimer;
   Timer? _countdownTimer;
+
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
+
+  String get _targetOrderId =>
+      widget.order.backendId.isNotEmpty ? widget.order.backendId : widget.order.id;
+
+  String _resolveImageUrl(String? raw) {
+    final url = (raw ?? '').trim();
+    if (url.isEmpty || url == 'null' || url == 'undefined') return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    final origin = ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+    return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+  }
 
   @override
   void initState() {
@@ -138,33 +156,50 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
 
     if (confirm == true) {
-      final targetId = widget.order.backendId.isNotEmpty ? widget.order.backendId : widget.order.id;
-      await RestaurantApiService.deleteOrder(targetId);
+      final targetId = _targetOrderId;
+      final res = await RestaurantApiService.deleteOrder(targetId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order permanently deleted.'), backgroundColor: Colors.redAccent),
-        );
-        Navigator.pop(context, true);
+        if (res['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order permanently deleted.'), backgroundColor: Colors.redAccent),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message']?.toString() ?? 'Failed to delete order'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
       }
     }
   }
 
   Future<void> _advanceOrderState() async {
-    final orderId = widget.order.id;
+    final orderId = _targetOrderId;
     if (widget.order.isSelfPickup) {
       if (_currentStatus == 'Pending' || _currentStatus == 'Placed') {
         _showAcceptPrepTimeModal();
       } else if (_currentStatus == 'Preparing') {
-        setState(() {
-          _currentStatus = 'Ready for Pickup';
-          widget.order.status = 'Ready for Pickup';
-        });
-        await RestaurantApiService.markOrderReady(orderId);
-        if (mounted) {
+        final res = await RestaurantApiService.markOrderReady(orderId);
+        if (!mounted) return;
+        if (res['success'] == true) {
+          setState(() {
+            _currentStatus = 'Ready for Pickup';
+            widget.order.status = 'Ready for Pickup';
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('🔔 Notification sent to customer: Order is Ready for Pickup!'),
               backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message']?.toString() ?? 'Could not mark order ready'),
+              backgroundColor: Colors.redAccent,
             ),
           );
         }
@@ -184,30 +219,54 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
 
     if (_currentStatus == 'Placed' || _currentStatus == 'Pending') {
-      setState(() {
-        _currentStatus = 'Preparing';
-        widget.order.status = 'Preparing';
-      });
-      await RestaurantApiService.prepareOrder(orderId);
-      if (mounted) {
+      final res = await RestaurantApiService.prepareOrder(orderId);
+      if (!mounted) return;
+      if (res['success'] == true) {
+        setState(() {
+          _currentStatus = 'Preparing';
+          widget.order.status = 'Preparing';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('👨‍🍳 Order Accepted! Food preparation started.'),
+          SnackBar(
+            content: Text(
+              _isGrocery
+                  ? '🛍️ Order Accepted! Store packing started.'
+                  : '👨‍🍳 Order Accepted! Food preparation started.',
+            ),
             backgroundColor: AppColors.primaryGreen,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message']?.toString() ?? 'Could not accept order'),
+            backgroundColor: Colors.redAccent,
           ),
         );
       }
     } else if (_currentStatus == 'Preparing') {
-      setState(() {
-        _currentStatus = 'Ready';
-        widget.order.status = 'Ready';
-      });
-      await RestaurantApiService.markOrderReady(orderId);
-      if (mounted) {
+      final res = await RestaurantApiService.markOrderReady(orderId);
+      if (!mounted) return;
+      if (res['success'] == true) {
+        setState(() {
+          _currentStatus = 'Ready';
+          widget.order.status = 'Ready';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Food Marked Ready! Click "Search Rider" to notify nearby riders.'),
+          SnackBar(
+            content: Text(
+              _isGrocery
+                  ? '✅ Order Packed & Ready! Click "Search Rider" to notify nearby riders.'
+                  : '✅ Food Marked Ready! Click "Search Rider" to notify nearby riders.',
+            ),
             backgroundColor: AppColors.primaryGreen,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message']?.toString() ?? 'Could not mark order ready'),
+            backgroundColor: Colors.redAccent,
           ),
         );
       }
@@ -220,8 +279,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       if (isHandedOverOrPickedUp) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🚀 Food handed over to rider! Rider is on the way to customer.'),
+            SnackBar(
+              content: Text(
+                _isGrocery
+                    ? '🚀 Order handed over to rider! Rider is on the way to customer.'
+                    : '🚀 Food handed over to rider! Rider is on the way to customer.',
+              ),
               backgroundColor: AppColors.primaryGreen,
             ),
           );
@@ -234,31 +297,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
-  void _showSearchingRiderModal() async {
-    Timer? searchTimer;
+  Future<void> _showSearchingRiderModal() async {
+    bool dialogOpen = true;
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
-        searchTimer = Timer(const Duration(seconds: 3), () async {
-          if (Navigator.canPop(dialogContext)) {
-            Navigator.pop(dialogContext);
-          }
-          final res = await RestaurantApiService.searchRiders(widget.order.id);
-          if (mounted) {
-            final count = res['data']?['count'] ?? 0;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(count > 0 
-                  ? '🔔 Order broadcasted to $count nearby riders! Ringtone ringing on riders app.' 
-                  : '🔔 Order broadcasted to nearby riders! Waiting for acceptance.'),
-                backgroundColor: AppColors.primaryGreen,
-                duration: const Duration(seconds: 4),
-              ),
-            );
-          }
-        });
-
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 10,
@@ -325,9 +369,36 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         );
       },
-    ).then((_) {
-      searchTimer?.cancel();
-    });
+    ).then((_) => dialogOpen = false);
+
+    final res = await RestaurantApiService.searchRiders(_targetOrderId);
+    if (!mounted) return;
+    if (dialogOpen && Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+    if (res['success'] == true) {
+      final count = (res['data'] is Map ? res['data']['count'] : null) ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            (count is num && count > 0)
+                ? '🔔 Order broadcasted to $count nearby riders!'
+                : '🔔 Order broadcasted to nearby riders! Waiting for acceptance.',
+          ),
+          backgroundColor: AppColors.primaryGreen,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      await _fetchFreshOrderDetails(isSilent: true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message']?.toString() ?? 'Could not search nearby riders'),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   void _showAcceptPrepTimeModal() {
@@ -335,9 +406,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (modalContext, setModalState) {
             final int totalTime = _selectedPrepTime + _selectedBufferTime;
 
             return Container(
@@ -377,7 +448,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Accept Self Pickup Order', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
-                              Text('Set Preparation Time, Buffer & Customer Note', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                              Text(
+                                _isGrocery
+                                    ? 'Set Packing Time, Buffer & Customer Note'
+                                    : 'Set Preparation Time, Buffer & Customer Note',
+                                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                              ),
                             ],
                           ),
                         ),
@@ -385,13 +461,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Section 1: Estimated Prep Time
-                    Text('1. Estimated Preparation Time', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    // Section 1: Estimated Packing / Prep Time
+                    Text(
+                      _isGrocery ? '1. Estimated Packing Time' : '1. Estimated Preparation Time',
+                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: [10, 15, 20, 25, 30, 45].map((mins) {
+                      children: [5, 10, 15, 20, 30, 45].map((mins) {
                         final isSelected = _selectedPrepTime == mins;
                         return ChoiceChip(
                           label: Text('$mins Mins', style: GoogleFonts.poppins(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : Colors.black87)),
@@ -407,15 +486,23 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Section 2: Preparation Buffer Time (Optional)
+                    // Section 2: Buffer Time (Optional)
                     Row(
                       children: [
-                        Text('2. Preparation Buffer Time ', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text(
+                          _isGrocery ? '2. Packing Buffer Time ' : '2. Preparation Buffer Time ',
+                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
                         Text('(Optional)', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('Add extra time for peak rush or special dish prep', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
+                    Text(
+                      _isGrocery
+                          ? 'Add extra time for peak rush or cold-chain packing'
+                          : 'Add extra time for peak rush or special dish prep',
+                      style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600]),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 10,
@@ -445,7 +532,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         maxLines: 2,
                         style: GoogleFonts.poppins(fontSize: 12),
                         decoration: InputDecoration(
-                          hintText: 'e.g. Heavy kitchen rush during peak lunch hour, Tandoor pre-heating.',
+                          hintText: _isGrocery
+                              ? 'e.g. Bulk grocery items or peak store counter rush.'
+                              : 'e.g. Heavy kitchen rush during peak hour.',
                           hintStyle: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[400]),
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -476,7 +565,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                   style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amber[900]),
                                 ),
                                 Text(
-                                  '($_selectedPrepTime mins Prep + $_selectedBufferTime mins Buffer time)',
+                                  '($_selectedPrepTime mins ${_isGrocery ? 'Pack' : 'Prep'} + $_selectedBufferTime mins Buffer time)',
                                   style: GoogleFonts.poppins(fontSize: 11, color: Colors.amber[800]),
                                 ),
                               ],
@@ -495,7 +584,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       maxLines: 2,
                       style: GoogleFonts.poppins(fontSize: 13),
                       decoration: InputDecoration(
-                        hintText: 'e.g. Freshly baking pizza, please collect from Counter 2.',
+                        hintText: _isGrocery
+                            ? 'e.g. Packing groceries now, please collect from Counter 2.'
+                            : 'e.g. Order is being prepared, please collect from Counter 2.',
                         hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
                         contentPadding: const EdgeInsets.all(12),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -507,21 +598,31 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () async {
-                          Navigator.pop(context);
-                          setState(() {
-                            widget.order.prepTimeMinutes = _selectedPrepTime;
-                            widget.order.bufferTimeMinutes = _selectedBufferTime;
-                            widget.order.bufferReason = _bufferReasonController.text.trim();
-                            widget.order.prepNote = _prepNoteController.text.trim();
-                            _currentStatus = 'Preparing';
-                            widget.order.status = 'Preparing';
-                          });
-                          await RestaurantApiService.prepareOrder(widget.order.id);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                          final navigator = Navigator.of(sheetContext);
+                          final messenger = ScaffoldMessenger.of(context);
+                          final res = await RestaurantApiService.prepareOrder(_targetOrderId);
+                          if (!mounted) return;
+                          if (navigator.canPop()) navigator.pop();
+                          if (res['success'] == true) {
+                            setState(() {
+                              widget.order.prepTimeMinutes = _selectedPrepTime;
+                              widget.order.bufferTimeMinutes = _selectedBufferTime;
+                              widget.order.bufferReason = _bufferReasonController.text.trim();
+                              widget.order.prepNote = _prepNoteController.text.trim();
+                              _currentStatus = 'Preparing';
+                              widget.order.status = 'Preparing';
+                            });
+                            messenger.showSnackBar(
                               SnackBar(
-                                content: Text('Order accepted! Total pickup time: $totalTime mins ($_selectedPrepTime mins prep + $_selectedBufferTime mins buffer).'),
+                                content: Text('Order accepted! Total pickup time: $totalTime mins.'),
                                 backgroundColor: AppColors.primaryGreen,
+                              ),
+                            );
+                          } else {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(res['message']?.toString() ?? 'Failed to accept order'),
+                                backgroundColor: Colors.redAccent,
                               ),
                             );
                           }
@@ -667,10 +768,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       child: ElevatedButton(
                         onPressed: () async {
                           final input = _otpController.text.trim();
-                          final expected = (widget.order.pickupOtp ?? '').trim();
-                          
+
                           if (input.length == 4) {
-                            final res = await RestaurantApiService.verifyPickup(widget.order.id, input);
+                            final res = await RestaurantApiService.verifyPickup(_targetOrderId, input);
                             if (res['success'] == true) {
                               if (mounted) Navigator.pop(context);
                               final isSelf = widget.order.isSelfPickup;
@@ -806,7 +906,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       ...[
                         'Customer requested cancellation',
                         'Item out of stock',
-                        'Kitchen overloaded',
+                        _isGrocery ? 'Store counter overloaded' : 'Kitchen overloaded',
                         'Other reason',
                       ].map((reason) {
                         final isSelected = selectedReason == reason;
@@ -926,12 +1026,26 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       Container(
                         height: 200,
                         width: double.infinity,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/images/restaurant_order_header.jpg'),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                        decoration: _isGrocery
+                            ? const BoxDecoration(gradient: AppColors.primaryGradient)
+                            : const BoxDecoration(
+                                image: DecorationImage(
+                                  image: AssetImage('assets/images/restaurant_order_header.jpg'),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                        child: _isGrocery
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: Icon(
+                                    Icons.local_grocery_store_rounded,
+                                    size: 72,
+                                    color: Colors.white.withValues(alpha: 0.28),
+                                  ),
+                                ),
+                              )
+                            : null,
                       ),
                       Container(
                         height: 200,
@@ -1102,8 +1216,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
 
     final steps = widget.order.isSelfPickup
-        ? ['Accept', 'Preparing', 'Ready', 'Arrived', 'Handover']
-        : ['Prepared', 'Ready', 'Pickup', 'Delivered'];
+        ? ['Accept', _isGrocery ? 'Packing' : 'Preparing', 'Ready', 'Arrived', 'Handover']
+        : [_isGrocery ? 'Packing' : 'Prepared', 'Ready', 'Pickup', 'Delivered'];
 
     int activeIndex = 0;
     if (widget.order.isSelfPickup) {
@@ -1178,17 +1292,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       switch (_currentStatus) {
         case 'Pending':
         case 'Placed':
-          return '🛒 New Self Pickup order received. Accept to set prep time.';
+          return _isGrocery
+              ? '🛒 New Self Pickup order received. Accept to set packing time.'
+              : '🛒 New Self Pickup order received. Accept to set prep time.';
         case 'Preparing':
-          return '👨‍🍳 Preparing food (${widget.order.prepTimeMinutes ?? 15} mins prep time).';
+          return _isGrocery
+              ? '🛍️ Packing groceries (${widget.order.prepTimeMinutes ?? 15} mins packing time).'
+              : '👨‍🍳 Preparing food (${widget.order.prepTimeMinutes ?? 15} mins prep time).';
         case 'Ready for Pickup':
         case 'Ready':
           return _customerArrived
-              ? '🔔 Customer has arrived at restaurant! Ready for counter handover.'
-              : '✅ Food is ready. Waiting for customer to arrive at restaurant.';
+              ? '🔔 Customer has arrived at ${_isGrocery ? 'store' : 'restaurant'}! Ready for counter handover.'
+              : '✅ Order is ready. Waiting for customer to arrive at ${_isGrocery ? 'store' : 'restaurant'}.';
         case 'Handed Over':
         case 'Delivered':
-          return '🎉 Food handed over to customer. Order completed.';
+          return '🎉 Order handed over to customer. Completed.';
         default:
           return '🛒 Self Pickup Order.';
       }
@@ -1197,15 +1315,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     switch (_currentStatus) {
       case 'Placed':
       case 'Preparing':
-        return '🔥 Food is being prepared.';
+        return _isGrocery ? '🛍️ Order is being packed.' : '🔥 Food is being prepared.';
       case 'Ready':
-        return '🔥 Food is ready and waiting for the rider.';
+        return _isGrocery
+            ? '✅ Order is packed and waiting for the rider.'
+            : '🔥 Food is ready and waiting for the rider.';
       case 'Picked Up':
-        return '🔥 The food has been handed over to the rider and is on the way.';
+        return '🚴 Order has been handed over to the rider and is on the way.';
       case 'Delivered':
-        return '🎉 Your order has been delivered successfully. Order completed.';
+        return '🎉 Order has been delivered successfully. Completed.';
       default:
-        return '🔥 Food is being prepared.';
+        return _isGrocery ? '🛍️ Order is being packed.' : '🔥 Food is being prepared.';
     }
   }
 
@@ -1236,10 +1356,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           const SizedBox(height: 12),
           _buildInfoRow('Customer Name', widget.order.customerName),
           const SizedBox(height: 8),
-          _buildInfoRow('Preparation Time', '${widget.order.prepTimeMinutes ?? 15} Mins'),
+          _buildInfoRow(_isGrocery ? 'Packing Time' : 'Preparation Time', '${widget.order.prepTimeMinutes ?? 15} Mins'),
           if (widget.order.bufferTimeMinutes > 0) ...[
             const SizedBox(height: 8),
-            _buildInfoRow('Preparation Buffer Time', '+${widget.order.bufferTimeMinutes} Mins'),
+            _buildInfoRow(_isGrocery ? 'Packing Buffer Time' : 'Preparation Buffer Time', '+${widget.order.bufferTimeMinutes} Mins'),
             if (widget.order.bufferReason != null && widget.order.bufferReason!.isNotEmpty) ...[
               const SizedBox(height: 8),
               _buildInfoRow('Buffer Time Reason', widget.order.bufferReason!),
@@ -1427,7 +1547,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             const SizedBox(height: 8),
             Text(
               widget.order.isSelfPickup
-                  ? 'Customer has a ${widget.order.gracePeriodMinutes}-min grace period after order completion to collect food at counter.'
+                  ? 'Customer has a ${widget.order.gracePeriodMinutes}-min grace period after order readiness to collect items at counter.'
                   : 'Rider has a ${widget.order.gracePeriodMinutes}-min grace period to arrive at store for order pickup.',
               style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[800]),
             ),
@@ -1497,6 +1617,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ...items.map((item) {
               String name = '';
               String variant = 'Standard';
+              String weight = '';
+              String unit = '';
               double price = 0.0;
               String image = '';
               int qty = 1;
@@ -1505,6 +1627,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 final Map itemMap = item;
                 name = itemMap['name']?.toString() ?? itemMap['product']?['name']?.toString() ?? '';
                 variant = itemMap['variant']?.toString() ?? itemMap['variation']?['name']?.toString() ?? 'Standard';
+                weight = itemMap['weight']?.toString() ?? itemMap['product']?['weight']?.toString() ?? '';
+                unit = itemMap['unit']?.toString() ?? itemMap['product']?['unit']?.toString() ?? '';
                 price = (itemMap['price'] as num?)?.toDouble() ?? (itemMap['product']?['price'] as num?)?.toDouble() ?? 0.0;
                 image = itemMap['image']?.toString() ?? itemMap['product']?['image']?.toString() ?? '';
                 qty = (itemMap['quantity'] as num? ?? itemMap['qty'] as num? ?? 1).toInt();
@@ -1518,7 +1642,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 } catch (_) {}
               }
 
-              if (name.isEmpty) name = 'Food Item';
+              if (name.isEmpty) name = 'Order Item';
+              final resolvedImg = _resolveImageUrl(image);
+              final packMeta = [
+                if (weight.trim().isNotEmpty || unit.trim().isNotEmpty) '${weight.trim()}${unit.trim()}',
+                if (variant.trim().isNotEmpty && variant.trim().toLowerCase() != 'standard') variant.trim(),
+                'Qty: $qty',
+              ].join('  •  ');
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -1526,9 +1656,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: image.isNotEmpty && (image.startsWith('http://') || image.startsWith('https://'))
+                      child: resolvedImg.isNotEmpty
                           ? Image.network(
-                              image,
+                              resolvedImg,
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,
@@ -1536,14 +1666,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                 width: 50,
                                 height: 50,
                                 color: Colors.grey[100],
-                                child: const Icon(Icons.fastfood, color: AppColors.primaryGreen),
+                                child: Icon(
+                                  _isGrocery ? Icons.inventory_2_outlined : Icons.fastfood,
+                                  color: AppColors.primaryGreen,
+                                ),
                               ),
                             )
                           : Container(
                               width: 50,
                               height: 50,
                               color: Colors.grey[100],
-                              child: const Icon(Icons.fastfood, color: AppColors.primaryGreen),
+                              child: Icon(
+                                _isGrocery ? Icons.inventory_2_outlined : Icons.fastfood,
+                                color: AppColors.primaryGreen,
+                              ),
                             ),
                     ),
                     const SizedBox(width: 12),
@@ -1552,7 +1688,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                          Text('$variant  •  Qty: $qty', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
+                          Text(packMeta, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
                         ],
                       ),
                     ),
@@ -1778,16 +1914,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     if (widget.order.isSelfPickup) {
       if (_currentStatus == 'Pending' || _currentStatus == 'Placed') {
-        text = 'Accept order and select preparation time?';
+        text = _isGrocery
+            ? 'Accept order and select packing time?'
+            : 'Accept order and select preparation time?';
         buttonText = 'Accept Order';
       } else if (_currentStatus == 'Preparing') {
-        text = 'Is food preparation complete and ready for customer pickup?';
+        text = _isGrocery
+            ? 'Is packing complete and ready for customer pickup?'
+            : 'Is food preparation complete and ready for customer pickup?';
         buttonText = 'Mark Ready';
       } else if (_currentStatus == 'Ready for Pickup' || _currentStatus == 'Ready') {
         text = _customerArrived ? '🔔 Customer has arrived! Verify OTP to handover.' : 'Verify 4-digit customer pickup OTP or QR';
         buttonText = 'Verify OTP / Handover';
       } else {
-        text = 'Order completed and food handed over to customer.';
+        text = 'Order completed and handed over to customer.';
         buttonText = 'Completed';
       }
     } else {
@@ -1797,19 +1937,23 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       final isHandedOverOrPickedUp = ['picked up', 'picked_up', 'out for delivery', 'out_for_delivery', 'on the way', 'on_the_way', 'delivered', 'handed over', 'handed_over', 'handovered', 'completed'].contains(_currentStatus.toLowerCase().trim());
 
       if (isHandedOverOrPickedUp) {
-        text = '🚀 Order Handed Over to Rider. Role completed for restaurant.';
+        text = '🚀 Order Handed Over to Rider.';
         buttonText = 'Handed Over to Rider';
       } else if (_currentStatus == 'Placed' || _currentStatus == 'Pending') {
-        text = 'Accept order and start food preparation in kitchen?';
-        buttonText = 'Start Preparing';
+        text = _isGrocery
+            ? 'Accept order and start packing items?'
+            : 'Accept order and start food preparation in kitchen?';
+        buttonText = _isGrocery ? 'Start Packing' : 'Start Preparing';
       } else if (_currentStatus == 'Preparing') {
-        text = 'Is food preparation complete and ready for pickup?';
+        text = _isGrocery
+            ? 'Is packing complete and ready for rider pickup?'
+            : 'Is food preparation complete and ready for pickup?';
         buttonText = 'Mark Ready';
       } else if (hasRider) {
-        text = '🚴 Rider ${widget.order.riderName ?? "Assigned"}! Ask 4-digit OTP to handover food.';
+        text = '🚴 Rider ${widget.order.riderName ?? "Assigned"}! Ask 4-digit OTP to handover order.';
         buttonText = 'Verify Rider OTP';
       } else if (_currentStatus == 'Ready' || _currentStatus == 'Ready for Pickup') {
-        text = 'Food is Ready! Click Search Rider to notify nearby delivery riders.';
+        text = 'Order is Ready! Click Search Rider to notify nearby delivery riders.';
         buttonText = 'Search Rider';
       } else {
         text = 'Order completed successfully.';

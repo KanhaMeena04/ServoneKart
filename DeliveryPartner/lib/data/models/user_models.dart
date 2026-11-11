@@ -120,6 +120,7 @@ class UserModel extends Equatable {
   final bool isOnline;        // Driver online status
   final bool isReturning;     // Driver returning to store
   final String? upi;          // Driver UPI payment identifier
+  final Map<String, dynamic>? bankDetails; // Driver saved bank payout details
   final DateTime createdAt;
 
   const UserModel({
@@ -135,17 +136,18 @@ class UserModel extends Equatable {
     this.isOnline = false,
     this.isReturning = false,
     this.upi,
+    this.bankDetails,
     required this.createdAt,
   });
 
   factory UserModel.fromJson(dynamic rawJson) {
     if (rawJson == null) {
       return UserModel(
-        id: 'RIDER_${DateTime.now().millisecondsSinceEpoch}',
+        id: '',
         phone: '',
         name: 'Rider Partner',
         role: 'driver',
-        isVerified: true,
+        isVerified: false,
         hasPinSet: false,
         isOnline: false,
         isReturning: false,
@@ -168,7 +170,7 @@ class UserModel extends Equatable {
         rawRider?['_id'] ??
         rawData?['_id'] ??
         rawData?['id'] ??
-        'RIDER_${DateTime.now().millisecondsSinceEpoch}';
+        '';
 
     final riderId = json['riderId']?.toString() ??
         rawRider?['_id']?.toString() ??
@@ -263,6 +265,14 @@ class UserModel extends Equatable {
         rawData?['upi']?.toString() ??
         rawData?['bankDetails']?['upiId']?.toString();
 
+    final rawBankDetails = json['bankDetails'] ??
+        rawRider?['bankDetails'] ??
+        rawUser?['bankDetails'] ??
+        rawData?['bankDetails'];
+    final Map<String, dynamic>? parsedBankDetails = rawBankDetails is Map
+        ? Map<String, dynamic>.from(rawBankDetails)
+        : null;
+
     DateTime parsedDate = DateTime.now();
     final dateStr = json['createdAt'] ?? rawUser?['createdAt'] ?? rawData?['createdAt'];
     if (dateStr != null) {
@@ -282,6 +292,7 @@ class UserModel extends Equatable {
       isOnline: isOnline,
       isReturning: isReturning,
       upi: upi,
+      bankDetails: parsedBankDetails,
       createdAt: parsedDate,
     );
   }
@@ -300,6 +311,7 @@ class UserModel extends Equatable {
       'isOnline': isOnline,
       'isReturning': isReturning,
       'upi': upi,
+      'bankDetails': bankDetails,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -317,6 +329,7 @@ class UserModel extends Equatable {
     bool? isOnline,
     bool? isReturning,
     String? upi,
+    Map<String, dynamic>? bankDetails,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -332,6 +345,7 @@ class UserModel extends Equatable {
       isOnline: isOnline ?? this.isOnline,
       isReturning: isReturning ?? this.isReturning,
       upi: upi ?? this.upi,
+      bankDetails: bankDetails ?? this.bankDetails,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -350,6 +364,7 @@ class UserModel extends Equatable {
         isOnline,
         isReturning,
         upi,
+        bankDetails,
         createdAt,
       ];
 }

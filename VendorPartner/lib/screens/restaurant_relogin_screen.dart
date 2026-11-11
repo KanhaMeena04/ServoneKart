@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_api_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ecdkart_logo.dart';
 import '../widgets/welcome_back_logo.dart';
@@ -84,34 +87,46 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
     return true;
   }
 
-  void _onLoginWithOtp() {
+  Future<void> _onLoginWithOtp() async {
     if (!_validateInput()) return;
 
+    final phone = _mobileController.text.trim().replaceAll(RegExp(r'\D'), '');
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      for (var c in _otpControllers) {
-        c.clear();
-      }
-      _otpControllers[0].text = '1';
-      _otpControllers[1].text = '2';
-      _otpControllers[2].text = '3';
-      _otpControllers[3].text = '4';
-      _otpControllers[4].text = '5';
-      _otpControllers[5].text = '6';
 
-      setState(() {
-        _isLoading = false;
+    final res = await RestaurantApiService.sendOtp(phone);
+    if (!mounted) return;
+
+    for (var c in _otpControllers) {
+      c.clear();
+    }
+
+    setState(() {
+      _isLoading = false;
+      if (res['success'] == true) {
         _isOtpMode = true;
-      });
+      }
+    });
 
+    if (res['success'] == true) {
+      final devOtp = (res['testOtp'] ?? '').toString().trim();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('OTP sent successfully! Demo OTP: 123456'),
+        SnackBar(
+          content: Text(
+            devOtp.isNotEmpty
+                ? 'OTP sent to +91 $phone (Dev OTP: $devOtp)'
+                : (res['message']?.toString() ?? 'OTP sent successfully to +91 $phone'),
+          ),
           backgroundColor: primaryGreen,
         ),
       );
-    });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message']?.toString() ?? 'Failed to send OTP. Please try again.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _verifyOtpAndLogin() async {
@@ -130,30 +145,26 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
     final phone = _mobileController.text.trim().replaceAll(RegExp(r'\D'), '');
 
     try {
-      final sRes = await http.get(Uri.parse(ApiConstants.checkApprovalStatusByMobile(phone))).timeout(const Duration(seconds: 8));
-      if (sRes.statusCode == 200) {
-        final data = jsonDecode(sRes.body);
-        final restId = (data['restaurantId'] ?? '').toString();
-        final token = (data['token'] ?? '').toString();
-        final isApproved = data['restaurantApproved'] == true || data['verificationStatus'] == 'verified';
+      final res = await RestaurantApiService.verifyOtp(phone, otpCode);
+      if (!mounted) return;
+
+      if (res['success'] == true) {
+        final restId = (res['restaurantId'] ?? '').toString();
+        final token = (res['token'] ?? '').toString();
+        final restaurantMap = res['restaurant'] is Map ? Map<String, dynamic>.from(res['restaurant'] as Map) : null;
+        final isApproved = res['isApproved'] == true;
+        final isGrocery = PlatformConfigService.isGroceryPlatform;
 
         String resolvedName = '';
-        if (data['name'] != null && data['name'].toString().isNotEmpty) {
-          final n = data['name'];
+        if (res['name'] != null && res['name'].toString().isNotEmpty) {
+          final n = res['name'];
           resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
-        } else if (data['restaurant'] != null && data['restaurant']['name'] != null) {
-          final n = data['restaurant']['name'];
+        } else if (restaurantMap != null && restaurantMap['name'] != null) {
+          final n = restaurantMap['name'];
           resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
         }
 
-        ApiConstants.setAuthenticatedSession(
-          restaurantId: restId,
-          authToken: token,
-        );
-
         final prefs = await SharedPreferences.getInstance();
-        if (restId.isNotEmpty) await prefs.setString('restaurantId', restId);
-        if (token.isNotEmpty) await prefs.setString('token', token);
         await prefs.setString('userPhone', phone);
         if (resolvedName.isNotEmpty && resolvedName != 'null') {
           await prefs.setString('restaurantName', resolvedName);
@@ -162,10 +173,28 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
         if (!mounted) return;
         setState(() => _isLoading = false);
 
+        if (restId.isEmpty || token.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isGrocery
+                    ? 'OTP verified! Please complete store registration to continue.'
+                    : 'OTP verified! Please complete partner registration to continue.',
+              ),
+              backgroundColor: Colors.orange.shade700,
+            ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen(isLoggedOut: false)),
+          );
+          return;
+        }
+
         if (isApproved) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Welcome Back, Partner! Logged in successfully.'),
+            SnackBar(
+              content: Text('Welcome Back, Partner! Logged in to ${PlatformConfigService.appName}.'),
               backgroundColor: primaryGreen,
             ),
           );
@@ -174,13 +203,15 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         } else {
+          final city = (restaurantMap?['city'] ?? restaurantMap?['address']?['city'] ?? '').toString();
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => WaitingForApprovalScreen(
-                applicationId: restId.isNotEmpty ? restId : 'APP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                restaurantName: resolvedName.isNotEmpty ? resolvedName : 'Your Restaurant',
-                city: 'Indore',
+                restaurantId: restId,
+                applicationId: restId,
+                restaurantName: resolvedName.isNotEmpty ? resolvedName : (isGrocery ? 'Your Store' : 'Your Outlet'),
+                city: city,
                 appliedDate: DateTime.now().toIso8601String().substring(0, 10),
                 mobileNumber: phone,
               ),
@@ -188,11 +219,10 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
           );
         }
       } else {
-        if (!mounted) return;
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No registered restaurant found with this mobile number.'),
+          SnackBar(
+            content: Text(res['message']?.toString() ?? 'Invalid OTP. Please try again.'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -226,27 +256,47 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        final token = data['token'] ?? data['authToken'] ?? '';
-        final restId = data['restaurantId'] ?? data['restaurant']?['_id'] ?? data['user']?['restaurantId'] ?? '';
+        final token = (data['token'] ?? data['authToken'] ?? '').toString();
+        final restId = (data['restaurantId'] ?? data['restaurant']?['_id'] ?? data['user']?['restaurantId'] ?? '').toString();
         final isApproved = data['isApproved'] == true || data['restaurantApproved'] == true || data['approvalStatus'] == 'verified';
+        final restaurantMap = data['restaurant'] is Map ? Map<String, dynamic>.from(data['restaurant'] as Map) : null;
+        final assignedRole = (data['assignedRole'] ?? data['user']?['assignedRole'] ?? restaurantMap?['assignedRole'] ?? 'Store Manager').toString();
+        final permissions = data['permissions'] ?? data['user']?['permissions'] ?? restaurantMap?['permissions'];
+        final businessType = (data['businessType'] ?? data['user']?['businessType'] ?? restaurantMap?['businessType'] ?? 'grocery_store').toString();
+        final vertical = (data['vertical'] ?? data['user']?['vertical'] ?? restaurantMap?['vertical'] ?? 'grocery').toString();
+        final platformMode = (data['platformMode'] ?? data['user']?['platformMode'] ?? 'grocery').toString();
 
         String resolvedName = '';
         if (data['name'] != null && data['name'].toString().isNotEmpty) {
           final n = data['name'];
           resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
-        } else if (data['restaurant'] != null && data['restaurant']['name'] != null) {
-          final n = data['restaurant']['name'];
+        } else if (restaurantMap != null && restaurantMap['name'] != null) {
+          final n = restaurantMap['name'];
           resolvedName = (n is Map ? (n['en'] ?? '') : n).toString();
         }
 
-        ApiConstants.setAuthenticatedSession(
-          restaurantId: restId.toString(),
-          authToken: token.toString(),
-        );
+        if (token.isNotEmpty && restId.isNotEmpty) {
+          await RestaurantAuthService.saveAuthSession(
+            token: token,
+            restaurantId: restId,
+            vendorData: restaurantMap,
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
+          );
+        } else {
+          await RestaurantAuthService.saveRbacContext(
+            assignedRole: assignedRole,
+            permissions: permissions is List ? permissions : null,
+            businessType: businessType,
+            vertical: vertical,
+            platformMode: platformMode,
+          );
+        }
 
         final prefs = await SharedPreferences.getInstance();
-        if (restId.toString().isNotEmpty) await prefs.setString('restaurantId', restId.toString());
-        if (token.toString().isNotEmpty) await prefs.setString('token', token.toString());
         await prefs.setString('userPhone', mobile);
         if (resolvedName.isNotEmpty && resolvedName != 'null') {
           await prefs.setString('restaurantName', resolvedName);
@@ -255,10 +305,20 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
         if (!mounted) return;
         setState(() => _isLoading = false);
 
-        if (isApproved) {
+        if (restId.isEmpty || token.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('PIN Verified! Welcome to ECDKART Partner Dashboard.'),
+              content: Text('Account found, but no active partner store session was issued. Please register or contact Super Admin.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+          return;
+        }
+
+        if (isApproved) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PIN Verified! Welcome to ${PlatformConfigService.appName} Partner Dashboard.'),
               backgroundColor: primaryGreen,
             ),
           );
@@ -267,13 +327,15 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         } else {
+          final isGrocery = PlatformConfigService.isGroceryPlatform;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => WaitingForApprovalScreen(
-                applicationId: restId.toString().isNotEmpty ? restId.toString() : 'APP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                restaurantName: data['name'] ?? data['restaurant']?['name'] ?? 'Your Restaurant',
-                city: data['city'] ?? 'Indore',
+                restaurantId: restId,
+                applicationId: restId,
+                restaurantName: resolvedName.isNotEmpty ? resolvedName : (isGrocery ? 'Your Store' : 'Your Outlet'),
+                city: (data['city'] ?? restaurantMap?['city'] ?? '').toString(),
                 appliedDate: DateTime.now().toIso8601String().substring(0, 10),
                 mobileNumber: mobile,
               ),
@@ -313,10 +375,6 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
     for (var c in _pinControllers) {
       c.clear();
     }
-    _pinControllers[0].text = '1';
-    _pinControllers[1].text = '2';
-    _pinControllers[2].text = '3';
-    _pinControllers[3].text = '4';
 
     showModalBottomSheet(
       context: context,
@@ -456,7 +514,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Demo PIN Hint
+                    // Security PIN Hint
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
@@ -469,7 +527,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Default quick demo PIN: 1234',
+                              'Enter your assigned 4-digit Store Partner PIN',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -538,7 +596,11 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, __) {
+        final bool isGrocery = PlatformConfigService.isGroceryPlatform;
+        return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Column(
@@ -551,13 +613,21 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                 Container(
                   height: 220,
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.offWhiteBg,
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/restaurant_otp_header.jpg'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                  decoration: isGrocery
+                      ? const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF0055FF), Color(0xFF00B4D8), Color(0xFFECFDF5)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        )
+                      : const BoxDecoration(
+                          color: AppTheme.offWhiteBg,
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/restaurant_otp_header.jpg'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -1043,12 +1113,14 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Register Now Link for New Restaurant Outlets
+                    // Register Now Link for New Store / Partner Outlets
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Don't have a Restaurant account? ",
+                          PlatformConfigService.isGroceryPlatform
+                              ? "Don't have a Store Partner account? "
+                              : "Don't have a Partner account? ",
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: Colors.grey[700],
@@ -1071,7 +1143,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
 
                   const SizedBox(height: 28),
 
-                  // ECDKART Restaurant Partner Value Proposition & Features (Same content)
+                  // Tricelyn Partner Value Proposition & Features
                   _buildRestaurantPartnerContent(),
 
                   const SizedBox(height: 32),
@@ -1082,9 +1154,13 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
         ),
       ),
     );
+      },
+    );
   }
 
   Widget _buildRestaurantPartnerContent() {
+    final bool isGrocery = PlatformConfigService.isGroceryPlatform;
+    final String brandName = PlatformConfigService.appName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1095,7 +1171,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'WHY PARTNER WITH ECD KART',
+                'WHY PARTNER WITH ${brandName.toUpperCase()}',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -1141,7 +1217,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Grow Your Kitchen Sales in Sohna',
+                      isGrocery ? 'Grow Your Grocery Store Sales' : 'Grow Your Partner Sales',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1150,7 +1226,9 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Direct orders, fast delivery & 0% setup fee for local restaurants.',
+                      isGrocery
+                          ? 'Direct hyperlocal orders, express dark-store delivery & 0% setup fee for grocery stores.'
+                          : 'Direct orders, fast delivery & 0% setup fee for local partners.',
                       style: GoogleFonts.poppins(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
@@ -1169,8 +1247,10 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
         _buildPartnerFeatureRow(
           icon: Icons.delivery_dining_rounded,
           iconColor: const Color(0xFF248C70),
-          title: 'Hyperlocal Sohna Fleet',
-          subtitle: 'Dedicated rider network ensuring speedy 25-30 min door-to-door delivery.',
+          title: 'Hyperlocal Delivery Fleet',
+          subtitle: isGrocery
+              ? 'Dedicated rider network ensuring rapid 10-20 min doorstep grocery delivery.'
+              : 'Dedicated rider network ensuring speedy door-to-door delivery.',
         ),
         const SizedBox(height: 10),
         _buildPartnerFeatureRow(
@@ -1183,12 +1263,14 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
         _buildPartnerFeatureRow(
           icon: Icons.storefront_rounded,
           iconColor: const Color(0xFFE65100),
-          title: 'Live Order & Menu Control',
-          subtitle: 'Real-time loud audio alerts, instant item toggle & live price management.',
+          title: isGrocery ? 'Live Order & SKU Inventory Control' : 'Live Order & Catalog Control',
+          subtitle: isGrocery
+              ? 'Real-time loud audio alerts, instant SKU stock toggle & live price management.'
+              : 'Real-time loud audio alerts, instant item toggle & live price management.',
         ),
         const SizedBox(height: 16),
 
-        // Stats ribbon (50+ Partners • 10K+ Orders • 25 Min Delivery)
+        // Stats ribbon
         Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
@@ -1201,7 +1283,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
             children: [
               _buildStatItem('50+', 'Local Partners'),
               Container(width: 1, height: 24, color: Colors.grey[300]),
-              _buildStatItem('25 Min', 'Avg Delivery'),
+              _buildStatItem(isGrocery ? '15 Min' : '25 Min', 'Avg Delivery'),
               Container(width: 1, height: 24, color: Colors.grey[300]),
               _buildStatItem('100%', 'Safe Payouts'),
             ],
@@ -1223,7 +1305,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                 const Icon(Icons.language_rounded, size: 13, color: Colors.grey),
                 const SizedBox(width: 5),
                 Text(
-                  'ecdkart.co.in • Sohna, Gurugram (122103)',
+                  '${brandName.toLowerCase()}.com • Multi-Vendor Partner Hub',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,

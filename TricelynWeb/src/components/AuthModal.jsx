@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Phone, Lock, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 
@@ -26,18 +26,18 @@ const AuthModal = () => {
 
     setLoading(true);
     try {
-      const res = await authService.sendOtp(cleanPhone);
+      const res = await authService.sendOtp(cleanPhone, name.trim());
       setLoading(false);
       setStep('otp');
-      if (res.data?.otp) {
-        setServerOtpInfo(`(Demo OTP: ${res.data.otp})`);
+      const devOtp = res.data?.testOtp || res.data?.otp;
+      if (devOtp) {
+        setServerOtpInfo(`(Dev OTP: ${devOtp})`);
+      } else {
+        setServerOtpInfo('');
       }
     } catch (err) {
       setLoading(false);
-      // If server OTP service fails or rate limited, fallback to demo OTP verification
-      console.warn('Backend OTP notice:', err.response?.data?.message || err.message);
-      setStep('otp');
-      setServerOtpInfo('(Use test OTP: 1234 or 0000)');
+      setError(err.response?.data?.message || 'Unable to send OTP right now. Please check server connection.');
     }
   };
 
@@ -52,40 +52,19 @@ const AuthModal = () => {
 
     setLoading(true);
     try {
-      const res = await authService.verifyOtp(phone, cleanOtp);
+      const res = await authService.verifyOtp(phone.trim(), cleanOtp, name.trim());
       setLoading(false);
       if (res.data?.token) {
         loginWithToken(res.data.token, res.data.user || { phone, name: name || 'Tricelyn Customer' });
         setIsAuthModalOpen(false);
         resetState();
       } else {
-        // Fallback login
-        performFallbackLogin();
+        setError(res.data?.message || 'Verification failed. Please retry.');
       }
     } catch (err) {
-      // In development, allow 1234, 0000 or any 4 digit OTP for smooth flow
-      if (cleanOtp === '1234' || cleanOtp === '0000' || cleanOtp.length >= 4) {
-        performFallbackLogin();
-      } else {
-        setLoading(false);
-        setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
-      }
+      setLoading(false);
+      setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.');
     }
-  };
-
-  const performFallbackLogin = () => {
-    setLoading(false);
-    const mockToken = 'tricelyn_jwt_' + Date.now();
-    const mockUser = {
-      _id: 'usr_' + phone,
-      phone: phone,
-      name: name || `Customer ${phone.slice(-4)}`,
-      role: 'customer',
-      city: 'Indore',
-    };
-    loginWithToken(mockToken, mockUser);
-    setIsAuthModalOpen(false);
-    resetState();
   };
 
   const resetState = () => {
@@ -100,7 +79,6 @@ const AuthModal = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100">
-        
         {/* Header with Tricelyn Blue accent */}
         <div className="bg-brand-600 px-6 py-6 text-white relative">
           <button
@@ -112,9 +90,9 @@ const AuthModal = () => {
           >
             <X className="w-5 h-5" />
           </button>
-          
+
           <span className="text-[10px] uppercase font-bold tracking-widest text-blue-200">
-            TRICELYN QUICK COMMERCE
+            TRICELYN QUICK GROCERY
           </span>
           <h3 className="text-xl font-extrabold text-white mt-1">
             {step === 'phone' ? 'Groceries in 10-15 Minutes' : 'Verify Your Mobile'}
@@ -122,7 +100,7 @@ const AuthModal = () => {
           <p className="text-xs text-blue-100 mt-1">
             {step === 'phone'
               ? 'Enter your mobile number to sign in or create an account'
-              : `Enter the 4-digit code sent to +91 ${phone}`}
+              : `Enter the verification code sent to +91 ${phone}`}
           </p>
         </div>
 
@@ -198,8 +176,8 @@ const AuthModal = () => {
                   type="text"
                   maxLength={6}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter 4-digit code"
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Enter OTP code"
                   required
                   autoFocus
                   className="w-full text-center tracking-widest text-lg py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-black"
@@ -240,4 +218,3 @@ const AuthModal = () => {
 };
 
 export default AuthModal;
-

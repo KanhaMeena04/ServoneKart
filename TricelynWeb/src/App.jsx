@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { LocationProvider } from './context/LocationContext';
 import { CartProvider } from './context/CartContext';
+import { PlatformProvider } from './context/PlatformContext';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -30,62 +31,64 @@ import SupportPage from './pages/SupportPage';
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <LocationProvider>
-          <CartProvider>
-            <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased relative">
-              {/* Sticky Header with Logo, Indore Location, Search & Cart */}
-              <Header />
+      <PlatformProvider>
+        <AuthProvider>
+          <LocationProvider>
+            <CartProvider>
+              <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased relative">
+                {/* Sticky Header with Logo, Location, Search & Cart */}
+                <Header />
 
-              {/* Main Routing Content */}
-              <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/product/:id" element={<ProductDetailPage />} />
-                  <Route path="/category/:slug" element={<CategoryPage />} />
-                  <Route path="/categories" element={<CategoriesOverviewPage />} />
-                  <Route path="/stores" element={<StoresPage />} />
-                  <Route path="/store/:storeId" element={<StoresPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
-                  <Route path="/track/:orderId" element={<OrderTrackingPage />} />
-                  <Route path="/search" element={<SearchResultsPage />} />
-                  <Route path="/account" element={<AccountOrdersPage />} />
-                  <Route path="/account/orders" element={<AccountOrdersPage />} />
-                  <Route path="/account/addresses" element={<AccountOrdersPage />} />
-                  <Route path="/support" element={<SupportPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
+                {/* Main Routing Content */}
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/product/:id" element={<ProductDetailPage />} />
+                    <Route path="/category/:slug" element={<CategoryPage />} />
+                    <Route path="/categories" element={<CategoriesOverviewPage />} />
+                    <Route path="/stores" element={<StoresPage />} />
+                    <Route path="/store/:storeId" element={<StoresPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+                    <Route path="/track/:orderId" element={<OrderTrackingPage />} />
+                    <Route path="/search" element={<SearchResultsPage />} />
+                    <Route path="/account" element={<AccountOrdersPage />} />
+                    <Route path="/account/orders" element={<AccountOrdersPage />} />
+                    <Route path="/account/addresses" element={<AccountOrdersPage />} />
+                    <Route path="/support" element={<SupportPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </main>
 
-              {/* Global Slide-Over Cart Drawer */}
-              <CartDrawer />
+                {/* Global Slide-Over Cart Drawer */}
+                <CartDrawer />
 
-              {/* Global Delivery Location Modal */}
-              <LocationModal />
+                {/* Global Delivery Location Modal */}
+                <LocationModal />
 
-              {/* Global Phone OTP Authentication Modal */}
-              <AuthModal />
+                {/* Global Phone OTP Authentication Modal */}
+                <AuthModal />
 
-              {/* Global Product Detail Modal */}
-              <ProductDetailModal />
+                {/* Global Product Detail Modal */}
+                <ProductDetailModal />
 
-              {/* Global Floating Active Order Banner */}
-              <ActiveOrderBanner />
+                {/* Global Floating Active Order Banner */}
+                <ActiveOrderBanner />
 
-              {/* Global Floating 24/7 Support Chat Widget */}
-              <SupportWidget />
+                {/* Global Floating 24/7 Support Chat Widget */}
+                <SupportWidget />
 
-              {/* Global Sticky Bottom Cart Bar on Mobile (Blinkit / Zepto Style) */}
-              <StickyMobileCartBar />
+                {/* Global Sticky Bottom Cart Bar on Mobile */}
+                <StickyMobileCartBar />
 
-              {/* Tricelyn Footer */}
-              <Footer />
-            </div>
-          </CartProvider>
-        </LocationProvider>
-      </AuthProvider>
+                {/* Tricelyn Footer */}
+                <Footer />
+              </div>
+            </CartProvider>
+          </LocationProvider>
+        </AuthProvider>
+      </PlatformProvider>
     </Router>
   );
 }

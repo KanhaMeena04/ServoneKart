@@ -1,15 +1,13 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/api_constansts.dart';
 import 'auth_service.dart';
 
 class ApiService {
-  // Flag to toggle mock mode (disabled for live backend connection with fallback)
-  static bool useMockBackend = false;
-
   static Future<Map<String, String>> _getHeaders() async {
     final token = await AuthService.getToken();
     return {
@@ -19,8 +17,14 @@ class ApiService {
     };
   }
 
-  // Active Orders Cache (Defaults to empty list, populated only via live backend)
-  static final List<Map<String, dynamic>> _mockActiveOrders = [];
+  static Map<String, dynamic> _tryDecode(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return <String, dynamic>{};
+  }
 
   // ==================== AUTH ENDPOINTS ====================
 
@@ -112,8 +116,8 @@ class ApiService {
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 10));
 
+      final data = _tryDecode(response.body);
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
         return {
           'success': true,
           'data': data['data'] ?? data,
@@ -121,10 +125,15 @@ class ApiService {
           'rider': data['rider'] ?? data['data']?['rider'] ?? data['data'],
         };
       }
+      return {
+        'success': false,
+        'statusCode': response.statusCode,
+        'message': data['message'] ?? 'Failed to fetch profile',
+      };
     } catch (e) {
       log("Error fetching profile: $e");
+      return {"success": false, "message": "Failed to fetch profile: $e"};
     }
-    return {"success": false, "message": "Failed to fetch profile"};
   }
 
   static Future<Map<String, dynamic>> updateUpiId(String upiId) async {
@@ -196,19 +205,29 @@ class ApiService {
 
   static Future<Map<String, dynamic>> markReachedStore([String? orderId]) async {
     try {
-      final url = orderId != null
-          ? "${ApiConstants.baseUrl}/riders/orders/$orderId/arrive-restaurant"
-          : ApiConstants.driverReachedStore;
-      final response = await http.put(
-        Uri.parse(url),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 15));
+      final http.Response response;
+      if (orderId != null && orderId.isNotEmpty) {
+        response = await http.put(
+          Uri.parse("${ApiConstants.baseUrl}/riders/orders/$orderId/arrive-restaurant"),
+          headers: await _getHeaders(),
+        ).timeout(const Duration(seconds: 15));
+      } else {
+        response = await http.post(
+          Uri.parse(ApiConstants.driverReachedStore),
+          headers: await _getHeaders(),
+          body: jsonEncode({}),
+        ).timeout(const Duration(seconds: 15));
+      }
 
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Reached store status updated'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Reached store status updated' : 'Failed to update store arrival'),
+      };
     } catch (e) {
       log("Error mark reached store: $e");
-      return {"success": true, "message": "Reached store status updated"};
+      return {"success": false, "message": "Network error updating store arrival: $e"};
     }
   }
 
@@ -219,7 +238,7 @@ class ApiService {
     double? heading,
   }) async {
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse(ApiConstants.updateLocation),
         headers: await _getHeaders(),
         body: jsonEncode({
@@ -229,9 +248,10 @@ class ApiService {
           'heading': heading,
         }),
       ).timeout(const Duration(seconds: 10));
-      return {"success": true};
+      final ok = response.statusCode >= 200 && response.statusCode < 300;
+      return {"success": ok};
     } catch (e) {
-      return {"success": true};
+      return {"success": false, "message": "Location sync error: $e"};
     }
   }
 
@@ -244,20 +264,20 @@ class ApiService {
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(response.body);
-        final list = data['orders'] ?? data['data'] ?? (data is List ? data : []);
+        final list = data is Map ? (data['orders'] ?? data['data'] ?? []) : (data is List ? data : []);
         if (list is List) {
           return {'success': true, 'data': list};
         }
+        return {'success': true, 'data': data};
       }
+      final errData = _tryDecode(response.body);
+      return {'success': false, 'data': [], 'message': errData['message'] ?? 'Failed to fetch active orders'};
     } catch (e) {
       log("Error fetching active orders: $e");
+      return {"success": false, "data": [], "message": "Network error loading active orders: $e"};
     }
-    return {
-      "success": true,
-      "data": [],
-    };
   }
 
   static Future<Map<String, dynamic>> getOrderHistory() async {
@@ -267,20 +287,20 @@ class ApiService {
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(response.body);
-        final list = data['orders'] ?? data['data'] ?? (data is List ? data : []);
+        final list = data is Map ? (data['orders'] ?? data['data'] ?? []) : (data is List ? data : []);
         if (list is List) {
           return {'success': true, 'data': list};
         }
+        return {'success': true, 'data': data};
       }
+      final errData = _tryDecode(response.body);
+      return {'success': false, 'data': [], 'message': errData['message'] ?? 'Failed to fetch order history'};
     } catch (e) {
       log("Error fetching order history: $e");
+      return {"success": false, "data": [], "message": "Network error loading order history: $e"};
     }
-    return {
-      "success": true,
-      "data": [],
-    };
   }
 
   static Future<Map<String, dynamic>> getOrderDetails(String orderId) async {
@@ -315,11 +335,16 @@ class ApiService {
         }),
       ).timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Order status updated to $status'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Order status updated to $status' : 'Failed to update order status'),
+        'data': data,
+      };
     } catch (e) {
       log("Error updating order status: $e");
-      return {"success": true, "message": "Order status updated to $status"};
+      return {"success": false, "message": "Network error updating order status: $e"};
     }
   }
 
@@ -337,11 +362,15 @@ class ApiService {
           'note': note ?? '',
         }),
       ).timeout(const Duration(seconds: 15));
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Customer rated successfully'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Customer rated successfully' : 'Failed to submit rating'),
+      };
     } catch (e) {
       log("Error rating customer: $e");
-      return {"success": true, "message": "Customer rated successfully"};
+      return {"success": false, "message": "Network error submitting rating: $e"};
     }
   }
 
@@ -351,8 +380,9 @@ class ApiService {
         Uri.parse("${ApiConstants.baseUrl}/riders/orders/$orderId/resend-pickup-otp"),
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Pickup OTP sent'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {'success': ok, 'message': data['message'] ?? (ok ? 'Pickup OTP sent' : 'Failed to send pickup OTP')};
     } catch (e) {
       return {"success": false, "message": "Failed to send pickup OTP: $e"};
     }
@@ -364,10 +394,14 @@ class ApiService {
         Uri.parse("${ApiConstants.baseUrl}/riders/orders/$orderId/resend-delivery-otp"),
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
-      final data = jsonDecode(response.body);
-      return {'success': true, 'otp': data['otp'] ?? '5678', 'message': data['message'] ?? 'Delivery OTP sent'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Delivery OTP sent to customer' : 'Failed to send delivery OTP'),
+      };
     } catch (e) {
-      return {"success": true, "otp": "5678", "message": "Delivery OTP sent"};
+      return {"success": false, "message": "Failed to send delivery OTP: $e"};
     }
   }
 
@@ -382,11 +416,15 @@ class ApiService {
         body: jsonEncode({'orderId': orderId, 'otp': otp.trim()}),
       ).timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Delivery completed successfully!'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Delivery completed successfully!' : 'Invalid OTP or verification failed'),
+      };
     } catch (e) {
       log("Error completing delivery: $e");
-      return {"success": true, "message": "Delivery completed successfully!"};
+      return {"success": false, "message": "Network error completing delivery: $e"};
     }
   }
 
@@ -396,10 +434,15 @@ class ApiService {
         Uri.parse("${ApiConstants.baseUrl}/riders/orders/$orderId/accept"),
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Order accepted'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Order accepted' : 'Failed to accept order'),
+        'data': data,
+      };
     } catch (e) {
-      return {"success": true, "message": "Order accepted"};
+      return {"success": false, "message": "Network error accepting order: $e"};
     }
   }
 
@@ -412,10 +455,15 @@ class ApiService {
           if (reason != null) ...{'reason': reason},
         }),
       ).timeout(const Duration(seconds: 15));
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Order declined'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Order declined' : 'Failed to decline order'),
+        'data': data,
+      };
     } catch (e) {
-      return {"success": true, "message": "Order declined"};
+      return {"success": false, "message": "Network error declining order: $e"};
     }
   }
 
@@ -426,22 +474,16 @@ class ApiService {
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(response.body);
         return {'success': true, 'data': data['data'] ?? data};
       }
+      final errData = _tryDecode(response.body);
+      return {'success': false, 'message': errData['message'] ?? 'Failed to fetch summary'};
     } catch (e) {
       log("Error fetching driver summary: $e");
+      return {"success": false, "message": "Network error fetching summary: $e"};
     }
-    return {
-      "success": true,
-      "data": {
-        "todayEarnings": 0.0,
-        "completedOrders": 0,
-        "activeHours": 0.0,
-        "rating": 5.0,
-      }
-    };
   }
   static Future<String?> uploadImage(File imageFile) async {
     try {
@@ -511,23 +553,31 @@ class ApiService {
       request.fields['upi'] = upi;
       if (email != null) request.fields['email'] = email;
 
-      if (profileImage != null) {
-        request.files.add(await http.MultipartFile.fromPath('profilePic', profileImage.path));
+      Future<void> attachFile(String field, XFile file) async {
+        if (kIsWeb) {
+          final bytes = await file.readAsBytes();
+          request.files.add(http.MultipartFile.fromBytes(field, bytes, filename: file.name));
+        } else {
+          request.files.add(await http.MultipartFile.fromPath(field, file.path));
+        }
       }
-      if (aadharFront != null) {
-        request.files.add(await http.MultipartFile.fromPath('aadharCardImage', aadharFront.path));
-      }
-      if (license != null) {
-        request.files.add(await http.MultipartFile.fromPath('licenseFrontImage', license.path));
-      }
+
+      if (profileImage != null) await attachFile('profilePic', profileImage);
+      if (aadharFront != null) await attachFile('aadharCardImage', aadharFront);
+      if (aadharBack != null) await attachFile('aadharBackImage', aadharBack);
+      if (license != null) await attachFile('licenseFrontImage', license);
 
       final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
       final response = await http.Response.fromStream(streamedResponse);
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode >= 200 && response.statusCode < 300, 'message': data['message'] ?? 'Documents uploaded successfully'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Documents uploaded successfully' : 'Failed to upload documents'),
+      };
     } catch (e) {
       log("Error uploading driver documents: $e");
-      return {"success": true, "message": "Documents uploaded successfully"};
+      return {"success": false, "message": "Failed to upload documents: $e"};
     }
   }
 
@@ -539,15 +589,16 @@ class ApiService {
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 20));
 
-      final data = jsonDecode(response.body);
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
       return {
-        'success': response.statusCode >= 200 && response.statusCode < 300,
-        'message': data['message'] ?? 'Rider onboarding completed successfully',
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Rider onboarding completed successfully' : 'Failed to complete onboarding'),
         'data': data
       };
     } catch (e) {
       log("Error completing rider onboarding: $e");
-      return {"success": true, "message": "Rider onboarding completed successfully"};
+      return {"success": false, "message": "Network error completing onboarding: $e"};
     }
   }
 
@@ -581,26 +632,12 @@ class ApiService {
           }
         };
       }
+      final errData = _tryDecode(response.body);
+      return {'success': false, 'message': errData['message'] ?? 'Failed to fetch wallet summary'};
     } catch (e) {
       log("Error fetching wallet summary: $e");
+      return {"success": false, "message": "Network error fetching wallet summary: $e"};
     }
-    return {
-      "success": true,
-      "data": {
-        "balance": 0.0,
-        "billable_hours": "0.0",
-        "today_orders": 0,
-        "recent_requests": []
-      },
-      "wallet": {
-        "availableBalance": 0.0,
-        "cashInHand": 0.0,
-        "cashLimit": 2000.0,
-        "isFrozen": false,
-        "totalEarnings": 0.0,
-        "transactions": []
-      }
-    };
   }
 
   static Future<Map<String, dynamic>> getCodBalance() async {
@@ -614,17 +651,12 @@ class ApiService {
         final data = jsonDecode(response.body);
         return {'success': true, 'data': data['data'] ?? data};
       }
+      final errData = _tryDecode(response.body);
+      return {'success': false, 'message': errData['message'] ?? 'Failed to fetch COD balance'};
     } catch (e) {
       log("Error fetching COD balance: $e");
+      return {"success": false, "message": "Network error fetching COD balance: $e"};
     }
-    return {
-      "success": true,
-      "data": {
-        "codBalance": 0.0,
-        "codEarnings": 0.0,
-        "amountToPay": 0.0,
-      }
-    };
   }
 
   static Future<Map<String, dynamic>> requestWithdrawal(
@@ -686,11 +718,15 @@ class ApiService {
         body: jsonEncode({'amount': amountCollected}),
       ).timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'COD payment recorded successfully'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'COD payment recorded successfully' : 'Failed to record COD collection'),
+      };
     } catch (e) {
       log("Error confirming COD collection: $e");
-      return {"success": true, "message": "COD payment recorded successfully"};
+      return {"success": false, "message": "Network error recording COD collection: $e"};
     }
   }
 
@@ -701,10 +737,14 @@ class ApiService {
         headers: await _getHeaders(),
       ).timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 200, 'message': data['message'] ?? 'Account deleted successfully'};
+      final data = _tryDecode(response.body);
+      final ok = response.statusCode >= 200 && response.statusCode < 300 && data['success'] != false;
+      return {
+        'success': ok,
+        'message': data['message'] ?? (ok ? 'Account deleted successfully' : 'Failed to delete account'),
+      };
     } catch (e) {
-      return {"success": true, "message": "Account deleted successfully"};
+      return {"success": false, "message": "Network error deleting account: $e"};
     }
   }
 

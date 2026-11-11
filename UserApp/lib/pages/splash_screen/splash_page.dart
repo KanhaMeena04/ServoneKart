@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/platform_config_provider.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -24,6 +25,7 @@ class _SplashPageState extends State<SplashPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<UserProvider>().fetchProfile();
+        context.read<PlatformConfigProvider>().refresh();
       }
     });
     _timer = Timer(const Duration(milliseconds: 1200), () {
@@ -96,15 +98,52 @@ class _SplashPageState extends State<SplashPage> {
                       ),
                     ),
                   ),
-                  // Food image
+                  // Quick-commerce grocery badge in semi-circle
                   Positioned(
-                    bottom: -10,
-                    right: -40,
-                    width: size.width * 1.15,
-                    child: Image.asset(
-                      'assets/delicious-pasta.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    bottom: 64,
+                    left: 24,
+                    right: 24,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 84,
+                          height: 84,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.local_grocery_store_rounded,
+                            color: Colors.white,
+                            size: 42,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Tricelyn Quick Mart',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Fresh groceries & daily staples in 10-15 mins',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

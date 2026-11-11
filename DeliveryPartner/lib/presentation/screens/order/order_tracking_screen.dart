@@ -10,6 +10,7 @@ import '../../../logic/blocs/driver/driver_bloc.dart';
 import '../../../logic/blocs/driver/driver_event.dart';
 import '../../../logic/blocs/driver/driver_state.dart';
 import '../../../data/services/api_service.dart';
+import '../../../data/services/platform_config_service.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final Map<String, dynamic> order;
@@ -41,6 +42,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   final Set<Polyline> _polylines = {};
   static const String googleApiKey = 'AIzaSyCN7XqyxOj5lgr2uaMNrTOg6PzHTOGa0xU';
   PolylinePoints polylinePoints = PolylinePoints(apiKey: googleApiKey);
+
+  bool get _isGroceryOrder {
+    final vertical = (widget.order['vertical'] ?? '').toString().trim().toLowerCase();
+    if (vertical == 'grocery') return true;
+    if (vertical == 'food' && PlatformConfigService.isFoodAllowed) return false;
+    if (vertical.isEmpty) {
+      final bType = (widget.order['restaurant']?['businessType'] ?? '').toString().toLowerCase();
+      if (bType == 'restaurant' && PlatformConfigService.isFoodAllowed) return false;
+      return true;
+    }
+    return PlatformConfigService.isGroceryPlatform;
+  }
+
+  String get _partnerLabel => _isGroceryOrder ? 'Store' : 'Restaurant';
 
   @override
   void initState() {
@@ -85,10 +100,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               _mapController?.animateCamera(CameraUpdate.newLatLngZoom(_driverLatLng!, 15.0));
             }
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🎉 OTP Verified by Restaurant! Order Handed Over. Deliver to Customer!'),
+              SnackBar(
+                content: Text('🎉 OTP Verified by $_partnerLabel! Order Handed Over. Deliver to Customer!'),
                 backgroundColor: primaryGreen,
-                duration: Duration(seconds: 4),
+                duration: const Duration(seconds: 4),
               ),
             );
           } else if (status.isNotEmpty && status != _currentDeliveryStatus.toLowerCase()) {
@@ -356,7 +371,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (oDist != null) return oDist.toString();
     } catch (_) {}
 
-    return '1.2';
+    return '--';
   }
 
   Future<void> _openExternalMap() async {
@@ -393,10 +408,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         });
       } else if (_currentDeliveryStatus == 'reached_store' || _currentDeliveryStatus == 'reached_restaurant') {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🔑 Please tell the 4-digit OTP to the restaurant owner so they can verify and hand over the order.'),
+          SnackBar(
+            content: Text('🔑 Please tell the 4-digit OTP to the ${_partnerLabel.toLowerCase()} so they can verify and hand over the order.'),
             backgroundColor: Colors.orange,
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -408,18 +423,28 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       setState(() => _isLoading = true);
       final res = await ApiService.updateOrderStatus(orderId: orderId, status: 'out_for_delivery');
       if (mounted) {
-        setState(() {
-          _currentDeliveryStatus = 'out_for_delivery';
-          _isToRestaurant = false;
-          _isLoading = false;
-        });
-        _getPolyline();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🚀 Order is Out for Delivery! Navigation started to Customer location.'),
-            backgroundColor: primaryGreen,
-          ),
-        );
+        if (res['success'] == true) {
+          setState(() {
+            _currentDeliveryStatus = 'out_for_delivery';
+            _isToRestaurant = false;
+            _isLoading = false;
+          });
+          _getPolyline();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🚀 Order is Out for Delivery! Navigation started to Customer location.'),
+              backgroundColor: primaryGreen,
+            ),
+          );
+        } else {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message']?.toString() ?? 'Failed to update status to Out for Delivery'),
+              backgroundColor: Colors.red[700],
+            ),
+          );
+        }
       }
     } else if (_currentDeliveryStatus == 'out_for_delivery' || _currentDeliveryStatus == 'on_the_way' || _currentDeliveryStatus == 'reached_customer_location' || _currentDeliveryStatus == 'delivery_arrived') {
       setState(() => _isLoading = true);
@@ -569,21 +594,26 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final customer = widget.order['customer'] ?? {};
-    final address = widget.order['address'] ?? widget.order['deliveryAddress'] ?? {};
-    final restaurant = widget.order['restaurant'] ?? {'name': 'Restaurant Store', 'address': 'Indore, MP'};
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, _) {
+        final customer = widget.order['customer'] ?? {};
+        final address = widget.order['address'] ?? widget.order['deliveryAddress'] ?? {};
+        final restaurant = widget.order['restaurant'] ??
+            widget.order['store'] ??
+            {'name': _isGroceryOrder ? 'Grocery Store' : 'Partner Store', 'address': 'Pickup Location'};
 
-    final restLatLng = _getRestaurantLatLng();
-    final custLatLng = _getCustomerLatLng();
-    final targetLatLng = _isToRestaurant ? restLatLng : custLatLng;
+        final restLatLng = _getRestaurantLatLng();
+        final custLatLng = _getCustomerLatLng();
+        final targetLatLng = _isToRestaurant ? restLatLng : custLatLng;
 
-    final markers = <Marker>{
-      Marker(
-        markerId: const MarkerId('store'),
-        position: restLatLng,
-        infoWindow: InfoWindow(title: restaurant['name'] ?? 'Restaurant Store'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-      ),
+        final markers = <Marker>{
+          Marker(
+            markerId: const MarkerId('store'),
+            position: restLatLng,
+            infoWindow: InfoWindow(title: restaurant['name'] ?? _partnerLabel),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          ),
       Marker(
         markerId: const MarkerId('customer'),
         position: custLatLng,
@@ -609,10 +639,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
     if (_isToRestaurant) {
       if (_currentDeliveryStatus == 'accepted' || _currentDeliveryStatus == 'assigned') {
-        actionBtnText = 'I have Reached the Store';
+        actionBtnText = 'I have Reached the $_partnerLabel';
         actionBtnColor = Colors.orange[700]!;
       } else if (_currentDeliveryStatus == 'reached_store') {
-        actionBtnText = 'Waiting for Restaurant';
+        actionBtnText = 'Waiting for $_partnerLabel';
         actionBtnColor = Colors.orange[300]!;
       } else {
         showActionButton = false;
@@ -743,7 +773,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
-                              '${_getLiveDistance()} KM',
+                              _getLiveDistance() == '--' ? '--' : '${_getLiveDistance()} KM',
                               style: TextStyle(
                                 color: _isToRestaurant ? Colors.orange[700] : primaryGreen,
                                 fontWeight: FontWeight.bold,
@@ -772,7 +802,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _isToRestaurant ? (restaurant['name'] ?? 'Restaurant') : (customer['name'] ?? 'Customer'),
+                                  _isToRestaurant ? (restaurant['name'] ?? _partnerLabel) : (customer['name'] ?? 'Customer'),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -826,9 +856,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           ),
                           child: Column(
                             children: [
-                              const Text(
-                                '🔑 SHOW THIS 4-DIGIT OTP TO RESTAURANT FOR PICKUP',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 13),
+                              Text(
+                                '🔑 SHOW THIS 4-DIGIT OTP TO ${_partnerLabel.toUpperCase()} FOR PICKUP',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 13),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 8),
@@ -843,7 +873,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Restaurant owner will verify this code to hand over the order.',
+                                '$_partnerLabel partner will verify this code to hand over the order.',
                                 style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                                 textAlign: TextAlign.center,
                               ),
@@ -893,6 +923,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

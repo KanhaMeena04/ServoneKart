@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/notification_service.dart';
+import '../../../data/services/rider_socket_service.dart';
 import '../../../data/models/auth_response_model.dart';
 import '../../../data/models/user_models.dart';
 import 'auth_event.dart';
@@ -37,7 +38,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(OtpSent(phone: event.phone));
         }
       } else {
-        final message = result['data']?['message'] ?? 'Failed to send OTP';
+        final message = (result['message'] ?? result['data']?['message'] ?? 'Failed to send OTP').toString();
         emit(AuthError(message: message));
       }
     } catch (e) {
@@ -65,6 +66,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             : (result['data'] != null ? Map<String, dynamic>.from(result['data'] as Map) : result);
         final authResponse = AuthResponseModel.fromJson(rawData);
 
+        if (authResponse.accessToken.isEmpty) {
+          emit(const AuthError(message: 'Invalid authentication token received from server'));
+          return;
+        }
+
         // If we provided a PIN, we definitely have a PIN set
         final hasPinSet = event.pin != null && event.pin!.isNotEmpty;
 
@@ -72,8 +78,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Save tokens
         await AuthService.saveTokens(
-          authResponse.accessToken.isNotEmpty ? authResponse.accessToken : "token_${DateTime.now().millisecondsSinceEpoch}",
-          authResponse.refreshToken.isNotEmpty ? authResponse.refreshToken : "refresh_${DateTime.now().millisecondsSinceEpoch}",
+          authResponse.accessToken,
+          authResponse.refreshToken.isNotEmpty ? authResponse.refreshToken : authResponse.accessToken,
           event.phone,
           hasPin: hasPinSet,
         );
@@ -84,9 +90,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } catch (_) {}
 
         NotificationService.registerToken();
+        final riderRoomId = authResponse.user.riderId ?? authResponse.user.id;
+        RiderSocketService.connect(riderId: riderRoomId);
         emit(Authenticated(user: authResponse.user.copyWith(isOnline: false, phone: event.phone)));
       } else {
-        final message = result['data']?['message'] ?? result['message'] ?? 'Invalid OTP';
+        final message = result['message'] ?? result['data']?['message'] ?? 'Invalid OTP';
         emit(AuthError(message: message.toString()));
       }
     } catch (e) {
@@ -108,10 +116,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (result['success'] == true) {
         final authResponse = AuthResponseModel.fromJson(result['data']);
 
+        if (authResponse.accessToken.isEmpty) {
+          emit(const AuthError(message: 'Invalid authentication token received from server'));
+          return;
+        }
+
         // Save tokens
         await AuthService.saveTokens(
           authResponse.accessToken,
-          authResponse.refreshToken,
+          authResponse.refreshToken.isNotEmpty ? authResponse.refreshToken : authResponse.accessToken,
           event.phone,
           hasPin: true,
         );
@@ -122,9 +135,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } catch (_) {}
 
         NotificationService.registerToken();
+        final riderRoomId = authResponse.user.riderId ?? authResponse.user.id;
+        RiderSocketService.connect(riderId: riderRoomId);
         emit(Authenticated(user: authResponse.user.copyWith(isOnline: false)));
       } else {
-        final message = result['data']?['message'] ?? 'Invalid PIN';
+        final message = (result['message'] ?? result['data']?['message'] ?? 'Invalid PIN').toString();
         emit(AuthError(message: message));
       }
     } catch (e) {
@@ -185,14 +200,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               'user': userMap,
             });
 
+            RiderSocketService.connect(riderId: parsedUser.riderId ?? parsedUser.id);
             emit(Authenticated(user: parsedUser));
             return;
+          } else if (result['statusCode'] == 401 || result['statusCode'] == 403) {
+            final refreshed = await AuthService.refreshAccessToken();
+            if (!refreshed) {
+              await AuthService.logout();
+              emit(const Unauthenticated());
+              return;
+            }
           }
         } catch (profileErr) {
           debugPrint("getProfile warning in CheckAuthStatus: $profileErr");
         }
 
-        // Fallback: If logged in with phone & token, authenticate immediately!
+        // Preserve offline session when token was present but network unreachable
         final fallbackUser = UserModel(
           id: 'RIDER_${phone.replaceAll(RegExp(r'\D'), '')}',
           phone: phone,
@@ -205,6 +228,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           createdAt: DateTime.now(),
         );
 
+        RiderSocketService.connect(riderId: fallbackUser.id);
         emit(Authenticated(user: fallbackUser));
         return;
       }
@@ -226,6 +250,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await ApiService.toggleOnlineStatus(false);
     } catch (_) {}
 
+    RiderSocketService.disconnect();
     await AuthService.logout();
     emit(const Unauthenticated());
   }

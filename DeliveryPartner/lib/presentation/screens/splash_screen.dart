@@ -200,7 +200,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       child: Column(
                         children: [
                           Text(
-                            'ECDKART RIDER',
+                            'TRICELYN RIDER',
                             style: GoogleFonts.poppins(
                               fontSize: 34,
                               fontWeight: FontWeight.w900,

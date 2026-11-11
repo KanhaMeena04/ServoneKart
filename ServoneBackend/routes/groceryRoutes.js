@@ -21,6 +21,82 @@ const {
  * Dynamic Hero Slider Banners + 3-Column Promo Offer Cards
  * Controlled dynamically from Master Admin Panel
  */
+const { ensureSettings } = require('../controllers/adminSettingsController');
+const socketService = require('../services/socketService');
+
+const extractText = (val, fallback = '') => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    return val.en || val.de || val.ar || Object.values(val).find(Boolean) || fallback;
+  }
+  return String(val);
+};
+
+function normalizeProduct(raw) {
+  if (!raw) return null;
+  const p = raw.toObject ? raw.toObject() : { ...raw };
+  const idStr = (p._id || p.id || '').toString();
+  const nameStr = extractText(p.name, 'Grocery Item');
+  const descStr = extractText(p.description, '');
+  const catObj = p.category && typeof p.category === 'object' ? p.category : null;
+  const catName = extractText(catObj?.name || p.categoryName, 'Daily Essentials');
+  const catSlug = catObj?.slug || p.categorySlug || 'daily-essentials';
+  const restObj = p.restaurant && typeof p.restaurant === 'object' ? p.restaurant : null;
+  const storeId = (restObj?._id || p.storeId || (typeof p.restaurant === 'string' || mongoose.isValidObjectId(p.restaurant) ? p.restaurant : '') || 'store_tricelyn_indore_01').toString();
+  const storeName = extractText(restObj?.name || p.storeName || p.restaurantName || p.vendorName, 'Tricelyn Partner Store');
+  const storeAddress = restObj?.address || p.storeAddress || 'Indore';
+  const storeRating = typeof restObj?.rating === 'object'
+    ? Number(restObj.rating?.average || 4.8)
+    : (Number(restObj?.rating || p.storeRating) || 4.8);
+  const price = Number(p.sellingPrice ?? p.price ?? p.basePrice ?? p.pricing?.b2c?.sellingPrice ?? 0);
+  const mrp = Number(p.mrp ?? p.pricing?.b2c?.mrp ?? Math.round(price * 1.2));
+  const discountPercent = p.discountPercent ?? (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0);
+  const stockQuantity = p.stockQuantity !== undefined ? Number(p.stockQuantity) : 100;
+  const lowStockThreshold = Number(p.lowStockThreshold ?? 10);
+  const inStock = p.outOfStock === true ? false : (p.inStock !== false && stockQuantity > 0);
+  const unitStr = p.unit || 'piece';
+  const weightStr = p.weight || (unitStr && unitStr !== 'piece' ? `1 ${unitStr}` : '1 unit');
+
+  return {
+    ...p,
+    _id: idStr || p.id,
+    id: idStr || p.id,
+    name: nameStr,
+    description: descStr,
+    sku: p.sku || (idStr ? `TRC-${idStr.slice(-6).toUpperCase()}` : 'TRC-SKU'),
+    vertical: p.vertical || VERTICALS.GROCERY,
+    price,
+    sellingPrice: price,
+    basePrice: Number(p.basePrice ?? price),
+    mrp,
+    discountPercent,
+    unit: unitStr,
+    weight: weightStr,
+    stockQuantity,
+    lowStockThreshold,
+    inStock,
+    outOfStock: !inStock,
+    available: p.available !== false && inStock,
+    categorySlug: catSlug,
+    categoryName: catName,
+    category: catObj
+      ? { _id: catObj._id?.toString(), id: catObj._id?.toString(), name: catName, slug: catSlug, image: catObj.image || '' }
+      : { name: catName, slug: catSlug },
+    storeId,
+    storeName,
+    storeAddress,
+    storeRating,
+    restaurant: storeId,
+    restaurantName: storeName,
+    vendorName: storeName,
+    deliveryTime: typeof restObj?.deliveryTime === 'number'
+      ? `${restObj.deliveryTime} mins`
+      : (restObj?.deliveryTime || p.deliveryTime || '10-15 mins'),
+    image: p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'
+  };
+}
+
 const DEFAULT_HERO_SLIDES = [
   {
     id: 'slide-farm-fresh',
@@ -187,10 +263,37 @@ router.get('/banners', async (req, res) => {
  */
 router.get('/best-sellers', async (req, res) => {
   try {
+    let bestSellers = [];
+    if (mongoose.connection.readyState === 1) {
+      const dbBest = await Product.find({
+        $or: [
+          { vertical: VERTICALS.GROCERY },
+          { vertical: 'grocery' },
+          { vertical: VERTICALS.ESSENTIALS }
+        ],
+        isDeleted: { $ne: true },
+        isApproved: { $ne: false },
+        isRejected: { $ne: true },
+        available: { $ne: false },
+        inStock: { $ne: false },
+        stockQuantity: { $gt: 0 }
+      })
+        .populate('category', 'name slug image')
+        .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+        .sort({ isFeatured: -1, stockQuantity: -1, createdAt: -1 })
+        .limit(16)
+        .lean();
+      bestSellers = dbBest.map(normalizeProduct).filter(Boolean);
+    }
+
+    if (bestSellers.length === 0) {
+      bestSellers = BEST_SELLERS;
+    }
+
     return res.status(200).json({
       success: true,
-      count: BEST_SELLERS.length,
-      data: BEST_SELLERS
+      count: bestSellers.length,
+      data: bestSellers
     });
   } catch (error) {
     return res.status(200).json({
@@ -209,7 +312,7 @@ router.get('/categories', async (req, res) => {
   try {
     let categories = [];
     if (mongoose.connection.readyState === 1) {
-      categories = await Category.find({
+      const dbCats = await Category.find({
         $or: [
           { vertical: VERTICALS.GROCERY },
           { vertical: 'grocery' },
@@ -217,7 +320,19 @@ router.get('/categories', async (req, res) => {
           { type: 'main' }
         ],
         isActive: { $ne: false }
-      }).select('name image icon slug position description').sort({ position: 1 }).lean();
+      }).select('name image icon slug position description vertical').sort({ position: 1 }).lean();
+
+      categories = dbCats.map((c) => {
+        const nameStr = extractText(c.name, 'Grocery Category');
+        return {
+          ...c,
+          _id: c._id ? c._id.toString() : '',
+          id: c._id ? c._id.toString() : '',
+          name: nameStr,
+          title: nameStr,
+          slug: c.slug || nameStr.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        };
+      });
     }
 
     if (!categories || categories.length === 0) {
@@ -240,7 +355,7 @@ router.get('/categories', async (req, res) => {
 
 /**
  * GET /api/grocery/category-sections
- * Category-wise grouped product sections for HomePage (e.g. Dairy, Cold Drinks, Mouth fresheners, etc.)
+ * Category-wise grouped product sections from live MongoDB (with static catalog fallback)
  */
 router.get('/category-sections', async (req, res) => {
   try {
@@ -255,16 +370,76 @@ router.get('/category-sections', async (req, res) => {
       { slug: 'bakery-biscuits', name: 'Bakery & Biscuits' }
     ];
 
-    const sections = featuredSectionSlugs.map(sec => {
-      const prods = ALL_CATALOG_PRODUCTS.filter(p => p.categorySlug === sec.slug);
-      return {
-        id: `sec_${sec.slug}`,
-        slug: sec.slug,
-        title: sec.name,
-        name: sec.name,
-        products: prods
-      };
-    });
+    let sections = [];
+    if (mongoose.connection.readyState === 1) {
+      const [dbCats, dbProds] = await Promise.all([
+        Category.find({
+          $or: [{ vertical: VERTICALS.GROCERY }, { vertical: 'grocery' }, { vertical: VERTICALS.ESSENTIALS }],
+          isActive: { $ne: false }
+        }).sort({ position: 1 }).lean(),
+        Product.find({
+          $or: [{ vertical: VERTICALS.GROCERY }, { vertical: 'grocery' }, { vertical: VERTICALS.ESSENTIALS }],
+          isDeleted: { $ne: true },
+          isApproved: { $ne: false },
+          isRejected: { $ne: true },
+          available: { $ne: false }
+        })
+          .populate('category', 'name slug image')
+          .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+          .lean()
+      ]);
+
+      const normProds = dbProds.map(normalizeProduct).filter(Boolean);
+      if (normProds.length > 0) {
+        const bySlug = new Map();
+        normProds.forEach((p) => {
+          const s = p.categorySlug || 'daily-essentials';
+          if (!bySlug.has(s)) {
+            bySlug.set(s, {
+              id: `sec_${s}`,
+              slug: s,
+              title: p.categoryName || 'Grocery',
+              name: p.categoryName || 'Grocery',
+              products: []
+            });
+          }
+          if (bySlug.get(s).products.length < 12) {
+            bySlug.get(s).products.push(p);
+          }
+        });
+
+        const seen = new Set();
+        featuredSectionSlugs.forEach((sec) => {
+          if (bySlug.has(sec.slug)) {
+            sections.push(bySlug.get(sec.slug));
+            seen.add(sec.slug);
+          }
+        });
+        dbCats.forEach((c) => {
+          const slug = c.slug || '';
+          if (slug && !seen.has(slug) && bySlug.has(slug)) {
+            sections.push(bySlug.get(slug));
+            seen.add(slug);
+          }
+        });
+        bySlug.forEach((val, key) => {
+          if (!seen.has(key)) sections.push(val);
+        });
+      }
+    }
+
+    if (sections.length === 0) {
+      sections = featuredSectionSlugs.map(sec => {
+        const prods = ALL_CATALOG_PRODUCTS.filter(p => p.categorySlug === sec.slug);
+        return {
+          id: `sec_${sec.slug}`,
+          slug: sec.slug,
+          title: sec.name,
+          name: sec.name,
+          products: prods
+        };
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -278,7 +453,7 @@ router.get('/category-sections', async (req, res) => {
 
 /**
  * GET /api/grocery/products
- * Dynamic grocery products from Product model with exact category filtering
+ * Dynamic grocery products from Product model with exact category, store & search filtering
  */
 router.get('/products', async (req, res) => {
   try {
@@ -286,69 +461,100 @@ router.get('/products', async (req, res) => {
     let products = [];
 
     if (mongoose.connection.readyState === 1) {
-      const query = {
-        $or: [
-          { vertical: VERTICALS.GROCERY },
-          { vertical: 'grocery' },
-          { vertical: VERTICALS.ESSENTIALS }
-        ],
-        isDeleted: { $ne: true },
-        isApproved: { $ne: false }
-      };
-
-      if (storeId) {
-        query.$or = [{ restaurant: storeId }, { storeId: storeId }];
-      }
-      if (search) {
-        query.$or = [
-          { 'name.en': { $regex: search, $options: 'i' } },
-          { name: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
-        ];
-      }
+      const andConds = [
+        {
+          $or: [
+            { vertical: VERTICALS.GROCERY },
+            { vertical: 'grocery' },
+            { vertical: VERTICALS.ESSENTIALS },
+            { vertical: VERTICALS.GIFTS_BAKERY }
+          ]
+        },
+        {
+          isDeleted: { $ne: true },
+          isApproved: { $ne: false },
+          isRejected: { $ne: true }
+        }
+      ];
 
       if (storeId && storeId !== 'all') {
-      filtered = filtered.filter(i => String(i.storeId) === String(storeId) || String(i.storeName).toLowerCase().includes(String(storeId).toLowerCase()));
-    }
-    if (category && category !== 'all') {
+        if (mongoose.isValidObjectId(storeId)) {
+          andConds.push({ $or: [{ restaurant: storeId }, { storeId }] });
+        } else {
+          const matchedRest = await Restaurant.findOne({
+            $or: [{ restaurantId: storeId }, { slug: storeId }]
+          }).select('_id').lean();
+          if (matchedRest) {
+            andConds.push({ $or: [{ restaurant: matchedRest._id }, { storeId }] });
+          } else {
+            andConds.push({ storeId });
+          }
+        }
+      }
+
+      if (search) {
+        andConds.push({
+          $or: [
+            { 'name.en': { $regex: search, $options: 'i' } },
+            { name: { $regex: search, $options: 'i' } },
+            { 'description.en': { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+            { sku: { $regex: search, $options: 'i' } }
+          ]
+        });
+      }
+
+      if (category && category !== 'all') {
+        const escapedCat = String(category).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const catDoc = await Category.findOne({
           $or: [
             { slug: category },
-            { _id: mongoose.isValidObjectId(category) ? category : null }
+            ...(mongoose.isValidObjectId(category) ? [{ _id: category }] : []),
+            { name: { $regex: `^${escapedCat}$`, $options: 'i' } },
+            { 'name.en': { $regex: `^${escapedCat}$`, $options: 'i' } }
           ]
         }).lean();
 
         if (catDoc) {
-          query.$and = [{ $or: [{ category: catDoc._id }, { categoryId: catDoc._id }, { categorySlug: catDoc.slug }] }];
+          andConds.push({
+            $or: [
+              { category: catDoc._id },
+              { categoryId: catDoc._id },
+              { categorySlug: catDoc.slug },
+              { categorySlug: category }
+            ]
+          });
+        } else {
+          andConds.push({ categorySlug: category });
         }
       }
 
-      const q = Product.find(query)
+      const q = Product.find({ $and: andConds })
         .populate('category', 'name slug image')
         .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+        .sort({ isFeatured: -1, createdAt: -1 })
         .lean();
       if (limit) q.limit(Number(limit));
-      products = await q.exec();
-      products = products.map(normalizeProduct).filter(Boolean);
+      const rawProducts = await q.exec();
+      products = rawProducts.map(normalizeProduct).filter(Boolean);
     }
 
-    // Dynamic catalog lookup if DB records not yet populated
-    if (!products || products.length === 0) {
+    if (products.length === 0 && mongoose.connection.readyState !== 1) {
       let filtered = ALL_CATALOG_PRODUCTS;
       if (category && category !== 'all') {
-        filtered = filtered.filter(p => 
-          p.categorySlug === category || 
-          p.category?.slug === category || 
+        filtered = filtered.filter(p =>
+          p.categorySlug === category ||
+          p.category?.slug === category ||
           p.category?.id === category
         );
       }
-      if (storeId) {
-        filtered = filtered.filter(p => p.storeId === storeId || p.restaurant === storeId);
+      if (storeId && storeId !== 'all') {
+        filtered = filtered.filter(p => String(p.storeId) === String(storeId) || String(p.restaurant) === String(storeId));
       }
       if (search) {
         const s = search.toLowerCase();
-        filtered = filtered.filter(p => 
-          p.name.toLowerCase().includes(s) || 
+        filtered = filtered.filter(p =>
+          p.name.toLowerCase().includes(s) ||
           (p.description && p.description.toLowerCase().includes(s))
         );
       }
@@ -364,13 +570,14 @@ router.get('/products', async (req, res) => {
       data: products
     });
   } catch (error) {
+    console.error('Grocery /products error:', error.message);
     let filtered = ALL_CATALOG_PRODUCTS;
     const { category, search, storeId, limit } = req.query;
     if (category && category !== 'all') {
       filtered = filtered.filter(p => p.categorySlug === category || p.category?.slug === category);
     }
-    if (storeId) {
-      filtered = filtered.filter(p => p.storeId === storeId || p.restaurant === storeId);
+    if (storeId && storeId !== 'all') {
+      filtered = filtered.filter(p => String(p.storeId) === String(storeId) || String(p.restaurant) === String(storeId));
     }
     if (search) {
       const s = search.toLowerCase();
@@ -646,10 +853,44 @@ router.get('/products/:id/similar', async (req, res) => {
   try {
     const { id } = req.params;
     const { categorySlug } = req.query;
-    let similar = ALL_CATALOG_PRODUCTS.filter(p => 
-      (p._id !== id && p.id !== id) && 
-      (!categorySlug || p.categorySlug === categorySlug || p.category?.slug === categorySlug)
-    ).slice(0, 8);
+    let similar = [];
+
+    if (mongoose.connection.readyState === 1) {
+      const andConds = [
+        {
+          $or: [
+            { vertical: VERTICALS.GROCERY },
+            { vertical: 'grocery' },
+            { vertical: VERTICALS.ESSENTIALS }
+          ]
+        },
+        { isDeleted: { $ne: true }, isApproved: { $ne: false } }
+      ];
+      if (mongoose.isValidObjectId(id)) {
+        andConds.push({ _id: { $ne: id } });
+      }
+      if (categorySlug) {
+        const catDoc = await Category.findOne({ slug: categorySlug }).select('_id').lean();
+        if (catDoc) {
+          andConds.push({ $or: [{ category: catDoc._id }, { categorySlug }] });
+        } else {
+          andConds.push({ categorySlug });
+        }
+      }
+      const dbSim = await Product.find({ $and: andConds })
+        .populate('category', 'name slug image')
+        .populate('restaurant', 'name address location rating ratingsCount deliveryTime image logo isPureVeg')
+        .limit(8)
+        .lean();
+      similar = dbSim.map(normalizeProduct).filter(Boolean);
+    }
+
+    if (similar.length === 0) {
+      similar = ALL_CATALOG_PRODUCTS.filter(p =>
+        (p._id !== id && p.id !== id) &&
+        (!categorySlug || p.categorySlug === categorySlug || p.category?.slug === categorySlug)
+      ).slice(0, 8);
+    }
 
     return res.status(200).json({
       success: true,
@@ -667,32 +908,90 @@ router.get('/products/:id/similar', async (req, res) => {
 
 /**
  * GET /api/grocery/stores
- * Get list of active grocery stores in Indore
+ * Get list of active grocery stores & dark stores
  */
 router.get('/stores', async (req, res) => {
   try {
-    const { city = 'Indore', search } = req.query;
+    const { search, lat, lng } = req.query;
+    const userLat = lat !== undefined ? Number(lat) : NaN;
+    const userLng = lng !== undefined ? Number(lng) : NaN;
+    const hasCoords = Number.isFinite(userLat) && Number.isFinite(userLng);
+    const haversine = require('haversine-distance');
 
     const query = {
       $or: [
         { businessType: BUSINESS_TYPES.GROCERY_STORE },
         { businessType: 'grocery_store' },
+        { businessType: BUSINESS_TYPES.WATER_DAIRY_SUPPLIER },
         { vertical: VERTICALS.GROCERY },
         { vertical: 'grocery' },
-        { restaurantType: { $regex: /grocery|supermarket|mart/i } }
+        { vertical: VERTICALS.ESSENTIALS },
+        { restaurantType: { $regex: /grocery|supermarket|mart|kirana|dairy/i } }
       ],
-      isActive: true
+      isActive: { $ne: false }
     };
 
     if (search) {
-      query.name = { $regex: search, $options: 'i' };
+      query.$and = [
+        {
+          $or: [
+            { 'name.en': { $regex: search, $options: 'i' } },
+            { name: { $regex: search, $options: 'i' } },
+            { address: { $regex: search, $options: 'i' } }
+          ]
+        }
+      ];
     }
 
     let stores = [];
     if (mongoose.connection.readyState === 1) {
-      stores = await Restaurant.find(query)
-        .select('name image bannerImage address location rating ratingsCount deliveryTime freeDeliveryThreshold minOrderAmount isOpen timing isPureVeg')
+      const dbStores = await Restaurant.find(query)
+        .select('name image bannerImage address city area location rating ratingsCount avgRating deliveryTime freeDeliveryThreshold minOrderAmount isOnline isActive isTemporarilyClosed timing isPureVeg tags cuisine')
         .lean();
+
+      stores = dbStores.map((s) => {
+        const nameStr = extractText(s.name, 'Tricelyn Partner Store');
+        const ratingNum = typeof s.rating === 'object'
+          ? Number(s.rating?.average ?? s.avgRating ?? 4.8)
+          : Number(s.rating ?? s.avgRating ?? 4.8);
+        const ratingsCountNum = typeof s.rating === 'object'
+          ? Number(s.rating?.count ?? s.ratingsCount ?? 120)
+          : Number(s.ratingsCount ?? 120);
+        const dtStr = typeof s.deliveryTime === 'number'
+          ? `${s.deliveryTime} mins`
+          : (s.deliveryTime || '10-15 mins');
+
+        let distanceKm = null;
+        if (hasCoords && Array.isArray(s.location?.coordinates) && s.location.coordinates.length >= 2) {
+          const storeLng = Number(s.location.coordinates[0]);
+          const storeLat = Number(s.location.coordinates[1]);
+          if (Number.isFinite(storeLat) && Number.isFinite(storeLng) && (storeLat !== 0 || storeLng !== 0)) {
+            distanceKm = haversine({ latitude: userLat, longitude: userLng }, { latitude: storeLat, longitude: storeLng }) / 1000;
+          }
+        }
+
+        return {
+          _id: s._id.toString(),
+          id: s._id.toString(),
+          name: nameStr,
+          address: s.address || `${s.area || ''}, ${s.city || ''}`.replace(/^, |, $/g, ''),
+          distanceKm,
+          distance: distanceKm !== null ? `${distanceKm.toFixed(1)} km` : 'Nearby',
+          rating: Number.isFinite(ratingNum) ? ratingNum : 4.8,
+          ratingsCount: ratingsCountNum,
+          deliveryTime: dtStr,
+          minOrderAmount: s.minOrderAmount || 49,
+          freeDeliveryThreshold: s.freeDeliveryThreshold || 199,
+          isOpen: s.isOnline !== false && s.isActive !== false && !s.isTemporarilyClosed,
+          timing: typeof s.timing === 'string' ? s.timing : '6:00 AM - 11:30 PM',
+          image: s.image || s.bannerImage || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',
+          tags: Array.isArray(s.tags) && s.tags.length > 0 ? s.tags : (Array.isArray(s.cuisine) && s.cuisine.length > 0 ? s.cuisine : ['Daily Grocery', 'Express 15m']),
+          isPureVeg: Boolean(s.isPureVeg)
+        };
+      });
+      if (hasCoords) {
+        stores.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+      }
     }
 
     if (!stores || stores.length === 0) {
@@ -747,57 +1046,6 @@ router.get('/stores', async (req, res) => {
           image: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80",
           tags: ["Pantry Staples", "Atta Rice & Dal", "Snacks"],
           isPureVeg: true
-        },
-        {
-          _id: "store_tricelyn_indore_04",
-          id: "store_tricelyn_indore_04",
-          name: "Malwa Daily Mart (Bhawarkua Square)",
-          address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001",
-          distance: "3.8 km",
-          rating: 4.5,
-          ratingsCount: 940,
-          deliveryTime: "15-20 mins",
-          minOrderAmount: 49,
-          freeDeliveryThreshold: 149,
-          isOpen: true,
-          timing: "8:00 AM - Midnight",
-          image: "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=600&q=80",
-          tags: ["Student Budget", "Instant Food", "Beverages & Mints"],
-          isPureVeg: false
-        },
-        {
-          _id: "store_tricelyn_indore_05",
-          id: "store_tricelyn_indore_05",
-          name: "Rajwada Heritage Grocery & Dry Fruits",
-          address: "MG Road, Near Rajwada Palace, Indore 452002",
-          distance: "4.5 km",
-          rating: 4.9,
-          ratingsCount: 3120,
-          deliveryTime: "20-25 mins",
-          minOrderAmount: 99,
-          freeDeliveryThreshold: 249,
-          isOpen: true,
-          timing: "9:00 AM - 10:30 PM",
-          image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=600&q=80",
-          tags: ["Indori Namkeen", "Premium Dry Fruits", "Pure Spices"],
-          isPureVeg: true
-        },
-        {
-          _id: "store_tricelyn_indore_06",
-          id: "store_tricelyn_indore_06",
-          name: "Metro Mart Quickstore (Super Corridor)",
-          address: "Sector A, Super Corridor Highway, Indore 452005",
-          distance: "5.2 km",
-          rating: 4.7,
-          ratingsCount: 850,
-          deliveryTime: "15-25 mins",
-          minOrderAmount: 49,
-          freeDeliveryThreshold: 199,
-          isOpen: true,
-          timing: "24x7 Open",
-          image: "https://images.unsplash.com/photo-1506484381205-f7945653044d?w=600&q=80",
-          tags: ["Household Cleaners", "Personal Care", "Dairy"],
-          isPureVeg: false
         }
       ];
     }
@@ -825,97 +1073,58 @@ router.get('/stores/:id/catalog', async (req, res) => {
     if (mongoose.connection.readyState === 1) {
       if (mongoose.isValidObjectId(id)) {
         store = await Restaurant.findById(id).lean();
+      } else {
+        store = await Restaurant.findOne({ $or: [{ restaurantId: id }, { slug: id }] }).lean();
       }
       if (store) {
         products = await Product.find({
-          $or: [{ restaurant: id }, { storeId: id }],
-          isDeleted: { $ne: true }
+          $or: [{ restaurant: store._id }, { storeId: store._id.toString() }, { storeId: id }],
+          isDeleted: { $ne: true },
+          isApproved: { $ne: false }
         }).populate('category', 'name slug image').lean();
       }
     }
 
     if (!store) {
-      const defaultStoreMap = {
-        "store_tricelyn_indore_01": {
-          _id: "store_tricelyn_indore_01",
-          name: "Tricelyn Express Mart (Vijay Nagar Hub)",
-          address: "Scheme 54, Vijay Nagar, Indore 452010",
-          rating: 4.8,
-          deliveryTime: "10-15 mins",
-          image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
-        },
-        "store_tricelyn_indore_02": {
-          _id: "store_tricelyn_indore_02",
-          name: "Fresh Farm Hub (Palasia Superstore)",
-          address: "Old Palasia Main Road, Near Industry House, Indore 452001",
-          rating: 4.7,
-          deliveryTime: "12-18 mins",
-          image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&q=80"
-        },
-        "store_tricelyn_indore_03": {
-          _id: "store_tricelyn_indore_03",
-          name: "Apna Super Kirana (Saket Nagar)",
-          address: "Saket Square, Near Anand Bazaar, Indore 452018",
-          rating: 4.6,
-          deliveryTime: "15-20 mins",
-          image: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80"
-        },
-        "store_tricelyn_indore_04": {
-          _id: "store_tricelyn_indore_04",
-          name: "Malwa Daily Mart (Bhawarkua Square)",
-          address: "Tower Chouraha, Bhawarkua Main Road, Indore 452001",
-          rating: 4.5,
-          deliveryTime: "15-20 mins",
-          image: "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=600&q=80"
-        },
-        "store_tricelyn_indore_05": {
-          _id: "store_tricelyn_indore_05",
-          name: "Rajwada Heritage Grocery & Dry Fruits",
-          address: "MG Road, Near Rajwada Palace, Indore 452002",
-          rating: 4.9,
-          deliveryTime: "20-25 mins",
-          image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=600&q=80"
-        },
-        "store_tricelyn_indore_06": {
-          _id: "store_tricelyn_indore_06",
-          name: "Metro Mart Quickstore (Super Corridor)",
-          address: "Sector A, Super Corridor Highway, Indore 452005",
-          rating: 4.7,
-          deliveryTime: "15-25 mins",
-          image: "https://images.unsplash.com/photo-1506484381205-f7945653044d?w=600&q=80"
-        }
-      };
-      store = defaultStoreMap[id] || {
+      store = {
         _id: id,
         id: id,
         name: "Tricelyn Partner Supermarket",
         address: "Scheme 54, Vijay Nagar, Indore",
         rating: 4.8,
-        deliveryTime: "10-15 mins"
+        deliveryTime: "10-15 mins",
+        image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
       };
       products = ALL_CATALOG_PRODUCTS;
     }
 
-    // Group products by category and inject specific store details
+    const storeIdStr = (store._id || store.id).toString();
+    const storeNameStr = extractText(store.name, 'Tricelyn Partner Store');
+    const storeRating = typeof store.rating === 'object' ? Number(store.rating?.average || 4.8) : (Number(store.rating) || 4.8);
+    const storeDeliveryTime = typeof store.deliveryTime === 'number' ? `${store.deliveryTime} mins` : (store.deliveryTime || '10-15 mins');
+
     const categoryMap = {};
     products.forEach(p => {
-      const catName = p.category?.name || p.categoryName || 'Daily Essentials';
-      const catId = p.category?._id?.toString() || p.categorySlug || 'default';
+      const normalized = normalizeProduct(p);
+      if (!normalized) return;
+      normalized.storeId = storeIdStr;
+      normalized.storeName = storeNameStr;
+      normalized.storeAddress = store.address || '';
+      normalized.restaurant = storeIdStr;
+      normalized.restaurantName = storeNameStr;
+      normalized.vendorName = storeNameStr;
+
+      const catName = normalized.categoryName || 'Daily Essentials';
+      const catId = normalized.category?._id || normalized.categorySlug || 'default';
       if (!categoryMap[catId]) {
         categoryMap[catId] = {
           id: catId,
           name: catName,
-          image: p.category?.image || null,
+          slug: normalized.categorySlug || 'daily-essentials',
+          image: normalized.category?.image || null,
           products: []
         };
       }
-      const normalized = normalizeProduct(p);
-      normalized.storeId = store._id || store.id;
-      normalized.storeName = store.name;
-      normalized.storeAddress = store.address;
-      normalized.restaurant = store._id || store.id;
-      normalized.restaurantName = store.name;
-      normalized.vendorName = store.name;
       categoryMap[catId].products.push(normalized);
     });
 
@@ -923,13 +1132,13 @@ router.get('/stores/:id/catalog', async (req, res) => {
       success: true,
       data: {
         store: {
-          id: store._id || store.id,
-          _id: store._id || store.id,
-          name: store.name,
-          address: store.address,
-          image: store.image,
-          rating: store.rating,
-          deliveryTime: store.deliveryTime || '10-15 mins'
+          id: storeIdStr,
+          _id: storeIdStr,
+          name: storeNameStr,
+          address: store.address || 'Indore',
+          image: store.image || store.bannerImage || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',
+          rating: storeRating,
+          deliveryTime: storeDeliveryTime
         },
         catalog: Object.values(categoryMap)
       }
@@ -940,101 +1149,303 @@ router.get('/stores/:id/catalog', async (req, res) => {
 });
 
 /**
- * POST /api/grocery/order
- * Place a grocery order routed directly to the selected Vendor/Store
+ * POST /api/grocery/order (and /orders alias)
+ * Place single- or multi-vendor grocery order: splits by vendor store,
+ * verifies & atomically decrements SKU stockQuantity, creates compliant Order docs,
+ * and broadcasts real-time newOrder socket notifications to each vendor & admin.
  */
-router.post('/order', protect, async (req, res) => {
+const placeGroceryOrderHandler = async (req, res) => {
   try {
     const {
-      storeId,
+      storeId: bodyStoreId,
+      storeName: bodyStoreName,
       items,
       deliveryAddress,
       paymentMethod = 'cod',
-      substitutionPreference = 'call_customer'
+      substitutionPreference = 'call_customer',
+      couponCode,
+      discount: bodyDiscount = 0,
+      tip = 0,
+      transactionId,
+      paymentStatus: bodyPaymentStatus,
+      idempotencyKey: clientIdempotencyKey,
+      deliveryNotes,
+      orderType: bodyOrderType,
+      isSelfPickup: bodyIsSelfPickup,
+      scheduledAt,
+      pickupTimeSlot
     } = req.body;
+
+    if (!req.user?._id) {
+      return res.status(401).json({ success: false, message: 'Authentication required to place order' });
+    }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Items are required' });
     }
 
-    let targetStoreId = storeId || 'store_tricelyn_indore_01';
-    let targetStoreName = req.body.storeName || 'Tricelyn Partner Store';
+    const normalizedAddressLine = typeof deliveryAddress === 'string'
+      ? deliveryAddress
+      : (deliveryAddress?.addressLine || deliveryAddress?.fullAddress || deliveryAddress?.address || deliveryAddress?.street || 'Standard Delivery Address');
+    const normalizedCoordinates = Array.isArray(deliveryAddress?.coordinates) && deliveryAddress.coordinates.length === 2
+      ? deliveryAddress.coordinates.map(Number)
+      : (Array.isArray(deliveryAddress?.location?.coordinates) && deliveryAddress.location.coordinates.length === 2
+        ? deliveryAddress.location.coordinates.map(Number)
+        : [75.8937, 22.7533]);
+    const normalizedDeliveryAddress = {
+      addressLine: normalizedAddressLine,
+      coordinates: normalizedCoordinates
+    };
 
-    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(targetStoreId)) {
-      const stDoc = await Restaurant.findById(targetStoreId).lean();
-      if (stDoc) {
-        targetStoreName = stDoc.name || targetStoreName;
+    const isDbReady = mongoose.connection.readyState === 1;
+    const settings = isDbReady ? await ensureSettings().catch(() => null) : null;
+    const baseDeliveryFee = Number(settings?.deliveryCharge ?? 25);
+    const freeDeliveryThreshold = Number(settings?.freeDeliveryThreshold ?? 199);
+    const platformFeeDefault = Number(settings?.platformFee ?? 5);
+    const packagingFeeDefault = Number(settings?.packagingFee ?? 0);
+
+    const rawPayMethod = String(paymentMethod || 'cod').toLowerCase();
+    const normPayMethod = ['cod', 'cash', 'cash_on_delivery'].includes(rawPayMethod)
+      ? 'cod'
+      : (rawPayMethod === 'card' ? 'card' : (rawPayMethod === 'wallet' ? 'wallet' : 'online'));
+    const normPayStatus = bodyPaymentStatus && ['pending', 'processing', 'paid', 'failed', 'refunded', 'refunding', 'cancelled'].includes(String(bodyPaymentStatus).toLowerCase())
+      ? String(bodyPaymentStatus).toLowerCase()
+      : (normPayMethod === 'cod' ? 'pending' : 'paid');
+
+    let fallbackStore = null;
+    if (isDbReady) {
+      if (bodyStoreId && mongoose.isValidObjectId(bodyStoreId)) {
+        fallbackStore = await Restaurant.findById(bodyStoreId).lean();
+      }
+      if (!fallbackStore) {
+        fallbackStore = await Restaurant.findOne({
+          $or: [{ businessType: 'grocery_store' }, { vertical: 'grocery' }, { vertical: 'essentials' }],
+          isActive: { $ne: false }
+        }).lean();
+      }
+      if (!fallbackStore) {
+        fallbackStore = await Restaurant.findOne({ isActive: { $ne: false } }).lean();
       }
     }
 
-    let subtotal = 0;
-    const orderItems = [];
+    const storeCache = new Map();
+    const resolveStoreDoc = async (candidateStoreId) => {
+      const key = candidateStoreId ? String(candidateStoreId) : '';
+      if (key && storeCache.has(key)) return storeCache.get(key);
+      let doc = null;
+      if (isDbReady && key) {
+        if (mongoose.isValidObjectId(key)) {
+          doc = await Restaurant.findById(key).lean();
+        } else {
+          doc = await Restaurant.findOne({ $or: [{ restaurantId: key }, { slug: key }] }).lean();
+        }
+      }
+      if (!doc) doc = fallbackStore;
+      if (doc && key) storeCache.set(key, doc);
+      return doc;
+    };
 
-    for (const item of items) {
-      let product = null;
-      if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(item.productId)) {
-        product = await Product.findById(item.productId);
+    const vendorGroups = new Map();
+    const stockAdjustments = [];
+
+    for (const rawItem of items) {
+      const qty = Math.max(1, Number(rawItem.quantity || 1));
+      const prodCandidateId = rawItem.productId || rawItem._id || rawItem.id;
+      let productDoc = null;
+
+      if (isDbReady) {
+        if (prodCandidateId && mongoose.isValidObjectId(prodCandidateId)) {
+          productDoc = await Product.findById(prodCandidateId);
+        } else if (rawItem.sku || rawItem.name) {
+          productDoc = await Product.findOne({
+            $or: [
+              ...(rawItem.sku ? [{ sku: rawItem.sku }] : []),
+              ...(rawItem.name ? [{ 'name.en': rawItem.name }, { name: rawItem.name }] : [])
+            ]
+          });
+        }
       }
 
-      const itemPrice = item.price || (product ? product.sellingPrice : 50);
-      const itemName = item.name || (product ? product.name : 'Grocery Item');
-      const itemUnit = item.unit || item.weight || 'piece';
+      if (productDoc) {
+        if (productDoc.outOfStock === true || productDoc.inStock === false) {
+          return res.status(400).json({
+            success: false,
+            message: `${extractText(productDoc.name, 'Product')} is currently out of stock`
+          });
+        }
+        if (productDoc.stockQuantity !== undefined && Number(productDoc.stockQuantity) < qty) {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient stock for ${extractText(productDoc.name, 'item')}. Available: ${productDoc.stockQuantity}`
+          });
+        }
+        stockAdjustments.push({ productId: productDoc._id, qty });
+      }
 
-      subtotal += itemPrice * item.quantity;
-      orderItems.push({
-        product: product ? product._id : (item.productId || 'custom_item'),
+      const candidateStoreId = rawItem.storeId || rawItem.restaurantId || productDoc?.restaurant?.toString() || bodyStoreId;
+      const storeDoc = await resolveStoreDoc(candidateStoreId);
+
+      if (isDbReady && !storeDoc?._id) {
+        return res.status(400).json({
+          success: false,
+          message: 'No active grocery dark store available to fulfill this order'
+        });
+      }
+
+      const resolvedStoreId = storeDoc?._id ? storeDoc._id.toString() : String(candidateStoreId || 'store_tricelyn_indore_01');
+      const resolvedStoreName = storeDoc ? extractText(storeDoc.name, 'Tricelyn Partner Store') : (rawItem.storeName || bodyStoreName || 'Tricelyn Partner Store');
+
+      if (!vendorGroups.has(resolvedStoreId)) {
+        vendorGroups.set(resolvedStoreId, {
+          storeObjId: storeDoc?._id || resolvedStoreId,
+          storeIdStr: resolvedStoreId,
+          storeName: resolvedStoreName,
+          items: [],
+          itemTotal: 0
+        });
+      }
+
+      const unitPrice = productDoc
+        ? Number(rawItem.price ?? productDoc.sellingPrice ?? productDoc.basePrice ?? 0)
+        : Number(rawItem.price ?? 50);
+      const itemName = productDoc
+        ? extractText(productDoc.name, rawItem.name || 'Grocery Item')
+        : (rawItem.name || 'Grocery Item');
+      const itemUnit = rawItem.unit || rawItem.weight || productDoc?.weight || productDoc?.unit || 'piece';
+
+      const grp = vendorGroups.get(resolvedStoreId);
+      grp.itemTotal += unitPrice * qty;
+      grp.items.push({
+        ...(productDoc?._id ? { product: productDoc._id } : {}),
         name: itemName,
-        quantity: item.quantity,
-        price: itemPrice,
-        unit: itemUnit,
-        image: item.image || (product ? product.image : '')
+        image: rawItem.image || productDoc?.image || '',
+        quantity: qty,
+        price: unitPrice,
+        variation: itemUnit ? { name: String(itemUnit), price: unitPrice } : undefined
       });
     }
 
-    const deliveryFee = subtotal >= 199 ? 0 : 25;
-    const platformFee = 5;
-    const totalAmount = subtotal + deliveryFee + platformFee;
+    // Atomically deduct stock for DB products
+    if (isDbReady) {
+      for (const adj of stockAdjustments) {
+        const updatedProd = await Product.findByIdAndUpdate(
+          adj.productId,
+          { $inc: { stockQuantity: -adj.qty } },
+          { new: true }
+        );
+        if (updatedProd && updatedProd.stockQuantity <= 0) {
+          updatedProd.stockQuantity = Math.max(0, updatedProd.stockQuantity);
+          updatedProd.inStock = false;
+          updatedProd.outOfStock = true;
+          await updatedProd.save();
+        }
+      }
+    }
 
-    const orderNumber = `GRO-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const fulfilmentGroup = `FG-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const totalSubtotal = Array.from(vendorGroups.values()).reduce((sum, g) => sum + g.itemTotal, 0);
+    const createdOrders = [];
+    let groupIndex = 0;
 
-    let orderDoc = {
-      orderNumber,
-      customer: req.user?._id || 'guest_user',
-      customerName: req.user?.name || 'Customer',
-      customerPhone: req.user?.mobile || req.user?.phone || '9999999999',
-      // Explicit Multi-Vendor routing so this order displays in VendorPartner app
-      restaurant: targetStoreId,
-      restaurantId: String(targetStoreId),
-      restaurantName: targetStoreName,
-      store: targetStoreId,
-      storeId: String(targetStoreId),
-      storeName: targetStoreName,
-      vertical: VERTICALS.GROCERY,
-      items: orderItems,
-      subtotal,
-      deliveryCharges: deliveryFee,
-      totalAmount,
-      deliveryAddress,
-      paymentMethod,
-      orderStatus: 'Placed',
-      orderType: 'delivery',
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid'
-    };
+    const isSelfPickupOrder = Boolean(bodyIsSelfPickup) || ['self_pickup', 'pickup'].includes(String(bodyOrderType || '').toLowerCase());
 
-    if (mongoose.connection.readyState === 1) {
-      orderDoc = await Order.create(orderDoc);
+    for (const grp of vendorGroups.values()) {
+      const isPrimary = groupIndex === 0;
+      const deliveryFee = isSelfPickupOrder ? 0 : (isPrimary ? (totalSubtotal >= freeDeliveryThreshold ? 0 : baseDeliveryFee) : 0);
+      const platformFee = isPrimary ? platformFeeDefault : 0;
+      const packagingFee = isPrimary ? packagingFeeDefault : 0;
+      const groupTip = isSelfPickupOrder ? 0 : (isPrimary ? Number(tip || 0) : 0);
+      const groupDiscount = isPrimary ? Number(bodyDiscount || 0) : 0;
+      const totalAmount = Math.max(0, grp.itemTotal + deliveryFee + platformFee + packagingFee + groupTip - groupDiscount);
+
+      const orderNumber = `GRO-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const idempotencyKey = `${clientIdempotencyKey || 'gro-' + Date.now()}-${groupIndex}-${Math.floor(100 + Math.random() * 900)}`;
+      const pickupOtp = String(Math.floor(1000 + Math.random() * 9000));
+      const deliveryOtp = String(Math.floor(1000 + Math.random() * 9000));
+
+      const orderPayload = {
+        orderNumber,
+        customer: req.user._id,
+        user: req.user._id,
+        customerId: req.user._id.toString(),
+        customerName: deliveryAddress?.name || req.user.name || 'Customer',
+        customerPhone: deliveryAddress?.phone || req.user.mobile || req.user.phone || '',
+        restaurant: grp.storeObjId,
+        restaurantId: grp.storeIdStr,
+        restaurantName: grp.storeName,
+        store: grp.storeObjId,
+        storeId: grp.storeIdStr,
+        storeName: grp.storeName,
+        vertical: VERTICALS.GROCERY,
+        fulfilmentGroup,
+        idempotencyKey,
+        items: grp.items,
+        itemTotal: grp.itemTotal,
+        deliveryFee,
+        platformFee,
+        packagingFee,
+        tip: groupTip,
+        discount: groupDiscount,
+        couponCode: couponCode || undefined,
+        totalAmount,
+        payableAmount: totalAmount,
+        deliveryAddress: normalizedDeliveryAddress,
+        paymentMethod: normPayMethod,
+        paymentStatus: normPayStatus,
+        transactionId: transactionId || undefined,
+        orderType: isSelfPickupOrder ? 'self_pickup' : 'delivery',
+        isSelfPickup: isSelfPickupOrder,
+        ...(scheduledAt ? { scheduledAt } : {}),
+        ...(pickupTimeSlot ? { pickupTimeSlot } : {}),
+        status: 'placed',
+        pickupOtp,
+        deliveryOtp,
+        specialInstructions: [deliveryNotes, substitutionPreference ? `Substitution: ${substitutionPreference}` : ''].filter(Boolean).join(' | ') || undefined,
+        timeline: [
+          {
+            status: 'placed',
+            timestamp: new Date(),
+            label: 'Order Placed',
+            by: 'customer',
+            description: `Grocery order placed with ${grp.storeName}`
+          }
+        ]
+      };
+
+      let savedOrder = orderPayload;
+      if (isDbReady) {
+        savedOrder = await Order.create(orderPayload);
+        try {
+          socketService.emitToRestaurant(grp.storeIdStr, 'newOrder', savedOrder);
+          socketService.emitToRestaurant(grp.storeIdStr, 'order:created', savedOrder);
+          socketService.emitToAdmin('newOrder', savedOrder);
+          socketService.emitToAdmin('order:created', savedOrder);
+        } catch (_) {}
+      }
+
+      createdOrders.push(savedOrder);
+      groupIndex++;
     }
 
     return res.status(201).json({
       success: true,
-      message: 'Grocery order placed successfully with vendor',
-      data: orderDoc
+      message: createdOrders.length > 1
+        ? `Order split across ${createdOrders.length} stores and placed successfully`
+        : 'Grocery order placed successfully with vendor',
+      fulfilmentGroup,
+      splitCount: createdOrders.length,
+      data: createdOrders[0],
+      order: createdOrders[0],
+      orders: createdOrders
     });
   } catch (error) {
     console.error('Grocery order error:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
-});
+};
+
+router.post('/order', protect, placeGroceryOrderHandler);
+router.post('/orders', protect, placeGroceryOrderHandler);
 
 
 /**
@@ -1052,66 +1463,49 @@ router.get('/inventory', async (req, res) => {
     let isFromDb = false;
 
     if (mongoose.connection.readyState === 1) {
-      try {
-        const query = { isDeleted: { $ne: true } };
-        if (search) {
-          query.$or = [
-            { 'name.en': { $regex: search, $options: 'i' } },
-            { name: { $regex: search, $options: 'i' } },
-            { sku: { $regex: search, $options: 'i' } }
-          ];
-        }
+      const query = { isDeleted: { $ne: true } };
+      const dbProducts = await Product.find(query)
+        .populate('category', 'name slug')
+        .populate('restaurant', 'name address')
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .lean();
 
-        const dbProducts = await Product.find(query)
-          .populate('category', 'name slug')
-          .populate('restaurant', 'name address')
-          .sort({ updatedAt: -1, createdAt: -1 })
-          .lean();
+      isFromDb = true;
+      items = (dbProducts || []).map(p => {
+        const price = Number(p.sellingPrice ?? p.price ?? p.basePrice ?? 0);
+        const mrp = Number(p.mrp ?? Math.round(price * 1.25));
+        const stock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : 100;
+        const threshold = Number(p.lowStockThreshold || 10);
+        const inStock = p.inStock !== false && stock > 0;
+        const nameStr = typeof p.name === 'object' ? (p.name?.en || Object.values(p.name || {})[0] || 'Grocery Item') : (p.name || 'Grocery Item');
+        const catName = typeof p.category?.name === 'object' ? (p.category.name?.en || Object.values(p.category.name || {})[0] || 'Grocery') : (p.category?.name || p.categorySlug || 'Grocery');
+        const rawStoreName = p.restaurant?.name;
+        const storeName = typeof rawStoreName === 'object'
+          ? (rawStoreName?.en || Object.values(rawStoreName || {})[0] || 'Partner Store')
+          : (rawStoreName || p.storeName || 'Partner Store');
 
-        if (dbProducts && dbProducts.length > 0) {
-          items = dbProducts.map(p => {
-            const price = Number(p.sellingPrice ?? p.price ?? p.basePrice ?? 0);
-            const mrp = Number(p.mrp ?? Math.round(price * 1.25));
-            const stock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : 100;
-            const threshold = Number(p.lowStockThreshold || 10);
-            const inStock = p.inStock !== false && stock > 0;
-            const nameStr = typeof p.name === 'object' ? (p.name?.en || Object.values(p.name || {})[0] || 'Grocery Item') : (p.name || 'Grocery Item');
-            const catName = typeof p.category?.name === 'object' ? (p.category.name?.en || Object.values(p.category.name || {})[0] || 'Grocery') : (p.category?.name || p.categorySlug || 'Grocery');
-            const rawStoreName = p.restaurant?.name;
-            const storeName = typeof rawStoreName === 'object'
-              ? (rawStoreName?.en || Object.values(rawStoreName || {})[0] || 'Tricelyn Dark Store Hub')
-              : (rawStoreName || 'Tricelyn Dark Store Hub');
-
-            return {
-              _id: p._id.toString(),
-              id: p._id.toString(),
-              sku: p.sku || `TRC-${p._id.toString().slice(-6).toUpperCase()}`,
-              name: nameStr,
-              categoryName: catName,
-              categorySlug: p.categorySlug || p.category?.slug || 'grocery',
-              storeName,
-              storeId: p.restaurant?._id?.toString() || p.restaurant || 'hub-01',
-              unit: p.unit || p.weight || '1 unit',
-              sellingPrice: price,
-              mrp: mrp,
-              stockQuantity: stock,
-              lowStockThreshold: threshold,
-              inStock,
-              status: !inStock || stock === 0 ? 'out_of_stock' : (stock <= threshold ? 'low_stock' : 'in_stock'),
-              image: p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80',
-              approvalStatus: p.approvalStatus || (p.isApproved ? 'approved' : 'pending'),
-              updatedAt: p.updatedAt || new Date()
-            };
-          });
-          isFromDb = true;
-        }
-      } catch (err) {
-        console.warn('Error querying DB inventory:', err.message);
-      }
-    }
-
-    // Fallback merge with ALL_CATALOG_PRODUCTS if DB has few items
-    if (items.length === 0) {
+        return {
+          _id: p._id.toString(),
+          id: p._id.toString(),
+          sku: p.sku || `TRC-${p._id.toString().slice(-6).toUpperCase()}`,
+          name: nameStr,
+          categoryName: catName,
+          categorySlug: p.categorySlug || p.category?.slug || 'grocery',
+          storeName,
+          storeId: p.restaurant?._id?.toString() || (typeof p.restaurant === 'string' ? p.restaurant : p.storeId) || '',
+          unit: p.unit || p.weight || '1 unit',
+          sellingPrice: price,
+          mrp: mrp,
+          stockQuantity: stock,
+          lowStockThreshold: threshold,
+          inStock,
+          status: !inStock || stock === 0 ? 'out_of_stock' : (stock <= threshold ? 'low_stock' : 'in_stock'),
+          image: p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80',
+          approvalStatus: p.approvalStatus || (p.isApproved ? 'approved' : 'pending'),
+          updatedAt: p.updatedAt || new Date()
+        };
+      });
+    } else {
       items = ALL_CATALOG_PRODUCTS.map((p, idx) => {
         const stock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : (idx === 3 ? 0 : (idx === 7 || idx === 12 ? 4 : 50 + (idx * 5)));
         const threshold = Number(p.lowStockThreshold || 10);
@@ -1199,11 +1593,19 @@ router.put('/inventory/:id', async (req, res) => {
 
     const updateObj = {};
     if (stockQuantity !== undefined) {
-      updateObj.stockQuantity = Number(stockQuantity);
-      updateObj.inStock = updateObj.stockQuantity > 0;
+      updateObj.stockQuantity = Math.max(0, Number(stockQuantity));
+      updateObj.inStock = inStock !== undefined ? Boolean(inStock) : updateObj.stockQuantity > 0;
+      updateObj.outOfStock = !updateObj.inStock;
+      updateObj.isAvailable = updateObj.inStock;
+      updateObj.available = updateObj.inStock;
     }
     if (lowStockThreshold !== undefined) updateObj.lowStockThreshold = Number(lowStockThreshold);
-    if (inStock !== undefined) updateObj.inStock = Boolean(inStock);
+    if (inStock !== undefined) {
+      updateObj.inStock = Boolean(inStock);
+      updateObj.outOfStock = !updateObj.inStock;
+      updateObj.isAvailable = updateObj.inStock;
+      updateObj.available = updateObj.inStock;
+    }
     if (sellingPrice !== undefined) {
       updateObj.sellingPrice = Number(sellingPrice);
       updateObj.basePrice = Number(sellingPrice);
@@ -1243,6 +1645,21 @@ router.put('/inventory/:id', async (req, res) => {
           { $set: updateObj },
           { new: true }
         );
+      }
+      if (updated && updated.restaurant) {
+        const Restaurant = require('../models/Restaurant');
+        await Restaurant.updateOne(
+          { _id: updated.restaurant, 'menu._id': updated._id },
+          {
+            $set: {
+              'menu.$.stockQuantity': updated.stockQuantity,
+              'menu.$.inStock': updated.inStock,
+              'menu.$.isAvailable': updated.inStock !== false,
+              ...(sellingPrice !== undefined ? { 'menu.$.sellingPrice': updated.sellingPrice, 'menu.$.price': updated.sellingPrice, 'menu.$.basePrice': updated.basePrice } : {}),
+              ...(mrp !== undefined ? { 'menu.$.mrp': updated.mrp } : {})
+            }
+          }
+        ).catch(() => {});
       }
     }
 
@@ -1303,28 +1720,39 @@ router.get('/orders/:id/invoice', async (req, res) => {
     const { id } = req.params;
     let order = null;
 
-    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(id)) {
-      order = await Order.findById(id)
-        .populate('user', 'name phone email')
-        .populate('restaurant', 'name address phone gstin fssai documents')
-        .populate('store', 'name address phone gstin fssai documents')
-        .lean();
+    if (mongoose.connection.readyState === 1) {
+      if (mongoose.isValidObjectId(id)) {
+        order = await Order.findById(id)
+          .populate('user', 'name phone mobile email')
+          .populate('customer', 'name phone mobile email')
+          .populate('restaurant', 'name address city state phone gstin fssai documents')
+          .populate('store', 'name address city state phone gstin fssai documents')
+          .lean();
+      } else {
+        order = await Order.findOne({ orderNumber: id })
+          .populate('user', 'name phone mobile email')
+          .populate('customer', 'name phone mobile email')
+          .populate('restaurant', 'name address city state phone gstin fssai documents')
+          .populate('store', 'name address city state phone gstin fssai documents')
+          .lean();
+      }
+      if (!order) {
+        return res.status(404).json({ success: false, message: 'Order not found for invoice generation' });
+      }
+    } else {
+      return res.status(503).json({ success: false, message: 'Database unavailable for invoice generation' });
     }
 
     // Dynamic order date & generated invoice sequence
-    const orderDate = order?.createdAt ? new Date(order.createdAt) : new Date();
-    const invNumber = `TRC-INV-${orderDate.getFullYear()}-${(order?._id?.toString() || id || '10842').slice(-6).toUpperCase()}`;
+    const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
+    const invNumber = `TRC-INV-${orderDate.getFullYear()}-${(order.orderNumber || order._id.toString()).slice(-6).toUpperCase()}`;
     
-    const items = (order?.items && order.items.length > 0) ? order.items : [
-      { name: 'Fresh Farm Red Onion (Pyaaz)', quantity: 2, price: 38, total: 76, unit: '1 kg' },
-      { name: 'Amul Taaza Homogenised Toned Milk', quantity: 2, price: 54, total: 108, unit: '1 Ltr' },
-      { name: "Lay's India's Magic Masala Chips", quantity: 3, price: 20, total: 60, unit: '52g' }
-    ];
+    const items = Array.isArray(order.items) ? order.items : [];
 
     const formattedItems = items.map((it, idx) => {
-      const q = it.quantity || 1;
-      const p = it.price || 50;
-      const total = it.total || (q * p);
+      const q = Number(it.quantity || 1);
+      const p = Number(it.price || 0);
+      const total = Number(it.total ?? (q * p));
       const taxable = Math.round((total / 1.05) * 100) / 100;
       const gstAmount = Math.round((total - taxable) * 100) / 100;
       const cgst = Math.round((gstAmount / 2) * 100) / 100;
@@ -1332,9 +1760,9 @@ router.get('/orders/:id/invoice', async (req, res) => {
 
       return {
         srNo: idx + 1,
-        name: it.name || it.productName || 'Grocery Item',
+        name: extractText(it.name || it.productName, 'Grocery Item'),
         quantity: q,
-        unit: it.unit || '1 unit',
+        unit: it.variation?.name || it.unit || '1 unit',
         unitPrice: p,
         taxableValue: taxable,
         cgstRate: '2.5%',
@@ -1345,43 +1773,45 @@ router.get('/orders/:id/invoice', async (req, res) => {
       };
     });
 
-    const itemsSubtotal = order?.itemTotal !== undefined 
+    const itemsSubtotal = order.itemTotal !== undefined 
       ? Number(order.itemTotal) 
       : formattedItems.reduce((acc, curr) => acc + curr.totalAmount, 0);
 
-    const packagingFee = order?.packagingFee !== undefined ? Number(order.packagingFee) : 10;
-    const deliveryFee = order?.deliveryFee !== undefined ? Number(order.deliveryFee) : (itemsSubtotal >= 199 ? 0 : 29);
-    const platformFee = order?.platformFee !== undefined ? Number(order.platformFee) : 3;
-    const discount = order?.discount !== undefined ? Number(order.discount) : (itemsSubtotal >= 200 ? 25 : 0);
-    const grandTotal = order?.totalAmount !== undefined 
+    const packagingFee = Number(order.packagingFee ?? 0);
+    const deliveryFee = Number(order.deliveryFee ?? 0);
+    const platformFee = Number(order.platformFee ?? 0);
+    const discount = Number(order.discount ?? 0);
+    const grandTotal = order.totalAmount !== undefined 
       ? Number(order.totalAmount) 
       : (itemsSubtotal + packagingFee + deliveryFee + platformFee - discount);
 
-    const storeDoc = order?.restaurant || order?.store;
+    const storeDoc = order.restaurant || order.store;
     const resolvedStoreName = storeDoc
-      ? (typeof storeDoc.name === 'object' ? (storeDoc.name.en || Object.values(storeDoc.name)[0]) : storeDoc.name)
-      : (order?.storeName || order?.restaurantName || 'Tricelyn Express Dark Store (Hub 01 - Vijay Nagar)');
+      ? extractText(storeDoc.name, 'Partner Store')
+      : (order.storeName || order.restaurantName || 'Partner Store');
 
-    const resolvedStoreAddress = storeDoc?.address || order?.restaurantAddress || 'Plot 42, Scheme 54, PU-4 Commercial Zone, Vijay Nagar, Indore, MP 452010';
-    const resolvedGstin = storeDoc?.documents?.gst?.number || storeDoc?.gstin || '23AABCT9988M1Z2';
-    const resolvedFssai = storeDoc?.documents?.license?.number || storeDoc?.fssaiNumber || '11422850000123';
+    const resolvedStoreAddress = storeDoc?.address || order.restaurantAddress || 'Store Address Unavailable';
+    const resolvedGstin = storeDoc?.documents?.gst?.number || storeDoc?.gstin || 'Unregistered / Applied';
+    const resolvedFssai = storeDoc?.documents?.license?.number || storeDoc?.fssaiNumber || 'N/A';
 
-    const resolvedCustName = order?.customerName || order?.user?.name || order?.deliveryAddress?.name || 'Valued Customer';
-    const resolvedCustPhone = order?.customerMobile || order?.user?.phone || order?.deliveryAddress?.phone || '+91 98930 12345';
-    const resolvedCustAddr = order?.deliveryAddress?.fullAddress || order?.deliveryAddress?.addressLine || order?.address || 'Flat 304, Emerald Heights, Scheme 78, Indore 452010';
+    const buyerDoc = order.customer || order.user;
+    const resolvedCustName = order.customerName || buyerDoc?.name || order.deliveryAddress?.name || 'Customer';
+    const resolvedCustPhone = order.customerPhone || order.customerMobile || buyerDoc?.mobile || buyerDoc?.phone || order.deliveryAddress?.phone || 'N/A';
+    const resolvedCustAddr = order.deliveryAddress?.fullAddress || order.deliveryAddress?.addressLine || order.address || 'N/A';
 
     const invoicePayload = {
       invoiceNumber: invNumber,
       invoiceDate: orderDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       invoiceTime: orderDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      orderId: order?._id?.toString() || id,
-      orderStatus: order?.status || order?.orderStatus || 'Delivered',
-      paymentMethod: (order?.paymentMethod || 'Online UPI (Razorpay)').toUpperCase(),
-      paymentStatus: (order?.paymentStatus || (order?.isPaid ? 'Paid' : 'Unpaid')).toUpperCase(),
+      orderId: order._id.toString(),
+      orderNumber: order.orderNumber || '',
+      orderStatus: order.status || order.orderStatus || 'placed',
+      paymentMethod: (order.paymentMethod || 'cod').toUpperCase(),
+      paymentStatus: (order.paymentStatus || (order.isPaid ? 'Paid' : 'Pending')).toUpperCase(),
 
-      // Dispatching Dark Store Entity (Dynamic)
+      // Dispatching Partner Store Entity (Dynamic)
       seller: {
-        legalName: 'Tricelyn Hyperlocal Technologies Pvt. Ltd.',
+        legalName: 'Tricelyn Multi-Vendor Marketplace',
         storeName: resolvedStoreName,
         address: resolvedStoreAddress,
         gstin: resolvedGstin,
@@ -1395,8 +1825,8 @@ router.get('/orders/:id/invoice', async (req, res) => {
         name: resolvedCustName,
         phone: resolvedCustPhone,
         deliveryAddress: resolvedCustAddr,
-        city: 'Indore',
-        state: 'Madhya Pradesh (23)'
+        city: storeDoc?.city || order.deliveryAddress?.city || '',
+        state: storeDoc?.state || order.deliveryAddress?.state || 'India'
       },
 
       items: formattedItems,

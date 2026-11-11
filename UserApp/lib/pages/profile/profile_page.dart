@@ -20,6 +20,7 @@ import 'support_chat_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/platform_config_provider.dart';
 
 class _GroupMenuItem {
   final String title;
@@ -41,6 +42,7 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     final userProvider = context.watch<UserProvider>();
+    final cfg = context.watch<PlatformConfigProvider>();
     final firstChar =
         userProvider.name.isNotEmpty ? userProvider.name[0].toUpperCase() : 'U';
 
@@ -305,15 +307,16 @@ class ProfileTab extends StatelessWidget {
                               builder: (_) => const AddressSelectionPage()),
                         ),
                       ),
-                      _GroupMenuItem(
-                        title: 'Food Preference',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const FoodPreferencesPage(
-                                  showBackButton: true)),
+                      if (cfg.isFoodActive)
+                        _GroupMenuItem(
+                          title: 'Food Preference',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const FoodPreferencesPage(
+                                    showBackButton: true)),
+                          ),
                         ),
-                      ),
                     ],
                   ),
 

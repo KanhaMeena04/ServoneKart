@@ -78,14 +78,16 @@ const useChangePassword = () => {
     setSuccess(false);
 
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.patch(`${API_BASE_URL}/api/admin/change-password`, {
         oldPassword,
         newPassword
       }, {
         headers: {
-          'Authorization': `Bearer YOUR_AUTH_TOKEN`,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           'Content-Type': 'application/json'
-        }
+        },
+        withCredentials: true
       });
       
       if (response.status === 200 || response.data.success) {

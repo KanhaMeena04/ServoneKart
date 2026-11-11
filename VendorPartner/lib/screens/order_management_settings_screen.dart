@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_colors.dart';
 
 class OrderManagementSettingsScreen extends StatefulWidget {
@@ -26,6 +28,10 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
   final TextEditingController _maxPickupCapacityController = TextEditingController(text: '20 orders/hr');
   final TextEditingController _gracePeriodController = TextEditingController(text: '15 mins');
   final TextEditingController _cancellationWindowController = TextEditingController(text: '5 mins');
+  bool _isSaving = false;
+
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
 
   @override
   void initState() {
@@ -36,17 +42,19 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final restId = prefs.getString('restaurantId') ?? '';
+      final restId = ApiConstants.restaurantId.isNotEmpty
+          ? ApiConstants.restaurantId
+          : (prefs.getString('restaurantId') ?? '');
       final token = prefs.getString('token') ?? '';
 
       if (restId.isNotEmpty) {
         final res = await http.get(
-          Uri.parse('${ApiConstants.baseUrl}/restaurants/$restId'),
+          Uri.parse('${ApiConstants.baseUrl}/restaurants/vendor/profile/$restId'),
           headers: {
             'Content-Type': 'application/json',
             if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           },
-        ).timeout(const Duration(seconds: 5));
+        ).timeout(const Duration(seconds: 6));
 
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
@@ -55,6 +63,12 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
             setState(() {
               _autoAcceptOrders = rest['autoAcceptOrders'] == true;
               _selfPickupEnabled = rest['isSelfPickupEnabled'] != false;
+              _orderScheduling = rest['orderScheduling'] == true;
+              _autoReadyNotification = rest['autoReadyNotification'] != false;
+              if (rest['dailyOrderLimit'] != null && (rest['dailyOrderLimit'] as num) > 0) {
+                _limitType = 'Custom';
+                _customLimitController.text = '${rest['dailyOrderLimit']}';
+              }
               if (rest['estimatedPreparationTime'] != null) {
                 _prepTimeController.text = '${rest['estimatedPreparationTime']} mins';
               }
@@ -67,53 +81,97 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
               if (rest['gracePeriodMinutes'] != null) {
                 _gracePeriodController.text = '${rest['gracePeriodMinutes']} mins';
               }
+              if (rest['pickupSlotDurationMinutes'] != null) {
+                _pickupSlotController.text = '${rest['pickupSlotDurationMinutes']} mins';
+              }
+              if (rest['maxPickupCapacity'] != null) {
+                _maxPickupCapacityController.text = '${rest['maxPickupCapacity']} orders/hr';
+              }
             });
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('OrderManagementSettings load error: $e');
+    }
   }
 
   Future<void> _saveSettings() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    String? errorMsg;
+    bool saved = false;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final restId = prefs.getString('restaurantId') ?? '';
+      final restId = ApiConstants.restaurantId.isNotEmpty
+          ? ApiConstants.restaurantId
+          : (prefs.getString('restaurantId') ?? '');
       final token = prefs.getString('token') ?? '';
 
-      final prepTimeVal = int.tryParse(_prepTimeController.text.replaceAll(RegExp(r'\D'), '')) ?? 15;
-      final bufferVal = int.tryParse(_prepBufferController.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
-      final cancelVal = int.tryParse(_cancellationWindowController.text.replaceAll(RegExp(r'\D'), '')) ?? 5;
-      final graceVal = int.tryParse(_gracePeriodController.text.replaceAll(RegExp(r'\D'), '')) ?? 15;
+      if (restId.isEmpty) {
+        errorMsg = 'Store session not found. Please log in again.';
+      } else {
+        final prepTimeVal = int.tryParse(_prepTimeController.text.replaceAll(RegExp(r'\D'), '')) ?? 15;
+        final bufferVal = int.tryParse(_prepBufferController.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+        final cancelVal = int.tryParse(_cancellationWindowController.text.replaceAll(RegExp(r'\D'), '')) ?? 5;
+        final graceVal = int.tryParse(_gracePeriodController.text.replaceAll(RegExp(r'\D'), '')) ?? 15;
+        final slotVal = int.tryParse(_pickupSlotController.text.replaceAll(RegExp(r'\D'), '')) ?? 15;
+        final capacityVal = int.tryParse(_maxPickupCapacityController.text.replaceAll(RegExp(r'\D'), '')) ?? 20;
+        final customLimit = _limitType == 'Custom'
+            ? (int.tryParse(_customLimitController.text.replaceAll(RegExp(r'\D'), '')) ?? 50)
+            : 0;
 
-      final payload = {
-        'autoAcceptOrders': _autoAcceptOrders,
-        'isSelfPickupEnabled': _selfPickupEnabled,
-        'estimatedPreparationTime': prepTimeVal,
-        'prepBufferTimeMinutes': bufferVal,
-        'cancellationWindowMinutes': cancelVal,
-        'gracePeriodMinutes': graceVal,
-      };
+        final payload = {
+          'autoAcceptOrders': _autoAcceptOrders,
+          'isSelfPickupEnabled': _selfPickupEnabled,
+          'orderScheduling': _orderScheduling,
+          'autoReadyNotification': _autoReadyNotification,
+          'dailyOrderLimit': customLimit,
+          'estimatedPreparationTime': prepTimeVal,
+          'prepBufferTimeMinutes': bufferVal,
+          'cancellationWindowMinutes': cancelVal,
+          'gracePeriodMinutes': graceVal,
+          'pickupSlotDurationMinutes': slotVal,
+          'maxPickupCapacity': capacityVal,
+        };
 
-      if (restId.isNotEmpty) {
-        await http.put(
-          Uri.parse('${ApiConstants.baseUrl}/restaurants/$restId'),
+        final response = await http.put(
+          Uri.parse('${ApiConstants.baseUrl}/restaurants/vendor/profile/$restId'),
           headers: {
             'Content-Type': 'application/json',
             if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           },
           body: jsonEncode(payload),
-        ).timeout(const Duration(seconds: 5));
+        ).timeout(const Duration(seconds: 8));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          saved = true;
+        } else {
+          try {
+            final errBody = jsonDecode(response.body);
+            errorMsg = errBody['message']?.toString() ?? 'Failed to save (${response.statusCode})';
+          } catch (_) {
+            errorMsg = 'Failed to save settings (${response.statusCode})';
+          }
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      errorMsg = 'Network error saving settings: $e';
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Order management settings updated successfully!',
+            saved
+                ? 'Order management settings saved to server!'
+                : (errorMsg ?? 'Could not save order management settings'),
             style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500),
           ),
-          backgroundColor: AppColors.primaryGreen,
+          backgroundColor: saved ? AppColors.primaryGreen : Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -246,7 +304,7 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
 
                   const SizedBox(height: 16),
 
-                  // Default Preparation Time Section
+                  // Default Preparation / Packing Time Section
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
@@ -266,7 +324,7 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Default Preparation Time',
+                          _isGrocery ? 'Default Packing Time' : 'Default Preparation Time',
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -275,7 +333,9 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Average time to prepare an order',
+                          _isGrocery
+                              ? 'Average time to pack an order'
+                              : 'Average time to prepare an order',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -368,12 +428,14 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
                           ],
                         ),
                         Text(
-                          'Configure store pickup slots, prep buffer & counter capacity.',
+                          _isGrocery
+                              ? 'Configure store pickup slots, packing buffer & counter capacity.'
+                              : 'Configure pickup slots, prep buffer & counter capacity.',
                           style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
                         ),
                         const Divider(height: 24),
                         if (_selfPickupEnabled) ...[
-                          _buildSubSettingRow('Preparation Buffer Time', _prepBufferController, 'e.g. 5 mins'),
+                          _buildSubSettingRow(_isGrocery ? 'Packing Buffer Time' : 'Preparation Buffer Time', _prepBufferController, 'e.g. 5 mins'),
                           const SizedBox(height: 12),
                           _buildSubSettingRow('Pickup Slot Duration', _pickupSlotController, 'e.g. 15 mins'),
                           const SizedBox(height: 12),
@@ -391,7 +453,12 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text('Automatic "Ready" Notification', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
-                                    Text('Trigger notification to customer when prep timer ends', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
+                                    Text(
+                                      _isGrocery
+                                          ? 'Trigger notification to customer when packing timer ends'
+                                          : 'Trigger notification to customer when prep timer ends',
+                                      style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600]),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -412,7 +479,7 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
             ),
           ),
 
-          // Bottom Primary Green Save Button matching theme & reference image
+          // Bottom Primary Green Save Button
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -430,7 +497,7 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _saveSettings,
+                  onPressed: _isSaving ? null : _saveSettings,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     elevation: 0,
@@ -438,14 +505,20 @@ class _OrderManagementSettingsScreenState extends State<OrderManagementSettingsS
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Text(
-                    'Save',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : Text(
+                          'Save',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),

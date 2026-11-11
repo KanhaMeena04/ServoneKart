@@ -26,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePin = true;
   bool _obscureConfirmPin = true;
+  bool _isSubmitting = false;
 
   Uint8List? _profileImageBytes;
   final ImagePicker _picker = ImagePicker();
@@ -156,6 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _onCreateAccount() async {
+    if (_isSubmitting) return;
     if (_formKey.currentState!.validate()) {
       if (_pinController.text.trim() != _confirmPinController.text.trim()) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -173,14 +175,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final name = _nameController.text.trim();
       final pin = _pinController.text.trim();
 
-      // Trigger OTP send to mobile
+      setState(() => _isSubmitting = true);
+      Map<String, dynamic> otpRes;
       try {
-        await ApiService.sendOtp(phone);
+        otpRes = await ApiService.sendOtp(phone);
       } catch (e) {
-        debugPrint('Error sending OTP: $e');
+        otpRes = {'success': false, 'message': 'Error sending OTP: $e'};
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
 
       if (!mounted) return;
+
+      if (otpRes['success'] != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(otpRes['message']?.toString() ?? 'Failed to send OTP. Please try again.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
 
       final profileImageBase64 = _profileImageBytes != null ? base64Encode(_profileImageBytes!) : null;
 
@@ -436,7 +452,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: _onCreateAccount,
+                          onPressed: _isSubmitting ? null : _onCreateAccount,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryGreen,
                             foregroundColor: Colors.white,
@@ -446,13 +462,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Text(
-                            'Create Account',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                )
+                              : Text(
+                                  'Create Account',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
 

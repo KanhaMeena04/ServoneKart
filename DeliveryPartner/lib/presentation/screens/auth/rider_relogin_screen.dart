@@ -103,7 +103,7 @@ class _RiderReloginScreenState extends State<RiderReloginScreen> {
           physics: const ClampingScrollPhysics(),
           child: Column(
             children: [
-              // Header Stack with Food / Rider Welcome Banner
+              // Header Stack with Delivery Partner Welcome Banner
               Stack(
                 alignment: Alignment.bottomCenter,
                 children: [

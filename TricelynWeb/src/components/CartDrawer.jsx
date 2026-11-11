@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  X, 
-  Trash2, 
   Plus, 
   Minus, 
   Tag, 
@@ -11,9 +9,7 @@ import {
   Share2,
   Clock,
   Info,
-  ShieldCheck, 
-  MapPin, 
-  Sparkles,
+  Store,
   ShoppingBag,
   CheckCircle2
 } from 'lucide-react';
@@ -26,9 +22,10 @@ const CartDrawer = () => {
   const { isAuthenticated, setIsAuthModalOpen } = useAuth();
   const { 
     items, 
+    storeGroups,
+    storeCount,
+    isMultiStore,
     updateQuantity, 
-    removeFromCart, 
-    clearCart, 
     itemCount, 
     subtotal, 
     mrpTotal, 
@@ -64,7 +61,7 @@ const CartDrawer = () => {
     if (navigator.share) {
       navigator.share({
         title: 'Tricelyn Cart',
-        text: `Check out my grocery cart on Tricelyn! ${itemCount} items ready for 10-15 min delivery in Indore.`,
+        text: `Check out my grocery cart on Tricelyn! ${itemCount} items ready for 10-15 min delivery.`,
         url: window.location.href,
       }).catch(() => {});
     } else {
@@ -86,7 +83,6 @@ const CartDrawer = () => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
         onClick={() => setIsCartDrawerOpen(false)}
@@ -95,7 +91,7 @@ const CartDrawer = () => {
       <div className="fixed inset-y-0 right-0 max-w-full flex">
         <div className="w-screen max-w-md bg-[#f8fafc] shadow-2xl flex flex-col h-full h-[100dvh] transform transition-all duration-300 ease-in-out">
           
-          {/* Header (Matches Reference Screenshot 5: Back Arrow + My Cart + Share) */}
+          {/* Header */}
           <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10 flex-shrink-0">
             <div className="flex items-center gap-3">
               <button
@@ -119,7 +115,7 @@ const CartDrawer = () => {
             </button>
           </div>
 
-          {/* Scrollable Body with Ample Bottom Clearance */}
+          {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-16">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
@@ -129,7 +125,7 @@ const CartDrawer = () => {
                 <div>
                   <h4 className="text-base font-bold text-gray-800">Your cart is empty</h4>
                   <p className="text-xs text-gray-500 mt-1">
-                    Explore fresh vegetables, dairy, fruits and snacks in Indore.
+                    Explore fresh vegetables, dairy, fruits and snacks in {selectedLocation?.name || 'your area'}.
                   </p>
                 </div>
                 <button
@@ -141,83 +137,97 @@ const CartDrawer = () => {
               </div>
             ) : (
               <>
-                {/* 1. Delivery in 10-15 Minutes Banner (Matches Screenshot 5) */}
+                {/* Delivery Speed Banner */}
                 <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 border border-emerald-100">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="text-sm font-black text-gray-900 leading-tight">
-                      Delivery in 10-15 minutes
+                      Delivery in {selectedLocation?.eta || '10-15 minutes'}
                     </h4>
                     <p className="text-xs text-gray-500 font-medium mt-0.5">
-                      Shipment of {itemCount} {itemCount === 1 ? 'item' : 'items'} · Indore Dark Store Live
+                      {isMultiStore
+                        ? `Multi-vendor basket: ${itemCount} items across ${storeCount} partner stores`
+                        : `Shipment of ${itemCount} ${itemCount === 1 ? 'item' : 'items'} · ${storeGroups[0]?.storeName || 'Tricelyn Dark Store'}`}
                     </p>
                   </div>
                 </div>
 
-                {/* 2. Cart Items Card (Matches Screenshot 5) */}
-                <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-2xs divide-y divide-gray-100">
-                  {items.map((item) => {
-                    const price = Number(item.product.price) || 0;
-                    const mrp = Number(item.product.mrp) || Math.round(price * 1.25);
+                {/* Multi-vendor Store Groups */}
+                {storeGroups.map((group) => (
+                  <div key={group.storeId} className="bg-white rounded-2xl p-3 border border-gray-100 shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between px-1 pb-1.5 border-b border-gray-100">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#0055ff]">
+                        <Store className="w-3.5 h-3.5" />
+                        <span className="truncate max-w-[220px]">{group.storeName}</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-gray-500">
+                        {group.items.length} {group.items.length === 1 ? 'SKU' : 'SKUs'} · ₹{group.subtotal.toFixed(0)}
+                      </span>
+                    </div>
 
-                    return (
-                      <div
-                        key={item.product._id}
-                        className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3"
-                      >
-                        {/* Thumbnail */}
-                        <div className="w-14 h-14 bg-gray-50 rounded-xl p-1 flex items-center justify-center flex-shrink-0 border border-gray-100">
-                          <img
-                            src={item.product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80'}
-                            alt={item.product.name}
-                            className="max-h-full max-w-full object-contain mix-blend-multiply"
-                          />
-                        </div>
+                    <div className="divide-y divide-gray-100">
+                      {group.items.map((item) => {
+                        const price = Number(item.product.price) || 0;
+                        const mrp = Number(item.product.mrp) || price;
+                        const pid = item.product._id || item.product.id;
 
-                        {/* Details */}
-                        <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-extrabold text-gray-900 truncate">
-                            {item.product.name}
-                          </h5>
-                          <p className="text-[11px] text-gray-500 font-medium">
-                            {item.product.weight || item.product.unit || '1 unit'}
-                          </p>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="text-xs font-black text-gray-900">₹{price}</span>
-                            {mrp > price && (
-                              <span className="text-[10px] text-gray-400 line-through">₹{mrp}</span>
-                            )}
+                        return (
+                          <div
+                            key={pid}
+                            className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3"
+                          >
+                            <div className="w-14 h-14 bg-gray-50 rounded-xl p-1 flex items-center justify-center flex-shrink-0 border border-gray-100">
+                              <img
+                                src={item.product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80'}
+                                alt={item.product.name}
+                                className="max-h-full max-w-full object-contain mix-blend-multiply"
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-xs font-extrabold text-gray-900 truncate">
+                                {item.product.name}
+                              </h5>
+                              <p className="text-[11px] text-gray-500 font-medium">
+                                {item.product.weight || item.product.unit || '1 unit'}
+                              </p>
+                              <div className="flex items-baseline gap-1.5 mt-0.5">
+                                <span className="text-xs font-black text-gray-900">₹{price}</span>
+                                {mrp > price && (
+                                  <span className="text-[10px] text-gray-400 line-through">₹{mrp}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center bg-[#0c831f] text-white rounded-xl shadow-xs overflow-hidden py-1 px-1 flex-shrink-0">
+                              <button
+                                onClick={() => updateQuantity(pid, item.quantity - 1)}
+                                className="w-7 h-6 flex items-center justify-center hover:bg-white/20 active:scale-90 transition font-bold"
+                                aria-label="Decrease"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-6 text-center text-xs font-black select-none">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(pid, item.quantity + 1)}
+                                className="w-7 h-6 flex items-center justify-center hover:bg-white/20 active:scale-90 transition font-bold"
+                                aria-label="Increase"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
 
-                        {/* Solid Green Quantity Stepper (Matches Screenshot 5) */}
-                        <div className="flex items-center bg-[#0c831f] text-white rounded-xl shadow-xs overflow-hidden py-1 px-1 flex-shrink-0">
-                          <button
-                            onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
-                            className="w-7 h-6 flex items-center justify-center hover:bg-white/20 active:scale-90 transition font-bold"
-                            aria-label="Decrease"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="w-6 text-center text-xs font-black select-none">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
-                            className="w-7 h-6 flex items-center justify-center hover:bg-white/20 active:scale-90 transition font-bold"
-                            aria-label="Increase"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* 3. Promo Code Input */}
+                {/* Promo Code Input */}
                 <div className="p-3.5 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-2.5">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
                     <Tag className="w-3.5 h-3.5 text-[#0055ff]" />
@@ -263,13 +273,12 @@ const CartDrawer = () => {
                   )}
                 </div>
 
-                {/* 4. Bill Details Card (Matches Screenshot 5) */}
+                {/* Bill Details */}
                 <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-2.5 text-xs">
                   <h6 className="font-extrabold text-gray-900 text-xs tracking-tight">
                     Bill details
                   </h6>
 
-                  {/* Items Total with Saved badge */}
                   <div className="flex items-center justify-between text-gray-600">
                     <div className="flex items-center gap-2">
                       <span>Items total</span>
@@ -294,7 +303,6 @@ const CartDrawer = () => {
                     </div>
                   )}
 
-                  {/* Delivery Charge */}
                   <div className="flex items-center justify-between text-gray-600">
                     <div className="flex items-center gap-1">
                       <span>Delivery charge</span>
@@ -309,7 +317,6 @@ const CartDrawer = () => {
                     </span>
                   </div>
 
-                  {/* Handling Charge */}
                   <div className="flex items-center justify-between text-gray-600">
                     <div className="flex items-center gap-1">
                       <span>Handling charge</span>
@@ -318,7 +325,6 @@ const CartDrawer = () => {
                     <span className="font-bold text-gray-900">₹{platformFee.toFixed(0)}</span>
                   </div>
 
-                  {/* Grand Total */}
                   <div className="border-t border-gray-100 pt-2.5 mt-1 flex items-center justify-between text-sm font-black text-gray-900">
                     <div className="flex items-center gap-1">
                       <span>Grand total</span>
@@ -328,7 +334,7 @@ const CartDrawer = () => {
                   </div>
                 </div>
 
-                {/* 5. Cancellation Policy Card (Matches Screenshot 5) */}
+                {/* Cancellation Policy */}
                 <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-1">
                   <h6 className="font-extrabold text-gray-900 text-xs tracking-tight">
                     Cancellation Policy
@@ -341,7 +347,6 @@ const CartDrawer = () => {
             )}
           </div>
 
-          {/* 6. Sticky Bottom Proceed Bar (Matches Screenshot 5: Green Bar) */}
           {items.length > 0 && (
             <div className="flex-shrink-0 p-3 sm:p-4 bg-white border-t border-gray-100 shadow-xl z-20">
               <button

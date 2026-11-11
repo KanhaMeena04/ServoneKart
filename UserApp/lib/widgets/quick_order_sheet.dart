@@ -6,10 +6,13 @@ import '../core/models/restaurant_models.dart';
 import '../providers/cart_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/location_provider.dart';
+import '../providers/platform_config_provider.dart';
+import '../services/grocery_api_service.dart';
 import '../services/restaurant_api_service.dart';
 import '../services/category_service.dart';
 import '../services/location_service.dart';
 import '../routes/app_routes.dart';
+import '../pages/widgets/product_card.dart';
 import 'safe_image.dart';
 
 class QuickOrderSheet extends StatefulWidget {
@@ -47,6 +50,28 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
 
   Future<void> _loadProducts() async {
     try {
+      final cfg = Provider.of<PlatformConfigProvider>(context, listen: false);
+      if (cfg.isGroceryActive) {
+        final results = await Future.wait([
+          GroceryApiService.getCategories(),
+          GroceryApiService.getProducts(limit: 80),
+        ]);
+        final rawCats = results[0];
+        final rawProds = results[1];
+        final items = rawProds.map((p) => GroceryApiService.toProduct(p)).toList();
+        final catNames = rawCats
+            .map((c) => (c['name'] ?? c['title'] ?? '').toString().trim())
+            .where((n) => n.isNotEmpty && n.toLowerCase() != 'all')
+            .toList();
+        if (mounted) {
+          setState(() {
+            _allProducts = items;
+            _categories = ['All', ...catNames];
+          });
+        }
+        return;
+      }
+
       // 1. Fetch dynamic categories from DB
       final catTree = await CategoryService.getCategoryTree(forceRefresh: true);
       final Map<String, String> catIdToNameMap = {};
@@ -327,9 +352,11 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
+    final cfg = context.watch<PlatformConfigProvider>();
     final primaryColor = const Color(0xFF248C70);
     final accentOrange = const Color(0xFFE89D1E);
     final cart = context.watch<CartProvider>();
+    final isGrocery = cfg.isGroceryActive;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -368,7 +395,7 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Quick Food Search',
+                      isGrocery ? 'Quick Grocery Add' : 'Quick Food Search',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -377,7 +404,9 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Order your favorite dish instantly',
+                      isGrocery
+                          ? 'Add fresh essentials in 10-15 mins'
+                          : 'Order your favorite dish instantly',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280),
@@ -406,7 +435,9 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
               onChanged: (val) => setState(() => _searchQuery = val),
               style: TextStyle(color: isDark ? Colors.white : Colors.black),
               decoration: InputDecoration(
-                hintText: 'Search food items, pizzas, burgers...',
+                hintText: isGrocery
+                    ? 'Search milk, bread, veggies, staples...'
+                    : 'Search food items, pizzas, burgers...',
                 hintStyle: TextStyle(
                   color: isDark ? Colors.grey.shade500 : const Color(0xFF9CA3AF),
                   fontSize: 14,
@@ -487,15 +518,19 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.fastfood_outlined,
+                              isGrocery ? Icons.shopping_basket_outlined : Icons.fastfood_outlined,
                               size: 56,
                               color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                             ),
                             const SizedBox(height: 12),
                             Text(
                               _allProducts.isEmpty
-                                  ? 'No dishes available from nearby restaurants\n(within 25 km radius)'
-                                  : 'No dishes found matching search',
+                                  ? (isGrocery
+                                      ? 'No grocery items loaded yet'
+                                      : 'No dishes available from nearby restaurants\n(within 25 km radius)')
+                                  : (isGrocery
+                                      ? 'No grocery items found matching search'
+                                      : 'No dishes found matching search'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -520,6 +555,15 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
 
                           return InkWell(
                             onTap: () {
+                              if (isGrocery || item.vertical == 'grocery') {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => ProductDetailSheet(product: item),
+                                );
+                                return;
+                              }
                               final restId = item.restaurantId;
                               if (restId != null && restId.isNotEmpty) {
                                 Navigator.pop(context);
@@ -645,13 +689,22 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                                   qtyInCart == 0
                                       ? ElevatedButton(
                                           onPressed: () {
-                                            cart.addItem(
-                                              item,
-                                              restaurantId: item.restaurantId ?? 'rest_main',
-                                              restaurantName: item.restaurantName ?? 'Restaurant',
-                                              restaurantImageUrl: item.restaurantImageUrl ?? item.image,
-                                              imageUrl: item.image,
-                                            );
+                                            if (isGrocery || item.vertical == 'grocery') {
+                                              cart.addGroceryItem(
+                                                item,
+                                                storeId: item.storeId ?? item.restaurantId ?? 'store_tricelyn_indore_01',
+                                                storeName: item.storeName ?? item.restaurantName ?? 'Tricelyn Partner Store',
+                                                storeImageUrl: item.restaurantImageUrl ?? '',
+                                              );
+                                            } else {
+                                              cart.addItem(
+                                                item,
+                                                restaurantId: item.restaurantId ?? 'rest_main',
+                                                restaurantName: item.restaurantName ?? 'Restaurant',
+                                                restaurantImageUrl: item.restaurantImageUrl ?? item.image,
+                                                imageUrl: item.image,
+                                              );
+                                            }
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: primaryColor,

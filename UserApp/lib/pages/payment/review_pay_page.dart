@@ -15,6 +15,8 @@ import '../../services/order_api_service.dart';
 import '../order/order_tracking_page.dart';
 import 'address_selection_page.dart';
 import '../profile/location_setup_page.dart';
+import '../../core/constants/app_constants.dart';
+import '../../providers/platform_config_provider.dart';
 import '../../widgets/flip_animation_widgets.dart';
 import 'package:ecdkart_app/services/meta_app_events_service.dart';
 
@@ -144,23 +146,23 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
     setState(() => _isProcessing = true);
     try {
       final result = await PaymentService.verifyPayment(
-        razorpayOrderId: response.orderId!,
-        razorpayPaymentId: response.paymentId!,
-        razorpaySignature: response.signature!,
+        razorpayOrderId: response.orderId ?? '',
+        razorpayPaymentId: response.paymentId ?? '',
+        razorpaySignature: response.signature ?? '',
       );
 
       if (result != null && result['success'] == true) {
-        final confirmedId = _pendingOrderId ??
-            result['orderId']?.toString() ??
-            response.orderId ??
-            '';
-        _onOrderSuccess(confirmedId);
+        await _processAndConfirmOrder(
+          paymentMethodOverride: 'online',
+          paymentStatusOverride: 'paid',
+          transactionIdOverride: response.paymentId,
+        );
       } else {
-        setState(() => _isProcessing = false);
+        if (mounted) setState(() => _isProcessing = false);
         _showError(result?['message'] ?? 'Payment verification failed');
       }
     } catch (e) {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
       _showError('Verification error: $e');
     }
   }
@@ -173,7 +175,17 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
 
   void _onOrderSuccess(String orderId) {
     final cart = context.read<CartProvider>();
-    final restaurantName = cart.restaurantName ?? 'Restaurant';
+    final isGrocery = cart.hasGroceryItems ||
+        context.read<PlatformConfigProvider>().isGroceryActive;
+    final restaurantName = isGrocery
+        ? (cart.storeCount > 1
+            ? 'Multiple Partner Stores (${cart.storeCount})'
+            : (cart.items.isNotEmpty
+                ? (cart.items.first.product.storeName ??
+                    cart.restaurantName ??
+                    'Tricelyn Partner Mart')
+                : (cart.restaurantName ?? 'Tricelyn Partner Mart')))
+        : (cart.restaurantName ?? 'Restaurant');
     final addressProvider = context.read<AddressProvider>();
     final selectedAddress = (addressProvider.addresses.isNotEmpty &&
             (_selectedAddressIndex ?? 0) < addressProvider.addresses.length)
@@ -184,7 +196,9 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
     final deliveryAddress = cart.isSelfPickup
         ? (cart.restaurantAddress ??
             cart.restaurantName ??
-            'Self Pickup at Restaurant')
+            (isGrocery
+                ? 'Self Pickup at Partner Store'
+                : 'Self Pickup at Restaurant'))
         : (selectedAddress?.fullAddress ?? 'Selected Delivery Address');
 
     final cartItems = cart.items
@@ -346,9 +360,12 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Select your preferred date and time to collect your order from the restaurant counter.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  Text(
+                    (context.read<CartProvider>().hasGroceryItems ||
+                            context.read<PlatformConfigProvider>().isGroceryActive)
+                        ? 'Select your preferred date and time to collect your groceries from the store counter.'
+                        : 'Select your preferred date and time to collect your order from the restaurant counter.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                   ),
                   const SizedBox(height: 20),
 
@@ -504,13 +521,16 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                               const Color(0xFF248C70).withValues(alpha: 0.3)),
                     ),
                     child: Row(
-                      children: const [
-                        Icon(Icons.bolt, color: Color(0xFF248C70), size: 20),
-                        SizedBox(width: 8),
+                      children: [
+                        const Icon(Icons.bolt, color: Color(0xFF248C70), size: 20),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Smart Prep Buffer: ~15 mins prep time + 15 mins grace period at restaurant counter.',
-                            style: TextStyle(
+                            (context.read<CartProvider>().hasGroceryItems ||
+                                    context.read<PlatformConfigProvider>().isGroceryActive)
+                                ? 'Smart Prep Buffer: ~10-15 mins packing time + 15 mins grace period at store counter.'
+                                : 'Smart Prep Buffer: ~15 mins prep time + 15 mins grace period at restaurant counter.',
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF1B5E20),
                               fontWeight: FontWeight.w600,
@@ -560,18 +580,29 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
     );
   }
 
-  Future<void> _processAndConfirmOrder() async {
+  Future<void> _processAndConfirmOrder({
+    String? paymentMethodOverride,
+    String? paymentStatusOverride,
+    String? transactionIdOverride,
+  }) async {
     setState(() => _isProcessing = true);
     final cart = context.read<CartProvider>();
     final addressProvider = context.read<AddressProvider>();
+    final userProvider = context.read<UserProvider>();
+    final isGroceryOrder = cart.hasGroceryItems ||
+        context.read<PlatformConfigProvider>().isGroceryActive;
+
     final selectedAddress = (addressProvider.addresses.isNotEmpty &&
             (_selectedAddressIndex ?? 0) < addressProvider.addresses.length)
         ? addressProvider.addresses[_selectedAddressIndex ?? 0]
-        : null;
+        : (addressProvider.addresses.isNotEmpty
+            ? addressProvider.addresses.first
+            : null);
 
     final locProvider = context.read<LocationProvider>();
     if (!cart.isSelfPickup && !locProvider.isServiceable) {
       if (mounted) {
+        setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -595,64 +626,232 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
       return;
     }
 
-    final isCod = _selectedPaymentMethod == 'Cash on Delivery';
+    final isCod = paymentMethodOverride != null
+        ? paymentMethodOverride == 'cod'
+        : _selectedPaymentMethod == 'Cash on Delivery';
     final isSelf =
         cart.orderType == 'pickup' || cart.orderType == 'self_pickup';
 
-    final orderData = {
-      'restaurantId': cart.restaurantId ?? '',
-      'paymentMethod': isCod ? 'cod' : 'online',
-      'items': cart.items
-          .map((item) => ({
-                'product': item.product.id,
-                'productId': item.product.id,
-                'name': item.product.name,
-                'image': item.product.image,
-                'price': item.product.price,
-                'quantity': item.quantity,
-              }))
-          .toList(),
-      'totalPrice': cart.finalAmount,
-      'tipAmount': isSelf ? 0 : _selectedTip,
-      'leaveAtDoor': isSelf ? false : _leaveAtDoor,
-      'selectedPaymentMethodName': _selectedPaymentMethod,
-      if (isSelf) ...{
-        'orderType': 'self_pickup',
-        'isSelfPickup': true,
-        'scheduledAt': cart.pickupDate,
-        'pickupTimeSlot': cart.pickupTimeSlot,
-      },
-    };
-
-    if (selectedAddress != null) {
-      orderData['addressId'] = selectedAddress.id;
-    }
+    final locLat = selectedAddress?.latitude ?? locProvider.lat ?? 22.7196;
+    final locLng = selectedAddress?.longitude ?? locProvider.lng ?? 75.8577;
 
     try {
-      final result = await context.read<OrderProvider>().placeOrder(orderData);
-      if (result['success'] == true && result['orderId'] != null) {
-        _pendingOrderId = result['orderId'].toString();
+      Map<String, dynamic> result;
+      if (isGroceryOrder) {
+        final groceryOrderData = {
+          if (cart.restaurantId != null && cart.restaurantId!.isNotEmpty)
+            'storeId': cart.restaurantId,
+          if (cart.restaurantName != null && cart.restaurantName!.isNotEmpty)
+            'storeName': cart.restaurantName,
+          'paymentMethod': isCod ? 'cod' : 'online',
+          if (paymentStatusOverride != null)
+            'paymentStatus': paymentStatusOverride,
+          if (transactionIdOverride != null)
+            'transactionId': transactionIdOverride,
+          'items': cart.items
+              .map((item) => {
+                    'product': item.product.id,
+                    'productId': item.product.id,
+                    'name': item.product.name,
+                    'image': item.product.image,
+                    'price': item.product.price,
+                    'quantity': item.quantity,
+                    if (item.product.unit != null) 'unit': item.product.unit,
+                    if (item.product.weight != null)
+                      'weight': item.product.weight,
+                    'storeId': (item.product.storeId?.isNotEmpty == true)
+                        ? item.product.storeId
+                        : (item.product.restaurantId ??
+                            cart.restaurantId ??
+                            ''),
+                    'storeName': (item.product.storeName?.isNotEmpty == true)
+                        ? item.product.storeName
+                        : (item.product.restaurantName ??
+                            cart.restaurantName ??
+                            'Partner Mart'),
+                  })
+              .toList(),
+          'totalPrice': cart.finalAmount,
+          'tip': isSelf ? 0 : _selectedTip,
+          'discount': cart.discountAmount,
+          if (cart.appliedCoupon != null)
+            'couponCode': cart.appliedCoupon!['code'],
+          if (cart.orderNote != null && cart.orderNote!.isNotEmpty)
+            'deliveryNotes': cart.orderNote,
+          'leaveAtDoor': isSelf ? false : _leaveAtDoor,
+          'selectedPaymentMethodName': _selectedPaymentMethod,
+          if (selectedAddress != null) 'addressId': selectedAddress.id,
+          'deliveryAddress': {
+            'addressLine': isSelf
+                ? (cart.restaurantAddress ??
+                    cart.restaurantName ??
+                    'Self Pickup')
+                : (selectedAddress?.fullAddress ??
+                    (locProvider.location.isNotEmpty &&
+                            locProvider.location != 'Select Location'
+                        ? (locProvider.subAddress.isNotEmpty
+                            ? '${locProvider.location}, ${locProvider.subAddress}'
+                            : locProvider.location)
+                        : 'Selected Delivery Address')),
+            'coordinates': [locLng, locLat],
+            'name': userProvider.name,
+            'phone': userProvider.phone,
+          },
+          if (isSelf) ...{
+            'orderType': 'self_pickup',
+            'isSelfPickup': true,
+            'scheduledAt': cart.pickupDate,
+            'pickupTimeSlot': cart.pickupTimeSlot,
+          },
+        };
+        result = await context
+            .read<OrderProvider>()
+            .placeGroceryOrder(groceryOrderData);
+      } else {
+        final orderData = {
+          'restaurantId': cart.restaurantId ?? '',
+          'paymentMethod': isCod ? 'cod' : 'online',
+          if (paymentStatusOverride != null)
+            'paymentStatus': paymentStatusOverride,
+          if (transactionIdOverride != null)
+            'transactionId': transactionIdOverride,
+          'items': cart.items
+              .map((item) => ({
+                    'product': item.product.id,
+                    'productId': item.product.id,
+                    'name': item.product.name,
+                    'image': item.product.image,
+                    'price': item.product.price,
+                    'quantity': item.quantity,
+                  }))
+              .toList(),
+          'totalPrice': cart.finalAmount,
+          'tipAmount': isSelf ? 0 : _selectedTip,
+          'leaveAtDoor': isSelf ? false : _leaveAtDoor,
+          'selectedPaymentMethodName': _selectedPaymentMethod,
+          if (isSelf) ...{
+            'orderType': 'self_pickup',
+            'isSelfPickup': true,
+            'scheduledAt': cart.pickupDate,
+            'pickupTimeSlot': cart.pickupTimeSlot,
+          },
+        };
+        if (selectedAddress != null) {
+          orderData['addressId'] = selectedAddress.id;
+        }
+        result = await context.read<OrderProvider>().placeOrder(orderData);
+      }
+
+      if (result['success'] == true &&
+          (result['orderId'] != null || result['fulfilmentGroup'] != null)) {
+        _pendingOrderId = (result['orderId'] ??
+                result['fulfilmentGroup'])
+            .toString();
         if (mounted) {
           _onOrderSuccess(_pendingOrderId!);
         }
       } else {
-        setState(() => _isProcessing = false);
+        if (mounted) setState(() => _isProcessing = false);
         if (mounted) {
           _showError(
               result['message'] ?? 'Failed to place order. Please try again.');
         }
       }
     } catch (e) {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
       if (mounted) {
         _showError('Error placing order: $e');
       }
     }
   }
 
-  // ── Online Payment Simulation Modal (UPI / Credit Card / Debit Card) ─────
+  Future<void> _showSandboxConfirmDialog(
+      String razorpayOrderId, double grandTotal) async {
+    bool verifying = false;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dlgCtx) {
+        return StatefulBuilder(
+          builder: (context, setDlgState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18)),
+              title: const Row(
+                children: [
+                  Icon(Icons.verified_user_outlined, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text('Test Sandbox Payment',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                ],
+              ),
+              content: Text(
+                'Live payment gateway keys are not active on this server. Confirm test sandbox payment of ₹${grandTotal.toStringAsFixed(2)} for Order #$razorpayOrderId?',
+                style: const TextStyle(fontSize: 13.5, color: Color(0xFF4B5563)),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: verifying ? null : () => Navigator.pop(dlgCtx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: verifying
+                      ? null
+                      : () async {
+                          setDlgState(() => verifying = true);
+                          final sandboxPayId =
+                              'pay_sandbox_${DateTime.now().millisecondsSinceEpoch}';
+                          final verifyRes = await PaymentService.verifyPayment(
+                            razorpayOrderId: razorpayOrderId,
+                            razorpayPaymentId: sandboxPayId,
+                            razorpaySignature: 'sandbox_confirm',
+                            isSandboxConfirm: true,
+                          );
+                          if (!mounted) return;
+                          Navigator.pop(dlgCtx);
+                          if (verifyRes != null && verifyRes['success'] == true) {
+                            await _processAndConfirmOrder(
+                              paymentMethodOverride: 'online',
+                              paymentStatusOverride: 'paid',
+                              transactionIdOverride: sandboxPayId,
+                            );
+                          } else {
+                            _showError(verifyRes?['message'] ??
+                                'Sandbox payment verification failed');
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary),
+                  child: verifying
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Text('Confirm Test Payment',
+                          style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Online Payment Modal (Razorpay Create Order + Verify Payment) ──────────
   void _showOnlinePaymentSimulationModal(
       BuildContext context, double grandTotal) {
+    final cart = context.read<CartProvider>();
+    final locProvider = context.read<LocationProvider>();
+    if (!cart.isSelfPickup && !locProvider.isServiceable) {
+      _showError(locProvider.serviceabilityMessage.isNotEmpty
+          ? locProvider.serviceabilityMessage
+          : 'Delivery is not available in your current location. Please update your address.');
+      return;
+    }
+
     bool isUpi = _selectedPaymentMethod.contains('UPI') ||
         _selectedPaymentMethod.contains('Google Pay') ||
         _selectedPaymentMethod.contains('PhonePe');
@@ -699,7 +898,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Pay with ${_selectedPaymentMethod}',
+                              'Pay with $_selectedPaymentMethod',
                               style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w900,
@@ -833,11 +1032,52 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                             ? null
                             : () async {
                                 setModalState(() => isPayingLocal = true);
-                                await Future.delayed(
-                                    const Duration(milliseconds: 1000));
-                                if (context.mounted) {
-                                  Navigator.pop(ctx); // Close payment modal
-                                  _processAndConfirmOrder(); // Place order & show Order Confirmed modal!
+                                final rzpRes = await PaymentService.createOrder(
+                                    grandTotal);
+                                if (!mounted) return;
+                                if (rzpRes == null ||
+                                    rzpRes['success'] != true ||
+                                    rzpRes['id'] == null) {
+                                  setModalState(() => isPayingLocal = false);
+                                  _showError(rzpRes?['message'] ??
+                                      'Unable to initialize payment gateway.');
+                                  return;
+                                }
+
+                                Navigator.pop(ctx);
+                                final rzpOrderId = rzpRes['id'].toString();
+
+                                if (rzpRes['isSandbox'] == true) {
+                                  await _showSandboxConfirmDialog(
+                                      rzpOrderId, grandTotal);
+                                } else {
+                                  final cfg =
+                                      context.read<PlatformConfigProvider>();
+                                  final user = context.read<UserProvider>();
+                                  try {
+                                    _razorpay.open({
+                                      'key': rzpRes['keyId'] ??
+                                          AppConstants.razorpayKey,
+                                      'amount': rzpRes['amountPaise'] ??
+                                          (grandTotal * 100).round(),
+                                      'order_id': rzpOrderId,
+                                      'name': cfg.appName,
+                                      'description':
+                                          '${cfg.isGroceryActive ? 'Grocery' : 'Order'} Payment',
+                                      'prefill': {
+                                        'contact': user.phone.isNotEmpty
+                                            ? user.phone
+                                            : '9999999999',
+                                        'email': user.email.isNotEmpty
+                                            ? user.email
+                                            : 'customer@tricelyn.com',
+                                      },
+                                      'theme': {'color': '#248C70'},
+                                    });
+                                  } catch (e) {
+                                    _showError(
+                                        'Failed to open payment gateway: $e');
+                                  }
                                 }
                               },
                         style: ElevatedButton.styleFrom(
@@ -858,7 +1098,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                                         color: Colors.white, strokeWidth: 2),
                                   ),
                                   SizedBox(width: 10),
-                                  Text('Processing Payment...',
+                                  Text('Initializing Payment...',
                                       style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.w700)),
@@ -1414,10 +1654,15 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
             ? addressProvider.addresses.first
             : null);
 
+    final isGrocery = cart.hasGroceryItems ||
+        context.watch<PlatformConfigProvider>().isGroceryActive;
+
     final displayAddress = cart.isSelfPickup
         ? (cart.restaurantAddress ??
             cart.restaurantName ??
-            'Self Pickup at Restaurant')
+            (isGrocery
+                ? 'Self Pickup at Partner Store'
+                : 'Self Pickup at Restaurant'))
         : (savedAddress?.fullAddress ?? 'Selected Delivery Address');
     final displayLabel = cart.isSelfPickup
         ? 'Self Pickup Location'
@@ -1528,7 +1773,9 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                       cart.restaurantAddress ??
                           (cart.restaurantName != null
                               ? '${cart.restaurantName}'
-                              : 'Selected Restaurant Store Counter'),
+                              : (isGrocery
+                                  ? 'Selected Partner Store Counter'
+                                  : 'Selected Restaurant Store Counter')),
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -1789,7 +2036,10 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                   ],
 
                   if (cart.isPackagingFeeEnabled) ...[
-                    _billRow('Restaurant packaging fee',
+                    _billRow(
+                        isGrocery
+                            ? 'Store packaging & handling'
+                            : 'Restaurant packaging fee',
                         '₹${cart.packagingFee.toStringAsFixed(2)}'),
                     const SizedBox(height: 10),
                   ],

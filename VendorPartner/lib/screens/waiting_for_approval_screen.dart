@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ecdkart_logo.dart';
 import 'dashboard_screen.dart';
@@ -46,7 +48,10 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
   @override
   void initState() {
     super.initState();
-    _displayName = widget.restaurantName ?? 'Your Restaurant';
+    final isGrocery = PlatformConfigService.isGroceryPlatform;
+    _displayName = (widget.restaurantName != null && widget.restaurantName!.trim().isNotEmpty)
+        ? widget.restaurantName!
+        : (isGrocery ? 'Your Store' : 'Your Outlet');
     // Immediate check on load
     _checkApprovalStatus(isAutoPoll: true);
     // Background polling every 5 seconds for instant real-time sync
@@ -70,7 +75,7 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final restId = widget.restaurantId ?? widget.applicationId ?? prefs.getString('restaurantId') ?? '';
-    final phone = widget.mobile ?? widget.mobileNumber ?? prefs.getString('userPhone') ?? '8305370330';
+    final phone = widget.mobile ?? widget.mobileNumber ?? prefs.getString('userPhone') ?? '';
     final token = prefs.getString('token') ?? '';
 
     String requestUrl = '';
@@ -82,7 +87,7 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
       if (!isAutoPoll) {
         setState(() {
           _isChecking = false;
-          _statusMessage = 'No active restaurant application found. Please register.';
+          _statusMessage = 'No active partner application found. Please register.';
         });
       }
       return;
@@ -103,40 +108,76 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
         final isRejected = data['verificationStatus'] == 'rejected' || data['rejectionReason'] != null;
         final serverName = data['name'];
         final serverToken = data['token'];
-        final returnedRestId = data['restaurantId'] ?? restId;
+        final returnedRestId = (data['restaurantId'] ?? restId).toString();
+        final assignedRole = data['assignedRole']?.toString();
+        final permissions = data['permissions'] is List ? data['permissions'] as List : null;
+        final businessType = data['businessType']?.toString();
+        final vertical = data['vertical']?.toString();
 
         if (serverName != null && serverName.toString().isNotEmpty) {
           _displayName = serverName.toString();
         }
 
+        await RestaurantAuthService.saveRbacContext(
+          assignedRole: assignedRole,
+          permissions: permissions,
+          businessType: businessType,
+          vertical: vertical,
+        );
+
         if (isApproved) {
           _pollingTimer?.cancel();
-          if (returnedRestId != null && returnedRestId.toString().isNotEmpty) {
-            final effectiveToken = (serverToken != null && serverToken.toString().isNotEmpty)
-                ? serverToken.toString()
-                : (token.isNotEmpty ? token : 'token_$returnedRestId');
-            ApiConstants.setAuthenticatedSession(
-              restaurantId: returnedRestId.toString(),
-              authToken: effectiveToken,
+          final effectiveToken = (serverToken != null && serverToken.toString().isNotEmpty)
+              ? serverToken.toString()
+              : token;
+
+          if (returnedRestId.isNotEmpty && effectiveToken.isNotEmpty) {
+            await RestaurantAuthService.saveAuthSession(
+              token: effectiveToken,
+              restaurantId: returnedRestId,
+              assignedRole: assignedRole,
+              permissions: permissions,
+              businessType: businessType,
+              vertical: vertical,
             );
-            await prefs.setString('restaurantId', returnedRestId.toString());
-            await prefs.setString('token', effectiveToken);
+            if (_displayName.isNotEmpty) {
+              await prefs.setString('restaurantName', _displayName);
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Store approved! Please login with your mobile PIN or OTP to open your dashboard.'),
+                  backgroundColor: AppTheme.primaryGreen,
+                ),
+              );
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            }
+            return;
           }
 
           if (mounted) {
+            final isGrocery = PlatformConfigService.isGroceryPlatform;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Row(
                   children: [
-                    Icon(Icons.check_circle_rounded, color: Colors.white),
-                    SizedBox(width: 10),
+                    const Icon(Icons.check_circle_rounded, color: Colors.white),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Text('🎉 Congratulations! Your restaurant has been Approved by Admin!'),
+                      child: Text(
+                        isGrocery
+                            ? '🎉 Congratulations! Your store has been Approved by Admin!'
+                            : '🎉 Congratulations! Your partner outlet has been Approved by Admin!',
+                      ),
                     ),
                   ],
                 ),
                 backgroundColor: AppTheme.primaryGreen,
-                duration: Duration(seconds: 4),
+                duration: const Duration(seconds: 4),
               ),
             );
             Navigator.pushReplacement(
@@ -204,9 +245,7 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
             tooltip: 'Logout',
             onPressed: () async {
               _pollingTimer?.cancel();
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-              ApiConstants.clearAuthenticatedSession();
+              await RestaurantAuthService.logout();
               if (context.mounted) {
                 Navigator.pushReplacement(
                   context,
@@ -366,7 +405,9 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
                     _buildTrackingStep(
                       stepNumber: 1,
                       title: 'Application Submitted',
-                      subtitle: 'Restaurant details, location & bank info uploaded',
+                      subtitle: PlatformConfigService.isGroceryPlatform
+                          ? 'Store details, location & bank info uploaded'
+                          : 'Outlet details, location & bank info uploaded',
                       isCompleted: true,
                       isActive: false,
                       isLast: false,
@@ -378,18 +419,24 @@ class _WaitingForApprovalScreenState extends State<WaitingForApprovalScreen> {
                       title: 'Documents & Bank Verification',
                       subtitle: _isRejected
                           ? 'Verification failed: $_rejectionReason'
-                          : (_currentStep > 2 ? 'FSSAI License & Bank details verified' : 'Admin verifying food license & bank documents'),
+                          : (_currentStep > 2
+                              ? 'Store license & bank details verified'
+                              : (PlatformConfigService.isGroceryPlatform
+                                  ? 'Admin verifying store license, GST & bank documents'
+                                  : 'Admin verifying food license & bank documents')),
                       isCompleted: _currentStep > 2,
                       isActive: _currentStep == 2 && !_isRejected,
                       isFailed: _isRejected,
                       isLast: false,
                     ),
 
-                    // Step 3: Menu & Pricing Review
+                    // Step 3: Catalog & Pricing Review
                     _buildTrackingStep(
                       stepNumber: 3,
-                      title: 'Menu & Pricing Review',
-                      subtitle: _currentStep >= 3 ? 'Menu items checked & approved' : 'Reviewing dish categories and prices',
+                      title: PlatformConfigService.isGroceryPlatform ? 'Catalog & Pricing Review' : 'Menu & Pricing Review',
+                      subtitle: _currentStep >= 3
+                          ? (PlatformConfigService.isGroceryPlatform ? 'Catalog SKUs checked & approved' : 'Menu items checked & approved')
+                          : (PlatformConfigService.isGroceryPlatform ? 'Reviewing product categories, stock & prices' : 'Reviewing item categories and prices'),
                       isCompleted: _currentStep >= 3,
                       isActive: _currentStep == 3,
                       isLast: false,

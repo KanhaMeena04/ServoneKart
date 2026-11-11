@@ -55,37 +55,37 @@ class _RegisterPageState extends State<RegisterPage> {
     PolicySection(
       heading: '1. Introduction & Definitions',
       content:
-          'The Platform is operated by ECDKART (OPC) PRIVATE LIMITED. By downloading or using the ECDKART Customer App, you agree to these Terms & Conditions. "Platform" refers to the ECDKART app and services. "Restaurant Partner" refers to listed food outlets, and "Rider" refers to delivery personnel.',
+          'The Platform is operated by Tricelyn Technologies. By downloading or using the Tricelyn Customer App, you agree to these Terms & Conditions. "Platform" refers to the Tricelyn app and quick-commerce services. "Partner Store" refers to listed grocery marts, dark stores, and merchant outlets, and "Rider" refers to delivery personnel.',
     ),
     PolicySection(
       heading: '2. Account Registration & Security',
       content:
-          'You must provide accurate information to register. You are responsible for maintaining the confidentiality of your account credentials and OTPs. ECDKART uses OTP-based authentication for security. Do not share your OTPs with unknown persons.',
+          'You must provide accurate information to register. You are responsible for maintaining the confidentiality of your account credentials and OTPs. Tricelyn uses OTP-based authentication for security. Do not share your OTPs with unknown persons.',
     ),
     PolicySection(
       heading: '3. Ordering & Services',
       content:
-          'ECDKART facilitates Home Delivery and Self Pickup from Restaurant Partners. Restaurant Partners are responsible for food preparation and quality. Placing an order does not guarantee acceptance; orders may be rejected due to item unavailability or operational limits.',
+          'Tricelyn facilitates Quick Commerce Grocery Delivery, Essentials, and Self Pickup from Partner Stores. Partner Stores are responsible for product quality, freshness, and stock availability. Placing an order does not guarantee acceptance; orders may be adjusted or refunded due to item unavailability or operational limits.',
     ),
     PolicySection(
       heading: '4. Payments & Refunds',
       content:
-          'Payments can be made via UPI, Debit/Credit Cards, Wallets, and other supported methods. Cancellations may be available before food preparation begins. Refunds for eligible cancelled or rejected orders will be processed according to the ECDKART Refund & Cancellation Policy.',
+          'Payments can be made via UPI, Debit/Credit Cards, Wallets, and other supported methods. Cancellations may be available before packing begins. Refunds for eligible cancelled or rejected orders will be processed according to the Tricelyn Refund & Cancellation Policy.',
     ),
     PolicySection(
       heading: '5. Prohibited Activities & Conduct',
       content:
-          'You must not use the Platform for unlawful purposes, submit fraudulent refund claims, create fake accounts, manipulate payments, or harass Restaurant Partners or Riders. ECDKART may suspend or terminate accounts involved in fraud or abuse.',
+          'You must not use the Platform for unlawful purposes, submit fraudulent refund claims, create fake accounts, manipulate payments, or harass Partner Stores or Riders. Tricelyn may suspend or terminate accounts involved in fraud or abuse.',
     ),
     PolicySection(
       heading: '6. Limitation of Liability',
       content:
-          'To the maximum extent permitted by applicable law, ECDKART acts as a technology platform and will not be liable for losses arising solely from circumstances beyond its reasonable control, including food quality issues which are the responsibility of the Restaurant Partner.',
+          'To the maximum extent permitted by applicable law, Tricelyn acts as a technology platform and will not be liable for losses arising solely from circumstances beyond its reasonable control, including product quality issues which are the responsibility of the Partner Store.',
     ),
     PolicySection(
       heading: '7. Dispute Resolution & Grievance',
       content:
-          'These Terms shall be governed by the laws applicable in India. For complaints or grievances, please contact us at:\n\nECDKART (OPC) PRIVATE LIMITED\nWebsite: https://ecdkart.co.in\nPlease provide your registered mobile number and Order ID for faster resolution.',
+          'These Terms shall be governed by the laws applicable in India. For complaints or grievances, please contact us at:\n\nTricelyn Support\nPlease provide your registered mobile number and Order ID for faster resolution.',
     ),
   ];
 
@@ -93,7 +93,7 @@ class _RegisterPageState extends State<RegisterPage> {
     PolicySection(
       heading: 'Overview & Compliance',
       content:
-          'Effective Date: August 10, 2026\n\nECD KART (OPC) PRIVATE LIMITED ("Company", "We", "Our", or "Us") operates the online food ordering system through our smartphone application. This privacy statement documents how we acquire, handle, store, transfer, and safeguard user information in compliance with the Indian Information Technology Act, 2000 and the Digital Personal Data Protection (DPDP) Act, 2023.',
+          'Effective Date: August 10, 2026\n\nTricelyn ("Company", "We", "Our", or "Us") operates the quick-commerce grocery and multi-service ordering platform through our smartphone application. This privacy statement documents how we acquire, handle, store, transfer, and safeguard user information in compliance with the Indian Information Technology Act, 2000 and the Digital Personal Data Protection (DPDP) Act, 2023.',
     ),
     PolicySection(
       heading: '1. Information Collection Practices',
@@ -108,7 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
     PolicySection(
       heading: '3. Payment Processing Safeguards',
       content:
-          'Payment operations are routed exclusively through Reserve Bank of India (RBI) authorized third-party gateways (e.g., Razorpay). ECD KART does NOT access or store full card details or UPI PIN passwords on our servers.',
+          'Payment operations are routed exclusively through Reserve Bank of India (RBI) authorized third-party gateways (e.g., Razorpay). Tricelyn does NOT access or store full card details or UPI PIN passwords on our servers.',
     ),
     PolicySection(
       heading: '4. Third-Party Integrations',
@@ -128,7 +128,7 @@ class _RegisterPageState extends State<RegisterPage> {
     PolicySection(
       heading: '7. Grievance Officer & Contact',
       content:
-          'In accordance with federal compliance regulations, if you have privacy concerns, please contact our Grievance Officer at:\n\nECD KART (OPC) PRIVATE LIMITED\nWebsite: https://ecdkart.co.in\nEmail: support@ecdkart.co.in',
+          'In accordance with regulatory compliance guidelines, if you have privacy concerns, please contact our Grievance Officer via the Support section inside the Tricelyn app.',
     ),
   ];
 

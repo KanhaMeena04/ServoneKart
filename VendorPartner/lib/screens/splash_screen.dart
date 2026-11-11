@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/platform_config_service.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
 
@@ -46,6 +47,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     _mainController.forward();
     _particleController.forward();
+    PlatformConfigService.fetchSettings();
 
     // 2. Final Hold: 1 second hold after 3 seconds animation, then transition
     Timer(const Duration(milliseconds: 4000), () {
@@ -228,14 +230,35 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 ),
                               ],
                             ),
-                            child: Image.asset(
-                              'splash_logo.png',
-                              height: 120,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => Image.asset(
-                                'assets/images/splash_logo.png',
-                                height: 120,
-                                fit: BoxFit.contain,
+                            child: Container(
+                              width: 112,
+                              height: 112,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF0055FF), Color(0xFF248C70)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: const Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.shopping_basket_rounded,
+                                    color: Colors.white,
+                                    size: 56,
+                                  ),
+                                  Positioned(
+                                    right: 18,
+                                    top: 18,
+                                    child: Icon(
+                                      Icons.bolt_rounded,
+                                      color: Color(0xFFFFD166),
+                                      size: 24,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -262,7 +285,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     child: Column(
                       children: [
                         Text(
-                          'ECD KART',
+                          'TRICELYN',
                           style: GoogleFonts.poppins(
                             fontSize: 34,
                             fontWeight: FontWeight.w900, 
@@ -272,7 +295,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'RESTAURANT',
+                          'PARTNER',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,

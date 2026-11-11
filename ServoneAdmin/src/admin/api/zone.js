@@ -36,49 +36,8 @@ const normalizeZoneItem = (item) => {
   };
 };
 
-// Default active service areas as instant fallback matching production DB
-const DEFAULT_SERVICE_AREAS = [
-  {
-    _id: "6ab8e49c4482885c95074e1a",
-    city: "Sohna",
-    zone: "Sohna",
-    state: "Haryana",
-    district: "Gurgaon Division",
-    pincode: "122103",
-    isServiceActive: true,
-  },
-  {
-    _id: "6ac4b989021001605ae5203d",
-    city: "Ujina",
-    zone: "Ujina",
-    village: "ujina , sangel , jajuka , jaisinghpur ,chilawli",
-    state: "Haryana",
-    district: "nuh mewat",
-    pincode: "122107",
-    isServiceActive: true,
-  },
-  {
-    _id: "6ace150b399029243d647bf8",
-    city: "Indore",
-    zone: "Public park",
-    state: "Madhya Pradesh",
-    district: "Indore Division",
-    pincode: "452010",
-    isServiceActive: true,
-  },
-  {
-    _id: "6ad0ffe33b7bdf8eeae21de0",
-    city: "Indore",
-    zone: "Sapna Sangeeta Road",
-    state: "Madhya Pradesh",
-    district: "Indore Division",
-    pincode: "452014",
-    isServiceActive: true,
-  },
-];
-
 const useZones = (filters = {}, keepPreviousOnError = true) => {
-  const [zones, setZones] = useState(() => DEFAULT_SERVICE_AREAS.map(normalizeZoneItem));
+  const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -142,7 +101,7 @@ const useZones = (filters = {}, keepPreviousOnError = true) => {
       console.error("Failed to fetch zones:", err);
       setError(err?.response?.data?.message || "Failed to fetch zones");
       if (!keepPreviousOnError) {
-        setZones(DEFAULT_SERVICE_AREAS.map(normalizeZoneItem));
+        setZones([]);
       }
     } finally {
       setLoading(false);

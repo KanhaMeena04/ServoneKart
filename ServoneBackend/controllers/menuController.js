@@ -216,8 +216,20 @@ exports.addFoodItem = async (req, res) => {
       }
     }
 
+    const itemStockQty = req.body.stockQuantity !== undefined ? Number(req.body.stockQuantity) : 100;
+    const itemInStock = req.body.inStock !== undefined ? Boolean(req.body.inStock) : itemStockQty > 0;
+
     const product = await Product.create({
       restaurant: restaurant._id,
+      vertical: req.body.vertical || restaurant.vertical || 'grocery',
+      sku: req.body.sku || `TRC-${Date.now().toString().slice(-6)}`,
+      barcode: req.body.barcode || '',
+      weight: req.body.weight || '',
+      unit: req.body.unit || 'piece',
+      stockQuantity: itemStockQty,
+      lowStockThreshold: Number(req.body.lowStockThreshold ?? 10),
+      inStock: itemInStock,
+      outOfStock: !itemInStock,
       category: category._id,
       categoryId: category._id,
       subcategoryId: validSubcategory ? validSubcategory._id : null,
@@ -486,6 +498,15 @@ exports.getMenu = async (req, res) => {
         sellingPrice: b2cSelling,
         b2bPrice: b2bSelling,
         mrp: b2cMrp,
+        vertical: p.vertical || restaurant.vertical || 'grocery',
+        sku: p.sku || `TRC-${p._id.toString().slice(-6).toUpperCase()}`,
+        barcode: p.barcode || '',
+        weight: p.weight || '',
+        unit: p.unit || 'piece',
+        stockQuantity: p.stockQuantity !== undefined ? Number(p.stockQuantity) : 100,
+        lowStockThreshold: Number(p.lowStockThreshold ?? 10),
+        inStock: p.outOfStock === true ? false : (p.inStock !== false && Number(p.stockQuantity ?? 100) > 0),
+        outOfStock: Boolean(p.outOfStock),
         foodType: p.foodType || (p.isVeg ? "veg" : "non-veg"),
         isVeg: p.isVeg !== false,
         preparationTime: p.preparationTime || 15,
@@ -1020,6 +1041,15 @@ exports.editProduct = async (req, res) => {
       "categoryId",
       "subcategoryId",
       "preparationTime",
+      "vertical",
+      "sku",
+      "barcode",
+      "weight",
+      "unit",
+      "stockQuantity",
+      "lowStockThreshold",
+      "inStock",
+      "outOfStock",
     ];
 
     let hasPendingUpdate = false;
@@ -1126,6 +1156,13 @@ exports.editProduct = async (req, res) => {
         } else if (field === "available") {
           product.available = updates.available === "true" || updates.available === true;
           product.isAvailable = product.available;
+        } else if (field === "stockQuantity") {
+          product.stockQuantity = Math.max(0, Number(updates.stockQuantity));
+          product.inStock = updates.inStock !== undefined ? Boolean(updates.inStock) : product.stockQuantity > 0;
+          product.outOfStock = !product.inStock;
+        } else if (field === "inStock") {
+          product.inStock = Boolean(updates.inStock);
+          product.outOfStock = !product.inStock;
         } else {
           product[field] = updates[field];
         }
@@ -1139,7 +1176,15 @@ exports.editProduct = async (req, res) => {
         product.pendingUpdate = undefined;
       }
     } else {
-      // Non-admin owner updating an approved item -> queue in pendingUpdate
+      // Non-admin owner updating an approved item -> apply instant stock/availability toggles & queue content edits
+      if (updates.stockQuantity !== undefined) {
+        product.stockQuantity = Math.max(0, Number(updates.stockQuantity));
+        product.inStock = updates.inStock !== undefined ? Boolean(updates.inStock) : product.stockQuantity > 0;
+        product.outOfStock = !product.inStock;
+      } else if (updates.inStock !== undefined) {
+        product.inStock = Boolean(updates.inStock);
+        product.outOfStock = !product.inStock;
+      }
       if (updates.available !== undefined) {
         product.available =
           updates.available === "true"
@@ -1598,8 +1643,19 @@ exports.bulkUploadMenuItems = async (req, res) => {
         }
         if (!categoryObj) categoryObj = defaultCat;
 
+        const itemStock = item.stockQuantity !== undefined ? Number(item.stockQuantity) : 100;
+        const itemInStk = item.inStock !== undefined ? Boolean(item.inStock) : (item.outOfStock !== true && itemStock > 0);
         const product = await Product.create({
           restaurant: restaurant._id,
+          vertical: item.vertical || restaurant.vertical || 'grocery',
+          sku: item.sku || `TRC-${Date.now().toString().slice(-6)}-${idx}`,
+          barcode: item.barcode || '',
+          weight: item.weight || '',
+          unit: item.unit || 'piece',
+          stockQuantity: itemStock,
+          lowStockThreshold: Number(item.lowStockThreshold ?? 10),
+          inStock: itemInStk,
+          outOfStock: !itemInStk,
           category: categoryObj?._id || defaultCat?._id,
           categoryId: categoryObj?._id || defaultCat?._id,
           name: { en: nameStr },

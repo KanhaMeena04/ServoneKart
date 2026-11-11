@@ -9,9 +9,14 @@ import 'package:vegbox_driver_app/presentation/screens/splash_screen.dart';
 import 'logic/blocs/auth/auth_bloc.dart';
 import 'logic/blocs/driver/driver_bloc.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/platform_config_service.dart';
+import 'data/services/rider_socket_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await PlatformConfigService.loadCached();
+  PlatformConfigService.fetchSettings();
+  RiderSocketService.connect();
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await NotificationService.initialize();

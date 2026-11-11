@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLocation } from '../context/LocationContext';
+import { usePlatform } from '../context/PlatformContext';
 import { groceryService } from '../services/api';
 import logoImg from '../assets/logo.png';
 
@@ -28,6 +29,7 @@ const Header = () => {
   const { user, isAuthenticated, logout, setIsAuthModalOpen } = useAuth();
   const { itemCount, subtotal, setIsCartDrawerOpen } = useCart();
   const { selectedLocation, setIsLocationModalOpen } = useLocation();
+  const { platformMode } = usePlatform();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState([]);
@@ -212,7 +214,7 @@ const Header = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for groceries, fresh produce, daily essentials..."
+                  placeholder={platformMode === 'food' ? 'Search dishes, meals or fresh groceries...' : 'Search for groceries, fresh produce, daily essentials...'}
                   className="w-full pl-5 pr-12 py-2.5 text-xs sm:text-sm bg-white text-gray-900 placeholder:text-gray-400 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm transition"
                 />
                 <button

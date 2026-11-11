@@ -139,18 +139,21 @@ class Order {
         if (item is Map<String, dynamic>) {
           final prod = item['product'] is Map ? item['product'] as Map<String, dynamic> : {};
           return {
-            'name': item['name']?.toString() ?? prod['name']?.toString() ?? 'Food Item',
+            'name': item['name']?.toString() ?? prod['name']?.toString() ?? 'Order Item',
             'image': item['image']?.toString() ?? prod['image']?.toString() ?? '',
             'price': (item['price'] as num?)?.toDouble() ?? (prod['price'] as num?)?.toDouble() ?? 0.0,
             'quantity': (item['quantity'] as num? ?? item['qty'] as num? ?? 1).toInt(),
             'variant': item['variant']?.toString() ?? item['variation']?['name']?.toString() ?? 'Standard',
+            'weight': item['weight']?.toString() ?? prod['weight']?.toString() ?? '',
+            'unit': item['unit']?.toString() ?? prod['unit']?.toString() ?? '',
+            'sku': item['sku']?.toString() ?? prod['sku']?.toString() ?? '',
           };
         }
         return item;
       }).toList();
 
       if (parsedItems.isNotEmpty && parsedItems[0] is Map) {
-        oName = parsedItems[0]['name']?.toString() ?? 'Food Item';
+        oName = parsedItems[0]['name']?.toString() ?? 'Order Item';
         oQty = (parsedItems[0]['quantity'] as num? ?? 1).toInt();
       }
       if (parsedItems.length > 1) {

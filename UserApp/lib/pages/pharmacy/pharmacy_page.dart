@@ -198,7 +198,7 @@ class _PharmacyPageState extends State<PharmacyPage> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ECDKART Pharmacy', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Tricelyn Pharmacy', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             Text('100% Genuine Medicines • Managed live by Admin', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),

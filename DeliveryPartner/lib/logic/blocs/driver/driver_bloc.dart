@@ -98,19 +98,29 @@ class DriverBloc extends Bloc<DriverEvent, DriverState> {
 
     try {
       final result = await ApiService.markReachedStore();
-      final updatedUser = event.currentUser?.copyWith(
-        isOnline: true,
-        isReturning: false,
-      );
+      if (result['success'] == true) {
+        final updatedUser = event.currentUser?.copyWith(
+          isOnline: true,
+          isReturning: false,
+        );
 
-      emit(ReachedStoreConfirmed(
-        message: result['message'] ?? 'Arrived at store successfully',
-        updatedUser: updatedUser,
-        orders: _activeOrders,
-        completedOrders: _completedOrders,
-        cancelledOrders: _cancelledOrders,
-        summaryData: _summaryData,
-      ));
+        emit(ReachedStoreConfirmed(
+          message: result['message'] ?? 'Arrived at store successfully',
+          updatedUser: updatedUser,
+          orders: _activeOrders,
+          completedOrders: _completedOrders,
+          cancelledOrders: _cancelledOrders,
+          summaryData: _summaryData,
+        ));
+      } else {
+        emit(DriverError(
+          message: (result['message'] ?? 'Failed to update store arrival').toString(),
+          orders: _activeOrders,
+          completedOrders: _completedOrders,
+          cancelledOrders: _cancelledOrders,
+          summaryData: _summaryData,
+        ));
+      }
     } catch (e) {
       emit(DriverError(
         message: 'Failed to update store arrival: $e',
@@ -171,11 +181,23 @@ class DriverBloc extends Bloc<DriverEvent, DriverState> {
       final historyResponse = await ApiService.getOrderHistory();
       final summaryResponse = await ApiService.getDriverSummary();
 
-      List<dynamic> newActiveOrders = [];
-      List<dynamic> newCompletedOrders = [];
-      List<dynamic> newCancelledOrders = [];
+      List<dynamic> newActiveOrders = List<dynamic>.from(_activeOrders);
+      List<dynamic> newCompletedOrders = List<dynamic>.from(_completedOrders);
+      List<dynamic> newCancelledOrders = List<dynamic>.from(_cancelledOrders);
+
+      if (activeResponse['success'] != true && !event.isSilent) {
+        emit(DriverError(
+          message: (activeResponse['message'] ?? 'Failed to load active orders').toString(),
+          orders: _activeOrders,
+          completedOrders: _completedOrders,
+          cancelledOrders: _cancelledOrders,
+          summaryData: _summaryData,
+        ));
+        return;
+      }
 
       if (activeResponse['success'] == true && activeResponse['data'] != null) {
+        newActiveOrders = [];
         final data = activeResponse['data'];
         if (data is List) {
           for (var item in data) {
@@ -204,6 +226,8 @@ class DriverBloc extends Bloc<DriverEvent, DriverState> {
       }
 
       if (historyResponse['success'] == true) {
+        newCompletedOrders = [];
+        newCancelledOrders = [];
         final data = historyResponse['data'] ?? historyResponse['orders'];
         List<dynamic> rawOrders = [];
         if (data is List) {
@@ -229,7 +253,7 @@ class DriverBloc extends Bloc<DriverEvent, DriverState> {
           // Normalize address object
           normalized['deliveryAddress'] = {
             'addressLine': (o['customer'] is Map ? o['customer']['address'] : null) ?? o['deliveryAddress'] ?? '',
-            'city': (o['customer'] is Map ? o['customer']['city'] : null) ?? 'Indore',
+            'city': (o['customer'] is Map ? o['customer']['city'] : null) ?? '',
           };
           normalizedOrders.add(normalized);
         }
@@ -287,7 +311,9 @@ class DriverBloc extends Bloc<DriverEvent, DriverState> {
       if (result['success'] == true) {
         String message = 'Order status updated successfully';
 
-        if (result['data'] is Map && result['data']['message'] != null) {
+        if (result['message'] != null && result['message'].toString().isNotEmpty) {
+          message = result['message'].toString();
+        } else if (result['data'] is Map && result['data']['message'] != null) {
           message = result['data']['message'].toString();
         }
 
@@ -329,7 +355,9 @@ class DriverBloc extends Bloc<DriverEvent, DriverState> {
       } else {
         String errorMessage = 'Failed to update order status';
 
-        if (result['data'] is Map && result['data']['message'] != null) {
+        if (result['message'] != null && result['message'].toString().isNotEmpty) {
+          errorMessage = result['message'].toString();
+        } else if (result['data'] is Map && result['data']['message'] != null) {
           errorMessage = result['data']['message'].toString();
         }
 

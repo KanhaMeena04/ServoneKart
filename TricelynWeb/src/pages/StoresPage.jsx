@@ -155,7 +155,7 @@ const StoresPage = () => {
             setCatalog(fallback.catalog);
           }
         } else {
-          const res = await groceryService.getStores({ city: 'Indore' });
+          const res = await groceryService.getStores();
           if (res.data?.data && res.data.data.length > 0) {
             setStores(res.data.data);
           } else {

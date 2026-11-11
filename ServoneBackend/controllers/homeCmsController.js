@@ -83,10 +83,13 @@ const notifyLayoutUpdated = () => {
 exports.getPublicHomeScreenSections = async (req, res) => {
   try {
     await ensureDefaultSectionsExist();
+    const { ensureSettings, computeVerticalFlags } = require('./adminSettingsController');
+    const sysSettings = await ensureSettings().catch(() => null);
+    const modeFlags = computeVerticalFlags(sysSettings?.platformMode);
     const now = new Date();
     
     // Return all configured sections so client knows which are active vs inactive
-    const sections = await HomeScreenSection.find({
+    let sections = await HomeScreenSection.find({
       $and: [
         { $or: [{ startDate: null }, { startDate: { $lte: now } }] },
         { $or: [{ endDate: null }, { endDate: { $gte: now } }] },
@@ -94,6 +97,11 @@ exports.getPublicHomeScreenSections = async (req, res) => {
     })
       .sort({ priority: 1, createdAt: 1 })
       .lean();
+    if (modeFlags.platformMode === 'grocery') {
+      sections = sections.filter(
+        (s) => !['food_categories', 'explore_restaurants', 'recommended_dishes', 'special_dishes'].includes(s.sectionKey)
+      );
+    }
 
     let banners = await Banner.find({ isActive: true }).sort({ position: 1 }).lean();
 
@@ -172,6 +180,10 @@ exports.getPublicHomeScreenSections = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      platformMode: modeFlags.platformMode,
+      primaryVertical: modeFlags.primaryVertical,
+      enableFoodDelivery: modeFlags.enableFoodDelivery,
+      enableGroceryDelivery: modeFlags.enableGroceryDelivery,
       sections,
       banners,
     });

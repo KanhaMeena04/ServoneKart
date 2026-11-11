@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_constants.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../theme/app_theme.dart';
 
 class RestaurantWalletScreen extends StatefulWidget {
-  const RestaurantWalletScreen({Key? key}) : super(key: key);
+  const RestaurantWalletScreen({super.key});
 
   @override
   State<RestaurantWalletScreen> createState() => _RestaurantWalletScreenState();
@@ -19,6 +21,9 @@ class _RestaurantWalletScreenState extends State<RestaurantWalletScreen> {
   double _totalCommissionPaid = 0.0;
   String _destinationBank = 'Linked Bank Account';
   List<dynamic> _transactions = [];
+
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
 
   @override
   void initState() {
@@ -33,9 +38,14 @@ class _RestaurantWalletScreenState extends State<RestaurantWalletScreen> {
       var restId = ApiConstants.restaurantId.isNotEmpty
           ? ApiConstants.restaurantId
           : (prefs.getString('restaurantId') ?? '');
-      final phone = prefs.getString('userPhone') ?? '8305370330';
+      final phone = prefs.getString('userPhone') ?? '';
       if (restId.isEmpty) restId = phone;
       final token = prefs.getString('token') ?? '';
+
+      if (restId.isEmpty) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       final bName = prefs.getString('bankName') ?? 'Bank Account';
       final bAcc = prefs.getString('bankAccount') ?? '';
@@ -489,7 +499,10 @@ class _RestaurantWalletScreenState extends State<RestaurantWalletScreen> {
     return Scaffold(
       backgroundColor: AppTheme.offWhiteBg,
       appBar: AppBar(
-        title: const Text('Restaurant Wallet & Payouts', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          _isGrocery ? 'Store Wallet & Payouts' : 'Restaurant Wallet & Payouts',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -535,9 +548,9 @@ class _RestaurantWalletScreenState extends State<RestaurantWalletScreen> {
                           Text(
                             '₹${_availableBalance.toStringAsFixed(2)}',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryGreen,
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 16),

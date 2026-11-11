@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import 'restaurant_support_chat_screen.dart';
 
 class HelpSupportScreen extends StatefulWidget {
@@ -12,6 +14,9 @@ class HelpSupportScreen extends StatefulWidget {
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
   final Set<int> _expanded = {};
 
+  bool get _isGrocery =>
+      PlatformConfigService.isGroceryPlatform || RestaurantAuthService.isGroceryStore;
+
   final List<Map<String, String>> _sections = [
     {
       'heading': 'We are here for you',
@@ -19,7 +24,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     },
     {
       'heading': 'Contact Details',
-      'content': 'Email: support@ecdkart.in\nPhone: +91 98765 43210\n\nFeel free to reach out to us anytime.',
+      'content': 'Email: support@tricelyn.com\n\nReach out anytime through our Live Admin Support Desk above for instant assistance.',
     },
   ];
 
@@ -50,7 +55,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 const Icon(Icons.support_agent_rounded, size: 48, color: Colors.white),
                 const SizedBox(height: 10),
                 Text(
-                  'Restaurant Partner Support',
+                  _isGrocery ? 'Store Partner Support' : 'Restaurant Partner Support',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 20,

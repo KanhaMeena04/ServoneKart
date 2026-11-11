@@ -234,7 +234,7 @@ class _RestaurantSupportChatScreenState extends State<RestaurantSupportChatScree
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Send a message to ECDKart Admin Support',
+                              'Send a message to Tricelyn Admin Support',
                               style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B)),
                             ),
                           ],
@@ -336,7 +336,7 @@ class _RestaurantSupportChatScreenState extends State<RestaurantSupportChatScree
               children: [
                 _buildQuickChip('Order delay issue'),
                 _buildQuickChip('Payout question'),
-                _buildQuickChip('Menu item update'),
+                _buildQuickChip('Catalog & stock update'),
                 _buildQuickChip('Need rider assistance'),
               ],
             ),

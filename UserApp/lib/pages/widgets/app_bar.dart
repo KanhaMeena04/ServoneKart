@@ -18,6 +18,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../providers/location_provider.dart';
+import '../../providers/platform_config_provider.dart';
 
 class CustomAppBar extends StatefulWidget {
   final bool showBottomRadius;
@@ -47,6 +48,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
     final userName = userProvider.name;
     final userAvatar = userProvider.avatar;
     final firstChar = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+    final isGroceryActive = context.watch<PlatformConfigProvider>().isGroceryActive;
 
     return Container(
       decoration: BoxDecoration(
@@ -202,7 +204,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Search for restaurants, dishes...',
+                        isGroceryActive
+                            ? 'Search milk, veggies, rice, snacks...'
+                            : 'Search for restaurants, dishes...',
                         style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
                       ),

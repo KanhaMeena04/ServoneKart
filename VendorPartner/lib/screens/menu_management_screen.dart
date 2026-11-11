@@ -11,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_colors.dart';
 import '../services/category_api_service.dart';
 import '../services/menu_api_service.dart';
+import '../services/platform_config_service.dart';
+import '../services/restaurant_auth_service.dart';
 import '../api_constants.dart';
 
 class MenuManagementScreen extends StatefulWidget {
@@ -25,6 +27,10 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
   bool _isLoading = false;
   bool _isFetching = false;
   Timer? _liveSyncTimer;
+
+  bool get _isGroceryMode =>
+      PlatformConfigService.isGroceryPlatform ||
+      (PlatformConfigService.isBothMode && RestaurantAuthService.isGroceryStore);
 
   @override
   void initState() {
@@ -142,37 +148,119 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     }
   }
 
-  void _loadInitialMockMenu() {
-    _menuItems = [];
-  }
+  Future<void> _adjustStock(Map<String, dynamic> item, int delta) async {
+    final String itemId = (item['_id'] ?? item['id'] ?? '').toString();
+    if (itemId.isEmpty) return;
+    final int previousStock = int.tryParse((item['stockQuantity'] ?? 0).toString()) ?? 0;
+    final int nextStock = (previousStock + delta).clamp(0, 999999);
+    if (nextStock == previousStock) return;
+    final bool previousAvailable = item['isAvailable'] ?? item['inStock'] ?? true;
+    final bool nextAvailable = nextStock > 0;
 
-  Future<void> _toggleAvailability(String itemId, bool isAvailable, String name) async {
     setState(() {
-      final index = _menuItems.indexWhere((item) => item['_id'] == itemId);
+      final index = _menuItems.indexWhere((m) => (m['_id'] ?? m['id']).toString() == itemId);
       if (index != -1) {
-        _menuItems[index]['isAvailable'] = isAvailable;
+        _menuItems[index]['stockQuantity'] = nextStock;
+        _menuItems[index]['inStock'] = nextAvailable;
+        _menuItems[index]['isAvailable'] = nextAvailable;
+        _menuItems[index]['available'] = nextAvailable;
       }
     });
 
+    final res = await MenuApiService.updateGroceryInventory(itemId, {
+      'stockQuantity': nextStock,
+      'inStock': nextAvailable,
+    });
+
+    if (res['success'] == true) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_menu_items', jsonEncode(_menuItems));
+      } catch (_) {}
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        final index = _menuItems.indexWhere((m) => (m['_id'] ?? m['id']).toString() == itemId);
+        if (index != -1) {
+          _menuItems[index]['stockQuantity'] = previousStock;
+          _menuItems[index]['inStock'] = previousAvailable;
+          _menuItems[index]['isAvailable'] = previousAvailable;
+          _menuItems[index]['available'] = previousAvailable;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message']?.toString() ?? 'Failed to update stock'),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleAvailability(String itemId, bool isAvailable, String name) async {
+    final int index = _menuItems.indexWhere((item) => item['_id'] == itemId);
+    final bool previous = index != -1 ? (_menuItems[index]['isAvailable'] ?? true) : !isAvailable;
+    setState(() {
+      if (index != -1) {
+        _menuItems[index]['isAvailable'] = isAvailable;
+        _menuItems[index]['inStock'] = isAvailable;
+        _menuItems[index]['available'] = isAvailable;
+      }
+    });
+
+    bool succeeded = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final restId = prefs.getString('restaurantId') ?? ApiConstants.restaurantId;
       final token = prefs.getString('token') ?? ApiConstants.authToken;
       if (restId.isNotEmpty && itemId.isNotEmpty) {
-        await http.patch(
+        final res = await http.patch(
           Uri.parse('${ApiConstants.baseUrl}/restaurants/vendor/menu/toggle/$restId/$itemId'),
           headers: {
             'Content-Type': 'application/json',
             if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           },
         ).timeout(const Duration(seconds: 6));
+        succeeded = res.statusCode >= 200 && res.statusCode < 300;
       }
     } catch (_) {}
 
     if (mounted) {
+      if (!succeeded) {
+        setState(() {
+          final idx = _menuItems.indexWhere((item) => item['_id'] == itemId);
+          if (idx != -1) {
+            _menuItems[idx]['isAvailable'] = previous;
+            _menuItems[idx]['inStock'] = previous;
+            _menuItems[idx]['available'] = previous;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update stock status on server. Please retry.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_menu_items', jsonEncode(_menuItems));
+      } catch (_) {}
+
+      final isGrocery = _isGroceryMode;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isAvailable ? '$name is now Available' : '$name is marked Unavailable'),
+          content: Text(
+            isGrocery
+                ? (isAvailable ? '$name is now In Stock' : '$name marked Out of Stock')
+                : (isAvailable ? '$name is now Available' : '$name is marked Unavailable'),
+          ),
           backgroundColor: AppColors.primaryGreen,
           duration: const Duration(seconds: 2),
         ),
@@ -181,43 +269,73 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
   }
 
   Future<void> _deleteMenuItem(String itemId) async {
+    final removedIdx = _menuItems.indexWhere((item) => item['_id'] == itemId);
+    final removedItem = removedIdx != -1 ? _menuItems[removedIdx] : null;
     setState(() {
       _menuItems.removeWhere((item) => item['_id'] == itemId);
     });
 
+    bool deletedOnServer = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final restId = prefs.getString('restaurantId') ?? ApiConstants.restaurantId;
       final token = prefs.getString('token') ?? ApiConstants.authToken;
       if (restId.isNotEmpty && itemId.isNotEmpty) {
-        await http.post(
+        final res = await http.post(
           Uri.parse('${ApiConstants.baseUrl}/restaurants/$restId/menu/$itemId/request-delete'),
           headers: {
             'Content-Type': 'application/json',
             if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           },
         ).timeout(const Duration(seconds: 6));
+        deletedOnServer = res.statusCode >= 200 && res.statusCode < 300;
       }
     } catch (_) {}
 
     if (mounted) {
+      if (!deletedOnServer && removedItem != null) {
+        setState(() {
+          _menuItems.insert(removedIdx.clamp(0, _menuItems.length), removedItem);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to remove item on server. Please retry.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_menu_items', jsonEncode(_menuItems));
+      } catch (_) {}
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Menu item deleted successfully'),
+        SnackBar(
+          content: Text(
+            _isGroceryMode ? 'Product removed from catalog' : 'Menu item deleted successfully',
+          ),
           backgroundColor: Colors.redAccent,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
   }
 
   void _showDeleteConfirmDialog(String itemId, String itemName) {
+    final isGrocery = _isGroceryMode;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Item', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete "$itemName" from your menu?', style: GoogleFonts.poppins(fontSize: 14)),
+        title: Text(isGrocery ? 'Remove Product' : 'Delete Item', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+          isGrocery
+              ? 'Are you sure you want to remove "$itemName" from your store catalog?'
+              : 'Are you sure you want to delete "$itemName" from your menu?',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -229,7 +347,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
               _deleteMenuItem(itemId);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: Text('Delete', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Remove', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -280,50 +398,49 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
         child: ExcelMenuImportSheet(
           onItemsImported: (importedItems) async {
             if (importedItems.isEmpty) return;
-            
+
             final prefs = await SharedPreferences.getInstance();
-
-            setState(() {
-              for (var item in importedItems.reversed) {
-                final exists = _menuItems.any((m) => m['name'] == item['name']);
-                if (!exists) {
-                  _menuItems.insert(0, item);
-                }
-              }
-            });
-
-            await prefs.setString('cached_menu_items', jsonEncode(_menuItems));
-
             final restId = prefs.getString('restaurantId') ?? ApiConstants.restaurantId;
 
+            List<Map<String, dynamic>> createdList = [];
             try {
-              final createdList = await MenuApiService.bulkImportMenuItems(restId, importedItems);
-              if (createdList.isNotEmpty) {
-                await _loadMenuFromApi(isSilent: true);
-              }
+              createdList = await MenuApiService.bulkImportMenuItems(restId, importedItems);
             } catch (e) {
               debugPrint("Bulk import API save error: $e");
             }
 
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(Icons.check_circle_rounded, color: Colors.white),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '🎉 ${importedItems.length} menu items imported & saved to database!',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            if (createdList.isNotEmpty) {
+              await _loadMenuFromApi(isSilent: true);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _isGroceryMode
+                                ? '${createdList.length} catalog products imported & sent for approval!'
+                                : '${createdList.length} menu items imported & saved to database!',
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    backgroundColor: AppColors.primaryGreen,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  backgroundColor: AppColors.primaryGreen,
-                  duration: const Duration(seconds: 3),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                );
+              }
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Bulk import failed on server. Please check connection and retry.'),
+                  backgroundColor: Colors.redAccent,
+                  duration: Duration(seconds: 3),
                 ),
               );
             }
@@ -363,12 +480,19 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
               await prefs.setString('cached_menu_items', jsonEncode(_menuItems));
             } catch (_) {}
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(existingItem != null ? 'Menu item updated successfully!' : 'New menu item submitted for admin approval!'),
-                backgroundColor: AppColors.primaryGreen,
-              ),
-            );
+            if (mounted) {
+              final isGrocery = _isGroceryMode;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    existingItem != null
+                        ? (isGrocery ? 'Product updated successfully!' : 'Menu item updated successfully!')
+                        : (isGrocery ? 'New product submitted for admin approval!' : 'New menu item submitted for admin approval!'),
+                  ),
+                  backgroundColor: AppColors.primaryGreen,
+                ),
+              );
+            }
 
             _loadMenuFromApi(isSilent: true);
           },
@@ -379,86 +503,95 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Header Banner with generated image matching Reference Image 1
-            _buildMenuHeaderBanner(),
-
-            // Menu Items List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
-                  : RefreshIndicator(
-                      onRefresh: _loadMenuFromApi,
-                      color: AppColors.primaryGreen,
-                      child: _menuItems.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: [
-                                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                                Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.restaurant_menu_rounded, size: 64, color: Colors.grey[400]),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'No menu items found',
-                                        style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 16),
+    return ValueListenableBuilder<String>(
+      valueListenable: PlatformConfigService.modeNotifier,
+      builder: (context, _, __) {
+        final bool isGrocery = _isGroceryMode;
+        return Scaffold(
+          backgroundColor: const Color(0xFFF9FAFB),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildMenuHeaderBanner(isGrocery),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                      : RefreshIndicator(
+                          onRefresh: _loadMenuFromApi,
+                          color: AppColors.primaryGreen,
+                          child: _menuItems.isEmpty
+                              ? ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                                    Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            isGrocery ? Icons.inventory_2_outlined : Icons.restaurant_menu_rounded,
+                                            size: 64,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            isGrocery ? 'No catalog products found' : 'No menu items found',
+                                            style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 16),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          ElevatedButton.icon(
+                                            onPressed: _loadMenuFromApi,
+                                            icon: const Icon(Icons.refresh_rounded, size: 16),
+                                            label: Text(
+                                              isGrocery ? 'Refresh Catalog' : 'Refresh Menu',
+                                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.primaryGreen,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 12),
-                                      ElevatedButton.icon(
-                                        onPressed: _loadMenuFromApi,
-                                        icon: const Icon(Icons.refresh_rounded, size: 16),
-                                        label: Text('Refresh Menu', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primaryGreen,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                                  itemCount: _menuItems.length,
+                                  itemBuilder: (context, index) {
+                                    final item = _menuItems[index];
+                                    return _buildReferenceMenuCard(item, isGrocery);
+                                  },
                                 ),
-                              ],
-                            )
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                              itemCount: _menuItems.length,
-                              itemBuilder: (context, index) {
-                                final item = _menuItems[index];
-                                return _buildReferenceMenuCard(item);
-                              },
-                            ),
-                    ),
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'addMenuItemFab',
-        onPressed: () => _openAddOrEditMenuModal(),
-        backgroundColor: AppColors.primaryGreen,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        icon: const Icon(Icons.add, color: Colors.white, size: 20),
-        label: Text(
-          'Add Item',
-          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'addMenuItemFab',
+            onPressed: () => _openAddOrEditMenuModal(),
+            backgroundColor: AppColors.primaryGreen,
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            icon: const Icon(Icons.add, color: Colors.white, size: 20),
+            label: Text(
+              isGrocery ? 'Add Product' : 'Add Item',
+              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // Header Banner with generated image matching Reference Image 1
-  Widget _buildMenuHeaderBanner() {
+  Widget _buildMenuHeaderBanner(bool isGrocery) {
     return Container(
       width: double.infinity,
       height: 150,
@@ -474,19 +607,29 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
       ),
       child: Stack(
         children: [
-          // Header Background Image (Tacos with Lime) matching asset
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/restaurant_menu_header_bg.jpg',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              errorBuilder: (context, error, stackTrace) => Image.network(
-                'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-                fit: BoxFit.cover,
-              ),
-            ),
+            child: isGrocery
+                ? Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primaryGreen.withValues(alpha: 0.16),
+                          const Color(0xFFECFDF5),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  )
+                : Image.asset(
+                    'assets/images/restaurant_menu_header_bg.jpg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                    ),
+                  ),
           ),
-          // White frosted blur overlay matching user's "WHITE WHITE BLUR" reference
           Positioned.fill(
             child: ClipRect(
               child: BackdropFilter(
@@ -516,25 +659,31 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                     ],
                     Expanded(
                       child: Text(
-                        'Menu Management',
+                        isGrocery ? 'Catalog & SKU Inventory' : 'Menu Management',
                         style: GoogleFonts.poppins(
-                          fontSize: 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.upload_file_rounded, color: AppColors.primaryGreen, size: 26),
+                      tooltip: isGrocery ? 'Bulk Import CSV / Excel' : 'Bulk Import Menu',
+                      onPressed: _showExcelImportModal,
+                    ),
                     IconButton(
                       icon: const Icon(Icons.add_circle_rounded, color: AppColors.primaryGreen, size: 32),
-                      tooltip: 'Add Menu Item',
+                      tooltip: isGrocery ? 'Add Catalog Product' : 'Add Menu Item',
                       onPressed: () => _openAddOrEditMenuModal(),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'View, add, edit, or manage all your\nmenu items in one place',
+                  isGrocery
+                      ? 'Manage store SKUs, weights, MRP, prices\n& live inventory stock in one place'
+                      : 'View, add, edit, or manage all your\nmenu items in one place',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: Colors.grey[700],
@@ -549,12 +698,20 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     );
   }
 
-  // Reference Menu Item Card matching Reference Image 1
-  Widget _buildReferenceMenuCard(Map<String, dynamic> item) {
-    final bool isAvailable = item['isAvailable'] ?? true;
+  // Reference Product / Menu Item Card
+  Widget _buildReferenceMenuCard(Map<String, dynamic> item, bool isGrocery) {
+    final bool isGroceryItem = isGrocery ||
+        (item['vertical']?.toString().toLowerCase() == 'grocery') ||
+        (item['sku']?.toString().trim().isNotEmpty == true);
+    final bool isAvailable = item['isAvailable'] ?? item['inStock'] ?? true;
+    final int stockQty = int.tryParse((item['stockQuantity'] ?? 0).toString()) ?? 0;
+    final int lowStockThreshold = int.tryParse((item['lowStockThreshold'] ?? 10).toString()) ?? 10;
+    final String sku = (item['sku'] ?? '').toString().trim();
+    final String weight = (item['weight'] ?? '').toString().trim();
+    final String unit = (item['unit'] ?? '').toString().trim();
     final List<String> flavors = [];
     final rawFlavors = item['flavors'] ?? item['variants'] ?? item['variations'];
-    if (rawFlavors is List) {
+    if (!isGroceryItem && rawFlavors is List) {
       for (var f in rawFlavors) {
         if (f is String && f.isNotEmpty) {
           flavors.add(f);
@@ -569,7 +726,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
         }
       }
     }
-    final List<dynamic> addOns = item['addOns'] is List ? item['addOns'] : [];
+    final List<dynamic> addOns = (!isGroceryItem && item['addOns'] is List) ? item['addOns'] : [];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -594,29 +751,30 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Item Image with Heart Favorite Overlay
+                // Product / Item Image
                 Stack(
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: _buildItemThumbnail(item['image']),
+                      child: _buildItemThumbnail(item['image'], isGrocery: isGroceryItem),
                     ),
-                    Positioned(
-                      top: 4,
-                      left: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.favorite_border_rounded,
-                          size: 14,
-                          color: Colors.black54,
+                    if (!isGroceryItem)
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.favorite_border_rounded,
+                            size: 14,
+                            color: Colors.black54,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(width: 14),
@@ -630,59 +788,98 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                       _buildApprovalStatusBadge(item),
                       const SizedBox(height: 4),
 
-                      // Price display with Portion awareness
+                      // Price display with MRP + Selling Price + B2B Price (or Portions for Food)
                       Builder(builder: (context) {
-                        final String pType = (item['portionType'] ?? 'none').toString();
-                        final Map<String, dynamic>? portions = item['portions'] is Map ? Map<String, dynamic>.from(item['portions']) : null;
-                        final bool hasHalfFull = pType == 'half_full' || (portions != null && (portions['half'] != null || portions['full'] != null));
-                        final bool hasSizes = pType == 'size' || (portions != null && (portions['small'] != null || portions['medium'] != null || portions['large'] != null));
+                        if (!isGroceryItem) {
+                          final String pType = (item['portionType'] ?? 'none').toString();
+                          final Map<String, dynamic>? portions = item['portions'] is Map ? Map<String, dynamic>.from(item['portions']) : null;
+                          final bool hasHalfFull = pType == 'half_full' || (portions != null && (portions['half'] != null || portions['full'] != null));
+                          final bool hasSizes = pType == 'size' || (portions != null && (portions['small'] != null || portions['medium'] != null || portions['large'] != null));
 
-                        if (hasHalfFull) {
-                          final fullP = portions?['full']?['basePrice'] ?? portions?['full']?['price'] ?? portions?['full']?['sellingPrice'];
-                          final halfP = portions?['half']?['basePrice'] ?? portions?['half']?['price'] ?? portions?['half']?['sellingPrice'];
-                          final List<String> parts = [];
-                          if (fullP != null) parts.add('Full: ₹$fullP');
-                          if (halfP != null) parts.add('Half: ₹$halfP');
-                          return Text(
-                            parts.isNotEmpty ? parts.join(' • ') : 'Base: ₹${item['basePrice'] ?? item['price'] ?? 0}',
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
-                          );
-                        } else if (hasSizes) {
-                          final sP = portions?['small']?['basePrice'] ?? portions?['small']?['price'] ?? portions?['small']?['sellingPrice'];
-                          final mP = portions?['medium']?['basePrice'] ?? portions?['medium']?['price'] ?? portions?['medium']?['sellingPrice'];
-                          final lP = portions?['large']?['basePrice'] ?? portions?['large']?['price'] ?? portions?['large']?['sellingPrice'];
-                          final List<String> parts = [];
-                          if (sP != null) parts.add('S: ₹$sP');
-                          if (mP != null) parts.add('M: ₹$mP');
-                          if (lP != null) parts.add('L: ₹$lP');
-                          return Text(
-                            parts.isNotEmpty ? parts.join(' • ') : 'Base: ₹${item['basePrice'] ?? item['price'] ?? 0}',
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
-                          );
+                          if (hasHalfFull) {
+                            final fullP = portions?['full']?['basePrice'] ?? portions?['full']?['price'] ?? portions?['full']?['sellingPrice'];
+                            final halfP = portions?['half']?['basePrice'] ?? portions?['half']?['price'] ?? portions?['half']?['sellingPrice'];
+                            final List<String> parts = [];
+                            if (fullP != null) parts.add('Full: ₹$fullP');
+                            if (halfP != null) parts.add('Half: ₹$halfP');
+                            return Text(
+                              parts.isNotEmpty ? parts.join(' • ') : '₹${item['basePrice'] ?? item['price'] ?? 0}',
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
+                            );
+                          } else if (hasSizes) {
+                            final sP = portions?['small']?['basePrice'] ?? portions?['small']?['price'] ?? portions?['small']?['sellingPrice'];
+                            final mP = portions?['medium']?['basePrice'] ?? portions?['medium']?['price'] ?? portions?['medium']?['sellingPrice'];
+                            final lP = portions?['large']?['basePrice'] ?? portions?['large']?['price'] ?? portions?['large']?['sellingPrice'];
+                            final List<String> parts = [];
+                            if (sP != null) parts.add('S: ₹$sP');
+                            if (mP != null) parts.add('M: ₹$mP');
+                            if (lP != null) parts.add('L: ₹$lP');
+                            return Text(
+                              parts.isNotEmpty ? parts.join(' • ') : '₹${item['basePrice'] ?? item['price'] ?? 0}',
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
+                            );
+                          }
                         }
 
-                        final baseP = item['basePrice'] ?? item['price'] ?? item['sellingPrice'] ?? 0.0;
-                        return Text(
-                          'Base: ₹${(baseP is num ? baseP : (double.tryParse(baseP.toString()) ?? 0.0)).toStringAsFixed(2)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                        final rawSelling = item['sellingPrice'] ?? item['b2cSellingPrice'] ?? item['basePrice'] ?? item['price'] ?? 0.0;
+                        final rawMrp = item['mrp'] ?? item['b2cMrp'] ?? rawSelling;
+                        final rawB2b = item['b2bPrice'] ?? item['b2bSellingPrice'] ?? 0.0;
+                        final double sellingVal = rawSelling is num ? rawSelling.toDouble() : (double.tryParse(rawSelling.toString()) ?? 0.0);
+                        final double mrpVal = rawMrp is num ? rawMrp.toDouble() : (double.tryParse(rawMrp.toString()) ?? sellingVal);
+                        final double b2bVal = rawB2b is num ? rawB2b.toDouble() : (double.tryParse(rawB2b.toString()) ?? 0.0);
+
+                        return Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          runSpacing: 2,
+                          children: [
+                            Text(
+                              '₹${sellingVal.toStringAsFixed(sellingVal % 1 == 0 ? 0 : 2)}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            if (mrpVal > sellingVal)
+                              Text(
+                                'MRP ₹${mrpVal.toStringAsFixed(mrpVal % 1 == 0 ? 0 : 2)}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Colors.grey[500],
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            if (isGroceryItem && b2bVal > 0 && b2bVal != sellingVal)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Text(
+                                  'B2B ₹${b2bVal.toStringAsFixed(b2bVal % 1 == 0 ? 0 : 2)}',
+                                  style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
+                                ),
+                              ),
+                          ],
                         );
                       }),
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: item['foodType'] == 'veg' ? Colors.green : (item['foodType'] == 'egg' ? Colors.orange : Colors.red),
+                          if (!isGroceryItem) ...[
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: item['foodType'] == 'veg' ? Colors.green : (item['foodType'] == 'egg' ? Colors.orange : Colors.red),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
+                            const SizedBox(width: 6),
+                          ],
                           Expanded(
                             child: Text(
                               item['name'] ?? '',
@@ -695,56 +892,153 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                           ),
                         ],
                       ),
-                      // Badges for Half/Full, Sizes, Add-ons
-                      Builder(builder: (context) {
-                        final String pType = (item['portionType'] ?? 'none').toString();
-                        final Map<String, dynamic>? portions = item['portions'] is Map ? Map<String, dynamic>.from(item['portions']) : null;
-                        final bool hasHalfFull = pType == 'half_full' || (portions != null && (portions['half'] != null || portions['full'] != null));
-                        final bool hasSizes = pType == 'size' || (portions != null && (portions['small'] != null || portions['medium'] != null || portions['large'] != null));
-                        final List<dynamic> aoList = item['addOns'] is List ? item['addOns'] : (item['addons'] is List ? item['addons'] : []);
 
-                        if (!hasHalfFull && !hasSizes && aoList.isEmpty) return const SizedBox.shrink();
+                      if (isGroceryItem) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            if (weight.isNotEmpty || unit.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.25)),
+                                ),
+                                child: Text(
+                                  '${weight.isNotEmpty ? '$weight ' : ''}${unit.isNotEmpty ? unit : 'pack'}',
+                                  style: GoogleFonts.poppins(fontSize: 9.5, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+                                ),
+                              ),
+                            if (sku.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Text(
+                                  'SKU: $sku',
+                                  style: GoogleFonts.poppins(fontSize: 9.5, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: stockQty <= 0
+                                    ? const Color(0xFFFEE2E2)
+                                    : (stockQty <= lowStockThreshold ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5)),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: stockQty <= 0
+                                      ? const Color(0xFFFCA5A5)
+                                      : (stockQty <= lowStockThreshold ? const Color(0xFFFDE68A) : const Color(0xFFA7F3D0)),
+                                ),
+                              ),
+                              child: Text(
+                                stockQty <= 0 ? 'Out of Stock (0)' : 'Stock: $stockQty',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: stockQty <= 0
+                                      ? const Color(0xFFB91C1C)
+                                      : (stockQty <= lowStockThreshold ? const Color(0xFFB45309) : const Color(0xFF047857)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () => _adjustStock(item, -1),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: const Icon(Icons.remove, size: 14, color: Colors.black87),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () => _adjustStock(item, 1),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.4)),
+                                ),
+                                child: const Icon(Icons.add, size: 14, color: AppColors.primaryGreen),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
 
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Wrap(
-                            spacing: 4,
-                            runSpacing: 4,
-                            children: [
-                              if (hasHalfFull)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.shade50,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: Colors.amber.shade200),
+                      // Food-only badges for Half/Full, Sizes, Add-ons
+                      if (!isGroceryItem)
+                        Builder(builder: (context) {
+                          final String pType = (item['portionType'] ?? 'none').toString();
+                          final Map<String, dynamic>? portions = item['portions'] is Map ? Map<String, dynamic>.from(item['portions']) : null;
+                          final bool hasHalfFull = pType == 'half_full' || (portions != null && (portions['half'] != null || portions['full'] != null));
+                          final bool hasSizes = pType == 'size' || (portions != null && (portions['small'] != null || portions['medium'] != null || portions['large'] != null));
+                          final List<dynamic> aoList = item['addOns'] is List ? item['addOns'] : (item['addons'] is List ? item['addons'] : []);
+
+                          if (!hasHalfFull && !hasSizes && aoList.isEmpty) return const SizedBox.shrink();
+
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: [
+                                if (hasHalfFull)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.shade50,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.amber.shade200),
+                                    ),
+                                    child: Text('Half/Full', style: GoogleFonts.poppins(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
                                   ),
-                                  child: Text('Half/Full', style: GoogleFonts.poppins(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
-                                ),
-                              if (hasSizes)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.purple.shade50,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: Colors.purple.shade200),
+                                if (hasSizes)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.purple.shade50,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.purple.shade200),
+                                    ),
+                                    child: Text('S/M/L Sizes', style: GoogleFonts.poppins(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.purple.shade900)),
                                   ),
-                                  child: Text('S/M/L Sizes', style: GoogleFonts.poppins(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.purple.shade900)),
-                                ),
-                              if (aoList.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.indigo.shade50,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: Colors.indigo.shade200),
+                                if (aoList.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.indigo.shade50,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.indigo.shade200),
+                                    ),
+                                    child: Text('+${aoList.length} Add-ons', style: GoogleFonts.poppins(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.indigo.shade900)),
                                   ),
-                                  child: Text('+${aoList.length} Add-ons', style: GoogleFonts.poppins(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.indigo.shade900)),
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
+                              ],
+                            ),
+                          );
+                        }),
                       if (item['category'] != null && item['category'].toString().isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
@@ -778,7 +1072,9 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                       },
                     ),
                     Text(
-                      isAvailable ? 'Available' : 'Unavailable',
+                      isGroceryItem
+                          ? (isAvailable ? 'In Stock' : 'Out of Stock')
+                          : (isAvailable ? 'Available' : 'Unavailable'),
                       style: GoogleFonts.poppins(
                         fontSize: 9,
                         color: isAvailable ? AppColors.primaryGreen : Colors.grey,
@@ -791,8 +1087,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
             ),
           ),
 
-          // Choice of Flavor Section matching Reference Image 1
-          if (flavors.isNotEmpty) ...[
+          // Choice of Flavor Section (Food only)
+          if (!isGroceryItem && flavors.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
@@ -853,8 +1149,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
             const SizedBox(height: 12),
           ],
 
-          // Add-Ons Section matching Reference Image 1
-          if (addOns.isNotEmpty) ...[
+          // Add-Ons Section (Food only)
+          if (!isGroceryItem && addOns.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
@@ -891,7 +1187,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                 children: addOns.map((addOn) {
                   final String name = addOn['name'] ?? 'Add-on';
                   final double price = (addOn['price'] ?? 0.0).toDouble();
-                  final String img = addOn['image'] ?? 'assets/images/restaurant_chicken_item.jpg';
+                  final String img = (addOn['image'] ?? '').toString().trim();
 
                   return GestureDetector(
                     onTap: () => _openAddOrEditMenuModal(item),
@@ -929,17 +1225,38 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                           const SizedBox(width: 8),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(6),
-                            child: Image.asset(
-                              img,
-                              width: 28,
-                              height: 28,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                width: 28,
-                                height: 28,
-                                color: Colors.grey[300],
-                              ),
-                            ),
+                            child: img.startsWith('http')
+                                ? Image.network(
+                                    img,
+                                    width: 28,
+                                    height: 28,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 28,
+                                      height: 28,
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.add_box_outlined, size: 16, color: Colors.grey),
+                                    ),
+                                  )
+                                : img.startsWith('assets/')
+                                    ? Image.asset(
+                                        img,
+                                        width: 28,
+                                        height: 28,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 28,
+                                          height: 28,
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.add_box_outlined, size: 16, color: Colors.grey),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 28,
+                                        height: 28,
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.add_box_outlined, size: 16, color: Colors.grey),
+                                      ),
                           ),
                         ],
                       ),
@@ -960,7 +1277,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                   onPressed: () => _showDeleteConfirmDialog(item['_id'], item['name']),
                   icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
                   label: Text(
-                    'Delete',
+                    isGroceryItem ? 'Remove' : 'Delete',
                     style: GoogleFonts.poppins(
                       color: Colors.redAccent,
                       fontWeight: FontWeight.w600,
@@ -1086,13 +1403,14 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     );
   }
 
-  Widget _buildItemThumbnail(String? rawImagePath) {
+  Widget _buildItemThumbnail(String? rawImagePath, {bool isGrocery = false}) {
+    final IconData placeholderIcon = isGrocery ? Icons.inventory_2_outlined : Icons.fastfood;
     if (rawImagePath == null || rawImagePath.isEmpty) {
       return Container(
         width: 80,
         height: 80,
         color: Colors.grey[200],
-        child: const Icon(Icons.fastfood, color: Colors.grey, size: 30),
+        child: Icon(placeholderIcon, color: Colors.grey, size: 30),
       );
     }
     String imagePath = rawImagePath.trim();
@@ -1120,7 +1438,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           width: 80,
           height: 80,
           color: Colors.grey[200],
-          child: const Icon(Icons.fastfood, color: Colors.grey),
+          child: Icon(placeholderIcon, color: Colors.grey),
         ),
       );
     }
@@ -1133,7 +1451,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
         width: 80,
         height: 80,
         color: Colors.grey[200],
-        child: const Icon(Icons.fastfood, color: Colors.grey),
+        child: Icon(placeholderIcon, color: Colors.grey),
       ),
     );
   }
@@ -1162,6 +1480,10 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
   late TextEditingController _mrpController;
   late TextEditingController _b2bPriceController;
   late TextEditingController _prepTimeController;
+  late TextEditingController _skuController;
+  late TextEditingController _weightController;
+  late TextEditingController _stockQtyController;
+  late TextEditingController _lowStockThresholdController;
 
   String _portionType = 'none'; // 'none', 'half_full', 'size'
   late TextEditingController _fullPriceController;
@@ -1180,61 +1502,106 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
   late TextEditingController _largeMrpController;
   late TextEditingController _largeB2bPriceController;
 
-  String _selectedCategory = 'Main Course';
-  String _selectedSubcategory = 'General';
+  static const List<String> _unitOptions = ['g', 'kg', 'ml', 'L', 'pack', 'piece', 'dozen'];
+  String _selectedUnit = 'pack';
+  String _selectedCategory = 'Staples & Grains';
+  String _selectedSubcategory = 'Rice & Atta';
   String _foodType = 'Veg'; // 'Veg', 'Non-Veg', or 'Egg'
   Uint8List? _selectedImageBytes;
   String? _existingImagePath;
+  bool _isSaving = false;
 
   List<String> _flavorVariants = [];
   List<Map<String, dynamic>> _addOnsList = [];
   Map<String, String> _categoryIdsMap = {};
 
+  bool get _isGroceryMode =>
+      PlatformConfigService.isGroceryPlatform ||
+      (PlatformConfigService.isBothMode && RestaurantAuthService.isGroceryStore);
+
   List<String> _categories = [
-    'Main Course',
-    'Starters',
-    'Pizzas & Burgers',
-    'Breads & Rice',
-    'Desserts',
+    'Staples & Grains',
+    'Dairy & Bread',
+    'Fruits & Vegetables',
     'Beverages',
+    'Snacks & Packaged',
+    'Personal & Home Care',
+    'Daily Essentials',
   ];
 
   Map<String, List<String>> _subcategoriesMap = {
-    'Main Course': ['Paneer Specialties', 'Chicken Specialties', 'Dal & Curry', 'Biryani & Rice'],
-    'Starters': ['Veg Starters', 'Non-Veg Starters', 'Tandoori Starters', 'Chinese Starters'],
-    'Pizzas & Burgers': ['Thin Crust Pizza', 'Cheese Burst Pizza', 'Veg Burger', 'Chicken Burger'],
-    'Breads & Rice': ['Naan & Roti', 'Fried Rice', 'Steamed Rice'],
-    'Desserts': ['Ice Creams', 'Sweets & Gulab Jamun', 'Pastries'],
-    'Beverages': ['Mocktails', 'Shakes & Smoothies', 'Cold Drinks'],
+    'Staples & Grains': ['Rice & Atta', 'Dal & Pulses', 'Edible Oils & Ghee', 'Spices & Masala'],
+    'Dairy & Bread': ['Milk & Curd', 'Paneer & Butter', 'Bread & Buns', 'Eggs'],
+    'Fruits & Vegetables': ['Fresh Vegetables', 'Fresh Fruits', 'Herbs & Leafy Greens'],
+    'Beverages': ['Cold Drinks & Juices', 'Tea & Coffee', 'Health Drinks'],
+    'Snacks & Packaged': ['Chips & Namkeen', 'Biscuits & Cookies', 'Noodles & Sauces'],
+    'Personal & Home Care': ['Detergents & Cleaners', 'Bath & Body', 'Oral Care'],
+    'Daily Essentials': ['General', 'Kitchen Supplies'],
   };
 
   @override
   void initState() {
     super.initState();
+    final bool isGrocery = _isGroceryMode;
+    if (!isGrocery) {
+      _categories = [
+        'Main Course',
+        'Starters',
+        'Pizzas & Burgers',
+        'Breads & Rice',
+        'Desserts',
+        'Beverages',
+      ];
+      _subcategoriesMap = {
+        'Main Course': ['Paneer Specialties', 'Chicken Specialties', 'Dal & Curry', 'Biryani & Rice'],
+        'Starters': ['Veg Starters', 'Non-Veg Starters', 'Tandoori Starters', 'Chinese Starters'],
+        'Pizzas & Burgers': ['Thin Crust Pizza', 'Cheese Burst Pizza', 'Veg Burger', 'Chicken Burger'],
+        'Breads & Rice': ['Naan & Roti', 'Fried Rice', 'Steamed Rice'],
+        'Desserts': ['Ice Creams', 'Sweets & Gulab Jamun', 'Pastries'],
+        'Beverages': ['Mocktails', 'Shakes & Smoothies', 'Cold Drinks'],
+      };
+      _selectedCategory = 'Main Course';
+      _selectedSubcategory = 'Paneer Specialties';
+    }
+
     final item = widget.existingItem;
     _nameController = TextEditingController(text: item?['name'] ?? '');
     _descController = TextEditingController(text: item?['description'] ?? '');
     _priceController = TextEditingController(
-      text: item?['basePrice'] != null ? item!['basePrice'].toString() : (item?['price'] != null ? item!['price'].toString() : (item?['sellingPrice'] != null ? item!['sellingPrice'].toString() : '')),
+      text: item?['sellingPrice'] != null
+          ? item!['sellingPrice'].toString()
+          : (item?['basePrice'] != null ? item!['basePrice'].toString() : (item?['price'] != null ? item!['price'].toString() : '')),
     );
     _mrpController = TextEditingController(
-      text: item?['mrp'] != null ? item!['mrp'].toString() : (item?['b2cMrp'] != null ? item!['b2cMrp'].toString() : (_priceController.text)),
+      text: item?['mrp'] != null ? item!['mrp'].toString() : (item?['b2cMrp'] != null ? item!['b2cMrp'].toString() : _priceController.text),
     );
     _b2bPriceController = TextEditingController(
-      text: item?['b2bPrice'] != null ? item!['b2bPrice'].toString() : (_priceController.text),
+      text: item?['b2bPrice'] != null ? item!['b2bPrice'].toString() : _priceController.text,
     );
     _prepTimeController = TextEditingController(
-      text: item?['preparationTime'] != null ? item!['preparationTime'].toString() : '15',
+      text: item?['preparationTime'] != null ? item!['preparationTime'].toString() : (isGrocery ? '5' : '15'),
     );
+    _skuController = TextEditingController(text: item?['sku']?.toString() ?? '');
+    _weightController = TextEditingController(text: item?['weight']?.toString() ?? '');
+    _stockQtyController = TextEditingController(
+      text: item?['stockQuantity'] != null ? item!['stockQuantity'].toString() : '50',
+    );
+    _lowStockThresholdController = TextEditingController(
+      text: item?['lowStockThreshold'] != null ? item!['lowStockThreshold'].toString() : '10',
+    );
+    final rawUnit = (item?['unit'] ?? 'pack').toString().trim();
+    _selectedUnit = _unitOptions.contains(rawUnit) ? rawUnit : 'pack';
 
-    // Portions detection & controllers initialization
+    // Portions detection & controllers initialization (food mode)
     final portions = item?['portions'] is Map ? Map<String, dynamic>.from(item!['portions']) : null;
-    final pType = item?['portionType']?.toString() ??
-        (portions != null && (portions['half'] != null || portions['full'] != null)
-            ? 'half_full'
-            : (portions != null && (portions['small'] != null || portions['medium'] != null || portions['large'] != null)
-                ? 'size'
-                : 'none'));
+    final pType = isGrocery
+        ? 'none'
+        : (item?['portionType']?.toString() ??
+            (portions != null && (portions['half'] != null || portions['full'] != null)
+                ? 'half_full'
+                : (portions != null && (portions['small'] != null || portions['medium'] != null || portions['large'] != null)
+                    ? 'size'
+                    : 'none')));
     _portionType = pType;
 
     _fullPriceController = TextEditingController(text: (portions?['full']?['basePrice'] ?? portions?['full']?['price'] ?? portions?['full']?['sellingPrice'])?.toString() ?? '');
@@ -1258,11 +1625,25 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
     _largeB2bPriceController = TextEditingController(text: portions?['large']?['b2bPrice']?.toString() ?? '');
 
     if (item != null) {
-      _selectedCategory = item['category'] ?? 'Main Course';
-      _selectedSubcategory = item['subcategory'] ?? (_subcategoriesMap[_selectedCategory]?.first ?? 'General');
+      final rawCat = (item['category'] ?? '').toString().trim();
+      if (rawCat.isNotEmpty) {
+        if (!_categories.contains(rawCat)) {
+          _categories.insert(0, rawCat);
+        }
+        _selectedCategory = rawCat;
+      }
+      final rawSub = (item['subcategory'] ?? '').toString().trim();
+      final subsForCat = _subcategoriesMap[_selectedCategory] ?? ['General'];
+      _selectedSubcategory = rawSub.isNotEmpty ? rawSub : subsForCat.first;
+      if (!_subcategoriesMap.containsKey(_selectedCategory)) {
+        _subcategoriesMap[_selectedCategory] = [_selectedSubcategory];
+      } else if (!_subcategoriesMap[_selectedCategory]!.contains(_selectedSubcategory)) {
+        _subcategoriesMap[_selectedCategory]!.insert(0, _selectedSubcategory);
+      }
+
       final rawFt = (item['foodType'] ?? 'veg').toString().toLowerCase();
       _foodType = rawFt == 'egg' ? 'Egg' : (rawFt == 'non-veg' ? 'Non-Veg' : 'Veg');
-      _existingImagePath = item['image'];
+      _existingImagePath = item['image']?.toString();
       if (item['flavors'] != null && item['flavors'] is List) {
         final List<String> fList = [];
         for (var f in (item['flavors'] as List)) {
@@ -1289,7 +1670,7 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
             aList.add({
               'name': aName.isNotEmpty ? aName : 'Add-on',
               'price': double.tryParse((a['price'] ?? 0).toString()) ?? 0.0,
-              'image': a['image']?.toString() ?? 'assets/images/restaurant_chicken_item.jpg',
+              'image': a['image']?.toString() ?? '',
             });
           }
         }
@@ -1301,7 +1682,9 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
 
   Future<void> _loadLiveCategories() async {
     try {
-      final tree = await CategoryApiService.fetchCategoryTree();
+      final tree = await CategoryApiService.fetchCategoryTree(
+        vertical: _isGroceryMode ? 'grocery' : 'food',
+      );
       if (tree.isNotEmpty && mounted) {
         final newCats = <String>[];
         final newCategoryIdsMap = <String, String>{};
@@ -1320,8 +1703,10 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
           setState(() {
             _categories = newCats;
             _categoryIdsMap = newCategoryIdsMap;
-            if (_selectedCategory.isNotEmpty && !_categories.contains(_selectedCategory)) {
+            if (widget.existingItem != null && _selectedCategory.isNotEmpty && !_categories.contains(_selectedCategory)) {
               _categories.insert(0, _selectedCategory);
+            } else if (!_categories.contains(_selectedCategory)) {
+              _selectedCategory = _categories.first;
             }
             _subcategoriesMap = newSubMap;
             final currentSubs = _subcategoriesMap[_selectedCategory] ?? ['General'];
@@ -1342,6 +1727,10 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
     _mrpController.dispose();
     _b2bPriceController.dispose();
     _prepTimeController.dispose();
+    _skuController.dispose();
+    _weightController.dispose();
+    _stockQtyController.dispose();
+    _lowStockThresholdController.dispose();
     _fullPriceController.dispose();
     _fullMrpController.dispose();
     _fullB2bPriceController.dispose();
@@ -1588,9 +1977,9 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                       itemCount: _addOnsList.length,
                       itemBuilder: (context, index) {
                         final addOn = _addOnsList[index];
-                        final String name = addOn['name'] ?? 'Plain Rice';
+                        final String name = addOn['name'] ?? 'Add-on';
                         final double price = (addOn['price'] ?? 25.0).toDouble();
-                        final String img = addOn['image'] ?? 'assets/images/restaurant_chicken_item.jpg';
+                        final String img = (addOn['image'] ?? '').toString().trim();
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -1603,18 +1992,38 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                               // Add-on Image Thumbnail
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  img,
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    width: 44,
-                                    height: 44,
-                                    color: Colors.grey[200],
-                                    child: const Icon(Icons.fastfood, size: 20, color: Colors.grey),
-                                  ),
-                                ),
+                                child: img.startsWith('http')
+                                    ? Image.network(
+                                        img,
+                                        width: 44,
+                                        height: 44,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          width: 44,
+                                          height: 44,
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.add_box_outlined, size: 20, color: Colors.grey),
+                                        ),
+                                      )
+                                    : img.startsWith('assets/')
+                                        ? Image.asset(
+                                            img,
+                                            width: 44,
+                                            height: 44,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              width: 44,
+                                              height: 44,
+                                              color: Colors.grey[200],
+                                              child: const Icon(Icons.add_box_outlined, size: 20, color: Colors.grey),
+                                            ),
+                                          )
+                                        : Container(
+                                            width: 44,
+                                            height: 44,
+                                            color: Colors.grey[200],
+                                            child: const Icon(Icons.add_box_outlined, size: 20, color: Colors.grey),
+                                          ),
                               ),
                               const SizedBox(width: 12),
 
@@ -1812,7 +2221,7 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
     );
   }
 
-  // --- MODAL 3: Edit Add-On Form Dialog (Reference Image 3) ---
+  // --- MODAL 3: Edit Add-On Form Dialog ---
   void _showEditAddOnDialog({
     int? index,
     Map<String, dynamic>? currentAddOn,
@@ -1822,135 +2231,139 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
     final priceCtrl = TextEditingController(
       text: currentAddOn?['price'] != null ? currentAddOn!['price'].toString() : '',
     );
-    String imgPath = currentAddOn?['image'] ?? 'assets/images/restaurant_chicken_item.jpg';
+    String imgPath = (currentAddOn?['image'] ?? '').toString();
 
     showDialog(
       context: context,
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                index != null ? 'Edit Add-ons' : 'Add New Add-on',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Dashed Upload Image Container matching Reference Image 3
-              GestureDetector(
-                onTap: () async {
-                  final picker = ImagePicker();
-                  final picked = await picker.pickImage(source: ImageSource.gallery);
-                  if (picked != null) {
-                    final bytes = await picked.readAsBytes();
-                    imgPath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.5), width: 1.5),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.upload_outlined, color: AppColors.primaryGreen, size: 24),
-                      const SizedBox(height: 4),
-                      Text('Upload Image', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-                    ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  index != null ? 'Edit Add-ons' : 'Add New Add-on',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-              // Add-on Name Field
-              Text('Add-on Name', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(
-                  hintText: 'Enter Flavour name',
-                  hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Base Price Field
-              Text('Base Price', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: priceCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter price',
-                  hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Update Button
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final name = nameCtrl.text.trim();
-                    final price = double.tryParse(priceCtrl.text) ?? 0.0;
-                    if (name.isNotEmpty) {
-                      final newAddOn = {'name': name, 'price': price, 'image': imgPath};
-                      if (onUpdated != null) {
-                        onUpdated(newAddOn);
-                      } else {
-                        setState(() => _addOnsList.add(newAddOn));
-                      }
+                GestureDetector(
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(source: ImageSource.gallery);
+                    if (picked != null) {
+                      final bytes = await picked.readAsBytes();
+                      setDialogState(() {
+                        imgPath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                      });
                     }
-                    Navigator.pop(dialogContext);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    index != null ? 'Update' : 'Add',
-                    style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  child: Container(
+                    width: double.infinity,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.5), width: 1.5),
+                    ),
+                    child: imgPath.startsWith('data:image')
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(11),
+                            child: Image.memory(base64Decode(imgPath.split(',').last), fit: BoxFit.cover),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.upload_outlined, color: AppColors.primaryGreen, size: 24),
+                              const SizedBox(height: 4),
+                              Text('Upload Image', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                            ],
+                          ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
+                const SizedBox(height: 14),
 
-              // Cancel Button
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey[400]!),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+                Text('Add-on Name', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'Enter add-on name',
+                    hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+
+                Text('Base Price', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: priceCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Enter price',
+                    hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final name = nameCtrl.text.trim();
+                      final price = double.tryParse(priceCtrl.text) ?? 0.0;
+                      if (name.isNotEmpty) {
+                        final newAddOn = {'name': name, 'price': price, 'image': imgPath};
+                        if (onUpdated != null) {
+                          onUpdated(newAddOn);
+                        } else {
+                          setState(() => _addOnsList.add(newAddOn));
+                        }
+                      }
+                      Navigator.pop(dialogContext);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryGreen,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      index != null ? 'Update' : 'Add',
+                      style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey[400]!),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1958,7 +2371,10 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
   }
 
   Future<void> _submitForm() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
+
+    final bool isGrocery = _isGroceryMode;
 
     String imagePath = _existingImagePath ?? '';
     if (_selectedImageBytes != null) {
@@ -1971,7 +2387,7 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
     double b2bVal = 0.0;
     final Map<String, dynamic> portionsMap = {};
 
-    if (_portionType == 'half_full') {
+    if (!isGrocery && _portionType == 'half_full') {
       final fPrice = double.tryParse(_fullPriceController.text.trim());
       if (fPrice != null && fPrice > 0) {
         portionsMap['full'] = {
@@ -1999,9 +2415,11 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
         return;
       }
       priceVal = (portionsMap['full']?['basePrice'] ?? portionsMap['half']?['basePrice'] ?? 0.0).toDouble();
-      mrpVal = priceVal;
-      b2bVal = priceVal;
-    } else if (_portionType == 'size') {
+      final parsedMrp = double.tryParse(_mrpController.text.trim());
+      final parsedB2b = double.tryParse(_b2bPriceController.text.trim());
+      mrpVal = (parsedMrp != null && parsedMrp > 0) ? parsedMrp : priceVal;
+      b2bVal = (parsedB2b != null && parsedB2b > 0) ? parsedB2b : priceVal;
+    } else if (!isGrocery && _portionType == 'size') {
       final sPrice = double.tryParse(_smallPriceController.text.trim());
       if (sPrice != null && sPrice > 0) {
         portionsMap['small'] = {'basePrice': sPrice, 'sellingPrice': sPrice, 'mrp': sPrice, 'b2bPrice': sPrice};
@@ -2024,25 +2442,37 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
         return;
       }
       priceVal = (portionsMap['small']?['basePrice'] ?? portionsMap['medium']?['basePrice'] ?? portionsMap['large']?['basePrice'] ?? 0.0).toDouble();
-      mrpVal = priceVal;
-      b2bVal = priceVal;
+      final parsedMrp = double.tryParse(_mrpController.text.trim());
+      final parsedB2b = double.tryParse(_b2bPriceController.text.trim());
+      mrpVal = (parsedMrp != null && parsedMrp > 0) ? parsedMrp : priceVal;
+      b2bVal = (parsedB2b != null && parsedB2b > 0) ? parsedB2b : priceVal;
     } else {
       priceVal = double.tryParse(_priceController.text.trim()) ?? 0.0;
-      mrpVal = priceVal;
-      b2bVal = priceVal;
+      final parsedMrp = double.tryParse(_mrpController.text.trim());
+      final parsedB2b = double.tryParse(_b2bPriceController.text.trim());
+      mrpVal = (parsedMrp != null && parsedMrp > 0) ? parsedMrp : priceVal;
+      b2bVal = (parsedB2b != null && parsedB2b > 0) ? parsedB2b : priceVal;
       if (priceVal <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid Base Price')),
+          SnackBar(content: Text(isGrocery ? 'Please enter a valid Selling Price' : 'Please enter a valid Base Price')),
         );
         return;
       }
     }
 
-    final prepTimeVal = int.tryParse(_prepTimeController.text) ?? 15;
+    final prepTimeVal = int.tryParse(_prepTimeController.text.trim()) ?? (isGrocery ? 5 : 15);
+    final stockQtyVal = int.tryParse(_stockQtyController.text.trim()) ?? 50;
+    final lowStockVal = int.tryParse(_lowStockThresholdController.text.trim()) ?? 10;
+    final skuVal = _skuController.text.trim();
+    final weightVal = _weightController.text.trim();
     final nameVal = _nameController.text.trim();
     final descVal = _descController.text.trim();
 
     final isEditing = widget.existingItem != null;
+    final effectiveVertical = isGrocery
+        ? 'grocery'
+        : (widget.existingItem?['vertical']?.toString() ?? 'food');
+
     final savedItem = {
       '_id': widget.existingItem?['_id'] ?? 'm_${DateTime.now().millisecondsSinceEpoch}',
       'name': nameVal,
@@ -2052,27 +2482,39 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
       'basePrice': priceVal,
       'sellingPrice': priceVal,
       'price': priceVal,
-      'b2cMrp': mrpVal > 0 ? mrpVal : priceVal,
-      'mrp': mrpVal > 0 ? mrpVal : priceVal,
-      'b2bPrice': b2bVal > 0 ? b2bVal : priceVal,
-      'b2bSellingPrice': b2bVal > 0 ? b2bVal : priceVal,
+      'b2cSellingPrice': priceVal,
+      'b2cMrp': mrpVal,
+      'mrp': mrpVal,
+      'b2bPrice': b2bVal,
+      'b2bSellingPrice': b2bVal,
       'categoryId': _categoryIdsMap[_selectedCategory],
       'preparationTime': prepTimeVal,
-      'foodType': _foodType.toLowerCase(),
-      'isVeg': _foodType.toLowerCase() == 'veg',
-      'isAvailable': widget.existingItem?['isAvailable'] ?? true,
-      'available': widget.existingItem?['isAvailable'] ?? true,
+      'sku': skuVal,
+      'weight': weightVal,
+      'unit': _selectedUnit,
+      'stockQuantity': stockQtyVal,
+      'lowStockThreshold': lowStockVal,
+      'inStock': stockQtyVal > 0,
+      'outOfStock': stockQtyVal <= 0,
+      'vertical': effectiveVertical,
+      'foodType': isGrocery ? 'veg' : _foodType.toLowerCase(),
+      'isVeg': isGrocery ? true : (_foodType.toLowerCase() == 'veg'),
+      'isAvailable': stockQtyVal > 0 && (widget.existingItem?['isAvailable'] ?? true),
+      'available': stockQtyVal > 0 && (widget.existingItem?['isAvailable'] ?? true),
       'approvalStatus': isEditing ? (widget.existingItem?['approvalStatus'] ?? 'pending') : 'pending',
       'isApproved': isEditing ? (widget.existingItem?['isApproved'] ?? false) : false,
       'image': imagePath,
-      'portionType': _portionType,
-      'portions': portionsMap.isNotEmpty ? portionsMap : null,
-      'flavors': _flavorVariants,
-      'variants': _flavorVariants,
-      'addOns': _addOnsList,
+      'portionType': isGrocery ? 'none' : _portionType,
+      'portions': (!isGrocery && portionsMap.isNotEmpty) ? portionsMap : null,
+      'flavors': isGrocery ? <String>[] : _flavorVariants,
+      'variants': isGrocery ? <String>[] : _flavorVariants,
+      'addOns': isGrocery ? <Map<String, dynamic>>[] : _addOnsList,
     };
 
-    // Save to backend database in real-time
+    setState(() => _isSaving = true);
+    bool savedOnServer = false;
+    String errorMessage = 'Unable to save product to server. Please check connection and retry.';
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final restId = prefs.getString('restaurantId') ?? ApiConstants.restaurantId;
@@ -2085,28 +2527,35 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
         'basePrice': priceVal,
         'price': priceVal,
         'sellingPrice': priceVal,
-        'mrp': mrpVal > 0 ? mrpVal : priceVal,
-        'b2cMrp': mrpVal > 0 ? mrpVal : priceVal,
+        'mrp': mrpVal,
+        'b2cMrp': mrpVal,
         'b2cSellingPrice': priceVal,
-        'b2bPrice': b2bVal > 0 ? b2bVal : priceVal,
-        'b2bSellingPrice': b2bVal > 0 ? b2bVal : priceVal,
+        'b2bPrice': b2bVal,
+        'b2bSellingPrice': b2bVal,
         'preparationTime': prepTimeVal,
         'category': _selectedCategory,
         'categoryId': _categoryIdsMap[_selectedCategory],
         'subcategory': _selectedSubcategory,
-        'foodType': _foodType.toLowerCase(),
-        'isVeg': _foodType.toLowerCase() == 'veg',
+        'sku': skuVal,
+        'weight': weightVal,
+        'unit': _selectedUnit,
+        'stockQuantity': stockQtyVal,
+        'lowStockThreshold': lowStockVal,
+        'inStock': stockQtyVal > 0,
+        'outOfStock': stockQtyVal <= 0,
+        'vertical': effectiveVertical,
+        'foodType': isGrocery ? 'veg' : _foodType.toLowerCase(),
+        'isVeg': isGrocery ? true : (_foodType.toLowerCase() == 'veg'),
         'description': descVal,
         'image': imagePath,
-        'portionType': _portionType,
-        'portions': portionsMap.isNotEmpty ? portionsMap : null,
-        'variants': _flavorVariants,
-        'variations': _flavorVariants,
-        'addOns': _addOnsList,
+        'portionType': isGrocery ? 'none' : _portionType,
+        'portions': (!isGrocery && portionsMap.isNotEmpty) ? portionsMap : null,
+        'variants': isGrocery ? <String>[] : _flavorVariants,
+        'variations': isGrocery ? <String>[] : _flavorVariants,
+        'addOns': isGrocery ? <Map<String, dynamic>>[] : _addOnsList,
       };
 
       if (isEditing && widget.existingItem?['_id'] != null) {
-        // Edit Menu Item
         final itemId = widget.existingItem!['_id'].toString();
         final res = await http.put(
           Uri.parse('${ApiConstants.baseUrl}/restaurants/vendor/menu/edit/$effectiveRestId/$itemId'),
@@ -2117,16 +2566,18 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
           body: jsonEncode(payload),
         ).timeout(const Duration(seconds: 12));
 
-        if (res.statusCode == 200) {
-          final resData = jsonDecode(res.body);
-          if (resData['product'] != null) {
+        final resData = jsonDecode(res.body);
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          savedOnServer = true;
+          if (resData is Map && resData['product'] != null) {
             final prod = resData['product'];
             savedItem['approvalStatus'] = prod['approvalStatus'] ?? savedItem['approvalStatus'];
             savedItem['isApproved'] = prod['isApproved'] ?? savedItem['isApproved'];
           }
+        } else if (resData is Map && resData['message'] != null) {
+          errorMessage = resData['message'].toString();
         }
       } else {
-        // Add New Menu Item -> Pending approval
         final res = await http.post(
           Uri.parse('${ApiConstants.baseUrl}/restaurants/vendor/menu/add/$effectiveRestId'),
           headers: {
@@ -2136,9 +2587,10 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
           body: jsonEncode(payload),
         ).timeout(const Duration(seconds: 12));
 
-        if (res.statusCode == 200 || res.statusCode == 201) {
-          final resData = jsonDecode(res.body);
-          if (resData['product'] != null) {
+        final resData = jsonDecode(res.body);
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          savedOnServer = true;
+          if (resData is Map && resData['product'] != null) {
             final prod = resData['product'];
             if (prod['_id'] != null) savedItem['_id'] = prod['_id'].toString();
             savedItem['approvalStatus'] = prod['approvalStatus'] ?? 'pending';
@@ -2147,24 +2599,100 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
               await prefs.setString('restaurantId', prod['restaurant'].toString());
             }
           }
+        } else if (resData is Map && resData['message'] != null) {
+          errorMessage = resData['message'].toString();
         }
       }
     } catch (e) {
-      debugPrint("Menu item save API error: $e");
+      debugPrint("Catalog item save API error: $e");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
 
-    widget.onItemSaved(savedItem);
-    Navigator.pop(context);
+    if (!mounted) return;
+    if (savedOnServer) {
+      widget.onItemSaved(savedItem);
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Widget _buildExistingImagePreview() {
+    final raw = (_existingImagePath ?? '').trim();
+    if (raw.isEmpty) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.upload_outlined, color: AppColors.primaryGreen, size: 28),
+          const SizedBox(height: 6),
+          Text(
+            _isGroceryMode ? 'Upload Product Image' : 'Upload Item Image',
+            style: GoogleFonts.poppins(
+              color: Colors.grey[600],
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+    if (raw.startsWith('data:image')) {
+      try {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: Image.memory(base64Decode(raw.split(',').last), fit: BoxFit.cover, width: double.infinity),
+        );
+      } catch (_) {}
+    }
+    final resolved = (!raw.startsWith('http') && !raw.startsWith('assets/'))
+        ? '${ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '')}${raw.startsWith('/') ? raw : '/$raw'}'
+        : raw;
+    if (resolved.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Image.network(
+          resolved,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          errorBuilder: (_, __, ___) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.upload_outlined, color: AppColors.primaryGreen, size: 28),
+              const SizedBox(height: 6),
+              Text('Tap to Change Image', style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.upload_outlined, color: AppColors.primaryGreen, size: 28),
+        const SizedBox(height: 6),
+        Text(
+          _isGroceryMode ? 'Upload Product Image' : 'Upload Item Image',
+          style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.existingItem != null;
+    final bool isGrocery = _isGroceryMode;
     final subcategories = _subcategoriesMap[_selectedCategory] ?? ['General'];
 
     return Column(
       children: [
-        // Modal Header matching Reference Image 2
+        // Modal Header
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           child: Row(
@@ -2175,7 +2703,9 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
               ),
               Expanded(
                 child: Text(
-                  isEditing ? 'Edit Menu' : 'Add Menu Item',
+                  isEditing
+                      ? (isGrocery ? 'Edit Catalog Product' : 'Edit Menu')
+                      : (isGrocery ? 'Add Catalog Product' : 'Add Menu Item'),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 18,
@@ -2184,13 +2714,13 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                   ),
                 ),
               ),
-              const SizedBox(width: 48), // Spacer for centered title
+              const SizedBox(width: 48),
             ],
           ),
         ),
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
 
-        // Form Content Body matching Reference Image 2
+        // Form Content Body
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -2200,22 +2730,24 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Item Name Field
-                  Text('Item Name', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                  // Name Field
+                  Text(isGrocery ? 'Product Name *' : 'Item Name *', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
-                      hintText: 'Enter Item Name',
+                      hintText: isGrocery ? 'e.g. Aashirvaad Shudh Chakki Atta 5kg' : 'Enter Item Name',
                       hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Please enter item name' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? (isGrocery ? 'Please enter product name' : 'Please enter item name')
+                        : null,
                   ),
                   const SizedBox(height: 16),
 
-                  // Upload Item Image Box
+                  // Upload Product Image Box
                   GestureDetector(
                     onTap: _pickImage,
                     child: Container(
@@ -2231,21 +2763,7 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                               borderRadius: BorderRadius.circular(11),
                               child: Image.memory(_selectedImageBytes!, fit: BoxFit.cover),
                             )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.upload_outlined, color: AppColors.primaryGreen, size: 28),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Upload Item Image',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          : _buildExistingImagePreview(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -2254,6 +2772,7 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                   Text('Category', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
+                    key: ValueKey('cat_${_categories.length}_$_selectedCategory'),
                     initialValue: _categories.contains(_selectedCategory) ? _selectedCategory : _categories.first,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2273,10 +2792,11 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Subcategory Field (Requested explicitly by user!)
+                  // Subcategory Field
                   Text('Subcategory', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
+                    key: ValueKey('sub_${subcategories.length}_$_selectedSubcategory'),
                     initialValue: subcategories.contains(_selectedSubcategory) ? _selectedSubcategory : subcategories.first,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2293,197 +2813,335 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Food Type Selection (Veg / Non-Veg / Egg)
-                  Text('Food Type', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Veg Option
-                      GestureDetector(
-                        onTap: () => setState(() => _foodType = 'Veg'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _foodType == 'Veg' ? Colors.green.withValues(alpha: 0.1) : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _foodType == 'Veg' ? Colors.green : Colors.grey[300]!, width: 1.5),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.green),
-                              ),
-                              const SizedBox(width: 6),
-                              Text('Veg', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
-                            ],
-                          ),
-                        ),
+                  // Grocery SKU, Weight, Unit & Stock Inventory Controls
+                  if (isGrocery) ...[
+                    Text('SKU / Barcode', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _skuController,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. TRC-ATTA-5KG (Optional)',
+                        hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
                       ),
-                      const SizedBox(width: 8),
-
-                      // Non-Veg Option
-                      GestureDetector(
-                        onTap: () => setState(() => _foodType = 'Non-Veg'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _foodType == 'Non-Veg' ? Colors.red.withValues(alpha: 0.1) : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _foodType == 'Non-Veg' ? Colors.red : Colors.grey[300]!, width: 1.5),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
-                              ),
-                              const SizedBox(width: 6),
-                              Text('Non-Veg', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Egg Option
-                      GestureDetector(
-                        onTap: () => setState(() => _foodType = 'Egg'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _foodType == 'Egg' ? Colors.amber.withValues(alpha: 0.15) : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _foodType == 'Egg' ? Colors.amber[700]! : Colors.grey[300]!, width: 1.5),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.amber[700]),
-                              ),
-                              const SizedBox(width: 6),
-                              Text('Egg', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Portion & Sizing Configuration Header
-                  Text('Portion & Pricing Configuration', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Select whether this item has Half/Full portions, S/M/L sizes, or single price',
-                    style: GoogleFonts.poppins(fontSize: 10.5, color: Colors.grey[500]),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Segmented Tabs
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _portionType = 'none'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _portionType == 'none' ? AppColors.primaryGreen : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Single Price',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: _portionType == 'none' ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _portionType = 'half_full'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _portionType == 'half_full' ? Colors.amber[700] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Half & Full',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: _portionType == 'half_full' ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _portionType = 'size'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _portionType == 'size' ? Colors.purple[700] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'S / M / L',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: _portionType == 'size' ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // If Single Price:
-                  if (_portionType == 'none') ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
                       children: [
-                        Text('Base Price (₹) *', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _priceController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            hintText: '₹ Base Price',
-                            hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Pack Weight / Size', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _weightController,
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. 500 or 1',
+                                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                ),
+                              ),
+                            ],
                           ),
-                          validator: (v) {
-                            if (_portionType == 'none' && (v == null || v.trim().isEmpty)) {
-                              return 'Please enter base price';
-                            }
-                            return null;
-                          },
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Unit', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField<String>(
+                                initialValue: _selectedUnit,
+                                decoration: InputDecoration(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                ),
+                                items: _unitOptions.map((u) => DropdownMenuItem(value: u, child: Text(u, style: GoogleFonts.poppins(fontSize: 13)))).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _selectedUnit = val);
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ]
-                  // If Half & Full:
-                  else if (_portionType == 'half_full') ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Stock Quantity *', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _stockQtyController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. 50',
+                                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Low Stock Alert At', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _lowStockThresholdController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. 10',
+                                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Food Type Selection (Food outlets only)
+                  if (!isGrocery) ...[
+                    Text('Food Type', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _foodType = 'Veg'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _foodType == 'Veg' ? Colors.green.withValues(alpha: 0.1) : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: _foodType == 'Veg' ? Colors.green : Colors.grey[300]!, width: 1.5),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.green),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('Veg', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _foodType = 'Non-Veg'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _foodType == 'Non-Veg' ? Colors.red.withValues(alpha: 0.1) : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: _foodType == 'Non-Veg' ? Colors.red : Colors.grey[300]!, width: 1.5),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('Non-Veg', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _foodType = 'Egg'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _foodType == 'Egg' ? Colors.amber.withValues(alpha: 0.15) : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: _foodType == 'Egg' ? Colors.amber[700]! : Colors.grey[300]!, width: 1.5),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.amber[700]),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('Egg', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Portion & Sizing Configuration Header
+                    Text('Portion & Pricing Configuration', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Select whether this item has Half/Full portions, S/M/L sizes, or single price',
+                      style: GoogleFonts.poppins(fontSize: 10.5, color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _portionType = 'none'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _portionType == 'none' ? AppColors.primaryGreen : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Single Price',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _portionType == 'none' ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _portionType = 'half_full'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _portionType == 'half_full' ? Colors.amber[700] : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Half & Full',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _portionType == 'half_full' ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _portionType = 'size'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _portionType == 'size' ? Colors.purple[700] : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'S / M / L',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _portionType == 'size' ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Single Price / MRP / B2B Pricing Fields
+                  if (isGrocery || _portionType == 'none') ...[
+                    Text(isGrocery ? 'Selling Price (₹) *' : 'Base Price (₹) *', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _priceController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        hintText: isGrocery ? '₹ Selling Price' : '₹ Base Price',
+                        hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                      ),
+                      validator: (v) {
+                        if ((isGrocery || _portionType == 'none') && (v == null || v.trim().isEmpty)) {
+                          return isGrocery ? 'Please enter selling price' : 'Please enter base price';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('MRP (₹)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _mrpController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: InputDecoration(
+                                  hintText: '₹ Printed MRP',
+                                  hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('B2B / Wholesale (₹)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _b2bPriceController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: InputDecoration(
+                                  hintText: '₹ B2B Price',
+                                  hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else if (!isGrocery && _portionType == 'half_full') ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -2535,9 +3193,7 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                         ],
                       ),
                     ),
-                  ]
-                  // If Sizes:
-                  else if (_portionType == 'size') ...[
+                  ] else if (!isGrocery && _portionType == 'size') ...[
                     Row(
                       children: [
                         Expanded(
@@ -2604,15 +3260,15 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                   ],
                   const SizedBox(height: 16),
 
-                  // Preparation Time Field
-                  Text('Preparation Time (Minutes)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                  // Packing / Preparation Time Field
+                  Text(isGrocery ? 'Packing Time (Minutes)' : 'Preparation Time (Minutes)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _prepTimeController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.timer_outlined, size: 20, color: AppColors.primaryGreen),
-                      hintText: 'e.g. 15 mins',
+                      hintText: isGrocery ? 'e.g. 5 mins' : 'e.g. 15 mins',
                       hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
@@ -2627,140 +3283,155 @@ class _AddOrEditMenuItemFormState extends State<AddOrEditMenuItemForm> {
                     controller: _descController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Enter description...',
+                      hintText: isGrocery ? 'Enter brand, pack details, shelf-life...' : 'Enter description...',
                       hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Please enter description' : null,
+                    validator: (v) {
+                      if (!isGrocery && (v == null || v.trim().isEmpty)) {
+                        return 'Please enter description';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
 
-                  // Flavour Variants Section matching Reference Image 1 & 4
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Flavour Variants (${_flavorVariants.length})', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: _showFlavourVariantsListModal,
-                            child: Text(
-                              'Manage All',
-                              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                  // Flavour Variants & Add-ons (Food outlets only)
+                  if (!isGrocery) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Flavour Variants (${_flavorVariants.length})', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: _showFlavourVariantsListModal,
+                              child: Text(
+                                'Manage All',
+                                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryGreen),
-                            onPressed: () => _showEditFlavourVariantDialog(),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Optional: Add flavour options that customers can choose from',
-                    style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _flavorVariants.map((variant) {
-                      return GestureDetector(
-                        onTap: _showFlavourVariantsListModal,
-                        child: Chip(
-                          label: Text(variant, style: GoogleFonts.poppins(fontSize: 11)),
-                          backgroundColor: const Color(0xFFF3F4F6),
-                          deleteIcon: const Icon(Icons.edit_outlined, size: 13, color: AppColors.primaryGreen),
-                          onDeleted: _showFlavourVariantsListModal,
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryGreen),
+                              onPressed: () => _showEditFlavourVariantDialog(),
+                            ),
+                          ],
                         ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Add Add-ons Section matching Reference Image 2 & 3
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Add Add-ons (${_addOnsList.length})', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: _showAddOnsListModal,
-                            child: Text(
-                              'Manage All',
-                              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryGreen),
-                            onPressed: () => _showEditAddOnDialog(),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Optional: Add add-on options that customers can choose from',
-                    style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
-                  ),
-                  const SizedBox(height: 8),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _addOnsList.map((addOn) {
+                      ],
+                    ),
+                    Text(
+                      'Optional: Add flavour options that customers can choose from',
+                      style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _flavorVariants.map((variant) {
                         return GestureDetector(
-                          onTap: _showAddOnsListModal,
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey[200]!, width: 1),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('₹ ${addOn['price']}', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
-                                    Text(addOn['name'], style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600])),
-                                  ],
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryGreen),
-                              ],
-                            ),
+                          onTap: _showFlavourVariantsListModal,
+                          child: Chip(
+                            label: Text(variant, style: GoogleFonts.poppins(fontSize: 11)),
+                            backgroundColor: const Color(0xFFF3F4F6),
+                            deleteIcon: const Icon(Icons.edit_outlined, size: 13, color: AppColors.primaryGreen),
+                            onDeleted: _showFlavourVariantsListModal,
                           ),
                         );
                       }).toList(),
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 20),
 
-                  // Bottom CTA Button matching Reference Image 2
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Add Add-ons (${_addOnsList.length})', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: _showAddOnsListModal,
+                              child: Text(
+                                'Manage All',
+                                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryGreen),
+                              onPressed: () => _showEditAddOnDialog(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Optional: Add add-on options that customers can choose from',
+                      style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _addOnsList.map((addOn) {
+                          return GestureDetector(
+                            onTap: _showAddOnsListModal,
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF9FAFB),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.grey[200]!, width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('₹ ${addOn['price']}', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
+                                      Text(addOn['name'], style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600])),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryGreen),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ] else
+                    const SizedBox(height: 12),
+
+                  // Bottom CTA Button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _submitForm,
+                      onPressed: _isSaving ? null : _submitForm,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryGreen, // Brand primary green theme
+                        backgroundColor: AppColors.primaryGreen,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text(
-                        isEditing ? 'Update' : 'Save Item',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                            )
+                          : Text(
+                              isEditing
+                                  ? (isGrocery ? 'Update Product' : 'Update')
+                                  : (isGrocery ? 'Submit for Approval' : 'Save Item'),
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -2799,7 +3470,89 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
   List<Map<String, dynamic>> _parsedItems = [];
   final Set<int> _selectedIndices = {};
 
-  // Sample Preset Menus for instantaneous 1-tap testing
+  bool get _isGroceryMode =>
+      PlatformConfigService.isGroceryPlatform ||
+      (PlatformConfigService.isBothMode && RestaurantAuthService.isGroceryStore);
+
+  final List<Map<String, dynamic>> _groceryCatalogPreset = [
+    {
+      'name': 'Aashirvaad Shudh Chakki Atta',
+      'category': 'Staples & Grains',
+      'subcategory': 'Rice & Atta',
+      'sellingPrice': 245.0,
+      'mrp': 275.0,
+      'b2bPrice': 225.0,
+      'weight': '5',
+      'unit': 'kg',
+      'stockQuantity': 45,
+      'lowStockThreshold': 10,
+      'sku': 'TRC-ATTA-5KG',
+      'vertical': 'grocery',
+      'description': '100% whole wheat chakki-ground atta with zero maida.',
+    },
+    {
+      'name': 'Amul Taaza Toned Milk',
+      'category': 'Dairy & Bread',
+      'subcategory': 'Milk & Curd',
+      'sellingPrice': 54.0,
+      'mrp': 56.0,
+      'b2bPrice': 50.0,
+      'weight': '1',
+      'unit': 'L',
+      'stockQuantity': 60,
+      'lowStockThreshold': 15,
+      'sku': 'TRC-AMUL-1L',
+      'vertical': 'grocery',
+      'description': 'Fresh homogenised toned milk pouch for daily kitchen needs.',
+    },
+    {
+      'name': 'India Gate Classic Basmati Rice',
+      'category': 'Staples & Grains',
+      'subcategory': 'Rice & Atta',
+      'sellingPrice': 189.0,
+      'mrp': 220.0,
+      'b2bPrice': 172.0,
+      'weight': '1',
+      'unit': 'kg',
+      'stockQuantity': 35,
+      'lowStockThreshold': 8,
+      'sku': 'TRC-RICE-1KG',
+      'vertical': 'grocery',
+      'description': 'Aged extra-long grain basmati rice for biryani and everyday meals.',
+    },
+    {
+      'name': 'Fortune Sunlite Refined Sunflower Oil',
+      'category': 'Staples & Grains',
+      'subcategory': 'Edible Oils & Ghee',
+      'sellingPrice': 138.0,
+      'mrp': 165.0,
+      'b2bPrice': 126.0,
+      'weight': '1',
+      'unit': 'L',
+      'stockQuantity': 40,
+      'lowStockThreshold': 10,
+      'sku': 'TRC-OIL-1L',
+      'vertical': 'grocery',
+      'description': 'Light, healthy cooking oil rich in vitamins A & D.',
+    },
+    {
+      'name': 'Fresh Farm Red Onions',
+      'category': 'Fruits & Vegetables',
+      'subcategory': 'Fresh Vegetables',
+      'sellingPrice': 38.0,
+      'mrp': 48.0,
+      'b2bPrice': 32.0,
+      'weight': '1',
+      'unit': 'kg',
+      'stockQuantity': 85,
+      'lowStockThreshold': 15,
+      'sku': 'TRC-ONION-1KG',
+      'vertical': 'grocery',
+      'description': 'Handpicked farm-fresh red onions graded daily at local hub.',
+    },
+  ];
+
+  // Sample Preset Menus for food outlets when platformMode allows food
   final List<Map<String, dynamic>> _northIndianPreset = [
     {
       'name': 'Paneer Butter Masala',
@@ -2811,8 +3564,8 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
       'image': 'assets/images/restaurant_paneertikka_header.jpg',
       'flavors': ['Mild Creamy', 'Medium Spicy', 'Desi Ghee Tadka'],
       'addOns': [
-        {'name': 'Butter Naan', 'price': 40.0, 'image': 'assets/images/restaurant_daltadka_header.jpg'},
-        {'name': 'Jeera Rice', 'price': 80.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
+        {'name': 'Butter Naan', 'price': 40.0, 'image': ''},
+        {'name': 'Jeera Rice', 'price': 80.0, 'image': ''},
       ],
     },
     {
@@ -2825,8 +3578,8 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
       'image': 'assets/images/restaurant_butterchicken_header.jpg',
       'flavors': ['Classic Makhani', 'Spicy Delhi Style'],
       'addOns': [
-        {'name': 'Garlic Naan', 'price': 45.0, 'image': 'assets/images/restaurant_daltadka_header.jpg'},
-        {'name': 'Extra Gravy', 'price': 60.0, 'image': 'assets/images/restaurant_butterchicken_header.jpg'},
+        {'name': 'Garlic Naan', 'price': 45.0, 'image': ''},
+        {'name': 'Extra Gravy', 'price': 60.0, 'image': ''},
       ],
     },
     {
@@ -2839,124 +3592,8 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
       'image': 'assets/images/restaurant_daltadka_header.jpg',
       'flavors': ['Creamy Classic', 'Smoky Dhaba Style'],
       'addOns': [
-        {'name': 'Tandoori Roti', 'price': 20.0, 'image': 'assets/images/restaurant_daltadka_header.jpg'},
-        {'name': 'Sirka Onion', 'price': 15.0, 'image': 'assets/images/restaurant_paneertikka_header.jpg'},
-      ],
-    },
-    {
-      'name': 'Dum Handi Chicken Biryani',
-      'category': 'Biryani & Rice',
-      'subcategory': 'Handi Biryani',
-      'b2bPrice': 280.0,
-      'foodType': 'non-veg',
-      'description': 'Fragrant basmati rice layered with spiced marinated chicken and saffron herbs.',
-      'image': 'assets/images/restaurant_handibiryani_header.jpg',
-      'flavors': ['Hyderabadi Dum', 'Kolkata Saffron'],
-      'addOns': [
-        {'name': 'Boiled Egg (1 pc)', 'price': 20.0, 'image': 'assets/images/restaurant_handibiryani_header.jpg'},
-        {'name': 'Burani Raita', 'price': 35.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-        {'name': 'Mirchi Ka Salan', 'price': 30.0, 'image': 'assets/images/restaurant_butterchicken_header.jpg'},
-      ],
-    },
-    {
-      'name': 'Tandoori Paneer Tikka (6 pcs)',
-      'category': 'Starters',
-      'subcategory': 'Tandoori Snacks',
-      'b2bPrice': 220.0,
-      'foodType': 'veg',
-      'description': 'Chunks of paneer marinated in spiced yogurt and grilled in traditional clay oven.',
-      'image': 'assets/images/restaurant_paneertikka_header.jpg',
-      'flavors': ['Achari Tikka', 'Hariyali Mint', 'Malai Cream'],
-      'addOns': [
-        {'name': 'Mint Chutney', 'price': 15.0, 'image': 'assets/images/restaurant_paneertikka_header.jpg'},
-        {'name': 'Chaat Masala Salad', 'price': 25.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-      ],
-    },
-    {
-      'name': 'Tandoori Chicken Leg Piece',
-      'category': 'Starters',
-      'subcategory': 'Tandoori Non-Veg',
-      'b2bPrice': 240.0,
-      'foodType': 'non-veg',
-      'description': 'Juicy roasted chicken leg pieces seasoned with secret tandoori spices and lemon.',
-      'image': 'assets/images/restaurant_legpiece_header.jpg',
-      'flavors': ['Red Spicy', 'Afghani Malai', 'Peri Peri Rub'],
-      'addOns': [
-        {'name': 'Extra Green Chutney', 'price': 15.0, 'image': 'assets/images/restaurant_paneertikka_header.jpg'},
-        {'name': 'Rumali Roti', 'price': 25.0, 'image': 'assets/images/restaurant_daltadka_header.jpg'},
-      ],
-    },
-  ];
-
-  final List<Map<String, dynamic>> _fastFoodPreset = [
-    {
-      'name': 'Crispy Veggie Deluxe Burger',
-      'category': 'Pizzas & Burgers',
-      'subcategory': 'Burgers',
-      'b2bPrice': 120.0,
-      'foodType': 'veg',
-      'description': 'Crispy golden vegetable patty topped with melted cheese, lettuce and signature mayo.',
-      'image': 'assets/images/restaurant_pizza_item.jpg',
-      'flavors': ['Classic Mayo', 'Spicy Peri Peri', 'Chipotle'],
-      'addOns': [
-        {'name': 'French Fries', 'price': 50.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-        {'name': 'Extra Cheese Slice', 'price': 25.0, 'image': 'assets/images/restaurant_pizza_item.jpg'},
-        {'name': 'Coke 500ml', 'price': 40.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-      ],
-    },
-    {
-      'name': 'Farmhouse Veg Supreme Pizza (10")',
-      'category': 'Pizzas & Burgers',
-      'subcategory': 'Pizzas',
-      'b2bPrice': 270.0,
-      'foodType': 'veg',
-      'description': 'Loaded with bell peppers, mushrooms, sweet corn, black olives, and 100% mozzarella.',
-      'image': 'assets/images/restaurant_pizza_item.jpg',
-      'flavors': ['Thin Crust', 'Cheese Burst', 'Wheat Crust'],
-      'addOns': [
-        {'name': 'Extra Mozzarella', 'price': 50.0, 'image': 'assets/images/restaurant_pizza_item.jpg'},
-        {'name': 'Garlic Dip', 'price': 30.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-      ],
-    },
-    {
-      'name': 'Crispy Chicken Wings (6 pcs)',
-      'category': 'Starters',
-      'subcategory': 'Non-Veg Starters',
-      'b2bPrice': 180.0,
-      'foodType': 'non-veg',
-      'description': 'Fresh chicken wings tossed in your choice of spicy seasoning and glaze.',
-      'image': 'assets/images/restaurant_chicken_item.jpg',
-      'flavors': ['Honey Bulgogi', 'Spicy BBQ', 'Snow Onion', 'Peri Peri'],
-      'addOns': [
-        {'name': 'Extra Ranch Sauce', 'price': 20.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-        {'name': 'Coke 500ml', 'price': 45.0, 'image': 'assets/images/restaurant_pizza_item.jpg'},
-      ],
-    },
-    {
-      'name': 'Veg Hakka Noodles',
-      'category': 'Chinese & Asian',
-      'subcategory': 'Noodles',
-      'b2bPrice': 150.0,
-      'foodType': 'veg',
-      'description': 'Wok tossed noodles loaded with crunchy julienned veggies and oriental sauces.',
-      'image': 'assets/images/restaurant_chinese_header.jpg',
-      'flavors': ['Classic Garlic', 'Schezwan Spicy'],
-      'addOns': [
-        {'name': 'Veg Manchurian (4 pcs)', 'price': 60.0, 'image': 'assets/images/restaurant_chinese_header.jpg'},
-        {'name': 'Chilli Garlic Dip', 'price': 20.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-      ],
-    },
-    {
-      'name': 'Chilli Paneer Dry',
-      'category': 'Chinese & Asian',
-      'subcategory': 'Starters',
-      'b2bPrice': 190.0,
-      'foodType': 'veg',
-      'description': 'Fried paneer cubes tossed in spicy soya-chilli glaze with capsicum and spring onions.',
-      'image': 'assets/images/restaurant_chinese_header.jpg',
-      'flavors': ['Dry Starter', 'Semi-Gravy'],
-      'addOns': [
-        {'name': 'Fried Rice (Small)', 'price': 70.0, 'image': 'assets/images/restaurant_chinese_header.jpg'},
+        {'name': 'Tandoori Roti', 'price': 20.0, 'image': ''},
+        {'name': 'Sirka Onion', 'price': 15.0, 'image': ''},
       ],
     },
   ];
@@ -2964,7 +3601,6 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
   @override
   void initState() {
     super.initState();
-    // Do not load any preset by default. Start with clean empty selection.
   }
 
   @override
@@ -2974,22 +3610,39 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
   }
 
   void _loadPreset(List<Map<String, dynamic>> presetList, String fileName, String fileSize) {
+    final isGrocery = _isGroceryMode;
     setState(() {
       _selectedFileName = fileName;
       _selectedFileSize = fileSize;
       _parsedItems = presetList.map((item) {
+        final double sellingP = ((item['sellingPrice'] ?? item['b2bPrice'] ?? 0.0) as num).toDouble();
+        final double mrpP = ((item['mrp'] ?? sellingP) as num).toDouble();
+        final double b2bP = ((item['b2bPrice'] ?? sellingP) as num).toDouble();
         return {
           '_id': 'm_imp_${DateTime.now().millisecondsSinceEpoch}_${item['name'].hashCode}',
           'name': item['name'],
-          'category': item['category'] ?? 'General',
+          'category': item['category'] ?? (isGrocery ? 'Daily Essentials' : 'General'),
           'subcategory': item['subcategory'] ?? 'General',
-          'b2bPrice': (item['b2bPrice'] as num).toDouble(),
+          'basePrice': sellingP,
+          'sellingPrice': sellingP,
+          'price': sellingP,
+          'mrp': mrpP,
+          'b2cMrp': mrpP,
+          'b2bPrice': b2bP,
+          'weight': item['weight']?.toString() ?? '',
+          'unit': item['unit']?.toString() ?? 'pack',
+          'stockQuantity': item['stockQuantity'] ?? 50,
+          'lowStockThreshold': item['lowStockThreshold'] ?? 10,
+          'inStock': true,
+          'sku': item['sku']?.toString() ?? '',
+          'vertical': isGrocery ? 'grocery' : (item['vertical'] ?? 'food'),
           'foodType': item['foodType'] ?? 'veg',
+          'isVeg': (item['foodType'] ?? 'veg') == 'veg',
           'isAvailable': true,
           'description': item['description'] ?? '',
-          'image': item['image'] ?? 'assets/images/restaurant_chicken_item.jpg',
-          'flavors': List<String>.from(item['flavors'] ?? ['Standard']),
-          'addOns': List<Map<String, dynamic>>.from(item['addOns'] ?? []),
+          'image': item['image'] ?? '',
+          'flavors': isGrocery ? <String>[] : List<String>.from(item['flavors'] ?? ['Standard']),
+          'addOns': isGrocery ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(item['addOns'] ?? []),
         };
       }).toList();
 
@@ -3004,16 +3657,16 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? pickedFile = await picker.pickMedia();
-      
+
       if (pickedFile == null) {
-        return; // User cancelled picking
+        return;
       }
 
       setState(() {
         _isUploading = true;
       });
 
-      final String fileName = pickedFile.name.isNotEmpty ? pickedFile.name : 'Uploaded_Menu_Sheet.csv';
+      final String fileName = pickedFile.name.isNotEmpty ? pickedFile.name : 'Uploaded_Catalog_Sheet.csv';
       final int bytesLength = await pickedFile.length();
       final String fileSize = bytesLength > 0 ? '${(bytesLength / 1024).toStringAsFixed(1)} KB' : '15.4 KB';
 
@@ -3033,16 +3686,15 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
           });
         }
       } else {
-        _loadPreset(_northIndianPreset, fileName, fileSize);
         if (mounted) {
           setState(() {
             _isUploading = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('File "$fileName" selected from gallery! ${_parsedItems.length} menu items parsed.'),
-              backgroundColor: AppColors.primaryGreen,
-              duration: const Duration(seconds: 2),
+              content: Text('Could not read CSV rows from "$fileName". Please select a plain .csv file or paste rows in Paste CSV tab.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -3058,6 +3710,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
   }
 
   void _parsePastedText() {
+    final bool isGrocery = _isGroceryMode;
     final text = _pasteController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3076,42 +3729,92 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
 
-      // Split by tab (Excel copy) or comma (CSV)
       final List<String> parts = line.contains('\t') ? line.split('\t') : line.split(',');
       if (parts.isEmpty) continue;
 
       final name = parts[0].trim();
-      if (name.isEmpty || name.toLowerCase() == 'name' || name.toLowerCase() == 'dish name') {
+      final lowerName = name.toLowerCase();
+      if (name.isEmpty ||
+          lowerName == 'name' ||
+          lowerName == 'product name' ||
+          lowerName == 'dish name' ||
+          lowerName == 'item name') {
         continue; // Skip header row
       }
 
-      final category = parts.length > 1 && parts[1].trim().isNotEmpty ? parts[1].trim() : 'Main Course';
-      final priceStr = parts.length > 2 ? parts[2].replaceAll(RegExp(r'[^0-9.]'), '').trim() : '150';
-      final double price = double.tryParse(priceStr) ?? 150.0;
-      final typeStr = parts.length > 3 ? parts[3].trim().toLowerCase() : 'veg';
-      final isNonVeg = typeStr.contains('non') || typeStr.contains('chicken') || typeStr.contains('mutton') || typeStr.contains('egg') || typeStr.contains('fish');
-      final desc = parts.length > 4 ? parts[4].trim() : 'Delicious freshly prepared dish';
+      if (isGrocery) {
+        // Format: Product Name, Category, Selling Price, MRP, Weight, Unit, Stock Qty, SKU
+        final category = parts.length > 1 && parts[1].trim().isNotEmpty ? parts[1].trim() : 'Staples & Grains';
+        final sellingStr = parts.length > 2 ? parts[2].replaceAll(RegExp(r'[^0-9.]'), '').trim() : '99';
+        final double sellingPrice = double.tryParse(sellingStr) ?? 99.0;
+        final mrpStr = parts.length > 3 ? parts[3].replaceAll(RegExp(r'[^0-9.]'), '').trim() : '';
+        final double mrp = (mrpStr.isNotEmpty ? double.tryParse(mrpStr) : null) ?? sellingPrice;
+        final weight = parts.length > 4 ? parts[4].trim() : '1';
+        final unit = parts.length > 5 && parts[5].trim().isNotEmpty ? parts[5].trim() : 'pack';
+        final stockStr = parts.length > 6 ? parts[6].replaceAll(RegExp(r'[^0-9]'), '').trim() : '50';
+        final int stockQty = int.tryParse(stockStr) ?? 50;
+        final sku = parts.length > 7 ? parts[7].trim() : 'TRC-${DateTime.now().millisecondsSinceEpoch % 10000}-$i';
+        final desc = parts.length > 8 && parts[8].trim().isNotEmpty ? parts[8].trim() : '$weight $unit $name';
 
-      List<String> flavors = ['Regular', 'Spicy'];
-      if (parts.length > 5 && parts[5].trim().isNotEmpty) {
-        flavors = parts[5].split(RegExp(r'[/;|]')).map((f) => f.trim()).where((f) => f.isNotEmpty).toList();
+        newParsed.add({
+          '_id': 'm_imp_${DateTime.now().millisecondsSinceEpoch}_$i',
+          'name': name,
+          'category': category,
+          'subcategory': 'General',
+          'basePrice': sellingPrice,
+          'sellingPrice': sellingPrice,
+          'price': sellingPrice,
+          'mrp': mrp > 0 ? mrp : sellingPrice,
+          'b2cMrp': mrp > 0 ? mrp : sellingPrice,
+          'b2bPrice': sellingPrice,
+          'weight': weight,
+          'unit': unit,
+          'stockQuantity': stockQty,
+          'lowStockThreshold': 10,
+          'inStock': stockQty > 0,
+          'sku': sku,
+          'vertical': 'grocery',
+          'foodType': 'veg',
+          'isVeg': true,
+          'isAvailable': stockQty > 0,
+          'description': desc,
+          'image': '',
+          'flavors': <String>[],
+          'addOns': <Map<String, dynamic>>[],
+        });
+      } else {
+        final category = parts.length > 1 && parts[1].trim().isNotEmpty ? parts[1].trim() : 'Main Course';
+        final priceStr = parts.length > 2 ? parts[2].replaceAll(RegExp(r'[^0-9.]'), '').trim() : '150';
+        final double price = double.tryParse(priceStr) ?? 150.0;
+        final typeStr = parts.length > 3 ? parts[3].trim().toLowerCase() : 'veg';
+        final isNonVeg = typeStr.contains('non') || typeStr.contains('chicken') || typeStr.contains('mutton') || typeStr.contains('egg') || typeStr.contains('fish');
+        final desc = parts.length > 4 ? parts[4].trim() : 'Freshly prepared item';
+
+        List<String> flavors = ['Regular', 'Spicy'];
+        if (parts.length > 5 && parts[5].trim().isNotEmpty) {
+          flavors = parts[5].split(RegExp(r'[/;|]')).map((f) => f.trim()).where((f) => f.isNotEmpty).toList();
+        }
+
+        newParsed.add({
+          '_id': 'm_imp_${DateTime.now().millisecondsSinceEpoch}_$i',
+          'name': name,
+          'category': category,
+          'subcategory': category,
+          'basePrice': price,
+          'sellingPrice': price,
+          'price': price,
+          'mrp': price,
+          'b2bPrice': price,
+          'vertical': 'food',
+          'foodType': isNonVeg ? 'non-veg' : 'veg',
+          'isVeg': !isNonVeg,
+          'isAvailable': true,
+          'description': desc,
+          'image': '',
+          'flavors': flavors.isNotEmpty ? flavors : ['Standard'],
+          'addOns': <Map<String, dynamic>>[],
+        });
       }
-
-      newParsed.add({
-        '_id': 'm_imp_${DateTime.now().millisecondsSinceEpoch}_$i',
-        'name': name,
-        'category': category,
-        'subcategory': category,
-        'b2bPrice': price,
-        'foodType': isNonVeg ? 'non-veg' : 'veg',
-        'isAvailable': true,
-        'description': desc,
-        'image': isNonVeg ? 'assets/images/restaurant_chicken_item.jpg' : 'assets/images/restaurant_paneertikka_header.jpg',
-        'flavors': flavors.isNotEmpty ? flavors : ['Standard'],
-        'addOns': [
-          {'name': 'Extra Portion', 'price': 30.0, 'image': 'assets/images/restaurant_chicken_item.jpg'},
-        ],
-      });
     }
 
     if (newParsed.isEmpty) {
@@ -3136,7 +3839,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Parsed ${newParsed.length} items from pasted spreadsheet data!'),
+        content: Text('Parsed ${newParsed.length} products from pasted spreadsheet data!'),
         backgroundColor: AppColors.primaryGreen,
       ),
     );
@@ -3166,6 +3869,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isGrocery = _isGroceryMode;
     return Column(
       children: [
         // Top Drag Handle & Title Bar
@@ -3184,7 +3888,6 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
           ),
           child: Column(
             children: [
-              // Drag Pill
               Center(
                 child: Container(
                   width: 40,
@@ -3197,7 +3900,6 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               ),
               const SizedBox(height: 12),
 
-              // Title Row
               Row(
                 children: [
                   Container(
@@ -3214,7 +3916,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Import Menu from Excel / CSV',
+                          isGrocery ? 'Bulk Import Grocery Catalog' : 'Import Menu from Excel / CSV',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -3222,7 +3924,9 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                           ),
                         ),
                         Text(
-                          'Bulk import your complete restaurant menu in seconds',
+                          isGrocery
+                              ? 'Bulk import store SKUs, weights, MRP, prices & stock'
+                              : 'Bulk import your complete outlet menu in seconds',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             color: Colors.grey[600],
@@ -3239,7 +3943,6 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               ),
               const SizedBox(height: 12),
 
-              // Mode Tabs
               Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F4F6),
@@ -3248,9 +3951,9 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                 padding: const EdgeInsets.all(3),
                 child: Row(
                   children: [
-                    _buildTabButton(0, 'Upload & Samples', Icons.file_present_rounded),
+                    _buildTabButton(0, 'Upload & Presets', Icons.file_present_rounded),
                     _buildTabButton(1, 'Paste CSV', Icons.paste_rounded),
-                    _buildTabButton(2, 'Excel Format', Icons.help_outline_rounded),
+                    _buildTabButton(2, 'CSV Format', Icons.help_outline_rounded),
                   ],
                 ),
               ),
@@ -3267,21 +3970,17 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_activeTab == 0) ...[
-                  _buildUploadAndPresetsTab(),
+                  _buildUploadAndPresetsTab(isGrocery),
                 ] else if (_activeTab == 1) ...[
-                  _buildPasteCsvTab(),
+                  _buildPasteCsvTab(isGrocery),
                 ] else ...[
-                  _buildFormatGuideTab(),
+                  _buildFormatGuideTab(isGrocery),
                 ],
 
                 const SizedBox(height: 20),
-
-                // Preview Table Section Header
-                _buildPreviewSectionHeader(),
-
+                _buildPreviewSectionHeader(isGrocery),
                 const SizedBox(height: 10),
 
-                // Preview List Cards
                 if (_parsedItems.isEmpty) ...[
                   Container(
                     width: double.infinity,
@@ -3296,11 +3995,12 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                         Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey[400]),
                         const SizedBox(height: 10),
                         Text(
-                          'No dishes parsed yet',
+                          isGrocery ? 'No products parsed yet' : 'No items parsed yet',
                           style: GoogleFonts.poppins(color: Colors.grey[700], fontWeight: FontWeight.w600, fontSize: 13),
                         ),
                         Text(
-                          'Choose an Excel file or paste CSV data above',
+                          'Choose a CSV file, load sample SKUs, or paste spreadsheet rows above',
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 11),
                         ),
                       ],
@@ -3313,7 +4013,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                     itemCount: _parsedItems.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      return _buildParsedItemCard(index);
+                      return _buildParsedItemCard(index, isGrocery);
                     },
                   ),
                 ],
@@ -3353,7 +4053,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                         ),
                       ),
                       Text(
-                        'Will be added directly to live menu',
+                        isGrocery ? 'Will be submitted to store catalog' : 'Will be added directly to outlet menu',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: Colors.grey[600],
@@ -3366,7 +4066,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                   onPressed: _selectedIndices.isEmpty ? null : _confirmImport,
                   icon: const Icon(Icons.file_download_done_rounded, color: Colors.white, size: 18),
                   label: Text(
-                    'Import (${_selectedIndices.length}) Dishes',
+                    isGrocery ? 'Import (${_selectedIndices.length}) SKUs' : 'Import (${_selectedIndices.length}) Items',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -3417,13 +4117,17 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                 size: 14,
                 color: isSelected ? AppColors.primaryGreen : Colors.grey[600],
               ),
-              const SizedBox(width: 5),
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppColors.primaryGreen : Colors.grey[700],
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? AppColors.primaryGreen : Colors.grey[700],
+                  ),
                 ),
               ),
             ],
@@ -3433,11 +4137,10 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
     );
   }
 
-  Widget _buildUploadAndPresetsTab() {
+  Widget _buildUploadAndPresetsTab(bool isGrocery) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Upload Excel Box
         GestureDetector(
           onTap: _pickFileFromDevice,
           child: Container(
@@ -3458,7 +4161,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                       children: [
                         CircularProgressIndicator(color: AppColors.primaryGreen),
                         SizedBox(height: 10),
-                        Text('Reading Excel file sheets...'),
+                        Text('Reading spreadsheet rows...'),
                       ],
                     ),
                   )
@@ -3474,7 +4177,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        _selectedFileName != null ? 'Selected: $_selectedFileName' : 'Select or Browse Excel File (.xlsx / .csv)',
+                        _selectedFileName != null ? 'Selected: $_selectedFileName' : 'Select or Browse CSV Sheet (.csv)',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -3483,7 +4186,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _selectedFileSize != null ? 'Size: $_selectedFileSize • Tap to re-upload' : 'Supports Microsoft Excel (.xlsx, .xls) and standard CSV format',
+                        _selectedFileSize != null ? 'Size: $_selectedFileSize • Tap to re-upload' : 'Supports standard CSV format exported from Excel / Sheets',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: Colors.grey[600],
@@ -3509,16 +4212,49 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                   ),
           ),
         ),
+        const SizedBox(height: 12),
+        if (isGrocery)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _loadPreset(_groceryCatalogPreset, 'Grocery_Starter_SKUs.csv', '5 SKUs'),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.primaryGreen),
+              label: Text(
+                'Load 5 Starter Grocery SKUs (Atta, Milk, Rice, Oil, Onion)',
+                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primaryGreen),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _loadPreset(_northIndianPreset, 'North_Indian_Starter.csv', '3 Items'),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.primaryGreen),
+              label: Text(
+                'Load Starter Outlet Items',
+                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primaryGreen),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildPasteCsvTab() {
+  Widget _buildPasteCsvTab(bool isGrocery) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Paste data copied from Excel or Google Sheets:',
+          'Paste rows copied from Excel or Google Sheets:',
           style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 6),
@@ -3527,7 +4263,9 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
           maxLines: 5,
           style: GoogleFonts.robotoMono(fontSize: 11),
           decoration: InputDecoration(
-            hintText: 'Dish Name, Category, Price, Veg/Non-Veg, Description\ne.g. Paneer Tikka, Starters, 220, Veg, Grilled cottage cheese\ne.g. Chicken Biryani, Main Course, 280, Non-Veg, Dum Biryani',
+            hintText: isGrocery
+                ? 'Product Name, Category, Selling Price, MRP, Weight, Unit, Stock Qty, SKU\ne.g. Aashirvaad Atta, Staples & Grains, 245, 275, 5, kg, 40, TRC-ATTA-5KG'
+                : 'Item Name, Category, Price, Veg/Non-Veg, Description\ne.g. Paneer Tikka, Starters, 220, Veg, Grilled cottage cheese',
             hintStyle: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[400]),
             filled: true,
             fillColor: const Color(0xFFF9FAFB),
@@ -3542,7 +4280,9 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
           children: [
             TextButton(
               onPressed: () {
-                _pasteController.text = 'Kadai Paneer, Main Course, 230, Veg, Spicy tomato onion capsicum gravy\nChicken Tikka Masala, Main Course, 280, Non-Veg, Charred chicken in rich gravy\nGarlic Butter Naan, Breads, 50, Veg, Fresh clay oven naan\nMango Lassi, Beverages, 90, Veg, Thick creamy yogurt lassi';
+                _pasteController.text = isGrocery
+                    ? 'Aashirvaad Shudh Chakki Atta, Staples & Grains, 245, 275, 5, kg, 40, TRC-ATTA-5KG\nAmul Taaza Toned Milk, Dairy & Bread, 54, 56, 1, L, 60, TRC-MILK-1L\nFortune Sunlite Sunflower Oil, Staples & Grains, 138, 165, 1, L, 35, TRC-OIL-1L\nFresh Farm Red Onion, Fruits & Vegetables, 38, 48, 1, kg, 80, TRC-ONION-1KG'
+                    : 'Kadai Paneer, Main Course, 230, Veg, Spicy tomato onion capsicum gravy\nGarlic Butter Naan, Breads & Rice, 50, Veg, Fresh clay oven naan';
               },
               child: Text('Fill Sample CSV', style: GoogleFonts.poppins(fontSize: 11, color: AppColors.primaryGreen)),
             ),
@@ -3563,7 +4303,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
     );
   }
 
-  Widget _buildFormatGuideTab() {
+  Widget _buildFormatGuideTab(bool isGrocery) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -3579,34 +4319,42 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               const Icon(Icons.info_outline_rounded, color: AppColors.primaryGreen, size: 18),
               const SizedBox(width: 8),
               Text(
-                'Excel Columns Structure',
+                isGrocery ? 'Grocery CSV Columns Structure' : 'Excel / CSV Columns Structure',
                 style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          _buildGuideRow('1. Dish Name', 'e.g. Butter Chicken (Required)'),
-          _buildGuideRow('2. Category', 'e.g. Starters, Main Course, Biryani'),
-          _buildGuideRow('3. Base Price', 'e.g. 250 (Numeric ₹ price)'),
-          _buildGuideRow('4. Food Type', 'e.g. "veg" or "non-veg"'),
-          _buildGuideRow('5. Description', 'e.g. Rich tomato butter gravy'),
-          _buildGuideRow('6. Flavours', 'e.g. Mild / Spicy / Extra Gravy (Optional)'),
-          _buildGuideRow('7. Add-ons', 'e.g. Extra Cheese:40, Butter Naan:30 (Optional)'),
+          if (isGrocery) ...[
+            _buildGuideRow('1. Product Name', 'e.g. Aashirvaad Shudh Chakki Atta (Required)'),
+            _buildGuideRow('2. Category', 'e.g. Staples & Grains, Dairy & Bread'),
+            _buildGuideRow('3. Selling Price', 'e.g. 245 (Numeric ₹ price)'),
+            _buildGuideRow('4. MRP', 'e.g. 275 (Printed MRP ₹)'),
+            _buildGuideRow('5. Weight', 'e.g. 5 or 500'),
+            _buildGuideRow('6. Unit', 'e.g. kg, g, L, ml, pack, piece, dozen'),
+            _buildGuideRow('7. Stock Qty', 'e.g. 40 (Initial store inventory count)'),
+            _buildGuideRow('8. SKU Code', 'e.g. TRC-ATTA-5KG (Optional)'),
+          ] else ...[
+            _buildGuideRow('1. Item Name', 'e.g. Paneer Tikka (Required)'),
+            _buildGuideRow('2. Category', 'e.g. Starters, Main Course'),
+            _buildGuideRow('3. Base Price', 'e.g. 250 (Numeric ₹ price)'),
+            _buildGuideRow('4. Type', 'e.g. "veg" or "non-veg"'),
+            _buildGuideRow('5. Description', 'e.g. Rich tomato butter gravy'),
+            _buildGuideRow('6. Flavours', 'e.g. Mild / Spicy (Optional)'),
+          ],
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Sample Excel Template "ECD_Restaurant_Menu_Template.xlsx" downloaded!'),
-                    backgroundColor: AppColors.primaryGreen,
-                  ),
-                );
+                _pasteController.text = isGrocery
+                    ? 'Product Name, Category, Selling Price, MRP, Weight, Unit, Stock Qty, SKU\nAashirvaad Shudh Chakki Atta, Staples & Grains, 245, 275, 5, kg, 40, TRC-ATTA-5KG\nAmul Taaza Toned Milk, Dairy & Bread, 54, 56, 1, L, 60, TRC-MILK-1L'
+                    : 'Item Name, Category, Base Price, Type, Description\nPaneer Tikka, Starters, 220, Veg, Grilled cottage cheese cubes';
+                setState(() => _activeTab = 1);
               },
-              icon: const Icon(Icons.download_rounded, size: 16, color: AppColors.primaryGreen),
+              icon: const Icon(Icons.copy_all_rounded, size: 16, color: AppColors.primaryGreen),
               label: Text(
-                'Download Sample Excel Template',
+                'Insert Sample CSV into Editor',
                 style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
               ),
               style: OutlinedButton.styleFrom(
@@ -3627,7 +4375,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 112,
             child: Text(
               col,
               style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
@@ -3644,7 +4392,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
     );
   }
 
-  Widget _buildPreviewSectionHeader() {
+  Widget _buildPreviewSectionHeader(bool isGrocery) {
     final bool isAllSelected = _selectedIndices.length == _parsedItems.length && _parsedItems.isNotEmpty;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3667,7 +4415,7 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               },
             ),
             Text(
-              'Dishes to Import (${_selectedIndices.length}/${_parsedItems.length})',
+              '${isGrocery ? 'Products' : 'Items'} to Import (${_selectedIndices.length}/${_parsedItems.length})',
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -3693,12 +4441,18 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
     );
   }
 
-  Widget _buildParsedItemCard(int index) {
+  Widget _buildParsedItemCard(int index, bool isGrocery) {
     final item = _parsedItems[index];
     final bool isSelected = _selectedIndices.contains(index);
     final bool isVeg = (item['foodType'] ?? 'veg') == 'veg';
     final List flavors = item['flavors'] ?? [];
     final List addOns = item['addOns'] ?? [];
+    final String sku = (item['sku'] ?? '').toString().trim();
+    final String weight = (item['weight'] ?? '').toString().trim();
+    final String unit = (item['unit'] ?? '').toString().trim();
+    final int stockQty = int.tryParse((item['stockQuantity'] ?? 0).toString()) ?? 0;
+    final double sellingP = ((item['sellingPrice'] ?? item['b2bPrice'] ?? 0.0) as num).toDouble();
+    final double mrpP = ((item['mrp'] ?? sellingP) as num).toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -3722,7 +4476,6 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Row(
           children: [
-            // Checkbox
             Checkbox(
               value: isSelected,
               activeColor: AppColors.primaryGreen,
@@ -3737,18 +4490,18 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               },
             ),
 
-            // Food Type Dot
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isVeg ? Colors.green : Colors.red,
+            if (!isGrocery) ...[
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isVeg ? Colors.green : Colors.red,
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
+              const SizedBox(width: 10),
+            ],
 
-            // Item Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -3762,7 +4515,9 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Row(
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -3775,19 +4530,32 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
                           style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[700]),
                         ),
                       ),
-                      if (flavors.isNotEmpty) ...[
-                        const SizedBox(width: 6),
+                      if (isGrocery) ...[
+                        if (weight.isNotEmpty || unit.isNotEmpty)
+                          Text(
+                            '$weight $unit',
+                            style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+                          ),
                         Text(
-                          '${flavors.length} flavours',
-                          style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
+                          'Stock: $stockQty',
+                          style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600]),
                         ),
-                      ],
-                      if (addOns.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          '${addOns.length} add-ons',
-                          style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
-                        ),
+                        if (sku.isNotEmpty)
+                          Text(
+                            sku,
+                            style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
+                          ),
+                      ] else ...[
+                        if (flavors.isNotEmpty)
+                          Text(
+                            '${flavors.length} flavours',
+                            style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
+                          ),
+                        if (addOns.isNotEmpty)
+                          Text(
+                            '${addOns.length} add-ons',
+                            style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[500]),
+                          ),
                       ],
                     ],
                   ),
@@ -3795,24 +4563,31 @@ class _ExcelMenuImportSheetState extends State<ExcelMenuImportSheet> {
               ),
             ),
 
-            // Price & Delete
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '₹${(item['b2bPrice'] ?? 0.0).toStringAsFixed(2)}',
+                  '₹${sellingP.toStringAsFixed(sellingP % 1 == 0 ? 0 : 2)}',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryGreen,
                   ),
                 ),
+                if (mrpP > sellingP)
+                  Text(
+                    'MRP ₹${mrpP.toStringAsFixed(mrpP % 1 == 0 ? 0 : 2)}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.grey[500],
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
                 GestureDetector(
                   onTap: () {
                     setState(() {
                       _parsedItems.removeAt(index);
                       _selectedIndices.remove(index);
-                      // Re-index remaining items in selected set
                       final newSet = <int>{};
                       for (final idx in _selectedIndices) {
                         if (idx > index) {

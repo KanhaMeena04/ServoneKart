@@ -84,10 +84,10 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
                 {order.customerName || 'Tricelyn Customer'}
               </p>
               <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
-                {order.deliveryAddress?.address || 'Scheme 54, Vijay Nagar, Indore, Madhya Pradesh'}
+                {order.deliveryAddress?.addressLine || order.deliveryAddress?.fullAddress || order.deliveryAddress?.address || 'Standard Delivery Address'}
               </p>
               <p className="text-[11px] text-gray-600 mt-0.5">
-                Phone: {order.phone || '+91 98260 00000'}
+                Phone: {order.customerPhone || order.phone || '+91 98260 00000'}
               </p>
             </div>
 

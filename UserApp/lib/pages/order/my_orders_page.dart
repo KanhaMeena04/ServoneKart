@@ -598,7 +598,7 @@ class _OrderCard extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            'For any query contact to ECDkart',
+                            'For any query contact Tricelyn Support',
                             style: TextStyle(
                               fontSize: 12,
                               color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -623,14 +623,19 @@ class _OrderCard extends StatelessWidget {
                                       padding: const EdgeInsets.symmetric(horizontal: 4),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    child: const FittedBox(
+                                    child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.star_border, size: 16),
-                                          SizedBox(width: 6),
-                                          Text('Rate Food', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                                          const Icon(Icons.star_border, size: 16),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            (order['vertical']?.toString().toLowerCase() == 'food')
+                                                ? 'Rate Food'
+                                                : 'Rate Order',
+                                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                          ),
                                         ],
                                       ),
                                     ),

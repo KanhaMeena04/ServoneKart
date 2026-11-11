@@ -64,14 +64,15 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         ? rawOrderNum.toString().toUpperCase()
         : (backendId.length > 8 ? 'ORD${backendId.substring(backendId.length - 4).toUpperCase()}' : backendId.toUpperCase());
     final status = order['status']?.toString().toLowerCase() ?? 'placed';
+    final isFoodOrder = order['vertical']?.toString().toLowerCase() == 'food';
     final restaurant = order['restaurant'] is Map ? order['restaurant'] : (order['store'] is Map ? order['store'] : {});
-    final restaurantName = restaurant['name']?.toString() ?? 'Restaurant';
+    final restaurantName = restaurant['name']?.toString() ?? (isFoodOrder ? 'Restaurant' : 'Partner Store');
     final restaurantImage = restaurant['image']?.toString() ?? restaurant['coverImage']?.toString() ?? '';
 
     final rawItems = (order['items'] as List? ?? []);
     final itemsList = rawItems.map((i) {
       if (i is Map) {
-        final name = i['name']?.toString() ?? i['product']?['name']?.toString() ?? 'Food Item';
+        final name = i['name']?.toString() ?? i['product']?['name']?.toString() ?? (isFoodOrder ? 'Food Item' : 'Grocery Item');
         final image = i['image']?.toString() ?? i['product']?['image']?.toString() ?? '';
         final price = (i['price'] as num?)?.toDouble() ?? (i['product']?['price'] as num?)?.toDouble() ?? 0.0;
         final qty = (i['quantity'] as num? ?? i['qty'] as num? ?? 1).toInt();
@@ -199,7 +200,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                         width: 44,
                         height: 44,
                         color: Colors.grey[200],
-                        child: const Icon(Icons.fastfood, color: AppColors.primary),
+                        child: Icon(
+                          isFoodOrder ? Icons.fastfood : Icons.local_grocery_store_rounded,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ),

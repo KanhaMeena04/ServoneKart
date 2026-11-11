@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_routes.dart';
 import 'providers/cart_provider.dart';
@@ -18,6 +19,7 @@ import 'providers/user_provider.dart';
 import 'providers/location_provider.dart';
 import 'package:ecdkart_app/services/socket_service.dart';
 import 'providers/order_provider.dart';
+import 'providers/platform_config_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,7 +111,7 @@ class _ECDKartAppState extends State<ECDKartApp> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'We sincerely apologize for the inconvenience. Sometimes unforeseen circumstances arise at the dark store. We highly value you as a customer and deeply appreciate your understanding!',
+                    'We sincerely apologize for the inconvenience. Sometimes unforeseen circumstances arise at the partner store. We highly value you as a customer and deeply appreciate your understanding!',
                     style: TextStyle(fontSize: 13, color: Colors.black87),
                   ),
                 ],
@@ -180,6 +182,7 @@ class _ECDKartAppState extends State<ECDKartApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => PlatformConfigProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),

@@ -47,6 +47,8 @@ import Security from "@mui/icons-material/Security";
 import BarChart from "@mui/icons-material/BarChart";
 import SupportAgent from "@mui/icons-material/SupportAgent";
 
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/utils';
 import { useAuth } from '../context/AuthContext';
 
 export interface MenuItemType {
@@ -234,7 +236,28 @@ export default function MenuContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = React.useState<string | null>(null);
+  const [platformMode, setPlatformMode] = React.useState<'grocery' | 'food' | 'both'>('grocery');
   const { user } = useAuth();
+
+  React.useEffect(() => {
+    let mounted = true;
+    axios.get(`${API_BASE_URL}/api/settings`)
+      .then((res) => {
+        if (mounted && res.data?.platformMode) {
+          setPlatformMode(res.data.platformMode);
+        }
+      })
+      .catch(() => {});
+    const onModeChange = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.platformMode) setPlatformMode(detail.platformMode);
+    };
+    window.addEventListener('platformModeChanged', onModeChange);
+    return () => {
+      mounted = false;
+      window.removeEventListener('platformModeChanged', onModeChange);
+    };
+  }, []);
 
   const userPerms: string[] | undefined = (user as any)?.permissions;
   const isSuperAdmin = !userPerms ||
@@ -243,16 +266,49 @@ export default function MenuContent() {
     user?.role === 'admin' ||
     (user as any)?.role === 'admin' ||
     user?.email === 'admin@gmail.com' ||
+    user?.email === 'admin@tricelyn.com' ||
     user?.email === 'admin@servonekart.com' ||
     user?.email === 'admin@ecdkart.com' ||
     (user as any)?.roleName === 'Super Admin' ||
     (user as any)?.name === 'Super Admin';
 
+  const modeAwareItems = React.useMemo(() => {
+    return menuItems.map((item) => {
+      if (item.text === 'Category Workspaces' && item.children) {
+        const baseChildren = item.children.filter((c) => !c.path.includes('/admin/food'));
+        if (platformMode === 'both') {
+          return {
+            ...item,
+            children: [
+              ...baseChildren,
+              { text: '🍽️ Food Delivery & Restaurants', path: '/restaurants' }
+            ]
+          };
+        }
+        if (platformMode === 'food') {
+          return {
+            ...item,
+            children: [
+              { text: '🍽️ Food Delivery & Restaurants (Core)', path: '/restaurants' },
+              ...baseChildren.filter((c) => !c.path.includes('/admin/grocery'))
+            ]
+          };
+        }
+        return { ...item, children: baseChildren };
+      }
+      if (platformMode === 'food') {
+        if (item.text === 'Grocery Orders') return { ...item, text: 'Food Orders' };
+        if (item.text === 'Dark Stores & Marts') return { ...item, text: 'Restaurants & Outlets' };
+      }
+      return item;
+    });
+  }, [platformMode]);
+
   const visibleMenuItems = React.useMemo(() => {
     if (isSuperAdmin || !Array.isArray(userPerms)) {
-      return menuItems;
+      return modeAwareItems;
     }
-    return menuItems.filter(item => {
+    return modeAwareItems.filter(item => {
       if (!item.permission) return true;
       if (userPerms.includes(item.permission)) return true;
       if (item.children && item.children.length > 0) {
@@ -270,7 +326,7 @@ export default function MenuContent() {
       });
       return { ...item, children: filteredChildren };
     });
-  }, [userPerms, isSuperAdmin]);
+  }, [userPerms, isSuperAdmin, modeAwareItems]);
 
   return (
     <Stack

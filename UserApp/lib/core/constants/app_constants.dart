@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 
 class AppConstants {
   static const String appName = 'Tricelyn';
-  static const String appTagline = 'Everything You Actually Want';
+  static const String appTagline = 'Fresh Groceries in 10-15 Mins';
   
   // Pass --dart-define=BACKEND_URL=https://... or --dart-define=LOCAL_IP=192.168.x.x for custom backend
   static const String _customBackendUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
@@ -31,13 +31,13 @@ class AppConstants {
   static const double defaultRadius = 12.0;
   
   static const List<String> categories = [
-    'Pizza',
-    'Burger',
-    'Noodles',
-    'Pasta',
-    'Chinese',
-    'Indian',
-    'Desserts',
-    'Beverages',
+    'Vegetables & Fruits',
+    'Dairy, Bread & Eggs',
+    'Atta, Rice & Dal',
+    'Oil, Ghee & Masala',
+    'Snacks & Munchies',
+    'Cold Drinks & Juices',
+    'Bakery & Biscuits',
+    'Personal Care',
   ];
 }

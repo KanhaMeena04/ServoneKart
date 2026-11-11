@@ -51,6 +51,40 @@ const MainGrid = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [resetHistory, setResetHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [platformMode, setPlatformMode] = useState<'grocery' | 'food' | 'both'>('grocery');
+  const [modeBusy, setModeBusy] = useState(false);
+
+  React.useEffect(() => {
+    axios.get(`${API_BASE_URL}/api/settings`)
+      .then((res) => {
+        if (res.data?.platformMode) setPlatformMode(res.data.platformMode);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSwitchPlatformMode = async (nextMode: 'grocery' | 'food' | 'both') => {
+    if (modeBusy || platformMode === nextMode) return;
+    setModeBusy(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const res = await axios.put(
+        `${API_BASE_URL}/api/settings/platform-mode`,
+        { platformMode: nextMode },
+        {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }
+      );
+      const updated = res.data?.platformMode || nextMode;
+      setPlatformMode(updated);
+      window.dispatchEvent(new CustomEvent('platformModeChanged', { detail: { platformMode: updated } }));
+      toast.success(`Platform mode set to ${String(updated).toUpperCase()} across all apps & website!`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Could not update platform mode');
+    } finally {
+      setModeBusy(false);
+    }
+  };
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -373,11 +407,11 @@ const MainGrid = () => {
               <div>
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-heading">
-                    Tricelyn Hyperlocal Command Center
+                    Tricelyn Super Admin Master Panel
                   </h1>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    INDORE OPS LIVE
+                    {platformMode === 'grocery' ? '100% GROCERY CORE LIVE' : platformMode === 'both' ? 'GROCERY PRIORITY + FOOD' : 'FOOD MODE LIVE'}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
@@ -432,8 +466,36 @@ const MainGrid = () => {
                 <span>Avg Fulfillment: <strong className="text-emerald-700 font-bold">12.4 Mins</strong></span>
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
-              Indore IST: {new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mr-1">
+                Active Vertical:
+              </span>
+              {([
+                { id: 'grocery', label: 'Grocery Only' },
+                { id: 'both', label: 'Grocery + Food' },
+                { id: 'food', label: 'Food Only' }
+              ] as const).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={modeBusy}
+                  onClick={() => handleSwitchPlatformMode(opt.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    platformMode === opt.id
+                      ? 'bg-[#0055ff] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => navigate('/setting')}
+                className="ml-1 text-[11px] font-bold text-[#0055ff] hover:underline cursor-pointer"
+              >
+                Full Settings →
+              </button>
             </div>
           </div>
         </div>

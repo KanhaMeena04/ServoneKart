@@ -30,7 +30,9 @@ import '../../providers/user_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/platform_config_provider.dart';
 import '../../services/socket_service.dart';
+import '../grocery/grocery_page.dart';
 
 import 'recommended_restaurants_page.dart';
 import '../cart/cart_page.dart';
@@ -78,9 +80,102 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Widget _buildVerticalSwitcher(PlatformConfigProvider cfg, bool isDark) {
+    final bool isGrocery = cfg.activeCustomerVertical == 'grocery';
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => cfg.setActiveVertical('grocery'),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isGrocery ? AppColors.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.local_grocery_store_rounded,
+                      size: 16,
+                      color: isGrocery
+                          ? Colors.white
+                          : (isDark ? Colors.grey.shade300 : const Color(0xFF4B5563)),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Grocery Mart',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: isGrocery
+                            ? Colors.white
+                            : (isDark ? Colors.grey.shade300 : const Color(0xFF4B5563)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => cfg.setActiveVertical('food'),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: !isGrocery ? AppColors.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.restaurant_menu_rounded,
+                      size: 16,
+                      color: !isGrocery
+                          ? Colors.white
+                          : (isDark ? Colors.grey.shade300 : const Color(0xFF4B5563)),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Food Delivery',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: !isGrocery
+                            ? Colors.white
+                            : (isDark ? Colors.grey.shade300 : const Color(0xFF4B5563)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
+    final cfg = context.watch<PlatformConfigProvider>();
+    final Widget? switcher = cfg.isBothMode ? _buildVerticalSwitcher(cfg, isDark) : null;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: isDark ? Colors.black : const Color(0xFFF5FAF8),
@@ -108,12 +203,15 @@ class _HomePageState extends State<HomePage> {
           );
         },
         child: KeyedSubtree(
-          key: ValueKey<int>(_selectedIndex),
+          key: ValueKey<String>('${_selectedIndex}_${cfg.activeCustomerVertical}'),
           child: [
-            _HomeTab(
-              selectedPreferences: _selectedPreferences,
-              onClearPreferences: _onClearPreferences,
-            ),
+            cfg.isGroceryActive
+                ? GroceryPage(isEmbedded: true, modeSwitcher: switcher)
+                : _HomeTab(
+                    selectedPreferences: _selectedPreferences,
+                    onClearPreferences: _onClearPreferences,
+                    modeSwitcher: switcher,
+                  ),
             CategoriesPage(
               onPreferencesSelected: _onPreferencesSelected,
               onSkip: _onSkipPreferences,
@@ -188,10 +286,12 @@ class _NavBarItem extends StatelessWidget {
 class _HomeTab extends StatefulWidget {
   final List<String> selectedPreferences;
   final VoidCallback? onClearPreferences;
+  final Widget? modeSwitcher;
 
   const _HomeTab({
     this.selectedPreferences = const [],
     this.onClearPreferences,
+    this.modeSwitcher,
   });
 
   @override
@@ -532,7 +632,7 @@ class _HomeTabState extends State<_HomeTab> {
       },
       {
         'sectionKey': 'ecdkart_comparison',
-        'title': 'ECDkart vs OTHER APPS',
+        'title': 'Tricelyn vs OTHER APPS',
         'subtitle': '40-60% LOWER PRICES - Save on every delivery',
         'sectionType': 'comparison_banner',
         'priority': 30,
@@ -1437,6 +1537,11 @@ class _HomeTabState extends State<_HomeTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.modeSwitcher != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                      child: widget.modeSwitcher!,
+                    ),
                   for (final sec in _orderedCmsSections) ...[
                     if (sec['isActive'] == true &&
                         sec['status'] != 'inactive' &&
@@ -2495,7 +2600,7 @@ class _EcdkartComparisonSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (restaurants.isEmpty) return const SizedBox.shrink();
 
-    final heading = (title != null && title!.trim().isNotEmpty) ? title!.trim() : 'ECDkart vs OTHER APPS';
+    final heading = (title != null && title!.trim().isNotEmpty) ? title!.trim() : 'Tricelyn vs OTHER APPS';
     final sub = (subtitle != null && subtitle!.trim().isNotEmpty) ? subtitle!.trim() : '40-60% LOWER PRICES - Save on every delivery';
 
     return Container(
@@ -4155,7 +4260,7 @@ class _RecentOrdersSectionState extends State<_RecentOrdersSection> {
           itemCount: pastOrders.length > 3 ? 3 : pastOrders.length,
           itemBuilder: (context, index) {
             final order = pastOrders[index];
-            final restName = order['restaurant']?['name'] ?? 'ECDKART Order';
+            final restName = order['storeName'] ?? order['restaurantName'] ?? order['restaurant']?['name'] ?? 'Tricelyn Order';
             final totalAmt = order['totalAmount'] ?? 0;
             final statusStr = order['status'] ?? 'processing';
             final isReordered = _reorderSuccessIndex == index;
@@ -4382,15 +4487,7 @@ class _SuperAppServicesSection extends StatelessWidget {
         subtitle: '10-15 Min Delivery',
         badge: 'Core Focus',
         icon: Icons.shopping_basket_rounded,
-        gradient: const [Color(0xFF0055FF), Color(0xFF00D2FF)],
-        onTap: () => context.push(AppRoutes.grocery),
-      ),
-      _ServiceItem(
-        title: 'Grocery & Mart',
-        subtitle: '10-20 Min Delivery',
-        badge: 'Instant',
-        icon: Icons.shopping_basket_rounded,
-        gradient: const [Color(0xFF10B981), Color(0xFF34D399)],
+        gradient: const [Color(0xFF10B981), Color(0xFF059669)],
         onTap: () => context.push(AppRoutes.grocery),
       ),
       _ServiceItem(
@@ -4480,7 +4577,7 @@ class _SuperAppServicesSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ECDKART Services',
+                      'Tricelyn Services',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,

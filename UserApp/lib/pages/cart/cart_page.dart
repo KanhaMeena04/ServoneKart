@@ -20,6 +20,8 @@ import '../../widgets/flip_animation_widgets.dart';
 import '../auth/login_page.dart';
 import '../auth/register_page.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/platform_config_provider.dart';
+import '../../services/grocery_api_service.dart';
 
 class CartPage extends StatefulWidget {
   final Restaurant? restaurant;
@@ -55,12 +57,16 @@ class _CartPageState extends State<CartPage> {
   }
 
   void _placeOrder(CartProvider cart) async {
+    final cfg = context.read<PlatformConfigProvider>();
+    final isGrocery = cart.hasGroceryItems || (cfg.isGroceryActive && widget.restaurant == null);
     final r = widget.restaurant;
     if (r != null && (!r.isOpen || !r.isActive || r.isTemporarilyClosed || !r.isOnline)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ This restaurant is currently closed. Cannot place order.'),
-          backgroundColor: Color(0xFFDC2626),
+        SnackBar(
+          content: Text(isGrocery
+              ? '⚠️ This partner store is currently closed. Cannot place order.'
+              : '⚠️ This restaurant is currently closed. Cannot place order.'),
+          backgroundColor: const Color(0xFFDC2626),
         ),
       );
       return;
@@ -128,17 +134,21 @@ class _CartPageState extends State<CartPage> {
 
   void _showNoteDialog(BuildContext context, CartProvider cart) {
     final controller = TextEditingController(text: cart.orderNote);
+    final isGrocery = cart.hasGroceryItems || context.read<PlatformConfigProvider>().isGroceryActive;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Note for Restaurant',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        title: Text(
+            isGrocery ? 'Add Note for Partner Store' : 'Add Note for Restaurant',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         content: TextField(
           controller: controller,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: 'e.g. No onions, Make it spicy...',
+            hintText: isGrocery
+                ? 'e.g. Call on arrival, pick fresh items...'
+                : 'e.g. No onions, Make it spicy...',
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -563,7 +573,7 @@ class _CartPageState extends State<CartPage> {
 
                   const SizedBox(height: 12),
 
-                  // 3. Cart Items Card List
+                  // 3. Cart Items Card List (grouped by partner store when multi-vendor)
                   Container(
                     width: double.infinity,
                     color: Colors.white,
@@ -571,17 +581,68 @@ class _CartPageState extends State<CartPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...items.map((item) => _CartItemRow(
-                              item: item,
-                              onEdit: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Edit options for ${item.product.name}'),
-                                    duration: const Duration(seconds: 1),
+                        if (cart.storeCount > 1)
+                          ...cart.storeGroups.entries.map((entry) {
+                            final groupItems = entry.value;
+                            final storeLabel = groupItems.isNotEmpty
+                                ? (groupItems.first.product.storeName ??
+                                    groupItems.first.product.restaurantName ??
+                                    'Partner Mart')
+                                : 'Partner Mart';
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                );
-                              },
-                            )),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.storefront_rounded,
+                                          size: 14, color: AppColors.primary),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '$storeLabel (${groupItems.length} item${groupItems.length > 1 ? 's' : ''})',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...groupItems.map((item) => _CartItemRow(
+                                      item: item,
+                                      onEdit: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Adjust quantity for ${item.product.name}'),
+                                            duration: const Duration(seconds: 1),
+                                          ),
+                                        );
+                                      },
+                                    )),
+                              ],
+                            );
+                          })
+                        else
+                          ...items.map((item) => _CartItemRow(
+                                item: item,
+                                onEdit: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Edit options for ${item.product.name}'),
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                              )),
 
                         const SizedBox(height: 12),
 
@@ -740,7 +801,7 @@ class _EstimatedDeliveryHeader extends StatelessWidget {
   }
 }
 
-// ── 2. Restaurant Header Card ────────────────────────────────────────────────
+// ── 2. Store / Restaurant Header Card ────────────────────────────────────────
 class _RestaurantHeaderCard extends StatelessWidget {
   final Restaurant? restaurant;
   final CartProvider cart;
@@ -748,10 +809,28 @@ class _RestaurantHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = restaurant?.name ?? cart.restaurantName ?? 'Selected Restaurant';
-    final cuisine = (restaurant?.cuisine != null && restaurant!.cuisine.isNotEmpty)
-        ? restaurant!.cuisine
-        : 'Pizza, Italian, Fast Food';
+    final cfg = context.watch<PlatformConfigProvider>();
+    final isGrocery = cart.hasGroceryItems || (cfg.isGroceryActive && restaurant == null);
+    final String name;
+    final String subtitle;
+
+    if (isGrocery) {
+      if (cart.storeCount > 1) {
+        name = 'Multi-Store Grocery Cart (${cart.storeCount} stores)';
+        subtitle = 'Quick Commerce • Auto-split & dispatched from nearest partner stores';
+      } else {
+        final firstItemStore = cart.items.isNotEmpty
+            ? (cart.items.first.product.storeName ?? cart.items.first.product.restaurantName)
+            : null;
+        name = firstItemStore ?? restaurant?.name ?? cart.restaurantName ?? 'Selected Partner Mart';
+        subtitle = 'Fresh Groceries & Daily Essentials';
+      }
+    } else {
+      name = restaurant?.name ?? cart.restaurantName ?? 'Selected Restaurant';
+      subtitle = (restaurant?.cuisine != null && restaurant!.cuisine.isNotEmpty)
+          ? restaurant!.cuisine
+          : 'Fresh Meals & Express Kitchen';
+    }
 
     return Container(
       width: double.infinity,
@@ -763,12 +842,14 @@ class _RestaurantHeaderCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1F2937),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1F2937),
+                  ),
                 ),
               ),
               const Icon(Icons.chevron_right, color: Color(0xFF6B7280), size: 22),
@@ -776,7 +857,7 @@ class _RestaurantHeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            cuisine,
+            subtitle,
             style: const TextStyle(
               fontSize: 13,
               color: Color(0xFF6B7280),
@@ -839,7 +920,9 @@ class _CartItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      item.product.category.isNotEmpty ? item.product.category : 'Original',
+                      (item.product.weight?.isNotEmpty == true || item.product.unit?.isNotEmpty == true)
+                          ? '${item.product.weight ?? ''} ${item.product.unit ?? ''} • ${item.product.category.isNotEmpty ? item.product.category : 'Grocery'}'.trim()
+                          : (item.product.category.isNotEmpty ? item.product.category : 'Original'),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF9CA3AF),
@@ -938,7 +1021,13 @@ class _CartItemRow extends StatelessWidget {
       width: 64,
       height: 64,
       color: AppColors.primary.withValues(alpha: 0.08),
-      child: const Icon(Icons.fastfood, color: AppColors.primary, size: 28),
+      child: Icon(
+        (item.product.vertical == 'grocery' || (item.product.storeId?.isNotEmpty ?? false))
+            ? Icons.local_grocery_store_rounded
+            : Icons.fastfood,
+        color: AppColors.primary,
+        size: 28,
+      ),
     );
   }
 }
@@ -1368,7 +1457,9 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
                   child: Text(
                     cart.orderNote != null
                         ? 'Note: ${cart.orderNote}'
-                        : 'Add a note for the restaurant',
+                        : ((cart.hasGroceryItems || context.watch<PlatformConfigProvider>().isGroceryActive)
+                            ? 'Add a note for the partner store'
+                            : 'Add a note for the restaurant'),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -1576,10 +1667,12 @@ class _BillDetailsCard extends StatelessWidget {
             const SizedBox(height: 10),
           ],
 
-          // Restaurant Packaging fee
+          // Store / Restaurant Packaging fee
           if (cart.isPackagingFeeEnabled) ...[
             _BillRow(
-              label: 'Restaurant packaging fee',
+              label: (cart.hasGroceryItems || context.watch<PlatformConfigProvider>().isGroceryActive)
+                  ? 'Store packaging & handling'
+                  : 'Restaurant packaging fee',
               valueStr: packagingFee == 0 ? 'Free' : '₹${packagingFee.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 10),
@@ -1713,14 +1806,18 @@ class _CancellationPolicyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cfg = context.watch<PlatformConfigProvider>();
+    final cart = context.watch<CartProvider>();
+    final isGrocery = cart.hasGroceryItems || cfg.isGroceryActive;
+
     return Container(
       width: double.infinity,
       color: Colors.white,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             'CANCELLATION POLICY',
             style: TextStyle(
               fontSize: 12,
@@ -1729,10 +1826,12 @@ class _CancellationPolicyCard extends StatelessWidget {
               letterSpacing: 1.0,
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Text(
-            'A 100% cancellation charge will apply after 1 minute window. This helps us compensate the restaurant partner for food preparation.',
-            style: TextStyle(
+            isGrocery
+                ? 'A 100% cancellation charge will apply after the 1 minute window once partner packing and dispatch begins.'
+                : 'A 100% cancellation charge will apply after 1 minute window. This helps us compensate the restaurant partner for food preparation.',
+            style: const TextStyle(
               fontSize: 11,
               color: Color(0xFF6B7280),
               height: 1.4,
@@ -1925,13 +2024,15 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                               child: Builder(
                                 builder: (context) {
                                   final cart = context.watch<CartProvider>();
+                                  final cfg = context.watch<PlatformConfigProvider>();
+                                  final isGrocery = cart.hasGroceryItems || cfg.isGroceryActive;
                                   final addrProvider = context.watch<AddressProvider>();
                                   final selectedAddr = addrProvider.addresses.isNotEmpty ? addrProvider.addresses.first : null;
                                   final String addrTitle = cart.isSelfPickup
-                                      ? 'Pickup from Restaurant'
+                                      ? (isGrocery ? 'Pickup from Partner Store' : 'Pickup from Restaurant')
                                       : (selectedAddr != null ? 'Delivering to ${selectedAddr.label.isNotEmpty ? selectedAddr.label : "Home"}' : 'Select Delivery Address');
                                   final String addrSubtitle = cart.isSelfPickup
-                                      ? (cart.restaurantAddress ?? cart.restaurantName ?? 'Restaurant Location')
+                                      ? (cart.restaurantAddress ?? cart.restaurantName ?? (isGrocery ? 'Partner Store Location' : 'Restaurant Location'))
                                       : (selectedAddr?.fullAddress ?? 'Tap to select delivery address');
 
                                   return Column(
@@ -2152,13 +2253,15 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                     child: Builder(
                       builder: (context) {
                         final cart = context.watch<CartProvider>();
+                        final cfg = context.watch<PlatformConfigProvider>();
+                        final isGrocery = cart.hasGroceryItems || cfg.isGroceryActive;
                         final addrProvider = context.watch<AddressProvider>();
                         final selectedAddr = addrProvider.addresses.isNotEmpty ? addrProvider.addresses.first : null;
                         final String addrTitle = cart.isSelfPickup
-                            ? 'Pickup from Restaurant'
+                            ? (isGrocery ? 'Pickup from Partner Store' : 'Pickup from Restaurant')
                             : (selectedAddr != null ? 'Delivering to ${selectedAddr.label.isNotEmpty ? selectedAddr.label : "Home"}' : 'Select Delivery Address');
                         final String addrSubtitle = cart.isSelfPickup
-                            ? (cart.restaurantAddress ?? cart.restaurantName ?? 'Restaurant Location')
+                            ? (cart.restaurantAddress ?? cart.restaurantName ?? (isGrocery ? 'Partner Store Location' : 'Restaurant Location'))
                             : (selectedAddr?.fullAddress ?? 'Tap to select delivery address');
 
                         return Column(
@@ -2261,48 +2364,89 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
 }
 
 // ── 7. Popular with your Order Section ───────────────────────────────────────
-class _PopularWithOrderSection extends StatelessWidget {
+class _PopularWithOrderSection extends StatefulWidget {
   final Restaurant? restaurant;
   const _PopularWithOrderSection({this.restaurant});
 
   @override
-  Widget build(BuildContext context) {
-    final menuItems = restaurant?.menu ?? [];
+  State<_PopularWithOrderSection> createState() => _PopularWithOrderSectionState();
+}
 
-    final displayItems = menuItems.isNotEmpty
-        ? menuItems
-        : [
-            MenuItem(
-              id: 'pop_1',
-              name: '6 pcs chicken wings',
-              description: 'Crispy fried chicken wings',
-              price: 120.0,
-              imageUrl: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=300',
-              category: 'Popular',
-              rating: 4.5,
-              isVeg: false,
+class _PopularWithOrderSectionState extends State<_PopularWithOrderSection> {
+  List<Product> _grocerySuggestions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cfg = context.read<PlatformConfigProvider>();
+      final cart = context.read<CartProvider>();
+      if (widget.restaurant == null && (cfg.isGroceryActive || cart.hasGroceryItems)) {
+        _loadGrocerySuggestions();
+      }
+    });
+  }
+
+  Future<void> _loadGrocerySuggestions() async {
+    try {
+      final list = await GroceryApiService.getBestSellers();
+      if (!mounted) return;
+      if (list.isNotEmpty) {
+        setState(() {
+          _grocerySuggestions = list
+              .take(8)
+              .map((raw) => GroceryApiService.toProduct(Map<String, dynamic>.from(raw as Map)))
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cfg = context.watch<PlatformConfigProvider>();
+    final cart = context.watch<CartProvider>();
+    final isGrocery = widget.restaurant == null && (cfg.isGroceryActive || cart.hasGroceryItems);
+
+    if (isGrocery) {
+      if (_grocerySuggestions.isEmpty) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Quick Add Everyday Essentials',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
             ),
-            MenuItem(
-              id: 'pop_2',
-              name: '6 pcs chicken wings',
-              description: 'Juicy honey glazed wings',
-              price: 120.0,
-              imageUrl: 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=300',
-              category: 'Popular',
-              rating: 4.5,
-              isVeg: false,
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 190,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _grocerySuggestions.length,
+                itemBuilder: (ctx, idx) => _PopularProductCard(product: _grocerySuggestions[idx]),
+              ),
             ),
-            MenuItem(
-              id: 'pop_3',
-              name: '6 pcs chicken wings',
-              description: 'Spicy buffalo wings',
-              price: 120.0,
-              imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300',
-              category: 'Popular',
-              rating: 4.5,
-              isVeg: false,
-            ),
-          ];
+          ],
+        ),
+      );
+    }
+
+    final menuItems = widget.restaurant?.menu ?? [];
+    if (menuItems.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -2329,13 +2473,106 @@ class _PopularWithOrderSection extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: displayItems.length,
+              itemCount: menuItems.length,
               itemBuilder: (ctx, idx) {
-                final item = displayItems[idx];
+                final item = menuItems[idx];
                 return _PopularCard(item: item);
               },
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PopularProductCard extends StatelessWidget {
+  final Product product;
+  const _PopularProductCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final unitText = [product.weight, product.unit]
+        .where((e) => e != null && e.isNotEmpty)
+        .join(' ');
+    return Container(
+      width: 130,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SafeImage(
+              product.image,
+              width: 130,
+              height: 110,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 130,
+                height: 110,
+                color: AppColors.primary.withValues(alpha: 0.08),
+                child: const Icon(Icons.local_grocery_store_rounded, color: AppColors.primary),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '₹${product.price.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  context.read<CartProvider>().addGroceryItem(
+                        product,
+                        storeId: product.storeId ?? product.restaurantId ?? 'store_tricelyn_indore_01',
+                        storeName: product.storeName ?? product.restaurantName ?? 'Tricelyn Partner Mart',
+                        storeImageUrl: product.image,
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Added ${product.name} to cart'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(Icons.add, size: 16, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            product.name,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+              height: 1.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (unitText.isNotEmpty)
+            Text(
+              unitText,
+              style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       ),
     );
@@ -2597,6 +2834,7 @@ class _EmptyCart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGrocery = context.watch<PlatformConfigProvider>().isGroceryActive;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2621,9 +2859,11 @@ class _EmptyCart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Add items from a restaurant to get started',
-            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+          Text(
+            isGrocery
+                ? 'Add fresh groceries & essentials to get started'
+                : 'Add items from a restaurant to get started',
+            style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -2636,9 +2876,9 @@ class _EmptyCart extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
-            child: const Text(
-              'Browse Restaurants',
-              style: TextStyle(fontWeight: FontWeight.w700),
+            child: Text(
+              isGrocery ? 'Browse Grocery Mart' : 'Browse Restaurants',
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ],

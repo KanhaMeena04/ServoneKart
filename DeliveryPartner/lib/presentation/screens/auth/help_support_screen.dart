@@ -19,7 +19,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     },
     {
       'heading': 'Contact Details',
-      'content': 'Email: support@ecdkart.in\nPhone: +91 98765 43210\n\nFeel free to reach out to us anytime.',
+      'content': 'Email: support@tricelyn.com\nLive Desk: Use "Chat with Support" above\n\nFeel free to reach out to us anytime.',
     },
   ];
 

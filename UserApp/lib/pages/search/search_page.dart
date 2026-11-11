@@ -6,12 +6,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../services/restaurant_api_service.dart';
+import '../../services/grocery_api_service.dart';
 import '../../core/models/restaurant_models.dart';
+import '../../core/models/product.dart';
 import '../../routes/app_routes.dart';
 import '../food_delivery/restaurant_detail_screen.dart';
+import '../widgets/product_card.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/platform_config_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/category_service.dart';
@@ -28,6 +32,9 @@ class _SearchPageState extends State<SearchPage> {
   final FocusNode _focusNode = FocusNode();
   
   List<Restaurant> _searchResults = [];
+  List<Product> _groceryProducts = [];
+  List<Map<String, dynamic>> _groceryStores = [];
+  List<Map<String, dynamic>> _groceryCategories = [];
   List<String> _suggestions = [];
   List<String> _recentSearches = [];
   
@@ -36,20 +43,43 @@ class _SearchPageState extends State<SearchPage> {
   Timer? _debounce;
   String _selectedFilter = 'All';
 
-  List<String> _popularCuisines = ['Biryani', 'Pizza', 'Burger', 'Chinese', 'Thali', 'Desserts', 'South Indian'];
+  List<String> _popularCuisines = ['Vegetables & Fruits', 'Dairy, Bread & Eggs', 'Atta, Rice & Dal', 'Snacks & Munchies', 'Cold Drinks', 'Personal Care'];
   List<CategoryItemModel> _cmsCategories = [];
   final List<String> _filters = ['All', 'Veg Only', 'Rating 4.0+', 'Fast Delivery'];
+
+  bool get _isGroceryMode {
+    try {
+      return context.read<PlatformConfigProvider>().isGroceryActive;
+    } catch (_) {
+      return true;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _loadRecentSearches();
-    _fetchCmsCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchCmsCategories();
+    });
     _focusNode.requestFocus();
   }
 
   Future<void> _fetchCmsCategories() async {
     try {
+      if (_isGroceryMode) {
+        final cats = await GroceryApiService.getCategories();
+        if (cats.isNotEmpty && mounted) {
+          setState(() {
+            _groceryCategories = cats;
+            _popularCuisines = cats
+                .map((c) => (c['name'] ?? c['title'] ?? '').toString())
+                .where((s) => s.isNotEmpty)
+                .toList();
+          });
+        }
+        return;
+      }
       final tree = await CategoryService.getCategoryTree();
       if (tree.isNotEmpty && mounted) {
         setState(() {
@@ -101,6 +131,20 @@ class _SearchPageState extends State<SearchPage> {
     setState(() => _isSearching = true);
 
     _debounce = Timer(const Duration(milliseconds: 300), () async {
+      if (_isGroceryMode) {
+        final raw = await GroceryApiService.getProducts(search: query, limit: 8);
+        final names = raw
+            .map((e) => (e['name'] ?? '').toString().trim())
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList();
+        if (mounted) {
+          setState(() {
+            _suggestions = names;
+          });
+        }
+        return;
+      }
       final suggestions = await RestaurantApiService.getSuggestions(query);
       if (mounted) {
         setState(() {
@@ -122,6 +166,23 @@ class _SearchPageState extends State<SearchPage> {
       _isSearching = true;
       _suggestions = [];
     });
+
+    if (_isGroceryMode) {
+      final results = await Future.wait([
+        GroceryApiService.getProducts(search: cleanQuery, limit: 50),
+        GroceryApiService.getStores(search: cleanQuery),
+      ]);
+      final rawProds = results[0];
+      final rawStores = results[1];
+      if (mounted) {
+        setState(() {
+          _groceryProducts = rawProds.map((e) => GroceryApiService.toProduct(e)).toList();
+          _groceryStores = rawStores;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
 
     double? lat;
     double? lng;
@@ -199,7 +260,9 @@ class _SearchPageState extends State<SearchPage> {
             onSubmitted: _performSearch,
             style: TextStyle(color: isDark ? Colors.white : Colors.black),
             decoration: InputDecoration(
-              hintText: 'Search for biryani, pizza...',
+              hintText: context.watch<PlatformConfigProvider>().isGroceryActive
+                  ? 'Search milk, bread, veggies, atta...'
+                  : 'Search for biryani, pizza...',
               hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[500], fontSize: 14),
               prefixIcon: const Icon(Icons.search, color: Color(0xFFE89D1E), size: 20),
               suffixIcon: _searchController.text.isNotEmpty
@@ -209,6 +272,8 @@ class _SearchPageState extends State<SearchPage> {
                         _searchController.clear();
                         setState(() {
                           _searchResults = [];
+                          _groceryProducts = [];
+                          _groceryStores = [];
                           _suggestions = [];
                           _isSearching = false;
                         });
@@ -272,8 +337,19 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildContent() {
+    final isGrocery = context.watch<PlatformConfigProvider>().isGroceryActive;
     if (!_isSearching && _searchController.text.isEmpty) {
       return _buildInitialState();
+    }
+
+    if (isGrocery) {
+      if (_suggestions.isNotEmpty && _groceryProducts.isEmpty && _groceryStores.isEmpty) {
+        return _buildSuggestionsList();
+      }
+      if (_groceryProducts.isEmpty && _groceryStores.isEmpty && _searchController.text.isNotEmpty && !_isLoading) {
+        return _buildEmptyResults();
+      }
+      return _buildGroceryResultsList();
     }
     
     if (_suggestions.isNotEmpty && _searchResults.isEmpty) {
@@ -285,6 +361,103 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     return _buildResultsList();
+  }
+
+  Widget _buildGroceryResultsList() {
+    final isDark = context.read<ThemeProvider>().isDarkMode;
+    final cart = context.watch<CartProvider>();
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (_groceryProducts.isNotEmpty) ...[
+          Text('Grocery Items (${_groceryProducts.length})', style: AppTextStyles.h3.copyWith(color: isDark ? Colors.white : Colors.black)),
+          const SizedBox(height: 10),
+          ..._groceryProducts.map((p) {
+            final qty = cart.items.where((ci) => ci.product.id == p.id).fold<int>(0, (s, ci) => s + ci.quantity);
+            return InkWell(
+              onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => ProductDetailSheet(product: p),
+              ),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1F2937) : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SafeImage(p.image, width: 68, height: 68, fit: BoxFit.cover),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+                          if (p.storeName != null && p.storeName!.isNotEmpty)
+                            Text(p.storeName!, style: const TextStyle(fontSize: 11.5, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                          Text('₹${p.price.toInt()} • ${p.weight ?? p.unit ?? '1 unit'}', style: TextStyle(fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black87)),
+                        ],
+                      ),
+                    ),
+                    qty == 0
+                        ? ElevatedButton(
+                            onPressed: () => cart.addGroceryItem(
+                              p,
+                              storeId: p.storeId ?? 'store_tricelyn_indore_01',
+                              storeName: p.storeName ?? 'Tricelyn Partner Store',
+                              storeImageUrl: p.restaurantImageUrl ?? '',
+                            ),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white),
+                            child: const Text('ADD'),
+                          )
+                        : Container(
+                            decoration: BoxDecoration(color: const Color(0xFF16A34A), borderRadius: BorderRadius.circular(8)),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove, size: 16, color: Colors.white),
+                                  onPressed: () => cart.updateQuantity(p.id, qty - 1),
+                                ),
+                                Text('$qty', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                IconButton(
+                                  icon: const Icon(Icons.add, size: 16, color: Colors.white),
+                                  onPressed: () => cart.updateQuantity(p.id, qty + 1),
+                                ),
+                              ],
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+        if (_groceryStores.isNotEmpty) ...[
+          Text('Partner Stores (${_groceryStores.length})', style: AppTextStyles.h3.copyWith(color: isDark ? Colors.white : Colors.black)),
+          const SizedBox(height: 10),
+          ..._groceryStores.map((s) => ListTile(
+                onTap: () => context.push(AppRoutes.grocery),
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SafeImage((s['image'] ?? '').toString(), width: 48, height: 48, fit: BoxFit.cover),
+                ),
+                title: Text((s['name'] ?? 'Partner Store').toString(), style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+                subtitle: Text((s['address'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.chevron_right),
+              )),
+        ],
+      ],
+    );
   }
 
   Widget _buildInitialState() {
@@ -317,7 +490,10 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 30),
           ],
-          Text('Popular Cuisines', style: AppTextStyles.h4.copyWith(color: isDark ? Colors.white : Colors.black)),
+          Text(
+            context.watch<PlatformConfigProvider>().isGroceryActive ? 'Shop by Category' : 'Popular Cuisines',
+            style: AppTextStyles.h4.copyWith(color: isDark ? Colors.white : Colors.black),
+          ),
           const SizedBox(height: 15),
           GridView.builder(
             shrinkWrap: true,
@@ -331,6 +507,10 @@ class _SearchPageState extends State<SearchPage> {
             itemCount: _popularCuisines.length,
             itemBuilder: (context, index) {
               final cuisine = _popularCuisines[index];
+              final isGrocery = context.watch<PlatformConfigProvider>().isGroceryActive;
+              final groceryImg = (isGrocery && index < _groceryCategories.length)
+                  ? (_groceryCategories[index]['image'] ?? '').toString()
+                  : '';
               return GestureDetector(
                 onTap: () {
                   _searchController.text = cuisine;
@@ -346,15 +526,27 @@ class _SearchPageState extends State<SearchPage> {
                         shape: BoxShape.circle,
                       ),
                       clipBehavior: Clip.antiAlias,
-                      child: (index < _cmsCategories.length && _cmsCategories[index].image.isNotEmpty)
-                          ? SafeImage(
-                              _cmsCategories[index].image,
-                              fit: BoxFit.cover,
-                            )
-                          : const Icon(Icons.fastfood, color: Color(0xFFE89D1E), size: 24),
+                      child: groceryImg.isNotEmpty
+                          ? SafeImage(groceryImg, fit: BoxFit.cover)
+                          : (!isGrocery && index < _cmsCategories.length && _cmsCategories[index].image.isNotEmpty)
+                              ? SafeImage(
+                                  _cmsCategories[index].image,
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  isGrocery ? Icons.shopping_basket_rounded : Icons.fastfood,
+                                  color: isGrocery ? const Color(0xFF16A34A) : const Color(0xFFE89D1E),
+                                  size: 24,
+                                ),
                     ),
                     const SizedBox(height: 8),
-                    Text(cuisine, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black), textAlign: TextAlign.center),
+                    Text(
+                      cuisine,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               );
@@ -412,13 +604,17 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildEmptyResults() {
     final isDark = context.read<ThemeProvider>().isDarkMode;
+    final isGrocery = context.read<PlatformConfigProvider>().isGroceryActive;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off_rounded, size: 100, color: isDark ? Colors.grey[800] : Colors.grey[200]),
           const SizedBox(height: 20),
-          Text('No matching restaurants', style: AppTextStyles.h3.copyWith(color: isDark ? Colors.white : Colors.black)),
+          Text(
+            isGrocery ? 'No matching grocery items or stores' : 'No matching restaurants',
+            style: AppTextStyles.h3.copyWith(color: isDark ? Colors.white : Colors.black),
+          ),
           const SizedBox(height: 10),
           Text('Try a different search term', style: TextStyle(color: Colors.grey[500])),
         ],

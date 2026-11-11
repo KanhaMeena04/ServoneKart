@@ -257,25 +257,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String? userUpi;
       String? userName;
       String? userPhone;
-      final authState = context.read<AuthBloc>().state;
-      if (authState is Authenticated) {
-        userUpi = authState.user.upi;
-        userName = authState.user.name;
-        userPhone = authState.user.phone;
+      Map<String, dynamic> savedBank = <String, dynamic>{};
+      final currentAuth = context.read<AuthBloc>().state;
+      if (currentAuth is Authenticated) {
+        userUpi = currentAuth.user.upi;
+        userName = currentAuth.user.name;
+        userPhone = currentAuth.user.phone;
+        if (currentAuth.user.bankDetails != null) {
+          savedBank = currentAuth.user.bankDetails!;
+        }
+      }
+
+      final resolvedUpi = (userUpi != null && userUpi.trim().isNotEmpty)
+          ? userUpi.trim()
+          : (savedBank['upiId'] ?? savedBank['upi'] ?? '').toString().trim();
+      final resolvedBankName = (savedBank['bankName'] ?? '').toString().trim();
+      final resolvedAccountNumber = (savedBank['accountNumber'] ?? '').toString().trim();
+      final resolvedIfsc = (savedBank['ifscCode'] ?? savedBank['ifsc'] ?? '').toString().trim();
+      final resolvedHolder = (savedBank['accountHolderName'] ?? savedBank['accountHolder'] ?? userName ?? '').toString().trim();
+
+      final hasUpi = resolvedUpi.isNotEmpty;
+      final hasBank = resolvedBankName.isNotEmpty && resolvedAccountNumber.isNotEmpty && resolvedIfsc.isNotEmpty;
+
+      if (!hasUpi && !hasBank) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Please link your UPI ID above or enter bank details in Rider Wallet before requesting payout.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
       }
 
       final bankDetails = {
-        'accountHolder': userName ?? 'Rider Partner',
-        'bankName': 'HDFC Bank',
-        'accountNumber': '50100234567890',
-        'ifsc': 'HDFC0001234',
-        'upiId': userUpi ?? 'rider@okhdfcbank',
+        if (resolvedHolder.isNotEmpty) 'accountHolder': resolvedHolder,
+        if (resolvedBankName.isNotEmpty) 'bankName': resolvedBankName,
+        if (resolvedAccountNumber.isNotEmpty) 'accountNumber': resolvedAccountNumber,
+        if (resolvedIfsc.isNotEmpty) 'ifsc': resolvedIfsc,
+        if (hasUpi) 'upiId': resolvedUpi,
         'phone': userPhone ?? '',
       };
 
       final result = await ApiService.requestWithdrawal(
         amount,
-        method: userUpi != null && userUpi.isNotEmpty ? 'upi' : 'bank',
+        method: hasUpi ? 'upi' : 'bank',
         bankDetails: bankDetails,
       );
 
@@ -490,28 +520,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 10),
                       _buildInfoCard(
-                        icon: Icons.verified_user_rounded,
+                        icon: user.isVerified ? Icons.verified_user_rounded : Icons.hourglass_top_rounded,
                         label: 'Verification Status',
-                        value: 'Verified',
-                        valueColor: primaryGreen,
+                        value: user.isVerified ? 'Verified' : 'Pending Review',
+                        valueColor: user.isVerified ? primaryGreen : Colors.orange[800],
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: primaryGreen.withValues(alpha: 0.12),
+                            color: (user.isVerified ? primaryGreen : Colors.orange[700]!).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: primaryGreen.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: (user.isVerified ? primaryGreen : Colors.orange[700]!).withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check_circle_rounded, color: primaryGreen, size: 14),
+                              Icon(
+                                user.isVerified ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                                color: user.isVerified ? primaryGreen : Colors.orange[800],
+                                size: 14,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                'ACTIVE',
+                                user.isVerified ? 'ACTIVE' : 'PENDING',
                                 style: GoogleFonts.poppins(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
-                                  color: primaryGreen,
+                                  color: user.isVerified ? primaryGreen : Colors.orange[800],
                                 ),
                               ),
                             ],
@@ -1056,7 +1092,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ElevatedButton(
               onPressed: (_amountToPayAdmin > 0 && !_isCodLoading) ? () async {
                 setState(() => _isCodLoading = true);
-                await _codPaymentService.initiatePayment();
+                await _codPaymentService.initiatePayment(amount: _amountToPayAdmin);
                 if (mounted) setState(() => _isCodLoading = false);
               } : null,
               style: ElevatedButton.styleFrom(
@@ -1278,24 +1314,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String intro = '';
 
     if (title == 'Privacy Policy') {
-      intro = 'Effective Date: 13 August 2026\n\nECDKART Rider App ("App") is operated by ECDKART (OPC) PRIVATE LIMITED.';
+      intro = 'Effective Date: 13 August 2026\n\nTricelyn Delivery Partner App ("App") is operated by Tricelyn.';
       items = [
         {'title': '1. Information We Collect', 'desc': 'We may collect your name, mobile number, profile details, identity/KYC documents, vehicle details, bank/payment information, location data, device information and delivery history.'},
         {'title': '2. Use of Information', 'desc': 'Your information may be used to:\n• Verify and manage your rider account.\n• Assign and track deliveries.\n• Process earnings and payments.\n• Provide customer support.\n• Maintain safety and security.'},
         {'title': '3. Location Information', 'desc': 'The App may collect location information while you are online or performing deliveries to enable order assignment, navigation, delivery tracking and operational safety.'},
-        {'title': '4. Information Sharing', 'desc': 'Necessary information may be shared with customers, restaurants, payment providers and service providers to facilitate deliveries.'},
+        {'title': '4. Information Sharing', 'desc': 'Necessary information may be shared with customers, partner stores, payment providers and service providers to facilitate deliveries.'},
         {'title': '5. Data Security', 'desc': 'We use reasonable security measures to protect your information.'},
       ];
     } else if (title == 'Terms & Conditions') {
-      intro = 'Effective Date: 13 August 2026\n\nBy registering or using the ECDKART Rider App, you agree to these Terms & Conditions.';
+      intro = 'Effective Date: 13 August 2026\n\nBy registering or using the Tricelyn Delivery Partner App, you agree to these Terms & Conditions.';
       items = [
         {'title': '1. Rider Account', 'desc': 'You must provide accurate personal, KYC and vehicle information.'},
         {'title': '2. Delivery Responsibilities', 'desc': 'Riders must accept and complete assigned deliveries responsibly.'},
         {'title': '3. Location & Availability', 'desc': 'Riders must maintain accurate online/offline status.'},
-        {'title': '4. Payments & Earnings', 'desc': 'Rider earnings and settlement terms will be governed by applicable ECDKART policies.'},
+        {'title': '4. Payments & Earnings', 'desc': 'Rider earnings and settlement terms will be governed by applicable Tricelyn policies.'},
       ];
     } else {
-      intro = 'ECDKART Payment Policy guidelines for earnings and payouts.';
+      intro = 'Tricelyn Payment Policy guidelines for earnings and payouts.';
       items = [
         {'title': 'Eligibility', 'desc': 'Only drivers with completed trips can request payouts.'},
         {'title': 'Minimum Withdrawal', 'desc': 'A minimum of ₹200 is required for a payout request.'},

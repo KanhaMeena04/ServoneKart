@@ -496,12 +496,12 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const PolicyPage(
       title: 'Privacy Policy',
-      emoji: 'ðŸ”’',
+      emoji: '🔒',
       sections: [
         PolicySection(
           heading: 'Overview & Compliance',
           content: 'Effective Date: August 10, 2026\n\n'
-                   'ECD KART (OPC) PRIVATE LIMITED ("Company", "We", "Our", or "Us") operates the online food ordering system through our smartphone application. This privacy statement documents how we acquire, handle, store, transfer, and safeguard user information in compliance with the Indian Information Technology Act, 2000 and the Digital Personal Data Protection (DPDP) Act, 2023.',
+                   'Tricelyn Technologies ("Company", "We", "Our", or "Us") operates our quick-commerce grocery & multi-service ordering platform through our smartphone application. This privacy statement documents how we acquire, handle, store, transfer, and safeguard user information in compliance with the Indian Information Technology Act, 2000 and the Digital Personal Data Protection (DPDP) Act, 2023.',
         ),
         PolicySection(
           heading: '1. Information Collection Practices',
@@ -511,11 +511,11 @@ class PrivacyPolicyPage extends StatelessWidget {
         ),
         PolicySection(
           heading: '2. Location Telemetry Data',
-          content: 'To drive effective food delivery dispatch and tracking, we require active GPS location coordinates from your smartphone when the app is in use (foreground). This facilitates accurate address selection and real-time tracking during active checkouts. You can revoke this permission at any time in device settings.',
+          content: 'To drive effective quick-commerce grocery delivery dispatch and tracking, we require active GPS location coordinates from your smartphone when the app is in use (foreground). This facilitates accurate address selection and real-time tracking during active checkouts. You can revoke this permission at any time in device settings.',
         ),
         PolicySection(
           heading: '3. Payment Processing Safeguards',
-          content: 'Payment operations are routed exclusively through Reserve Bank of India (RBI) authorized third-party gateways (e.g., Razorpay). ECD KART does NOT access or store full card details or UPI PIN passwords on our servers.',
+          content: 'Payment operations are routed exclusively through Reserve Bank of India (RBI) authorized third-party gateways (e.g., Razorpay). Tricelyn does NOT access or store full card details or UPI PIN passwords on our servers.',
         ),
         PolicySection(
           heading: '4. Third-Party Integrations',
@@ -532,9 +532,9 @@ class PrivacyPolicyPage extends StatelessWidget {
         PolicySection(
           heading: '7. Grievance Officer & Contact',
           content: 'In accordance with federal compliance regulations, if you have privacy concerns, please contact our Grievance Officer at:\n\n'
-                   'ECD KART (OPC) PRIVATE LIMITED\n'
-                   'Website: https://servonekart.com\n'
-                   'Email: support@servonekart.com',
+                   'Tricelyn Technologies\n'
+                   'Website: https://tricelyn.com\n'
+                   'Email: support@tricelyn.com',
         ),
       ],
     );
@@ -557,10 +557,10 @@ class RefundPolicyPage extends StatelessWidget {
           content:
               'You are eligible for a refund if: (a) your order was not delivered within the '
               'promised time window and you did not receive it, (b) you received the wrong items '
-              'or your order was significantly different from what was described, (c) the food '
-              'quality was unacceptable due to spoilage or contamination, or (d) you were charged '
-              'incorrectly. Refund requests must be raised within 24 hours of the expected delivery '
-              'time through the app or by contacting our support team.',
+              'or your order was significantly different from what was described, (c) fresh produce '
+              'or packaged grocery items were expired, damaged, or spoiled upon delivery, or (d) you were charged '
+              'incorrectly. Refund requests must be raised within 24 hours of delivery '
+              'through the app or by contacting our support team.',
         ),
         PolicySection(
           heading: 'Non-Refundable Cases',
@@ -570,7 +570,7 @@ class RefundPolicyPage extends StatelessWidget {
               'delivery address was provided by the customer, (c) the customer was unavailable at '
               'the delivery location after multiple attempts, (d) the refund request was raised '
               'more than 24 hours after the order, (e) the issue was caused by factors outside '
-              'ServoneKart\'s control such as natural disasters or government restrictions, or '
+              'Tricelyn\'s control such as natural disasters or government restrictions, or '
               '(f) promotional or free items included in the order.',
         ),
         PolicySection(
@@ -578,10 +578,10 @@ class RefundPolicyPage extends StatelessWidget {
           content:
               'To initiate a refund, go to My Orders in the app, select the relevant order, and '
               'tap "Report an Issue". Describe the problem and attach photos if applicable. '
-              'Alternatively, contact our support team at support@servonekart.com or call +91 89506 05676. '
+              'Alternatively, contact our support team at support@tricelyn.com or call +91 89506 05676. '
               'Our team will review your request within 24–48 hours. If approved, the refund will '
               'be processed to your original payment method. For cash-on-delivery orders, refunds '
-              'will be credited as ServoneKart wallet balance.',
+              'will be credited as Tricelyn wallet balance.',
         ),
         PolicySection(
           heading: 'Refund Timeline',
@@ -589,7 +589,7 @@ class RefundPolicyPage extends StatelessWidget {
               'Once a refund is approved, the processing time depends on your payment method:\n\n'
               '• UPI / Net Banking: 2–3 business days\n'
               '• Credit / Debit Card: 5–7 business days\n'
-              '• ServoneKart Wallet: Instant\n'
+              '• Tricelyn Wallet: Instant\n'
               '• Cash on Delivery: Credited as wallet balance within 24 hours\n\n'
               'Please note that bank processing times may vary. If you do not receive your refund '
               'within the stated period, contact your bank before reaching out to us.',
@@ -598,20 +598,20 @@ class RefundPolicyPage extends StatelessWidget {
           heading: 'Partial Refunds',
           content:
               'In cases where only part of your order was affected — for example, one item was '
-              'missing from a multi-item order — ServoneKart may issue a partial refund corresponding '
+              'missing from a multi-item order — Tricelyn may issue a partial refund corresponding '
               'to the value of the affected item(s). The partial refund amount will be calculated '
               'based on the item price at the time of order, excluding any discounts or offers '
-              'applied to the overall order. Partial refunds are credited to your ServoneKart wallet '
+              'applied to the overall order. Partial refunds are credited to your Tricelyn wallet '
               'by default for faster processing.',
         ),
         PolicySection(
           heading: 'Contact for Refunds',
           content:
               'For any refund-related queries or disputes, please contact us:\n\n'
-              'Email: support@servonekart.com\n'
+              'Email: support@tricelyn.com\n'
               'Phone: +91 89506 05676 (Mon–Sat, 9 AM – 9 PM)\n'
               'In-App: My Orders → Select Order → Report an Issue\n'
-              'Address: ServoneKart Technologies Pvt. Ltd., 42 MG Road, Indore, Madhya Pradesh – 452001, India\n\n'
+              'Address: Tricelyn Technologies Pvt. Ltd., 42 MG Road, Indore, Madhya Pradesh – 452001, India\n\n'
               'We are committed to resolving all refund disputes fairly and promptly.',
         ),
       ],
@@ -632,31 +632,31 @@ class TermsConditionsPage extends StatelessWidget {
       sections: [
         PolicySection(
           heading: '1. Introduction & Definitions',
-          content: 'The Platform is operated by ServoneKart (OPC) PRIVATE LIMITED. By downloading or using the ServoneKart Customer App, you agree to these Terms & Conditions. "Platform" refers to the ServoneKart app and services. "Vendor Partner" refers to listed food outlets, and "Delivery Partner" refers to delivery personnel.',
+          content: 'The Platform is operated by Tricelyn Technologies. By downloading or using the Tricelyn Customer App, you agree to these Terms & Conditions. "Platform" refers to the Tricelyn app and quick-commerce services. "Vendor Partner" refers to listed dark stores, supermarkets, and partner outlets, and "Delivery Partner" refers to delivery personnel.',
         ),
         PolicySection(
           heading: '2. Account Registration & Security',
-          content: 'You must provide accurate information to register. You are responsible for maintaining the confidentiality of your account credentials and OTPs. ServoneKart uses OTP-based authentication for security. Do not share your OTPs with unknown persons.',
+          content: 'You must provide accurate information to register. You are responsible for maintaining the confidentiality of your account credentials and OTPs. Tricelyn uses OTP-based authentication for security. Do not share your OTPs with unknown persons.',
         ),
         PolicySection(
           heading: '3. Ordering & Services',
-          content: 'ServoneKart facilitates Home Delivery and Self Pickup from Vendor Partners. Vendor Partners are responsible for food preparation and quality. Placing an order does not guarantee acceptance; orders may be rejected due to item unavailability or operational limits.',
+          content: 'Tricelyn facilitates Home Delivery and Self Pickup from Vendor Partners. Vendor Partners are responsible for product quality, freshness, and accurate packing. Placing an order does not guarantee acceptance; orders may be rejected due to stock unavailability or operational limits.',
         ),
         PolicySection(
           heading: '4. Payments & Refunds',
-          content: 'Payments can be made via UPI, Debit/Credit Cards, Wallets, and other supported methods. Cancellations may be available before food preparation begins. Refunds for eligible cancelled or rejected orders will be processed according to the ServoneKart Refund & Cancellation Policy.',
+          content: 'Payments can be made via UPI, Debit/Credit Cards, Wallets, and other supported methods. Cancellations may be available before packing or dispatch begins. Refunds for eligible cancelled or rejected orders will be processed according to the Tricelyn Refund & Cancellation Policy.',
         ),
         PolicySection(
           heading: '5. Prohibited Activities & Conduct',
-          content: 'You must not use the Platform for unlawful purposes, submit fraudulent refund claims, create fake accounts, manipulate payments, or harass Vendor Partners or Delivery Partners. ServoneKart may suspend or terminate accounts involved in fraud or abuse.',
+          content: 'You must not use the Platform for unlawful purposes, submit fraudulent refund claims, create fake accounts, manipulate payments, or harass Vendor Partners or Delivery Partners. Tricelyn may suspend or terminate accounts involved in fraud or abuse.',
         ),
         PolicySection(
           heading: '6. Limitation of Liability',
-          content: 'To the maximum extent permitted by applicable law, ServoneKart acts as a technology platform and will not be liable for losses arising solely from circumstances beyond its reasonable control, including food quality issues which are the responsibility of the Vendor Partner.',
+          content: 'To the maximum extent permitted by applicable law, Tricelyn acts as a technology platform and will not be liable for losses arising solely from circumstances beyond its reasonable control, including product quality or expiry issues which are the responsibility of the Vendor Partner.',
         ),
         PolicySection(
           heading: '7. Dispute Resolution & Grievance',
-          content: 'These Terms shall be governed by the laws applicable in India. For complaints or grievances, please contact us at:\n\nServoneKart (OPC) PRIVATE LIMITED\nWebsite: https://servonekart.com\nPlease provide your registered mobile number and Order ID for faster resolution.',
+          content: 'These Terms shall be governed by the laws applicable in India. For complaints or grievances, please contact us at:\n\nTricelyn Technologies\nWebsite: https://tricelyn.com\nPlease provide your registered mobile number and Order ID for faster resolution.',
         ),
       ],
     );
@@ -677,7 +677,7 @@ class ShippingPolicyPage extends StatelessWidget {
         PolicySection(
           heading: 'Delivery Coverage',
           content:
-              'ServoneKart currently delivers across Indore, Madhya Pradesh, India. Our delivery '
+              'Tricelyn currently delivers across Indore, Madhya Pradesh, India. Our delivery '
               'zones cover major areas including Vijay Nagar, Palasia, Rajwada, Bhanwarkuan, '
               'Scheme 54, Scheme 78, Nipania, Bhawarkuan, LIG Colony, and surrounding localities. '
               'You can check if your area is serviceable by entering your delivery address in the '
@@ -687,33 +687,31 @@ class ShippingPolicyPage extends StatelessWidget {
         PolicySection(
           heading: 'Delivery Time',
           content:
-              'Standard delivery time is 30–45 minutes from order confirmation, depending on '
-              'the restaurant\'s preparation time and your distance from the restaurant. '
-              'During peak hours (12 PM – 2 PM and 7 PM – 9 PM), delivery may take up to '
-              '60 minutes. Estimated delivery time is displayed on the order confirmation screen '
-              'and is updated in real time. Delivery times may be affected by traffic conditions, '
-              'weather, or high order volumes. ServoneKart will notify you of any significant delays '
+              'Express quick-commerce delivery time is typically 10–30 minutes from order confirmation, depending on '
+              'partner store packing speed and distance from the nearest dark store. '
+              'During peak hours or adverse weather, delivery may take up to '
+              '45 minutes. Estimated delivery time is displayed on the order confirmation screen '
+              'and is updated in real time. Tricelyn will notify you of any significant delays '
               'via push notification.',
         ),
         PolicySection(
           heading: 'Delivery Charges',
           content:
-              'Delivery charges are calculated based on the distance between the restaurant and '
+              'Delivery charges are calculated based on the distance between the partner store and '
               'your delivery address. The applicable delivery fee is displayed clearly before you '
-              'confirm your order. Orders above ₹299 qualify for free delivery from participating '
-              'restaurants. A small platform fee may apply to certain orders. During promotional '
-              'periods, delivery charges may be waived. ServoneKart reserves the right to revise '
+              'confirm your order. Orders above ₹299 may qualify for free delivery from participating '
+              'stores. A small handling or platform fee may apply to certain orders. During promotional '
+              'periods, delivery charges may be waived. Tricelyn reserves the right to revise '
               'delivery charges at any time, with changes reflected in the app before order '
               'placement.',
         ),
         PolicySection(
           heading: 'Delivery Process',
           content:
-              'Once you place an order, the restaurant begins preparation and a delivery partner '
+              'Once you place an order, the partner store packs your items and a delivery partner '
               'is assigned. You can track your order in real time through the "My Orders" section '
-              'of the app. Our delivery partners are trained to handle food safely and maintain '
-              'hygiene standards. All deliveries are made in insulated bags to preserve food '
-              'temperature. Upon delivery, you will receive a notification. Please ensure someone '
+              'of the app. Our delivery partners are trained to handle groceries, cold-chain dairy, '
+              'and fragile items safely. Upon delivery, you will receive a notification. Please ensure someone '
               'is available at the delivery address to receive the order. Contactless delivery '
               'is available on request.',
         ),
@@ -726,17 +724,17 @@ class ShippingPolicyPage extends StatelessWidget {
               'cancelled and a refund will be processed as per our Refund Policy. To avoid '
               'failed deliveries, please ensure your address details are accurate and complete, '
               'and that you are reachable on the registered phone number at the time of delivery. '
-              'ServoneKart is not liable for failed deliveries due to incorrect address information.',
+              'Tricelyn is not liable for failed deliveries due to incorrect address information.',
         ),
         PolicySection(
           heading: 'Order Tracking',
           content:
-              'ServoneKart provides real-time order tracking so you always know where your food is. '
+              'Tricelyn provides real-time order tracking so you always know where your order is. '
               'After placing an order, navigate to My Orders and tap on your active order to '
               'view the live tracking map. You will see status updates including: Order Confirmed, '
-              'Preparing, Out for Delivery, and Delivered. Push notifications are sent at each '
+              'Packing, Out for Delivery, and Delivered. Push notifications are sent at each '
               'stage. If you experience any issues with tracking or your order status appears '
-              'stuck, please contact our support team at support@servonekart.com or call '
+              'stuck, please contact our support team at support@tricelyn.com or call '
               '+91 89506 05676.',
         ),
       ],

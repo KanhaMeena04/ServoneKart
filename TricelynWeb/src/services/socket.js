@@ -21,16 +21,14 @@ class SocketService {
 
     this.socket.on('connect', () => {
       this.connected = true;
-      console.log('⚡ Socket connected to Tricelyn server:', this.socket.id);
       if (userId) {
         this.socket.emit('joinUser', userId);
         this.socket.emit('joinCustomer', userId);
       }
     });
 
-    this.socket.on('disconnect', (reason) => {
+    this.socket.on('disconnect', () => {
       this.connected = false;
-      console.log('🔌 Socket disconnected:', reason);
     });
 
     return this.socket;
@@ -41,7 +39,6 @@ class SocketService {
     if (orderId) {
       this.socket.emit('joinOrder', orderId);
       this.socket.emit('joinRoom', `order_${orderId}`);
-      console.log(`📦 Joined real-time room for order: ${orderId}`);
     }
   }
 
@@ -65,6 +62,18 @@ class SocketService {
     this.socket.on('driverLocationUpdate', callback);
   }
 
+  onPlatformModeUpdate(callback) {
+    if (!this.socket) this.connect();
+    this.socket.on('platformModeUpdated', callback);
+    this.socket.on('settingsUpdated', callback);
+    return () => {
+      if (this.socket) {
+        this.socket.off('platformModeUpdated', callback);
+        this.socket.off('settingsUpdated', callback);
+      }
+    };
+  }
+
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
@@ -76,4 +85,3 @@ class SocketService {
 
 export const socketService = new SocketService();
 export default socketService;
-

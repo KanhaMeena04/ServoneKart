@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/platform_config_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../services/payment_service.dart';
-import '../../core/models/product.dart';
 import '../checkout/order_success_page.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -123,8 +123,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<void> _startPayment() async {
     if (_isProcessing) return;
-    
+
     final cart = context.read<CartProvider>();
+    final cfg = context.read<PlatformConfigProvider>();
+    final user = context.read<UserProvider>();
     final amount = cart.totalAmount; // Send Rupees to backend
 
     if (amount <= 0) {
@@ -138,41 +140,92 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       final orderData = await PaymentService.createOrder(amount);
+      if (!mounted) return;
       if (orderData != null && orderData['success'] == true) {
-        final order = orderData['order'];
-        
-        if (order == null || order['id'] == null) {
+        final orderId = (orderData['id'] ?? orderData['order']?['id'])?.toString();
+
+        if (orderId == null || orderId.isEmpty) {
           throw Exception("Razorpay Order ID missing from server response");
         }
 
+        if (orderData['isSandbox'] == true) {
+          setState(() => _isProcessing = false);
+          final confirmed = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dlgCtx) => AlertDialog(
+              title: const Text('Confirm Test Sandbox Payment'),
+              content: Text(
+                'Live gateway keys are not active. Confirm test payment of ₹${amount.toStringAsFixed(2)} for Order #$orderId?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dlgCtx, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(dlgCtx, true),
+                  child: const Text('Confirm Payment'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed != true || !mounted) return;
+          setState(() => _isProcessing = true);
+          final sandboxPayId = 'pay_sandbox_${DateTime.now().millisecondsSinceEpoch}';
+          final verifyRes = await PaymentService.verifyPayment(
+            razorpayOrderId: orderId,
+            razorpayPaymentId: sandboxPayId,
+            razorpaySignature: 'sandbox_confirm',
+            isSandboxConfirm: true,
+          );
+          if (!mounted) return;
+          if (verifyRes != null && verifyRes['success'] == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Payment Successful!"), backgroundColor: Colors.green),
+            );
+            _completeOrder();
+          } else {
+            setState(() => _isProcessing = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(verifyRes?['message'] ?? 'Sandbox payment verification failed'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
+        final key = orderData['keyId']?.toString();
         var options = {
-          'key': AppConstants.razorpayKey, // Using the key from your .env
-          'amount': (amount * 100).toInt(),
-          'name': 'ECDKART',
-          'order_id': order['id'],
-          'description': 'Food Order Payment',
+          'key': (key != null && key.isNotEmpty) ? key : AppConstants.razorpayKey,
+          'amount': (orderData['amountPaise'] as num?)?.toInt() ?? (amount * 100).toInt(),
+          'name': cfg.appName,
+          'order_id': orderId,
+          'description': cfg.isGroceryActive ? 'Grocery Order Payment' : 'Order Payment',
           'timeout': 300, // in seconds
           'prefill': {
-            'contact': context.read<UserProvider>().phone.isNotEmpty 
-                ? context.read<UserProvider>().phone 
-                : '9876543210',
-            'email': context.read<UserProvider>().email.isNotEmpty 
-                ? context.read<UserProvider>().email 
-                : 'test@example.com'
+            'contact': user.phone.isNotEmpty ? user.phone : '9876543210',
+            'email': user.email.isNotEmpty ? user.email : 'support@tricelyn.com',
           }
         };
         _razorpay.open(options);
       } else {
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to create order. Try again.")),
+          SnackBar(
+            content: Text(orderData?['message'] ?? "Failed to create order. Try again."),
+          ),
         );
       }
     } catch (e) {
-      setState(() => _isProcessing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
@@ -228,7 +281,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                           width: 50,
                                           height: 50,
                                           color: Colors.grey[200],
-                                          child: const Icon(Icons.fastfood, color: Colors.grey),
+                                          child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
                                         ),
                                   ),
                                 ),
@@ -289,43 +342,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                     ),
                   const Divider(height: 32),
-                  if (cart.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // Add a sample item for testing
-                            cart.addItem(
-                              Product(
-                                id: 'sample_1',
-                                name: 'Delicious Pepperoni Pizza',
-                                description: 'Freshly baked with extra cheese',
-                                price: 299.0,
-                                image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400',
-                                category: 'Pizza',
-                                rating: 4.5,
-                                isVeg: false,
-                              ),
-                              restaurantId: 'r1',
-                              restaurantName: 'Pizza Paradise',
-                              restaurantImageUrl: '',
-                              imageUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400',
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text("Add Sample Item (Test)"),
-                        ),
-                      ),
-                    ),
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(

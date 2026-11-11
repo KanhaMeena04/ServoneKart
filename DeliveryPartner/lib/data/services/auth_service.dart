@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/constants/api_constansts.dart';
 
 class AuthService {
   static const String _tokenKey = 'access_token';
@@ -49,11 +52,38 @@ class AuthService {
     return prefs.getBool(_hasPinKey) ?? false;
   }
 
-  // Refresh access token
+  // Refresh access token against live backend
   static Future<bool> refreshAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, 'mock_refreshed_access_token');
-    return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString(_refreshTokenKey);
+      if (refreshToken == null || refreshToken.isEmpty) return false;
+
+      final response = await http
+          .post(
+            Uri.parse(ApiConstants.refreshToken),
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({'refreshToken': refreshToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        final newToken = data['token'] ?? data['accessToken'] ?? data['data']?['token'];
+        final newRefresh = data['refreshToken'] ?? data['data']?['refreshToken'] ?? refreshToken;
+        if (newToken != null && newToken.toString().isNotEmpty) {
+          await prefs.setString(_tokenKey, newToken.toString());
+          await prefs.setString(_refreshTokenKey, newRefresh.toString());
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Refresh token error: $e');
+    }
+    return false;
   }
 
   // Logout (clear tokens but keep phone & PIN info for quick re-login)

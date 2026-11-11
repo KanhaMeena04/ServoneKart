@@ -6,6 +6,7 @@ import '../../core/models/product.dart';
 import '../../core/models/restaurant_models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/platform_config_provider.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/safe_image.dart';
@@ -44,11 +45,14 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
+    final cfg = context.watch<PlatformConfigProvider>();
     final wishlistProvider = context.watch<WishlistProvider>();
 
     final List<Restaurant> favRestaurants = wishlistProvider.favoriteRestaurants;
     final List<Product> favDishes = wishlistProvider.items;
     final bool isEmpty = favRestaurants.isEmpty && favDishes.isEmpty;
+    final storeLabel = cfg.isGroceryActive ? 'Stores' : 'Restaurants';
+    final itemLabel = cfg.isGroceryActive ? 'Grocery Items' : 'Food Items';
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5FAF8),
@@ -67,7 +71,7 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
           },
         ),
         title: const Text(
-          '❤️ Your Favourites',
+          'Your Favourites',
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Colors.white),
         ),
         bottom: isEmpty
@@ -82,28 +86,28 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
                 tabs: [
                   Tab(
                     icon: const Icon(Icons.storefront_rounded, size: 20),
-                    text: 'Restaurants (${favRestaurants.length})',
+                    text: '$storeLabel (${favRestaurants.length})',
                   ),
                   Tab(
-                    icon: const Icon(Icons.fastfood_rounded, size: 20),
-                    text: 'Food Items (${favDishes.length})',
+                    icon: Icon(cfg.isGroceryActive ? Icons.shopping_basket_rounded : Icons.fastfood_rounded, size: 20),
+                    text: '$itemLabel (${favDishes.length})',
                   ),
                 ],
               ),
       ),
       body: isEmpty
-          ? _buildGlobalEmptyState(context, isDark)
+          ? _buildGlobalEmptyState(context, isDark, cfg.isGroceryActive)
           : TabBarView(
               controller: _tabController,
               children: [
-                _buildRestaurantsTab(context, favRestaurants, wishlistProvider, isDark),
-                _buildDishesTab(context, favDishes, isDark),
+                _buildRestaurantsTab(context, favRestaurants, wishlistProvider, isDark, cfg.isGroceryActive),
+                _buildDishesTab(context, favDishes, isDark, cfg.isGroceryActive),
               ],
             ),
     );
   }
 
-  Widget _buildGlobalEmptyState(BuildContext context, bool isDark) {
+  Widget _buildGlobalEmptyState(BuildContext context, bool isDark, bool isGrocery) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -133,7 +137,9 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap the heart icon on any restaurant or dish to easily find and order them here.',
+              isGrocery
+                  ? 'Tap the heart icon on any store or grocery item to quickly reorder them here.'
+                  : 'Tap the heart icon on any restaurant or dish to easily find and order them here.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
             ),
@@ -146,8 +152,11 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
                   context.go(AppRoutes.home);
                 }
               },
-              icon: const Icon(Icons.restaurant_menu, size: 18),
-              label: const Text('Explore Restaurants', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(isGrocery ? Icons.shopping_bag_rounded : Icons.restaurant_menu, size: 18),
+              label: Text(
+                isGrocery ? 'Explore Stores' : 'Explore Restaurants',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -166,6 +175,7 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
     List<Restaurant> favRestaurants,
     WishlistProvider wishlistProvider,
     bool isDark,
+    bool isGrocery,
   ) {
     if (favRestaurants.isEmpty) {
       return Center(
@@ -175,7 +185,7 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
             Icon(Icons.storefront_outlined, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 14),
             Text(
-              'No Favourite Restaurants',
+              isGrocery ? 'No Favourite Stores' : 'No Favourite Restaurants',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -184,7 +194,9 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap the heart icon on restaurant cards to save them',
+              isGrocery
+                  ? 'Tap the heart icon on partner store cards to save them'
+                  : 'Tap the heart icon on restaurant cards to save them',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
@@ -342,16 +354,17 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
     BuildContext context,
     List<Product> favDishes,
     bool isDark,
+    bool isGrocery,
   ) {
     if (favDishes.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.fastfood_outlined, size: 64, color: Colors.grey.shade400),
+            Icon(isGrocery ? Icons.shopping_basket_outlined : Icons.fastfood_outlined, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 14),
             Text(
-              'No Favourite Food Items',
+              isGrocery ? 'No Favourite Grocery Items' : 'No Favourite Food Items',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -360,7 +373,9 @@ class _WishlistTabState extends State<WishlistTab> with SingleTickerProviderStat
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap the heart icon on any dish to save it here',
+              isGrocery
+                  ? 'Tap the heart icon on any grocery item to save it here'
+                  : 'Tap the heart icon on any dish to save it here',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],

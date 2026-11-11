@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
             physics: const ClampingScrollPhysics(),
             child: Column(
               children: [
-                // Header Stack with Food Delivery Rider Banner
+                // Header Stack with Delivery Partner Banner
                 Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
@@ -559,7 +559,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 32),
 
-                        // ================= ECD KART PARTNER PERKS & SHOWCASE =================
+                        // ================= TRICELYN PARTNER PERKS & SHOWCASE =================
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),
@@ -603,7 +603,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'ECD KART Fleet Benefits',
+                                      'Tricelyn Fleet Benefits',
                                       style: GoogleFonts.poppins(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -637,7 +637,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 iconBg: const Color(0xFFFFF3E0),
                                 iconColor: const Color(0xFFE65100),
                                 title: 'Daily Peak & Rain Incentives',
-                                subtitle: 'Extra bonus rewards on lunch, dinner, rain & festival peak order surges.',
+                                subtitle: 'Extra bonus rewards on morning, evening, rain & festival peak order surges.',
                               ),
                               const SizedBox(height: 12),
                               _buildPerkRow(
@@ -645,7 +645,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 iconBg: const Color(0xFFF3E5F5),
                                 iconColor: const Color(0xFF7B1FA2),
                                 title: '24/7 Safety & Live Route Support',
-                                subtitle: 'On-duty emergency helpline and seamless map navigation across Sohna.',
+                                subtitle: 'On-duty emergency helpline and live turn-by-turn map navigation.',
                               ),
                             ],
                           ),
@@ -704,7 +704,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  'Delivering Happiness Across Sohna, Haryana (www.ecdkart.co.in)',
+                                  'Fast Grocery & Essentials Delivery Partner Fleet (tricelyn.com)',
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
                                     color: Colors.grey[700],

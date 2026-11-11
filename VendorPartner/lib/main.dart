@@ -7,13 +7,16 @@ import 'firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/splash_screen.dart';
 import 'api_constants.dart';
-
 import 'services/notification_service.dart';
+import 'services/platform_config_service.dart';
+import 'services/restaurant_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await RestaurantNotificationService.initialize();
+  await PlatformConfigService.loadCached();
+  PlatformConfigService.fetchSettings();
 
   if (!kIsWeb) {
     await FirebaseCrashlytics.instance
@@ -33,12 +36,13 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final savedId = prefs.getString('restaurantId') ?? '';
   final savedToken = prefs.getString('token') ?? '';
+  await RestaurantAuthService.hydrateRbacFromPrefs();
 
-  final hasSession = savedId.isNotEmpty;
+  final hasSession = savedId.isNotEmpty && savedToken.isNotEmpty;
   if (hasSession) {
     ApiConstants.setAuthenticatedSession(
       restaurantId: savedId,
-      authToken: savedToken.isNotEmpty ? savedToken : 'guest_vendor_token',
+      authToken: savedToken,
     );
   }
 

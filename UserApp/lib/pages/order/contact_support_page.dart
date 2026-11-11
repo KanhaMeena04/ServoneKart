@@ -479,7 +479,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
     return _buildChatBubble({
       'isUser': false,
       'isSystem': true,
-      'text': 'Thanks for contacting ECDKart Support! Our agent will assist you shortly.',
+      'text': 'Thanks for contacting Tricelyn Support! Our agent will assist you shortly.',
       'time': _formatTimestamp(DateTime.now().toIso8601String()),
     });
   }
@@ -586,7 +586,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isSystem ? 'ECDKart System' : 'ECDKart Support',
+                        isSystem ? 'Tricelyn System' : 'Tricelyn Support',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
