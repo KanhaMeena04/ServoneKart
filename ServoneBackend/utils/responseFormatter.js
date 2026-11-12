@@ -159,6 +159,7 @@ exports.formatRestaurantForAdmin = (restaurant) => {
   const ownerName = restaurant.ownerName || ((restaurant.owner && typeof restaurant.owner === 'object' && restaurant.owner.name) ? restaurant.owner.name : `${realName} Owner`);
   const ownerEmail = restaurant.ownerEmail || ((restaurant.owner && typeof restaurant.owner === 'object' && restaurant.owner.email) ? restaurant.owner.email : (restaurant.email || (realPhone ? `${realPhone.replace(/[^0-9]/g, '')}@ecdkart.com` : '')));
   const ownerMobile = restaurant.ownerMobile || ((restaurant.owner && typeof restaurant.owner === 'object' && restaurant.owner.mobile) ? restaurant.owner.mobile : realPhone);
+  const realPin = restaurant.pin || restaurant.ownerPin || restaurant.restaurantKey || (restaurant.owner && typeof restaurant.owner === 'object' ? restaurant.owner.pin : '') || '1234';
 
   return {
     _id: restaurant._id,
@@ -247,6 +248,17 @@ exports.formatProductForUser = (product) => {
     _id: product._id,
     restaurant: product.restaurant,
     category: product.category,
+    categoryId: product.categoryId || (product.category && product.category._id ? product.category._id : product.category),
+    subcategoryId: product.subcategoryId || null,
+    vertical: product.vertical || 'food',
+    sku: product.sku || '',
+    barcode: product.barcode || '',
+    weight: product.weight || '',
+    unit: product.unit || 'piece',
+    stockQuantity: product.stockQuantity !== undefined ? product.stockQuantity : 100,
+    lowStockThreshold: product.lowStockThreshold !== undefined ? product.lowStockThreshold : 10,
+    inStock: product.inStock !== false && !product.outOfStock,
+    variants: product.variants || [],
     name: product.name,
     description: product.description,
     image: product.image,

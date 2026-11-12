@@ -244,7 +244,7 @@ exports.reorderAdminCategories = async (req, res) => {
 
 exports.getAdminProducts = async (req, res) => {
   try {
-    const { restaurantId, categoryId, subcategory, search, page = 1, limit = 100 } = req.query;
+    const { restaurantId, categoryId, subcategory, search, page = 1, limit = 200 } = req.query;
 
     const filter = {};
     if (restaurantId) filter.restaurant = restaurantId;

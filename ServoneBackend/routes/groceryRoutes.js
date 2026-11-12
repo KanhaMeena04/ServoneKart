@@ -319,6 +319,7 @@ router.get('/categories', async (req, res) => {
           { type: 'grocery' },
           { type: 'main' }
         ],
+        type: { $ne: 'subcategory' },
         isActive: { $ne: false }
       }).select('name image icon slug position description vertical').sort({ position: 1 }).lean();
 
@@ -375,6 +376,7 @@ router.get('/category-sections', async (req, res) => {
       const [dbCats, dbProds] = await Promise.all([
         Category.find({
           $or: [{ vertical: VERTICALS.GROCERY }, { vertical: 'grocery' }, { vertical: VERTICALS.ESSENTIALS }],
+          type: { $ne: 'subcategory' },
           isActive: { $ne: false }
         }).sort({ position: 1 }).lean(),
         Product.find({
@@ -520,6 +522,7 @@ router.get('/products', async (req, res) => {
             $or: [
               { category: catDoc._id },
               { categoryId: catDoc._id },
+              { subcategoryId: catDoc._id },
               { categorySlug: catDoc.slug },
               { categorySlug: category }
             ]
