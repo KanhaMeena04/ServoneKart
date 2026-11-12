@@ -15,7 +15,9 @@ async function testControllerDirectly() {
   console.log("==========================================");
 
   try {
-    await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/servonekart");
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!uri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
+    await mongoose.connect(uri);
     console.log("✅ MongoDB Connected directly.");
 
     // Find admin user

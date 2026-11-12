@@ -6,8 +6,9 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
-const oldUri = process.env.OLD_MONGODB_URI || "mongodb://localhost:27017/old_db";
-const oldFallback = process.env.OLD_MONGODB_FALLBACK_URI || "mongodb://localhost:27017/old_db";
+const oldUri = process.env.OLD_MONGODB_URI;
+const oldFallback = process.env.OLD_MONGODB_FALLBACK_URI || oldUri;
+if (!oldUri) throw new Error('OLD_MONGODB_URI environment variable is required.');
 
 const backupDir = path.join(__dirname, '../data/old_db_backup');
 

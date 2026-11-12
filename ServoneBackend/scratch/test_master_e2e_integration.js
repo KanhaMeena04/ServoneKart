@@ -26,7 +26,9 @@ async function runMasterE2ETests() {
   let createdPromocodeId = null;
 
   try {
-    await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/servonekart", {
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!uri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
+    await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 15000,
       family: 4
     });

@@ -10,10 +10,7 @@ class RestaurantSocketService {
   static String _currentRestaurantId = '';
   static final List<Function(dynamic)> _newOrderListeners = [];
 
-  static String get _baseUrl {
-    final url = ApiConstants.baseUrl;
-    return url.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
-  }
+  static String get _baseUrl => ApiConstants.socketUrl;
 
   static Future<void> init(String restaurantId, String token) async {
     if (restaurantId.isEmpty) return;

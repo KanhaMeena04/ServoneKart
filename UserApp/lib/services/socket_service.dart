@@ -9,10 +9,7 @@ class SocketService {
   static IO.Socket? _socket;
   static bool _isInitialized = false;
 
-  static String get _baseUrl {
-    final url = AppConstants.baseUrl;
-    return url.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
-  }
+  static String get _baseUrl => AppConstants.socketUrl;
 
   static Future<void> init() async {
     if (_isInitialized) return;

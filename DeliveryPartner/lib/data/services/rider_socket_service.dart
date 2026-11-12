@@ -13,8 +13,7 @@ class RiderSocketService {
   static Stream<Map<String, dynamic>> get onOrderEvent =>
       _orderEventsController.stream;
 
-  static String get _socketBaseUrl =>
-      ApiConstants.baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+  static String get _socketBaseUrl => ApiConstants.socketUrl;
 
   static void connect({String? riderId}) {
     if (_socket == null) {

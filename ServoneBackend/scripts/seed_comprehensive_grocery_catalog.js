@@ -10,7 +10,8 @@ const Banner = require('../models/Banner');
 const Restaurant = require('../models/Restaurant');
 const { CATEGORIES, ALL_CATALOG_PRODUCTS } = require('../data/comprehensiveGroceryCatalog');
 
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/servonekart";
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!mongoUri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
 
 const SEED_STORES = [
   {

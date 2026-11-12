@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const MONGO_URI = process.env.CLIENT_MONGO_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ecdkart_local_dev';
+const MONGO_URI = process.env.CLIENT_MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!MONGO_URI) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
 
 async function runClientDiscoveryAudit() {
   console.log('====================================================');

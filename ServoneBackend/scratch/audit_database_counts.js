@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
+const path = require('path');
 const dotenv = require('dotenv');
-dotenv.config({ path: 'C:/Kanha/ECDUpdt/ECDbackend/.env' });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 async function runAudit() {
   try {
-    const mongoUri = 'mongodb://127.0.0.1:27017/ecdkart';
-    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 2000 });
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!mongoUri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
+    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
     console.log('Connected to MongoDB for Entity Count & Orphan Audit');
 
     const User = require('C:/Kanha/ECDUpdt/ECDbackend/models/User');

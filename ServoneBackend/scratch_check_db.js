@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
-require('dotenv').config({ path: 'C:/Kanha/ECDUpdt/ECDbackend/.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 async function check() {
-  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/ecdkart';
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!uri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
   console.log('Connecting to:', uri);
   await mongoose.connect(uri);
   

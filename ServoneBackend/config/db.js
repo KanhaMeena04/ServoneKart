@@ -1,13 +1,24 @@
-require('dotenv').config();
+const dns = require('dns');
+try {
+  dns.setDefaultResultOrder('ipv4first');
+  dns.setServers(['1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4']);
+} catch (e) {}
+
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  const mongoUri = (process.env.MONGODB_URI || process.env.MONGO_URI || '').trim();
 
   if (!mongoUri) {
     console.error('❌ FATAL: MONGODB_URI / MONGO_URI environment variable is missing.');
     console.error('Silently falling back to localhost or legacy databases is strictly disabled.');
     throw new Error('MONGODB_URI environment variable is required to start ServoneBackend.');
+  }
+
+  if (/mongodb:\/\/(localhost|127\.0\.0\.1)/i.test(mongoUri)) {
+    throw new Error('Local MongoDB URIs are disabled. Configure the MongoDB Atlas URI in MONGODB_URI / MONGO_URI.');
   }
 
   mongoose.set('bufferCommands', false);

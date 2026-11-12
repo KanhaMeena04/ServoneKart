@@ -28,6 +28,21 @@ class ApiConstants {
         ? _customBackendUrl
         : _defaultProductionBackendUrl;
   }
+
+  static const String _customSocketUrl =
+      String.fromEnvironment('SOCKET_URL', defaultValue: '');
+  static String get socketUrl => _customSocketUrl.isNotEmpty
+      ? _customSocketUrl
+      : baseUrl.replaceAll(RegExp(r'/api(/v1)?/?$'), '');
+
+  static const String websiteUrl = String.fromEnvironment(
+    'WEBSITE_URL',
+    defaultValue: 'https://tricelynwebsite.vercel.app',
+  );
+  static const String adminUrl = String.fromEnvironment(
+    'ADMIN_URL',
+    defaultValue: 'https://tricelynadmin.vercel.app',
+  );
   
   static String? _restaurantId;
   static String? _authToken;

@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const Restaurant = require('../models/Restaurant');
 
 async function inspectDB() {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/ecdkart';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!mongoUri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
     await mongoose.connect(mongoUri);
     console.log("Connected to MongoDB...");
 

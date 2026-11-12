@@ -34,35 +34,45 @@ const app = express();
 const server = http.createServer(app);
 app.set('trust proxy', 1);
 
+const normalizeOrigin = (value) => (value ? String(value).trim().replace(/\/+$/, '') : '');
+
 const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
   process.env.FRONTEND_ORIGIN,
+  process.env.WEBSITE_URL,
+  process.env.ADMIN_URL,
   process.env.SOCKET_IO_CLIENT_URL,
   process.env.BACKEND_URL,
   process.env.RENDER_EXTERNAL_URL,
+  'https://tricelynwebsite.vercel.app',
+  'https://tricelynadmin.vercel.app',
   'https://servonekart.onrender.com',
-  'https://ecdadminpanel.vercel.app',
   'http://localhost:3000',
+  'http://localhost:5173',
   'http://localhost:5000',
   'http://localhost:5005',
   'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
   'http://127.0.0.1:5005'
-].filter(Boolean);
+].map(normalizeOrigin).filter(Boolean);
 
 const corsConfig = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (/^http:\/\/localhost(:\d+)?$/.test(origin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
+    const cleanOrigin = normalizeOrigin(origin);
+    if (/^http:\/\/localhost(:\d+)?$/.test(cleanOrigin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(cleanOrigin)) {
       return callback(null, true);
     }
-    const extraOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [];
+    const extraOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',').map(normalizeOrigin).filter(Boolean)
+      : [];
     if (
-      allowedOrigins.includes(origin) ||
-      extraOrigins.includes(origin) ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-      /\.vercel\.app$/.test(origin) ||
-      /\.onrender\.com$/.test(origin)
+      allowedOrigins.includes(cleanOrigin) ||
+      extraOrigins.includes(cleanOrigin) ||
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin) ||
+      /\.vercel\.app$/.test(cleanOrigin) ||
+      /\.onrender\.com$/.test(cleanOrigin)
     ) {
       return callback(null, true);
     }

@@ -6,11 +6,12 @@ try {
 
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Types;
 
-const defaultNewUri = process.env.MONGODB_URI || "mongodb://localhost:27017/servonekart";
-const newUri = process.env.MONGODB_URI || defaultNewUri;
+const newUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!newUri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
 
 const backupDir = path.join(__dirname, '../data/old_db_backup');
 

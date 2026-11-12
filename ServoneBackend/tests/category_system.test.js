@@ -11,7 +11,8 @@ const AuditLog = require("../models/AuditLog");
 const categoryController = require("../controllers/categoryController");
 const seedMasterCategories = require("../scripts/seedMasterCategories");
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecdkart_local_dev";
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!MONGO_URI) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
 
 // Mock Express Req/Res helpers
 function createMockReqRes(body = {}, params = {}, query = {}) {

@@ -68,7 +68,8 @@ const indoreRestaurants = [
 
 async function seedIndoreRestaurants() {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/ecdkart';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!mongoUri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
     await mongoose.connect(mongoUri);
     console.log("Connected to MongoDB for Indore seeding...");
 

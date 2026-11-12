@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 async function inspectCats() {
-  await mongoose.connect('mongodb://127.0.0.1:27017/ecdkart_local_dev');
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!uri) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
+  await mongoose.connect(uri);
   const db = mongoose.connection.db;
 
   const total = await db.collection('categories').countDocuments();

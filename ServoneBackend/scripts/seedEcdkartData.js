@@ -15,7 +15,8 @@ const Promocode = require('../models/Promocode');
 const AdminSetting = require('../models/AdminSetting');
 const Rider = require('../models/Rider');
 
-const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/ecdkart_local_dev";
+const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!mongoURI) throw new Error('MONGODB_URI / MONGO_URI environment variable is required.');
 
 async function seedData() {
   try {
