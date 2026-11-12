@@ -19,7 +19,7 @@ out/
 **/.gradle/
 **/.kotlin/
 **/.cxx/
-**/reports/
+**/android/**/reports/
 
 # iOS build & caches
 **/ios/Pods/
