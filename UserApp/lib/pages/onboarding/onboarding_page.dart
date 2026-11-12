@@ -32,12 +32,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: 'Order fresh fruits, vegetables, dairy & daily essentials\ndelivered in minutes across Indore.',
     ),
     OnboardingItem(
-      image: 'assets/Group 2072750484.jpg',
+      image: 'assets/onboarding_2.jpg',
       title: 'Live Rider Tracking',
       subtitle: 'Real-time GPS tracking of your grocery shipment\nso you know exactly when it arrives at your door.',
     ),
     OnboardingItem(
-      image: 'assets/Group 2072750484.jpg',
+      image: 'assets/onboarding_3.jpg',
       title: '100% Quality & Best Prices',
       subtitle: 'Direct from verified dark stores and supermarkets\nat prices cheaper than local marts.',
     ),
