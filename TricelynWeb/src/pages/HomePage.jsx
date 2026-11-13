@@ -69,11 +69,44 @@ const HomePage = () => {
   const { platformMode, enableFoodDelivery } = usePlatform();
   const { selectedLocation } = useLocation();
   const [categories, setCategories] = useState(CATEGORIES);
+  const [shuffledCategories, setShuffledCategories] = useState([]);
+  const [isMobileCatPaused, setIsMobileCatPaused] = useState(false);
+  const mobileCatTrackRef = useRef(null);
+
   const [bestSellers, setBestSellers] = useState(BEST_SELLERS);
   const [categorySections, setCategorySections] = useState([]);
   const [bannersData, setBannersData] = useState(null);
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Sync shuffledCategories when categories load
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      setShuffledCategories([...categories]);
+    }
+  }, [categories]);
+
+  // Live auto-shuffle & scroll every 6 seconds (between 5-10s)
+  useEffect(() => {
+    if (isMobileCatPaused || !mobileCatTrackRef.current) return;
+    const interval = setInterval(() => {
+      if (mobileCatTrackRef.current) {
+        const el = mobileCatTrackRef.current;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (el.scrollLeft >= maxScroll - 30) {
+          setShuffledCategories((prev) => {
+            if (prev.length <= 3) return prev;
+            return [...prev.slice(2), ...prev.slice(0, 2)];
+          });
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollBy({ left: 160, behavior: 'smooth' });
+        }
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [isMobileCatPaused, categories]);
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -135,10 +168,10 @@ const HomePage = () => {
         } else {
           setStores([
             {
-              _id: 'store_tricelyn_indore_01',
-              id: 'store_tricelyn_indore_01',
-              name: 'Tricelyn Express Mart (Vijay Nagar Hub)',
-              address: 'Scheme 54, Vijay Nagar, Indore 452010',
+              _id: 'store_tricelyn_01',
+              id: 'store_tricelyn_01',
+              name: 'Tricelyn Express Mart (Central Hub)',
+              address: 'Hub #1, Express Logistics Zone',
               rating: 4.8,
               deliveryTime: '10-15 mins',
               distance: '1.2 km',
@@ -146,10 +179,10 @@ const HomePage = () => {
               image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'
             },
             {
-              _id: 'store_tricelyn_indore_02',
-              id: 'store_tricelyn_indore_02',
-              name: 'Fresh Farm Hub (Palasia Superstore)',
-              address: 'Old Palasia Main Road, Near Industry House, Indore 452001',
+              _id: 'store_tricelyn_02',
+              id: 'store_tricelyn_02',
+              name: 'Fresh Farm Hub (Metro Superstore)',
+              address: 'Metro Hyperlocal Park, Station Road',
               rating: 4.7,
               deliveryTime: '12-18 mins',
               distance: '2.5 km',
@@ -157,10 +190,10 @@ const HomePage = () => {
               image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80'
             },
             {
-              _id: 'store_tricelyn_indore_03',
-              id: 'store_tricelyn_indore_03',
-              name: 'Apna Super Kirana (Saket Nagar)',
-              address: 'Saket Square, Near Anand Bazaar, Indore 452018',
+              _id: 'store_tricelyn_03',
+              id: 'store_tricelyn_03',
+              name: 'City Super Kirana & Staples',
+              address: 'Commercial Square, City Center',
               rating: 4.6,
               deliveryTime: '15-20 mins',
               distance: '3.1 km',
@@ -261,53 +294,43 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* MOBILE VIEW (< 768px): 4-Column Quick-Commerce Sections (Matches Reference Screenshot 1 & 2) */}
-          <div className="space-y-6 md:hidden">
-            {MOBILE_CATEGORY_GROUPS.map((group, gIdx) => (
-              <div key={gIdx} className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-gray-900 tracking-tight">
-                    {group.title}
-                  </h3>
-                  <Link
-                    to="/categories"
-                    className="text-[11px] font-bold text-[#0055ff] hover:underline"
-                  >
-                    see all
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2.5">
-                  {group.items.map((cat, cIdx) => (
-                    <Link
-                      key={cIdx}
-                      to={`/category/${cat.slug}`}
-                      className="flex flex-col items-center group text-center cursor-pointer"
-                    >
-                      {/* Soft Light Blue Rounded Square (Matches Blinkit Reference) */}
-                      <div className="w-full aspect-square bg-[#f0f6ff] active:bg-blue-100 rounded-2xl p-2 flex items-center justify-center border border-blue-100/60 shadow-2xs group-active:scale-95 transition">
-                        <img
-                          src={cat.image}
-                          alt={cat.name}
-                          className="max-h-full max-w-full object-contain mix-blend-multiply rounded-lg"
-                          loading="lazy"
-                        />
-                      </div>
-
-                      {/* Category Label Below */}
-                      <span className="text-[10px] font-bold text-gray-800 group-hover:text-[#0055ff] line-clamp-2 mt-1 leading-tight text-center">
-                        {cat.name}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
+          {/* MOBILE VIEW (< 768px): Single-Line Auto-Scrolling / Shuffling Circle Categories */}
+          <div className="md:hidden">
+            <div 
+              ref={mobileCatTrackRef}
+              onMouseEnter={() => setIsMobileCatPaused(true)}
+              onMouseLeave={() => setIsMobileCatPaused(false)}
+              onTouchStart={() => setIsMobileCatPaused(true)}
+              onTouchEnd={() => setTimeout(() => setIsMobileCatPaused(false), 2000)}
+              className="flex items-center gap-3.5 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1 -mx-1"
+            >
+              {shuffledCategories.map((cat, idx) => (
+                <Link
+                  key={cat.slug || cat._id || idx}
+                  to={`/category/${cat.slug}`}
+                  className="flex-shrink-0 flex flex-col items-center text-center group cursor-pointer w-[68px]"
+                >
+                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#0055ff] via-sky-400 to-indigo-500 shadow-xs group-active:scale-95 transition-transform duration-200">
+                    <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden flex items-center justify-center">
+                      <img
+                        src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80"}
+                        alt={cat.name}
+                        className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                  <span className="mt-1.5 text-[11px] font-bold text-gray-800 group-hover:text-[#0055ff] line-clamp-1 leading-tight text-center w-full px-0.5">
+                    {cat.shortName || cat.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ============================================================
-            SHOPS NEAR ME (Multi-Vendor Hyperlocal Stores in Indore)
+            SHOPS NEAR ME (Multi-Vendor Hyperlocal Partner Stores)
            ============================================================ */}
         {stores && stores.length > 0 && (
           <section className="space-y-4">
@@ -434,57 +457,94 @@ const HomePage = () => {
         </section>
 
         {/* ============================================================
-            5. DELIVERY PARTNER PRIORITY BANNER
-            (Matches Master Mockup: Dark Navy Priority Strip)
+            5. DELIVERY PARTNER PRIORITY BANNER (Screenshot 2: Modern & Dynamic)
            ============================================================ */}
-        <section className="rounded-2xl bg-[#031633] text-white p-6 sm:p-8 relative overflow-hidden shadow-md">
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-6">
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#021028] via-[#051c44] to-[#003db3] text-white p-5 sm:p-7 lg:p-8 shadow-xl border border-blue-400/20">
+          {/* Subtle Ambient Decorative Glows */}
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#0055ff]/20 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center gap-6">
             
-            {/* Left Content */}
-            <div className="lg:col-span-5 space-y-2">
-              <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-                Your Groceries. <br />
-                <span className="text-cyan-400">Our Priority.</span>
+            {/* Left Column: Heading, Subtitle & Action CTA */}
+            <div className="lg:col-span-5 space-y-2.5 sm:space-y-3">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span>Hyperlocal Express • 10-15 Mins</span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight leading-tight">
+                {priorityBanner.title ? (
+                  priorityBanner.title.includes('.') ? (
+                    <>
+                      {priorityBanner.title.split('.')[0]}.<br />
+                      <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
+                        {priorityBanner.title.split('.').slice(1).join('.')}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
+                      {priorityBanner.title}
+                    </span>
+                  )
+                ) : (
+                  <>
+                    Your Groceries.<br />
+                    <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
+                      Our Priority.
+                    </span>
+                  </>
+                )}
               </h3>
-              <p className="text-xs text-blue-200 font-medium">
-                Fast. Safe. Reliable.
+
+              <p className="text-xs sm:text-sm text-blue-200/90 font-medium">
+                {priorityBanner.subtitle || "Fast. Safe. Reliable doorstep delivery in 10-15 minutes."}
               </p>
-              <div className="pt-2">
+
+              <div className="pt-1 sm:pt-2">
                 <Link
-                  to={priorityBanner.buttonLink || "/about"}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-full text-xs font-bold transition shadow-xs"
+                  to={priorityBanner.buttonLink || "/policy/shipping"}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-blue-900/40 hover:shadow-blue-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 border border-white/20"
                 >
                   <span>{priorityBanner.buttonText || "Learn More"}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
 
-            {/* Right 3 Steps (Order -> Pick -> Deliver) */}
-            <div className="lg:col-span-7 grid grid-cols-3 gap-4 border-t lg:border-t-0 lg:border-l border-white/10 pt-4 lg:pt-0 lg:pl-6">
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-cyan-400">
-                  <ShoppingCart className="w-4 h-4" />
-                  <span className="text-xs font-bold text-white">Order</span>
+            {/* Right Column: 3 Frosted Steps (Order -> Pick -> Deliver) */}
+            <div className="lg:col-span-7 grid grid-cols-3 gap-2.5 sm:gap-4 border-t lg:border-t-0 lg:border-l border-white/10 pt-4 lg:pt-0 lg:pl-6">
+              
+              <div className="group rounded-xl p-3 sm:p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 flex flex-col items-center sm:items-start text-center sm:text-left">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
+                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <p className="text-[11px] text-blue-200">Place your order in minutes</p>
+                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">Order</h4>
+                <p className="text-[10px] sm:text-xs text-blue-200/80 mt-0.5 leading-snug">
+                  Place order in seconds
+                </p>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-cyan-400">
-                  <Package className="w-4 h-4" />
-                  <span className="text-xs font-bold text-white">Pick</span>
+              <div className="group rounded-xl p-3 sm:p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 flex flex-col items-center sm:items-start text-center sm:text-left">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <p className="text-[11px] text-blue-200">We pick fresh from our store</p>
+                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">Pick</h4>
+                <p className="text-[10px] sm:text-xs text-blue-200/80 mt-0.5 leading-snug">
+                  Freshly picked & packed
+                </p>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-cyan-400">
-                  <Truck className="w-4 h-4" />
-                  <span className="text-xs font-bold text-white">Deliver</span>
+              <div className="group rounded-xl p-3 sm:p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 flex flex-col items-center sm:items-start text-center sm:text-left">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
+                  <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <p className="text-[11px] text-blue-200">Get it at your doorstep in 10-30 mins</p>
+                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">Deliver</h4>
+                <p className="text-[10px] sm:text-xs text-blue-200/80 mt-0.5 leading-snug">
+                  10-15 min to your door
+                </p>
               </div>
+
             </div>
 
           </div>

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>ECD Restaurant</string>
+	<string>Tricelyn Partner</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ECD Restaurant</string>
+	<string>Tricelyn Partner</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -68,13 +68,13 @@
 	</array>
 	<!-- Privacy Permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>ECD Restaurant requires location access to set and verify your restaurant store location for dispatch.</string>
+	<string>Tricelyn Partner requires location access to set and verify your store location for dispatch.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>ECD Restaurant requires location access to ensure accurate delivery pickup mapping.</string>
+	<string>Tricelyn Partner requires location access to ensure accurate delivery pickup mapping.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>ECD Restaurant requires camera access to capture menu dish images and restaurant documentation.</string>
+	<string>Tricelyn Partner requires camera access to capture menu items, products, and store documentation.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ECD Restaurant requires photo library access to upload food photos and store profile banners.</string>
+	<string>Tricelyn Partner requires photo library access to upload product photos and store profile banners.</string>
 	<!-- Background Modes for Order Audio and FCM Push Notifications -->
 	<key>UIBackgroundModes</key>
 	<array>

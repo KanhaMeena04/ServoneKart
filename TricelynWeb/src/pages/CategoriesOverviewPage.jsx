@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Layers } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Layers, Search, Sparkles } from 'lucide-react';
 import { groceryService } from '../services/api';
 
 const CategoriesOverviewPage = () => {
   const [categories, setCategories] = useState([]);
+  const [searchFilter, setSearchFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fallbackPalettes = [
@@ -39,57 +40,90 @@ const CategoriesOverviewPage = () => {
     fetchCats();
   }, []);
 
-  const displayList = categories.length > 0 
+  const rawList = categories.length > 0 
     ? categories.map((c, i) => ({
         name: c.name,
         slug: c.slug || c._id,
         img: c.image || fallbackPalettes[i % fallbackPalettes.length].img,
         bg: fallbackPalettes[i % fallbackPalettes.length].bg,
-        count: 'Fresh Stock',
+        count: '10-15 Min Delivery',
       }))
     : fallbackPalettes.map((p, i) => ({
         name: `Category ${i + 1}`,
         slug: `category-${i + 1}`,
         img: p.img,
         bg: p.bg,
-        count: '10-15 min delivery',
+        count: '10-15 Min Delivery',
       }));
 
+  const filteredList = rawList.filter(c => 
+    c.name.toLowerCase().includes(searchFilter.toLowerCase().trim())
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div>
-        <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 mb-2">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Home</span>
-        </Link>
-        <h1 className="text-2xl font-black text-gray-900">Explore All Grocery Categories</h1>
-        <p className="text-xs text-gray-500 mt-1">Delivered to your home in 10-15 minutes across Indore</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 pb-20">
+      
+      {/* Header with Search and Navigation */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+        <div>
+          <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0055ff] hover:text-blue-700 transition mb-1.5">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              All Grocery Categories
+            </h1>
+            <span className="text-[11px] font-black text-[#0055ff] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+              {filteredList.length} Categories
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Fresh groceries, dairy & daily staples delivered in 10-15 minutes from nearest partner dark stores.
+          </p>
+        </div>
+
+        {/* Quick Filter Search Box */}
+        <div className="relative w-full md:w-72">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3 pointer-events-none" />
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder="Filter categories..."
+            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0055ff] shadow-xs"
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 sm:gap-8">
-        {displayList.map((cat) => (
+      {/* Grid: 3-4 columns on mobile, 4-6 on tablet/desktop with tight, attractive spacing */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-5">
+        {filteredList.map((cat) => (
           <Link
             key={cat.slug}
             to={`/category/${cat.slug}`}
-            className="group flex flex-col items-center text-center cursor-pointer"
+            className="group flex flex-col items-center text-center p-2.5 rounded-2xl bg-white hover:bg-blue-50/40 border border-gray-100 hover:border-[#0055ff]/40 shadow-xs hover:shadow-md transition-all duration-200"
           >
-            {/* Full Goal Circle with Thin Brand Theme Blue Border */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
+            {/* Full Goal Circle with Double Ring Accent */}
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-2xs group-hover:shadow-md group-hover:ring-3 group-hover:ring-blue-100/70 transition-all duration-300 flex items-center justify-center">
               <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
                 <img
                   src={cat.img}
                   alt={cat.name}
                   className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                  loading="lazy"
                 />
               </div>
             </div>
 
             {/* Name Below Circle */}
-            <div className="mt-2.5">
-              <h3 className="text-xs sm:text-[13px] font-extrabold text-gray-900 group-hover:text-[#0055ff] transition leading-snug line-clamp-2 max-w-[120px]">
+            <div className="mt-2 w-full">
+              <h3 className="text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0055ff] transition leading-snug line-clamp-2 px-1">
                 {cat.name}
               </h3>
-              <p className="text-[10px] text-gray-400 font-semibold mt-0.5">{cat.count}</p>
+              <span className="inline-block text-[9px] sm:text-[10px] text-emerald-600 font-bold mt-0.5">
+                ⚡ 10-15m
+              </span>
             </div>
           </Link>
         ))}

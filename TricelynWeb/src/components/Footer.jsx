@@ -42,7 +42,7 @@ const Footer = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-white tracking-tight truncate">10-15 Min Delivery</p>
-                <p className="text-[11px] text-gray-400 truncate">Superfast Indore fulfillment</p>
+                <p className="text-[11px] text-gray-400 truncate">Superfast doorstep fulfillment</p>
               </div>
             </div>
 
@@ -94,11 +94,11 @@ const Footer = () => {
               </div>
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
-              Indore's premier quick-commerce grocery delivery platform. Fresh fruits, vegetables, milk, daily staples & snacks delivered to your doorstep in 10-15 minutes.
+              India's premier quick-commerce grocery delivery platform. Fresh fruits, vegetables, dairy, daily staples & snacks delivered to your doorstep in 10-15 minutes.
             </p>
             <div className="pt-1 text-[11px] text-gray-400">
-              <span className="font-semibold text-gray-300">Indore Hubs: </span>
-              <span className="text-gray-400">Vijay Nagar · New Palasia · Chappan Dukan · Rajwada · Bhanwarkuan · Super Corridor</span>
+              <span className="font-semibold text-gray-300">Express Dark Stores: </span>
+              <span className="text-gray-400">Hyperlocal fulfillment across city zones with 10-15 min doorstep delivery SLA.</span>
             </div>
           </div>
 
@@ -113,9 +113,9 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Customer Service (2 cols) */}
+          {/* Customer Service & Policies (2 cols) */}
           <div className="md:col-span-2 lg:col-span-2 space-y-2">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Customer Care</h4>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Legal & Policies</h4>
             <ul className="space-y-1.5 text-xs text-gray-400">
               <li>
                 <button
@@ -123,14 +123,16 @@ const Footer = () => {
                   className="flex items-center gap-1.5 text-blue-400 hover:text-white transition-colors text-xs font-bold group cursor-pointer text-left"
                 >
                   <Headphones className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                  <span>24/7 Live Support Chat</span>
+                  <span>24/7 Live Chat</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 </button>
               </li>
-              <li><Link to="/support" className="hover:text-blue-400 transition-colors">Help & FAQs</Link></li>
-              <li><Link to="/support" className="hover:text-blue-400 transition-colors">Contact Support</Link></li>
-              <li><Link to="/support" className="hover:text-blue-400 transition-colors">Shipping Policy</Link></li>
-              <li><Link to="/support" className="hover:text-blue-400 transition-colors">Return & Refund</Link></li>
+              <li><Link to="/policy/refund" className="hover:text-blue-400 transition-colors">Return & Refund</Link></li>
+              <li><Link to="/policy/shipping" className="hover:text-blue-400 transition-colors">Delivery Policy</Link></li>
+              <li><Link to="/policy/terms" className="hover:text-blue-400 transition-colors">Terms of Service</Link></li>
+              <li><Link to="/policy/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/policy/faq" className="hover:text-blue-400 transition-colors">Help & FAQs</Link></li>
+              <li><Link to="/policy/contact" className="hover:text-blue-400 transition-colors">Contact Support</Link></li>
             </ul>
           </div>
 
@@ -180,7 +182,7 @@ const Footer = () => {
           <p>© 2026 Tricelyn Technologies Pvt Ltd. All rights reserved.</p>
           <div className="flex items-center gap-4 text-gray-400 font-medium">
             <span>Fast · Fresh · Everyday</span>
-            <span>Made with ❤️ for Indore</span>
+            <span>Delivering Fresh Everyday across India</span>
           </div>
         </div>
 

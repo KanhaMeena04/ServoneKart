@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>ECDKART Rider</string>
+		<string>Tricelyn Delivery</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>ECDKART Rider</string>
+		<string>Tricelyn Delivery</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -49,15 +49,15 @@
 		<false/>
 		<!-- Privacy Permissions -->
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>ECDKART Rider requires access to your location to assign nearby delivery orders and provide turn-by-turn navigation.</string>
+		<string>Tricelyn Delivery requires access to your location to assign nearby delivery orders and provide turn-by-turn navigation.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>ECDKART Rider requires background location access to share live delivery status with customers and restaurants while on active delivery routes.</string>
+		<string>Tricelyn Delivery requires background location access to share live delivery status with customers and restaurants while on active delivery routes.</string>
 		<key>NSLocationAlwaysUsageDescription</key>
-		<string>ECDKART Rider tracks your location during active orders to update customers on order arrival.</string>
+		<string>Tricelyn Delivery tracks your location during active orders to update customers on order arrival.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>ECDKART Rider requires camera access to take your profile selfie and capture identity verification documents (driving license, vehicle registration).</string>
+		<string>Tricelyn Delivery requires camera access to take your profile selfie and capture identity verification documents (driving license, vehicle registration).</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>ECDKART Rider requires photo library access to upload your KYC identification documents and vehicle papers.</string>
+		<string>Tricelyn Delivery requires photo library access to upload your KYC identification documents and vehicle papers.</string>
 		<!-- Background Modes for Live Location Tracking and FCM Alerts -->
 		<key>UIBackgroundModes</key>
 		<array>

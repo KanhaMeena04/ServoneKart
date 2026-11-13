@@ -27,6 +27,7 @@ import OrderTrackingPage from './pages/OrderTrackingPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import AccountOrdersPage from './pages/AccountOrdersPage';
 import SupportPage from './pages/SupportPage';
+import LegalPolicyCenterPage from './pages/LegalPolicyCenterPage';
 
 function App() {
   return (
@@ -57,6 +58,13 @@ function App() {
                     <Route path="/account/orders" element={<AccountOrdersPage />} />
                     <Route path="/account/addresses" element={<AccountOrdersPage />} />
                     <Route path="/support" element={<SupportPage />} />
+                    <Route path="/policy/:policyType" element={<LegalPolicyCenterPage />} />
+                    <Route path="/policies" element={<Navigate to="/policy/refund" replace />} />
+                    <Route path="/terms" element={<Navigate to="/policy/terms" replace />} />
+                    <Route path="/privacy" element={<Navigate to="/policy/privacy" replace />} />
+                    <Route path="/refund" element={<Navigate to="/policy/refund" replace />} />
+                    <Route path="/shipping-policy" element={<Navigate to="/policy/shipping" replace />} />
+                    <Route path="/faq" element={<Navigate to="/policy/faq" replace />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>
