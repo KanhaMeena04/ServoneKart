@@ -15,6 +15,10 @@ const ProductCard = ({ product }) => {
   const mrp = Number(product.mrp) || Math.round(price * 1.25);
   const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : (product.discountPercent || 0);
 
+  const isNonVeg = product.isVeg === false ||
+    (product.name && /egg|chicken|mutton|fish|meat|prawn|keema/i.test(product.name)) ||
+    (product.categorySlug && /meat|fish|chicken/i.test(product.categorySlug));
+
   const handleCardClick = () => {
     navigate(`/product/${productId}`);
   };
@@ -77,14 +81,28 @@ const ProductCard = ({ product }) => {
       {/* Product Info with Tight, Clean Spacing */}
       <div className="flex-1 flex flex-col justify-between">
         <div>
-          {/* Product Name */}
-          <h4 
-            onClick={handleCardClick}
-            className="text-xs sm:text-[13px] font-extrabold text-gray-900 line-clamp-1 group-hover:text-[#0055ff] transition cursor-pointer mb-0.5 leading-tight" 
-            title={product.name}
-          >
-            {product.name}
-          </h4>
+          {/* Product Name with Veg/Non-Veg Badge */}
+          <div className="flex items-start gap-1.5 mb-0.5">
+            <span
+              className={`mt-0.5 w-3 h-3 flex-shrink-0 rounded-[3px] border flex items-center justify-center bg-white ${
+                isNonVeg ? 'border-rose-600' : 'border-emerald-600'
+              }`}
+              title={isNonVeg ? 'Non-Vegetarian' : 'Vegetarian'}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isNonVeg ? 'bg-rose-600' : 'bg-emerald-600'
+                }`}
+              />
+            </span>
+            <h4 
+              onClick={handleCardClick}
+              className="text-xs sm:text-[13px] font-extrabold text-gray-900 line-clamp-1 group-hover:text-[#0055ff] transition cursor-pointer leading-tight flex-1" 
+              title={product.name}
+            >
+              {product.name}
+            </h4>
+          </div>
 
           {/* Weight / Unit Subtitle & Store Tag */}
           <div className="flex items-center justify-between text-[11px] font-medium text-gray-500 mb-1">

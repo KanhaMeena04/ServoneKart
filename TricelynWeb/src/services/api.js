@@ -48,6 +48,7 @@ export const settingsService = {
 // Grocery Services
 export const groceryService = {
   getCategories: () => api.get('/grocery/categories'),
+  getCategoryTree: () => api.get('/categories/tree?vertical=grocery'),
   getProducts: (params = {}) => api.get('/grocery/products', { params }),
   getProductById: (id) => api.get(`/grocery/products/${id}`),
   getSimilarProducts: (id, categorySlug) => api.get(`/grocery/products/${id}/similar`, { params: { categorySlug } }),

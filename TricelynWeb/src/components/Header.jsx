@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -15,19 +15,26 @@ import {
   Layers,
   ArrowRight,
   Headphones,
-  MessageSquare
+  MessageSquare,
+  Plus,
+  Minus,
+  TrendingUp,
+  Store
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLocation } from '../context/LocationContext';
 import { usePlatform } from '../context/PlatformContext';
 import { groceryService } from '../services/api';
+import { ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 import logoImg from '../assets/logo.png';
+
+const POPULAR_SEARCH_CHIPS = ['Milk', 'Fresh Bread', 'Farm Eggs', 'Amul Paneer', 'Aashirvaad Atta', 'Lays Chips', 'Coca Cola', 'Butter', 'Maggi Noodles'];
 
 const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, setIsAuthModalOpen } = useAuth();
-  const { itemCount, subtotal, setIsCartDrawerOpen } = useCart();
+  const { itemCount, subtotal, setIsCartDrawerOpen, addToCart, getItemQuantity, updateQuantity } = useCart();
   const { selectedLocation, setIsLocationModalOpen } = useLocation();
   const { platformMode } = usePlatform();
 
@@ -35,6 +42,15 @@ const Header = () => {
   const [categories, setCategories] = useState([]);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Instant Live Search Dropdown State
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [liveSearchResults, setLiveSearchResults] = useState([]);
+  const [liveCategoryResults, setLiveCategoryResults] = useState([]);
+  const [isSearchingLive, setIsSearchingLive] = useState(false);
+
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -50,15 +66,263 @@ const Header = () => {
     fetchCats();
   }, []);
 
+  // Live Debounced Autocomplete
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setLiveSearchResults([]);
+      setLiveCategoryResults([]);
+      setIsSearchingLive(false);
+      return;
+    }
+
+    const q = searchQuery.toLowerCase().trim();
+    // Match categories instantly
+    const matchedCats = categories.filter(c =>
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.slug && c.slug.toLowerCase().includes(q))
+    ).slice(0, 4);
+    setLiveCategoryResults(matchedCats);
+
+    setIsSearchingLive(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await groceryService.getProducts({ search: q, limit: 6 });
+        if (res.data?.data && res.data.data.length > 0) {
+          setLiveSearchResults(res.data.data.slice(0, 6));
+        } else {
+          const fallback = ALL_CATALOG_PRODUCTS.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+            (p.description && p.description.toLowerCase().includes(q))
+          ).slice(0, 6);
+          setLiveSearchResults(fallback);
+        }
+      } catch {
+        const fallback = ALL_CATALOG_PRODUCTS.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          (p.categoryName && p.categoryName.toLowerCase().includes(q))
+        ).slice(0, 6);
+        setLiveSearchResults(fallback);
+      } finally {
+        setIsSearchingLive(false);
+      }
+    }, 180);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery, categories]);
+
+  // Click outside to close live search dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        desktopSearchRef.current && !desktopSearchRef.current.contains(e.target) &&
+        mobileSearchRef.current && !mobileSearchRef.current.contains(e.target)
+      ) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setIsSearchFocused(false);
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
+  const handleSelectChip = (chip) => {
+    setSearchQuery(chip);
+    setIsSearchFocused(false);
+    navigate(`/search?q=${encodeURIComponent(chip)}`);
+  };
+
+  const handleSelectProduct = (prodId) => {
+    setIsSearchFocused(false);
+    navigate(`/product/${prodId}`);
+  };
+
+  const handleSelectCategory = (slug) => {
+    setIsSearchFocused(false);
+    navigate(`/category/${slug}`);
+  };
+
   const handleOpenChat = () => {
     window.dispatchEvent(new Event('open-support-chat'));
+  };
+
+  const renderSearchDropdown = (isMobile = false) => {
+    if (!isSearchFocused) return null;
+
+    return (
+      <div
+        className={`absolute left-0 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 text-gray-800 animate-in fade-in slide-in-from-top-1 ${
+          isMobile ? 'top-full mt-1.5 max-h-[75vh]' : 'top-full mt-2 max-h-[480px]'
+        } overflow-y-auto no-scrollbar`}
+      >
+        {/* 1. If Query is empty: Show Popular Searches & Fast Categories */}
+        {!searchQuery.trim() ? (
+          <div className="p-3 sm:p-4 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <TrendingUp className="w-3.5 h-3.5 text-[#0055ff]" />
+              <span>Popular Searches</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_SEARCH_CHIPS.map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectChip(chip)}
+                  className="px-2.5 py-1 bg-gray-50 hover:bg-blue-50 hover:text-[#0055ff] border border-gray-200 rounded-full text-xs font-semibold text-gray-700 transition"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                Browse Top Categories
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {categories.slice(0, 6).map((cat) => (
+                  <button
+                    key={cat.slug || cat._id}
+                    type="button"
+                    onClick={() => handleSelectCategory(cat.slug || cat._id)}
+                    className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 text-left transition border border-gray-50"
+                  >
+                    <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#0055ff] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      🛒
+                    </span>
+                    <span className="text-xs font-bold text-gray-800 truncate">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* 2. When Query is typed: Live results */
+          <div className="divide-y divide-gray-100">
+            {/* Matched Categories Pills */}
+            {liveCategoryResults.length > 0 && (
+              <div className="p-2.5 bg-blue-50/50 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex-shrink-0">
+                  Categories:
+                </span>
+                {liveCategoryResults.map((cat) => (
+                  <button
+                    key={cat.slug || cat._id}
+                    type="button"
+                    onClick={() => handleSelectCategory(cat.slug || cat._id)}
+                    className="px-2 py-0.5 bg-white border border-blue-200 rounded-lg text-xs font-bold text-[#0055ff] hover:bg-[#0055ff] hover:text-white transition whitespace-nowrap flex-shrink-0"
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Matched Products */}
+            {liveSearchResults.length > 0 ? (
+              <div className="p-2 space-y-1">
+                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Matching Products
+                </div>
+                {liveSearchResults.map((prod) => {
+                  const pid = prod._id || prod.id;
+                  const qty = getItemQuantity(pid);
+                  const price = Number(prod.price ?? prod.sellingPrice) || 0;
+                  const mrp = Number(prod.mrp) || Math.round(price * 1.25);
+
+                  return (
+                    <div
+                      key={pid}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition gap-2"
+                    >
+                      <div
+                        onClick={() => handleSelectProduct(pid)}
+                        className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
+                          <img
+                            src={prod.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80'}
+                            alt={prod.name}
+                            className="max-h-full max-w-full object-contain mix-blend-multiply"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[#0055ff]">
+                            {prod.name}
+                          </h4>
+                          <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                            <span>{prod.weight || prod.unit || '1 unit'}</span>
+                            <span className="font-extrabold text-gray-900">₹{price}</span>
+                            {mrp > price && (
+                              <span className="line-through text-gray-400 text-[10px]">₹{mrp}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Add / Qty Control */}
+                      <div className="flex-shrink-0">
+                        {qty === 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => addToCart(prod, 1)}
+                            className="px-3 py-1 bg-blue-50 text-[#0055ff] hover:bg-[#0055ff] hover:text-white rounded-lg text-xs font-bold transition border border-blue-200 active:scale-95"
+                          >
+                            ADD
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1 bg-[#0055ff] text-white rounded-lg px-1.5 py-0.5">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(pid, qty - 1)}
+                              className="w-5 h-5 flex items-center justify-center hover:bg-white/20 rounded"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs font-bold px-1">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(pid, qty + 1)}
+                              className="w-5 h-5 flex items-center justify-center hover:bg-white/20 rounded"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : isSearchingLive ? (
+              <div className="p-6 text-center text-xs text-gray-400 font-bold">
+                Searching grocery dark stores...
+              </div>
+            ) : (
+              <div className="p-6 text-center text-xs text-gray-500">
+                No products found for "{searchQuery}".
+              </div>
+            )}
+
+            {/* Bottom Footer: Press Enter for Full Search */}
+            <div
+              onClick={handleSearchSubmit}
+              className="p-2.5 bg-gray-50 hover:bg-blue-50 text-center cursor-pointer transition flex items-center justify-center gap-1.5 text-xs font-bold text-[#0055ff]"
+            >
+              <span>See all results for "{searchQuery}"</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -147,27 +411,31 @@ const Header = () => {
             </div>
 
             {/* Bottom Row: Full-Width Search Input (Matches Reference Screenshot 1) */}
-            <form onSubmit={handleSearchSubmit} className="w-full relative">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder='Search "milk", "bread", "chips", "paneer"...'
-                  className="w-full pl-9 pr-8 py-2 text-xs bg-white text-gray-900 placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-xs"
-                />
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 pointer-events-none" />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </form>
+            <div ref={mobileSearchRef} className="w-full relative">
+              <form onSubmit={handleSearchSubmit} className="w-full relative">
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder='Search "milk", "bread", "chips", "paneer"...'
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-white text-gray-900 placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-xs"
+                  />
+                  <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 pointer-events-none" />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </form>
+              {renderSearchDropdown(true)}
+            </div>
           </div>
 
           {/* ==================== DESKTOP NAVBAR (>= 768px) ==================== */}
@@ -205,27 +473,31 @@ const Header = () => {
             </button>
 
             {/* Search Bar: White Rounded-Full Pill (Matches Mockup) */}
-            <form
-              onSubmit={handleSearchSubmit}
-              className="flex-1 max-w-2xl relative"
-            >
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={platformMode === 'food' ? 'Search dishes, meals or fresh groceries...' : 'Search for groceries, fresh produce, daily essentials...'}
-                  className="w-full pl-5 pr-12 py-2.5 text-xs sm:text-sm bg-white text-gray-900 placeholder:text-gray-400 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm transition"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-3 p-1.5 text-gray-500 hover:text-[#0055ff] transition"
-                  aria-label="Search"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
+            <div ref={desktopSearchRef} className="flex-1 max-w-2xl relative">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="w-full relative"
+              >
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={platformMode === 'food' ? 'Search dishes, meals or fresh groceries...' : 'Search for groceries, fresh produce, daily essentials...'}
+                    className="w-full pl-5 pr-12 py-2.5 text-xs sm:text-sm bg-white text-gray-900 placeholder:text-gray-400 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm transition"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-3 p-1.5 text-gray-500 hover:text-[#0055ff] transition"
+                    aria-label="Search"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
+              {renderSearchDropdown(false)}
+            </div>
 
             {/* Right Action Icons: Auth & Cart (Matches Mockup) */}
             <div className="flex items-center gap-3 flex-shrink-0">

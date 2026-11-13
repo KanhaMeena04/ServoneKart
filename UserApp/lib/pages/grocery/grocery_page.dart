@@ -14,6 +14,7 @@ import '../../services/grocery_api_service.dart';
 import '../../services/notification_api_service.dart';
 import '../../widgets/safe_image.dart';
 import '../category_product/category_products.dart';
+import '../category_selection/categories_page.dart';
 import '../profile/profile_page.dart';
 import '../widgets/product_card.dart';
 
@@ -400,6 +401,11 @@ class _GroceryPageState extends State<GroceryPage> {
                   SliverToBoxAdapter(
                     child: _buildOfferCardsSection(isDark),
                   ),
+
+                // Quick-Commerce 4-Col "Shop by Category" Visual Grid (Blinkit / Zepto Standard)
+                SliverToBoxAdapter(
+                  child: _buildQuickCategoryGridSection(isDark),
+                ),
 
                 // Dynamic Categories Chips Row
                 SliverToBoxAdapter(
@@ -1232,6 +1238,133 @@ class _GroceryPageState extends State<GroceryPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickCategoryGridSection(bool isDark) {
+    final displayCats = _categoryItems.where((c) => (c['slug'] ?? '') != 'all').take(8).toList();
+    if (displayCats.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Shop by Category',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CategoriesPage()),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'See All',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: primaryGreen,
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, size: 16, color: primaryGreen),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: displayCats.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.74,
+            ),
+            itemBuilder: (context, index) {
+              final cat = displayCats[index];
+              final name = (cat['name'] ?? 'Category').toString();
+              final slug = (cat['slug'] ?? '').toString();
+              final image = (cat['image'] ?? '').toString();
+              final isSelected = slug == _selectedCategorySlug;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedCategorySlug = slug;
+                    _selectedCategoryName = name;
+                  });
+                },
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? primaryGreen.withValues(alpha: 0.15)
+                              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF0F6FF)),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? primaryGreen
+                                : (isDark ? Colors.grey[800]! : const Color(0xFFE2E8F0)),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(7),
+                        child: Center(
+                          child: image.isNotEmpty
+                              ? SafeImage(
+                                  image,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.shopping_basket_rounded,
+                                    color: primaryGreen,
+                                    size: 26,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.shopping_basket_rounded,
+                                  color: primaryGreen,
+                                  size: 26,
+                                ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected
+                            ? primaryGreen
+                            : (isDark ? Colors.white70 : const Color(0xFF1E293B)),
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -14,7 +14,10 @@ import { CATEGORIES, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
 const CategoryPage = () => {
   const { slug } = useParams();
   const [categories, setCategories] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [subcategories, setSubcategories] = useState([]);
+  const [activeSubcategory, setActiveSubcategory] = useState('all');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'low-high' | 'high-low' | 'discount'
@@ -34,14 +37,24 @@ const CategoryPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [catsRes, prodsRes] = await Promise.allSettled([
+        setActiveSubcategory('all');
+
+        const [treeRes, catsRes, prodsRes] = await Promise.allSettled([
+          groceryService.getCategoryTree(),
           groceryService.getCategories(),
           groceryService.getProducts({ category: slug !== 'all' ? slug : undefined }),
         ]);
 
+        let loadedTree = [];
+        if (treeRes.status === 'fulfilled' && (treeRes.value.data?.categories || treeRes.value.data?.data)) {
+          loadedTree = treeRes.value.data.categories || treeRes.value.data.data;
+          setCategoryTree(loadedTree);
+        }
+
         let loadedCats = defaultCategoriesList;
         if (catsRes.status === 'fulfilled' && catsRes.value.data?.data && catsRes.value.data.data.length > 0) {
           const apiCats = catsRes.value.data.data.map((c) => ({
+            _id: c._id,
             name: c.name,
             slug: c.slug || c._id,
             icon: c.icon || '🛒',
@@ -51,8 +64,24 @@ const CategoryPage = () => {
         }
         setCategories(loadedCats);
 
-        const current = loadedCats.find((c) => c.slug === slug) || loadedCats[0];
+        const current = loadedCats.find((c) => c.slug === slug || c._id === slug) || loadedCats[0];
         setSelectedCategory(current);
+
+        // Find nested subcategories from category tree
+        if (loadedTree.length > 0 && current.slug !== 'all') {
+          const matchedTreeNode = loadedTree.find(t => 
+            t.slug === current.slug || 
+            t._id === current._id || 
+            t.name.toLowerCase() === current.name.toLowerCase()
+          );
+          if (matchedTreeNode && matchedTreeNode.subcategories && matchedTreeNode.subcategories.length > 0) {
+            setSubcategories(matchedTreeNode.subcategories);
+          } else {
+            setSubcategories([]);
+          }
+        } else {
+          setSubcategories([]);
+        }
 
         if (prodsRes.status === 'fulfilled' && prodsRes.value.data?.data && prodsRes.value.data.data.length > 0) {
           setProducts(prodsRes.value.data.data);
@@ -76,8 +105,26 @@ const CategoryPage = () => {
     fetchData();
   }, [slug]);
 
+  // Subcategory Filtering logic
+  const filteredProducts = activeSubcategory === 'all'
+    ? products
+    : products.filter(p => {
+        const subId = (p.subCategory?._id || p.subCategory || p.subCategoryId || '').toString();
+        const subName = (p.subCategory?.name || p.subCategoryName || '').toString().toLowerCase();
+        const pTags = Array.isArray(p.tags) ? p.tags.join(' ').toLowerCase() : '';
+        const pDesc = (p.description || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        const target = activeSubcategory.toLowerCase();
+
+        return subId === activeSubcategory ||
+               subName.includes(target) ||
+               pTags.includes(target) ||
+               pDesc.includes(target) ||
+               pName.includes(target);
+      });
+
   // Sort logic
-  const sortedProducts = [...products].sort((a, b) => {
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
     const priceA = Number(a.price) || 0;
     const priceB = Number(b.price) || 0;
     if (sortBy === 'low-high') return priceA - priceB;
@@ -191,6 +238,41 @@ const CategoryPage = () => {
               </select>
             </div>
           </div>
+
+          {/* Subcategories Filter Pills (Blinkit / Zepto Quick-Commerce Experience) */}
+          {subcategories.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <button
+                type="button"
+                onClick={() => setActiveSubcategory('all')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
+                  activeSubcategory === 'all'
+                    ? 'bg-[#0055ff] text-white shadow-xs'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                All ({products.length})
+              </button>
+              {subcategories.map((sub) => {
+                const subKey = sub.slug || sub._id || sub.name;
+                const isSelected = activeSubcategory === subKey || activeSubcategory === sub.name || activeSubcategory === sub._id;
+                return (
+                  <button
+                    key={subKey}
+                    type="button"
+                    onClick={() => setActiveSubcategory(subKey)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
+                      isSelected
+                        ? 'bg-[#0055ff] text-white shadow-xs'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {sub.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Product Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">

@@ -11,7 +11,8 @@ import {
   Clock,
   Info,
   Store,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -138,6 +139,29 @@ const CartPage = () => {
           </div>
         </div>
 
+        {/* Free Delivery Milestone Progress (Quick-Commerce Standard) */}
+        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-4 rounded-2xl border border-emerald-200/60 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-extrabold text-gray-800 flex items-center gap-1.5">
+              <span>🚚</span>
+              {subtotal >= 199 ? (
+                <span className="text-emerald-700 font-black">Congratulations! You unlocked FREE Delivery</span>
+              ) : (
+                <span>Add items worth <strong className="text-emerald-700">₹{(199 - subtotal).toFixed(0)}</strong> for FREE Delivery</span>
+              )}
+            </span>
+            <span className="text-[10px] font-black text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+              ₹199 Min Order
+            </span>
+          </div>
+          <div className="w-full bg-white rounded-full h-2.5 overflow-hidden border border-emerald-100">
+            <div 
+              className="bg-gradient-to-r from-emerald-500 to-green-600 h-full rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(100, Math.round((subtotal / 199) * 100))}%` }}
+            />
+          </div>
+        </div>
+
         {/* Cart Items Grouped by Vendor Store */}
         {storeGroups.map((group) => (
           <div key={group.storeId} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs space-y-2">
@@ -254,6 +278,38 @@ const CartPage = () => {
 
           {couponError && (
             <p className="text-xs text-red-500 font-medium">{couponError}</p>
+          )}
+
+          {/* Available Quick Coupons */}
+          {!coupon && (
+            <div className="space-y-1.5 pt-2 border-t border-gray-100">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                <span>Best Available Coupons</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div 
+                  onClick={() => handleApplyPromo('WELCOME50')}
+                  className="bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200/80 rounded-xl p-2.5 cursor-pointer transition active:scale-95 text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-amber-900">WELCOME50</span>
+                    <span className="text-[10px] font-bold text-[#0055ff]">APPLY</span>
+                  </div>
+                  <p className="text-[10px] text-amber-700 mt-0.5">Flat ₹50 OFF</p>
+                </div>
+                <div 
+                  onClick={() => handleApplyPromo('TRICELYN20')}
+                  className="bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/80 rounded-xl p-2.5 cursor-pointer transition active:scale-95 text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-blue-900">TRICELYN20</span>
+                    <span className="text-[10px] font-bold text-[#0055ff]">APPLY</span>
+                  </div>
+                  <p className="text-[10px] text-blue-700 mt-0.5">20% OFF up to ₹100</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

@@ -92,26 +92,34 @@ class ProductCard extends StatelessWidget {
                               ),
                             ),
                     ),
-                    if (isFood)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: product.isVeg ? Colors.green : Colors.red,
-                            borderRadius: BorderRadius.circular(4),
+                    // Classic Indian FSSAI Veg / Non-Veg Indicator
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: product.isVeg ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                            width: 1.2,
                           ),
-                          child: Text(
-                            product.isVeg ? 'VEG' : 'NON-VEG',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 8),
-                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
-                      )
-                    else if (product.weight != null &&
-                        product.weight!.isNotEmpty)
+                        child: Icon(
+                          Icons.circle,
+                          color: product.isVeg ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                          size: 7,
+                        ),
+                      ),
+                    ),
+                    if (product.weight != null && product.weight!.isNotEmpty)
                       Positioned(
                         top: 8,
                         left: 8,
