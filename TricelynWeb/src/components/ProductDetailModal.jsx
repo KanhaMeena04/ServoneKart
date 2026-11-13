@@ -50,7 +50,7 @@ const ProductDetailModal = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={handleOpenFullScreen}
-              className="text-xs font-bold text-[#0055ff] hover:text-blue-700 flex items-center gap-1 px-3 py-1 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+              className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-1 px-3 py-1 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
             >
               <span>Full Screen Page</span>
               <ExternalLink className="w-3.5 h-3.5" />

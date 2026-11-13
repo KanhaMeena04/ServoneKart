@@ -48,7 +48,7 @@ import GoogleServiceAreaMap, { parseGooglePlaceDetails } from "../../components/
 import { Slider } from "@mui/material";
 import { useCities } from "../../api/city";
 
-const BRAND_MAIN = "#0055ff";
+const BRAND_MAIN = "#0B3EDB";
 const BRAND_HOVER = "#0043c7";
 const BRAND_LIGHT = "#eff6ff";
 

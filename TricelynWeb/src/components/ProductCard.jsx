@@ -43,7 +43,7 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-blue-100 hover:border-[#0055ff] shadow-[0_2px_8px_rgba(0,85,255,0.04)] hover:shadow-[0_8px_20px_rgba(0,85,255,0.10)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between overflow-hidden group p-2.5 sm:p-3 relative">
+    <div className="bg-white rounded-2xl border border-blue-100 hover:border-[#0B3EDB] shadow-[0_2px_8px_rgba(0,85,255,0.04)] hover:shadow-[0_8px_20px_rgba(0,85,255,0.10)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between overflow-hidden group p-2.5 sm:p-3 relative">
       
       {/* Attractive Image Container with Rounded Corners & Soft Gradient */}
       <div 
@@ -97,7 +97,7 @@ const ProductCard = ({ product }) => {
             </span>
             <h4 
               onClick={handleCardClick}
-              className="text-xs sm:text-[13px] font-extrabold text-gray-900 line-clamp-1 group-hover:text-[#0055ff] transition cursor-pointer leading-tight flex-1" 
+              className="text-xs sm:text-[13px] font-extrabold text-gray-900 line-clamp-1 group-hover:text-[#0B3EDB] transition cursor-pointer leading-tight flex-1" 
               title={product.name}
             >
               {product.name}
@@ -143,13 +143,13 @@ const ProductCard = ({ product }) => {
           ) : quantity === 0 ? (
             <button
               onClick={() => addToCart(product, 1)}
-              className="w-full py-1.5 sm:py-2 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+              className="w-full py-1.5 sm:py-2 bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>Add to Cart</span>
             </button>
           ) : (
-            <div className="flex items-center justify-between bg-[#0055ff] text-white rounded-xl shadow-xs overflow-hidden py-1 px-1">
+            <div className="flex items-center justify-between bg-[#0B3EDB] text-white rounded-xl shadow-xs overflow-hidden py-1 px-1">
               <button
                 onClick={() => updateQuantity(productId, quantity - 1)}
                 className="w-7 h-6 flex items-center justify-center hover:bg-white/20 active:scale-90 transition font-bold"

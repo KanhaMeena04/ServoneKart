@@ -52,7 +52,7 @@ const RestaurantBannerTable = () => {
         <Button
           variant="contained"
           onClick={() => navigate('/add-restaurant-banner')}
-          sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+          sx={{ backgroundColor: '#0B3EDB', '&:hover': { backgroundColor: '#0A2B6B' } }}
           className="capitalize rounded-xl font-bold"
         >
           + Add New Banner / Offer Card
@@ -71,7 +71,7 @@ const RestaurantBannerTable = () => {
         <Button
           variant="contained"
           onClick={() => navigate('/add-restaurant-banner')}
-          sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+          sx={{ backgroundColor: '#0B3EDB', '&:hover': { backgroundColor: '#0A2B6B' } }}
           className="capitalize rounded-xl font-bold shadow-xs text-xs px-4 py-2"
         >
           + Add Banner
@@ -121,7 +121,7 @@ const RestaurantBannerTable = () => {
                   <TableCell>
                     <div className="space-y-0.5 max-w-xs">
                       {row.badge && (
-                        <span className="inline-block text-[9px] font-black uppercase tracking-wider text-[#0055ff] bg-blue-50 px-1.5 py-0.5 rounded">
+                        <span className="inline-block text-[9px] font-black uppercase tracking-wider text-[#0B3EDB] bg-blue-50 px-1.5 py-0.5 rounded">
                           {row.badge}
                         </span>
                       )}

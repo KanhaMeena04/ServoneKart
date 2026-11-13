@@ -54,15 +54,15 @@ const LegalPolicyCenterPage = () => {
         
         {/* Navigation Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-          <Link to="/" className="hover:text-[#0055ff] transition">Home</Link>
+          <Link to="/" className="hover:text-[#0B3EDB] transition">Home</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-gray-900 font-bold">Legal, Policies & Help Center</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-[#0055ff] font-bold capitalize">{POLICY_TABS.find(t => t.id === activeTab)?.label}</span>
+          <span className="text-[#0B3EDB] font-bold capitalize">{POLICY_TABS.find(t => t.id === activeTab)?.label}</span>
         </div>
 
         {/* Hero Header */}
-        <div className="bg-gradient-to-r from-[#0055ff] via-blue-600 to-indigo-700 text-white rounded-3xl p-6 sm:p-10 shadow-lg relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#0B3EDB] via-blue-600 to-indigo-700 text-white rounded-3xl p-6 sm:p-10 shadow-lg relative overflow-hidden">
           <div className="relative z-10 max-w-2xl space-y-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold text-blue-100">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
@@ -96,11 +96,11 @@ const LegalPolicyCenterPage = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all ${
                     isActive
-                      ? 'bg-blue-50 text-[#0055ff] border-l-4 border-[#0055ff] shadow-2xs font-extrabold'
+                      ? 'bg-blue-50 text-[#0B3EDB] border-l-4 border-[#0B3EDB] shadow-2xs font-extrabold'
                       : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent font-medium'
                   }`}
                 >
-                  <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0055ff] text-white' : 'bg-gray-100 text-gray-600'} shrink-0 mt-0.5`}>
+                  <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0B3EDB] text-white' : 'bg-gray-100 text-gray-600'} shrink-0 mt-0.5`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -114,7 +114,7 @@ const LegalPolicyCenterPage = () => {
             {/* Quick Live Chat Box */}
             <div className="mt-4 pt-4 border-t border-gray-100 px-2 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-gray-800">
-                <Headphones className="w-4 h-4 text-[#0055ff]" />
+                <Headphones className="w-4 h-4 text-[#0B3EDB]" />
                 <span>Need Instant Help?</span>
               </div>
               <p className="text-[11px] text-gray-500">
@@ -122,7 +122,7 @@ const LegalPolicyCenterPage = () => {
               </p>
               <button
                 onClick={handleOpenSupportChat}
-                className="w-full py-2 bg-[#0055ff] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+                className="w-full py-2 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
               >
                 <span>Start Live Support Chat</span>
               </button>
@@ -152,7 +152,7 @@ const LegalPolicyCenterPage = () => {
 const RefundPolicyContent = () => (
   <div className="space-y-6">
     <div className="border-b border-gray-100 pb-4">
-      <span className="text-[10px] font-bold text-[#0055ff] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+      <span className="text-[10px] font-bold text-[#0B3EDB] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
         Updated: November 2026
       </span>
       <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2">
@@ -171,7 +171,7 @@ const RefundPolicyContent = () => (
         <p className="text-[11px] text-emerald-700">100% refund before partner dark store starts packing.</p>
       </div>
       <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl space-y-1">
-        <RotateCcw className="w-4 h-4 text-[#0055ff]" />
+        <RotateCcw className="w-4 h-4 text-[#0B3EDB]" />
         <p className="text-xs font-bold text-blue-900">Quality Guarantee</p>
         <p className="text-[11px] text-blue-700">Damaged or incorrect fresh items refunded within minutes.</p>
       </div>
@@ -251,7 +251,7 @@ const RefundPolicyContent = () => (
 const TermsOfServiceContent = () => (
   <div className="space-y-6">
     <div className="border-b border-gray-100 pb-4">
-      <span className="text-[10px] font-bold text-[#0055ff] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+      <span className="text-[10px] font-bold text-[#0B3EDB] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
         Legal Agreement
       </span>
       <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2">
@@ -400,7 +400,7 @@ const FaqContent = () => {
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-100 pb-4">
-        <span className="text-[10px] font-bold text-[#0055ff] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-[#0B3EDB] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
           Help Desk
         </span>
         <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2">
@@ -444,7 +444,7 @@ const ContactGrievanceContent = ({ onOpenChat }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
-          <Headphones className="w-4 h-4 text-[#0055ff]" />
+          <Headphones className="w-4 h-4 text-[#0B3EDB]" />
           <span>24/7 Live Chat Support</span>
         </div>
         <p className="text-xs text-gray-600">
@@ -452,7 +452,7 @@ const ContactGrievanceContent = ({ onOpenChat }) => (
         </p>
         <button
           onClick={onOpenChat}
-          className="mt-1 px-4 py-1.5 bg-[#0055ff] text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition"
+          className="mt-1 px-4 py-1.5 bg-[#0B3EDB] text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition"
         >
           Open Chat Now
         </button>
@@ -466,7 +466,7 @@ const ContactGrievanceContent = ({ onOpenChat }) => (
         <p className="text-xs text-gray-600">
           Send formal inquiries or billing escalation requests:
         </p>
-        <a href="mailto:support@tricelyn.com" className="text-xs font-bold text-[#0055ff] hover:underline block">
+        <a href="mailto:support@tricelyn.com" className="text-xs font-bold text-[#0B3EDB] hover:underline block">
           support@tricelyn.com
         </a>
       </div>
@@ -479,7 +479,7 @@ const ContactGrievanceContent = ({ onOpenChat }) => (
       </h3>
       <div className="text-xs text-gray-600 space-y-1">
         <p><strong>Officer Name:</strong> Nodal Grievance Officer, Tricelyn Technologies</p>
-        <p><strong>Email:</strong> <a href="mailto:grievance@tricelyn.com" className="text-[#0055ff] hover:underline">grievance@tricelyn.com</a></p>
+        <p><strong>Email:</strong> <a href="mailto:grievance@tricelyn.com" className="text-[#0B3EDB] hover:underline">grievance@tricelyn.com</a></p>
         <p><strong>Working Hours:</strong> Monday to Saturday, 9:00 AM – 6:00 PM IST</p>
         <p><strong>Resolution SLA:</strong> Acknowledgment within 24 hours; resolution within 5 working days.</p>
       </div>

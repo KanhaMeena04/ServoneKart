@@ -66,7 +66,7 @@ const CategoriesOverviewPage = () => {
       {/* Header with Search and Navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
         <div>
-          <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0055ff] hover:text-blue-700 transition mb-1.5">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3EDB] hover:text-blue-700 transition mb-1.5">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Home</span>
           </Link>
@@ -74,7 +74,7 @@ const CategoriesOverviewPage = () => {
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
               All Grocery Categories
             </h1>
-            <span className="text-[11px] font-black text-[#0055ff] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+            <span className="text-[11px] font-black text-[#0B3EDB] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
               {filteredList.length} Categories
             </span>
           </div>
@@ -91,7 +91,7 @@ const CategoriesOverviewPage = () => {
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="Filter categories..."
-            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0055ff] shadow-xs"
+            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0B3EDB] shadow-xs"
           />
         </div>
       </div>
@@ -102,10 +102,10 @@ const CategoriesOverviewPage = () => {
           <Link
             key={cat.slug}
             to={`/category/${cat.slug}`}
-            className="group flex flex-col items-center text-center p-2.5 rounded-2xl bg-white hover:bg-blue-50/40 border border-gray-100 hover:border-[#0055ff]/40 shadow-xs hover:shadow-md transition-all duration-200"
+            className="group flex flex-col items-center text-center p-2.5 rounded-2xl bg-white hover:bg-blue-50/40 border border-gray-100 hover:border-[#0B3EDB]/40 shadow-xs hover:shadow-md transition-all duration-200"
           >
             {/* Full Goal Circle with Double Ring Accent */}
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-2xs group-hover:shadow-md group-hover:ring-3 group-hover:ring-blue-100/70 transition-all duration-300 flex items-center justify-center">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full p-[2px] border border-[#0B3EDB]/35 group-hover:border-[#0B3EDB] bg-white shadow-2xs group-hover:shadow-md group-hover:ring-3 group-hover:ring-blue-100/70 transition-all duration-300 flex items-center justify-center">
               <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
                 <img
                   src={cat.img}
@@ -118,7 +118,7 @@ const CategoriesOverviewPage = () => {
 
             {/* Name Below Circle */}
             <div className="mt-2 w-full">
-              <h3 className="text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0055ff] transition leading-snug line-clamp-2 px-1">
+              <h3 className="text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0B3EDB] transition leading-snug line-clamp-2 px-1">
                 {cat.name}
               </h3>
               <span className="inline-block text-[9px] sm:text-[10px] text-emerald-600 font-bold mt-0.5">

@@ -28,7 +28,7 @@ const PLATFORM_MODE_OPTIONS = [
     title: 'Grocery (Primary) + Food Delivery',
     badge: 'DUAL VERTICAL',
     desc: 'Grocery remains the core primary experience while also exposing Food Delivery & Restaurant discovery where supported.',
-    accent: '#0055ff',
+    accent: '#0B3EDB',
     bg: 'bg-blue-50 border-blue-500 text-blue-950'
   },
   {
@@ -57,7 +57,7 @@ const SiteSetting = () => {
     androidAppLink: 'https://play.google.com/store/apps/details?id=com.servonekart.userapp',
     siteEmail: 'care@tricelyn.com',
     siteContact: '9847192735',
-    menuColors: '#0055ff',
+    menuColors: '#0B3EDB',
     highlightColors: '#10b981',
     adminCommission: '20',
     restaurantCommission: '80',

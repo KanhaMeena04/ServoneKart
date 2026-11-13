@@ -142,7 +142,7 @@ const ProductDetailPage = () => {
           <p className="text-xs text-gray-500">{error || 'This product is currently unavailable or out of stock.'}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2.5 bg-[#0055ff] text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition"
+            className="px-6 py-2.5 bg-[#0B3EDB] text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition"
           >
             Back to Home
           </button>
@@ -225,7 +225,7 @@ const ProductDetailPage = () => {
                     onClick={() => setSelectedImageIndex(idx)}
                     className={`w-16 h-16 sm:w-18 sm:h-18 rounded-xl border-2 p-1.5 flex items-center justify-center bg-gray-50/60 transition-all flex-shrink-0 ${
                       selectedImageIndex === idx 
-                        ? 'border-[#0055ff] ring-2 ring-blue-100 bg-white' 
+                        ? 'border-[#0B3EDB] ring-2 ring-blue-100 bg-white' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -261,7 +261,7 @@ const ProductDetailPage = () => {
                   <div>
                     <button
                       onClick={() => setShowFullDetails(!showFullDetails)}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#0055ff] hover:text-blue-700 transition pt-1"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3EDB] hover:text-blue-700 transition pt-1"
                     >
                       <span>{showFullDetails ? 'View less details' : 'View more details'}</span>
                       {showFullDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -350,7 +350,7 @@ const ProductDetailPage = () => {
                           onClick={() => setSelectedVariant(v)}
                           className={`flex flex-col items-start px-4 py-2.5 rounded-2xl border-2 transition-all text-left min-w-[100px] ${
                             isSelected 
-                              ? 'border-[#0055ff] bg-blue-50/40 shadow-xs' 
+                              ? 'border-[#0B3EDB] bg-blue-50/40 shadow-xs' 
                               : 'border-gray-200 hover:border-gray-300 bg-white'
                           }`}
                         >
@@ -359,7 +359,7 @@ const ProductDetailPage = () => {
                               {v.unit || v.weight}
                             </span>
                             {isSelected && (
-                              <Check className="w-3.5 h-3.5 text-[#0055ff] flex-shrink-0" />
+                              <Check className="w-3.5 h-3.5 text-[#0B3EDB] flex-shrink-0" />
                             )}
                           </div>
                           <span className="text-xs font-bold text-gray-600 mt-0.5">
@@ -446,7 +446,7 @@ const ProductDetailPage = () => {
 
                   <div>
                     <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 leading-snug">
-                      Sold & Fulfilled by: <span className="text-[#0055ff]">{product.vendor?.name || product.storeName || product.restaurantName || 'Tricelyn Express Mart (Vijay Nagar Hub)'}</span>
+                      Sold & Fulfilled by: <span className="text-[#0B3EDB]">{product.vendor?.name || product.storeName || product.restaurantName || 'Tricelyn Express Mart (Vijay Nagar Hub)'}</span>
                     </h4>
                     <p className="text-[11px] text-gray-500 mt-0.5">
                       📍 {product.vendor?.address || product.storeAddress || 'Scheme 54, Vijay Nagar, Indore'}
@@ -459,7 +459,7 @@ const ProductDetailPage = () => {
                     </span>
                     <Link
                       to={`/store/${product.vendor?.id || product.storeId || product.restaurant || 'store_tricelyn_indore_01'}`}
-                      className="font-bold text-[#0055ff] hover:text-blue-800 hover:underline flex items-center gap-0.5 text-xs"
+                      className="font-bold text-[#0B3EDB] hover:text-blue-800 hover:underline flex items-center gap-0.5 text-xs"
                     >
                       <span>Visit Store Catalog</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -489,7 +489,7 @@ const ProductDetailPage = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-[#0055ff] flex-shrink-0 mt-0.5">
+                      <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-[#0B3EDB] flex-shrink-0 mt-0.5">
                         <Tag className="w-4 h-4" />
                       </div>
                       <div>

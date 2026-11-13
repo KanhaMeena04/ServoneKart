@@ -195,7 +195,7 @@ const StoresPage = () => {
           <div>
             <Link
               to="/stores"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0055ff] hover:text-blue-700 transition mb-3"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3EDB] hover:text-blue-700 transition mb-3"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to All Partner Stores</span>
@@ -212,7 +212,7 @@ const StoresPage = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Store className="w-10 h-10 text-[#0055ff]" />
+                    <Store className="w-10 h-10 text-[#0B3EDB]" />
                   )}
                 </div>
 
@@ -231,7 +231,7 @@ const StoresPage = () => {
                   </h1>
 
                   <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#0055ff] flex-shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 text-[#0B3EDB] flex-shrink-0" />
                     <span>{currentStore?.address || 'Scheme 54, Vijay Nagar, Indore'}</span>
                   </p>
 
@@ -275,7 +275,7 @@ const StoresPage = () => {
                 onClick={() => setSelectedCategoryTab('all')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
                   selectedCategoryTab === 'all'
-                    ? 'bg-[#0055ff] text-white shadow-xs'
+                    ? 'bg-[#0B3EDB] text-white shadow-xs'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -288,7 +288,7 @@ const StoresPage = () => {
                   onClick={() => setSelectedCategoryTab(sec.id)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
                     selectedCategoryTab === sec.id
-                      ? 'bg-[#0055ff] text-white shadow-xs'
+                      ? 'bg-[#0B3EDB] text-white shadow-xs'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
@@ -373,7 +373,7 @@ const StoresPage = () => {
         <div className="space-y-2">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0055ff] hover:text-blue-700 transition"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3EDB] hover:text-blue-700 transition"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Home</span>
@@ -405,7 +405,7 @@ const StoresPage = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search shops by name, locality (Vijay Nagar, Palasia, Saket...) or category"
-              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-[#0055ff] focus:bg-white transition"
+              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-[#0B3EDB] focus:bg-white transition"
             />
           </div>
 
@@ -414,7 +414,7 @@ const StoresPage = () => {
               onClick={() => setActiveFilter('all')}
               className={`px-3.5 py-1.5 rounded-lg font-bold transition whitespace-nowrap ${
                 activeFilter === 'all'
-                  ? 'bg-[#0055ff] text-white shadow-xs'
+                  ? 'bg-[#0B3EDB] text-white shadow-xs'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
               }`}
             >
@@ -424,7 +424,7 @@ const StoresPage = () => {
               onClick={() => setActiveFilter('fast')}
               className={`px-3.5 py-1.5 rounded-lg font-bold transition whitespace-nowrap flex items-center gap-1 ${
                 activeFilter === 'fast'
-                  ? 'bg-[#0055ff] text-white shadow-xs'
+                  ? 'bg-[#0B3EDB] text-white shadow-xs'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
               }`}
             >
@@ -435,7 +435,7 @@ const StoresPage = () => {
               onClick={() => setActiveFilter('rated')}
               className={`px-3.5 py-1.5 rounded-lg font-bold transition whitespace-nowrap flex items-center gap-1 ${
                 activeFilter === 'rated'
-                  ? 'bg-[#0055ff] text-white shadow-xs'
+                  ? 'bg-[#0B3EDB] text-white shadow-xs'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
               }`}
             >
@@ -446,7 +446,7 @@ const StoresPage = () => {
               onClick={() => setActiveFilter('pureveg')}
               className={`px-3.5 py-1.5 rounded-lg font-bold transition whitespace-nowrap flex items-center gap-1 ${
                 activeFilter === 'pureveg'
-                  ? 'bg-[#0055ff] text-white shadow-xs'
+                  ? 'bg-[#0B3EDB] text-white shadow-xs'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
               }`}
             >
@@ -464,7 +464,7 @@ const StoresPage = () => {
             <p className="text-xs text-gray-500">Try searching with a different locality or clear filters</p>
             <button
               onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}
-              className="px-4 py-2 bg-[#0055ff] text-white text-xs font-bold rounded-xl"
+              className="px-4 py-2 bg-[#0B3EDB] text-white text-xs font-bold rounded-xl"
             >
               Reset Filters
             </button>
@@ -475,7 +475,7 @@ const StoresPage = () => {
               <Link
                 key={st._id || st.id}
                 to={`/store/${st._id || st.id}`}
-                className="bg-white rounded-2xl border border-gray-100 hover:border-[#0055ff] shadow-xs hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between group space-y-4"
+                className="bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between group space-y-4"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-20 h-20 rounded-2xl overflow-hidden bg-blue-50 border border-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -487,13 +487,13 @@ const StoresPage = () => {
                         loading="lazy"
                       />
                     ) : (
-                      <Store className="w-10 h-10 text-[#0055ff]" />
+                      <Store className="w-10 h-10 text-[#0B3EDB]" />
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <h3 className="text-sm font-extrabold text-gray-900 group-hover:text-[#0055ff] transition truncate">
+                      <h3 className="text-sm font-extrabold text-gray-900 group-hover:text-[#0B3EDB] transition truncate">
                         {st.name}
                       </h3>
                       <span className="flex items-center gap-0.5 text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/50 flex-shrink-0">
@@ -524,7 +524,7 @@ const StoresPage = () => {
                   <span className="text-[11px] font-semibold text-emerald-600">
                     Free delivery on ₹199+
                   </span>
-                  <span className="font-bold text-[#0055ff] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                  <span className="font-bold text-[#0B3EDB] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                     <span>Shop Catalog</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </span>

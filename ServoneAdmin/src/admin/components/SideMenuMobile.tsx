@@ -83,8 +83,8 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-              <Typography sx={{ fontSize: '10px', fontWeight: 800, color: '#0055ff' }}>
-                INDORE OPS LIVE
+              <Typography sx={{ fontSize: '10px', fontWeight: 800, color: '#0B3EDB' }}>
+                HYPERLOCAL OPS LIVE
               </Typography>
             </Box>
             <Typography sx={{ fontSize: '10px', fontWeight: 800, color: '#475569' }}>
@@ -99,20 +99,20 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
           <MenuContent />
         </Stack>
 
-        <Divider sx={{ borderColor: 'rgba(0, 85, 255, 0.08)' }} />
+        <Divider sx={{ borderColor: 'rgba(11, 62, 219, 0.08)' }} />
 
         {/* Bottom Profile Pill */}
-        <Box sx={{ p: 1.6, bgcolor: 'rgba(0, 85, 255, 0.02)' }}>
+        <Box sx={{ p: 1.6, bgcolor: 'rgba(11, 62, 219, 0.02)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: '#0055ff', fontSize: '0.78rem', fontWeight: 800 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: '#0A2B6B', fontSize: '0.78rem', fontWeight: 800 }}>
                 {((user?.name || 'Admin').split(' ').map((n) => n[0]).slice(0, 2).join('')).toUpperCase()}
               </Avatar>
               <Box sx={{ minWidth: 0 }}>
-                <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>
+                <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#07162E' }}>
                   {user?.name || 'Super Admin'}
                 </Typography>
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#0055ff' }}>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#0B3EDB' }}>
                   {(user as any)?.roleName || 'Admin'}
                 </Typography>
               </Box>

@@ -232,7 +232,7 @@ const HomePage = () => {
            ============================================================ */}
         <section className="space-y-3.5 sm:space-y-4">
           {platformMode !== 'grocery' && enableFoodDelivery && (
-            <div className="bg-gradient-to-r from-[#0055ff] to-indigo-600 text-white rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs shadow-xs">
+            <div className="bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0B3EDB] text-white rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs shadow-xs">
               <div className="flex items-center gap-2 font-bold">
                 <Sparkles className="w-4 h-4 text-amber-300" />
                 <span>
@@ -262,7 +262,7 @@ const HomePage = () => {
             </h2>
             <Link
               to="/categories"
-              className="text-xs font-bold text-[#0055ff] hover:text-blue-700 flex items-center gap-0.5 group"
+              className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
             >
               <span>View All</span>
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -277,7 +277,7 @@ const HomePage = () => {
                 to={`/category/${cat.slug}`}
                 className="group flex flex-col items-center text-center cursor-pointer"
               >
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[2px] border border-[#0055ff]/35 group-hover:border-[#0055ff] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[2px] border border-[#0B3EDB]/35 group-hover:border-[#0B3EDB] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
                   <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
                     <img
                       src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
@@ -288,7 +288,7 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                <span className="mt-2.5 text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0055ff] transition line-clamp-2 leading-tight text-center max-w-[105px]">
+                <span className="mt-2.5 text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0B3EDB] transition line-clamp-2 leading-tight text-center max-w-[105px]">
                   {cat.shortName || cat.name}
                 </span>
               </Link>
@@ -311,7 +311,7 @@ const HomePage = () => {
                   to={`/category/${cat.slug}`}
                   className="flex-shrink-0 flex flex-col items-center text-center group cursor-pointer w-[68px]"
                 >
-                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#0055ff] via-sky-400 to-indigo-500 shadow-xs group-active:scale-95 transition-transform duration-200">
+                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#07162E] via-[#0A2B6B] to-[#0B3EDB] shadow-xs group-active:scale-95 transition-transform duration-200">
                     <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden flex items-center justify-center">
                       <img
                         src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80"}
@@ -321,7 +321,7 @@ const HomePage = () => {
                       />
                     </div>
                   </div>
-                  <span className="mt-1.5 text-[11px] font-bold text-gray-800 group-hover:text-[#0055ff] line-clamp-1 leading-tight text-center w-full px-0.5">
+                  <span className="mt-1.5 text-[11px] font-bold text-gray-800 group-hover:text-[#0B3EDB] line-clamp-1 leading-tight text-center w-full px-0.5">
                     {cat.shortName || cat.name}
                   </span>
                 </Link>
@@ -356,7 +356,7 @@ const HomePage = () => {
 
               <Link
                 to="/stores"
-                className="text-xs font-bold text-[#0055ff] hover:text-blue-700 flex items-center gap-0.5 group"
+                className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
               >
                 <span>View All ({stores.length}+ Shops)</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -368,7 +368,7 @@ const HomePage = () => {
                 <Link
                   key={store._id || store.id}
                   to={`/store/${store._id || store.id}`}
-                  className="w-[84vw] flex-shrink-0 snap-start sm:w-auto bg-white rounded-2xl border border-gray-100 hover:border-[#0055ff] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                  className="w-[84vw] flex-shrink-0 snap-start sm:w-auto bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div className="flex items-start gap-3.5">
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition">
@@ -382,7 +382,7 @@ const HomePage = () => {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
-                        <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#0055ff] transition truncate">
+                        <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#0B3EDB] transition truncate">
                           {store.name}
                         </h3>
                         <span className="flex items-center gap-0.5 text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
@@ -420,7 +420,7 @@ const HomePage = () => {
                         </span>
                       ))}
                     </div>
-                    <span className="font-bold text-[#0055ff] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 flex-shrink-0">
+                    <span className="font-bold text-[#0B3EDB] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 flex-shrink-0">
                       <span>Shop Store</span>
                       <ChevronRight className="w-3 h-3" />
                     </span>
@@ -443,7 +443,7 @@ const HomePage = () => {
             </h2>
             <Link
               to="/categories"
-              className="text-xs font-bold text-[#0055ff] hover:text-blue-700 flex items-center gap-0.5 group"
+              className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
             >
               <span>View All</span>
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -478,8 +478,8 @@ const HomePage = () => {
             <div className="max-w-xl lg:max-w-2xl mx-auto backdrop-blur-md bg-white/85 sm:bg-white/80 md:bg-white/90 rounded-2xl p-4 sm:p-6 lg:p-7 border border-white/90 shadow-md text-center flex flex-col items-center">
               
               {/* Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0055ff]/10 border border-[#0055ff]/25 text-[#0055ff] text-[10px] sm:text-xs font-bold tracking-wide uppercase shadow-2xs mb-2">
-                <span className="w-2 h-2 rounded-full bg-[#0055ff] animate-pulse" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3EDB]/10 border border-[#0D5AA6]/30 text-[#0B3EDB] text-[10px] sm:text-xs font-bold tracking-wide uppercase shadow-2xs mb-2">
+                <span className="w-2 h-2 rounded-full bg-[#0B3EDB] animate-pulse" />
                 <span>Hyperlocal Express • 10-15 Mins</span>
               </div>
 
@@ -489,19 +489,19 @@ const HomePage = () => {
                   priorityBanner.title.includes('.') ? (
                     <>
                       {priorityBanner.title.split('.')[0]}.<br className="hidden sm:inline" />{' '}
-                      <span className="text-[#0055ff]">
+                      <span className="text-[#0B3EDB]">
                         {priorityBanner.title.split('.').slice(1).join('.')}
                       </span>
                     </>
                   ) : (
-                    <span className="text-[#0055ff]">
+                    <span className="text-[#0B3EDB]">
                       {priorityBanner.title}
                     </span>
                   )
                 ) : (
                   <>
                     Your Groceries.{' '}
-                    <span className="text-[#0055ff]">Our Priority.</span>
+                    <span className="text-[#0B3EDB]">Our Priority.</span>
                   </>
                 )}
               </h3>
@@ -515,7 +515,7 @@ const HomePage = () => {
               <div className="mt-3">
                 <Link
                   to={priorityBanner.buttonLink || "/policy/shipping"}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-full text-xs sm:text-sm font-bold shadow-md shadow-blue-600/30 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#0A2B6B] to-[#0B3EDB] hover:from-[#07162E] hover:to-[#0A2B6B] text-white rounded-full text-xs sm:text-sm font-bold shadow-md shadow-[#0B3EDB]/25 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                 >
                   <span>{priorityBanner.buttonText || "Learn More"}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -526,7 +526,7 @@ const HomePage = () => {
               <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mt-4 pt-3.5 border-t border-gray-200/70">
                 
                 <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-[#0055ff] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
                     <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Order</h4>
@@ -621,7 +621,7 @@ const CategoryProductRow = ({ section }) => {
         <div className="flex items-center gap-3">
           <Link
             to={`/category/${section.slug}`}
-            className="text-xs font-bold text-[#0055ff] hover:text-blue-700 hover:underline"
+            className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 hover:underline"
           >
             see all
           </Link>

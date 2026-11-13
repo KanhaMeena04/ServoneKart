@@ -64,7 +64,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
         >
           {/* 1. Menu Button */}
           <MenuButton aria-label="menu" onClick={effectiveToggleDrawer(true)}>
-            <MenuRoundedIcon sx={{ color: '#0055ff' }} />
+            <MenuRoundedIcon sx={{ color: '#0B3EDB' }} />
           </MenuButton>
 
           {/* 2. Tricelyn Mobile Branded Logo */}
@@ -86,7 +86,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Search />
             <MenuButton showBadge aria-label="Open notifications" onClick={(e) => setNotifAnchorEl(e.currentTarget)}>
-              <NotificationsRoundedIcon sx={{ color: '#0055ff' }} />
+              <NotificationsRoundedIcon sx={{ color: '#0B3EDB' }} />
             </MenuButton>
             <Menu
               anchorEl={notifAnchorEl}
@@ -97,7 +97,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
                 sx: { mt: 1.5, width: 280, borderRadius: 3, p: 1 }
               }}
             >
-              <Typography variant="subtitle2" sx={{ p: 1, fontWeight: 700, borderBottom: '1px solid #eee', color: '#0055ff' }}>
+              <Typography variant="subtitle2" sx={{ p: 1, fontWeight: 700, borderBottom: '1px solid #eee', color: '#0B3EDB' }}>
                 Notifications
               </Typography>
               <MenuItem onClick={() => setNotifAnchorEl(null)}>
@@ -122,7 +122,7 @@ export function CustomIcon() {
       sx={{
         width: '1.5rem',
         height: '1.5rem',
-        bgcolor: '#0055ff',
+        bgcolor: '#0B3EDB',
         borderRadius: '999px',
         display: 'flex',
         justifyContent: 'center',

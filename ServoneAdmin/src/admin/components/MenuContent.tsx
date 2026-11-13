@@ -227,7 +227,7 @@ export const menuItems: MenuItemType[] = [
     ]
   },
   { text: 'Audit Logs', icon: <ReceiptLong />, path: '/audit-logs', permission: 'SiteSettings' },
-  { text: 'Chat Support', icon: <SupportAgent sx={{ color: '#0055ff' }} />, path: '/support-chat', badge: 'LIVE' },
+  { text: 'Chat Support', icon: <SupportAgent sx={{ color: '#0B3EDB' }} />, path: '/support-chat', badge: 'LIVE' },
   { text: 'Emergency Controls', icon: <Warning />, path: '/emergency-controls', permission: 'RuleEngine' },
   { text: 'System Health', icon: <HealthAndSafety />, path: '/dashboard', permission: 'Dashboard' },
 ];
@@ -358,14 +358,14 @@ export default function MenuContent() {
                   py: 1,
                   borderRadius: 1,
                   mx: 1,
-                  backgroundColor: location.pathname === item.path ? 'rgba(0, 85, 255, 0.10)' : 'transparent',
-                  color: location.pathname === item.path ? '#0055ff' : '#2C2C2C',
-                  '&:hover': { bgcolor: 'rgba(0, 85, 255, 0.06)' }
+                  backgroundColor: location.pathname === item.path ? 'rgba(11, 62, 219, 0.10)' : 'transparent',
+                  color: location.pathname === item.path ? '#0B3EDB' : '#2C2C2C',
+                  '&:hover': { bgcolor: 'rgba(11, 62, 219, 0.06)' }
                 }}
               >
                 <ListItemIcon sx={{ 
                   minWidth: 36, 
-                  color: location.pathname === item.path ? '#0055ff' : '#2C2C2C' 
+                  color: location.pathname === item.path ? '#0B3EDB' : '#2C2C2C' 
                 }}>
                   {item.icon}
                 </ListItemIcon>
@@ -375,7 +375,7 @@ export default function MenuContent() {
                     fontSize: '10px',
                     fontWeight: 800,
                     backgroundColor: '#dbeafe',
-                    color: '#1e40af',
+                    color: '#0A2B6B',
                     padding: '2px 7px',
                     borderRadius: '10px',
                     letterSpacing: '0.5px',
@@ -391,7 +391,7 @@ export default function MenuContent() {
                       transform: open === item.text ? 'rotate(90deg)' : 'rotate(0deg)',
                       transition: '0.2s',
                       display: 'flex',
-                      color: open === item.text ? '#0055ff' : '#2C2C2C'
+                      color: open === item.text ? '#0B3EDB' : '#2C2C2C'
                     }}
                   >
                     <ChevronRight fontSize="small" />
@@ -412,16 +412,16 @@ export default function MenuContent() {
                           py: 0.7,
                           borderRadius: 1,
                           mr: 1,
-                          backgroundColor: location.pathname === sub.path ? 'rgba(0, 85, 255, 0.12)' : 'transparent',
-                          color: location.pathname === sub.path ? '#0055ff' : '#2C2C2C',
+                          backgroundColor: location.pathname === sub.path ? 'rgba(11, 62, 219, 0.12)' : 'transparent',
+                          color: location.pathname === sub.path ? '#0B3EDB' : '#2C2C2C',
                           '&:hover': {
-                            backgroundColor: '#0055ff',
+                            backgroundColor: '#0B3EDB',
                             color: '#fff',
                             '& .MuiListItemIcon-root': { color: '#fff' }
                           },
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 28, color: location.pathname === sub.path ? '#0055ff' : '#93c5fd' }}>
+                        <ListItemIcon sx={{ minWidth: 28, color: location.pathname === sub.path ? '#0B3EDB' : '#94beff' }}>
                           <RadioButtonUnchecked sx={{ fontSize: 10 }} />
                         </ListItemIcon>
                         <ListItemText primary={sub.text} primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: location.pathname === sub.path ? 600 : 400 }} />

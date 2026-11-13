@@ -31,16 +31,16 @@ const defaultTheme = createTheme();
 const customShadows: Shadows = [...defaultTheme.shadows];
 
 export const brand = {
-  50: '#eef4ff',
+  50: '#f0f5ff',
   100: '#d9e6ff',
   200: '#bcd4ff',
   300: '#8eb9ff',
-  400: '#5792ff',
-  500: '#0055ff',
-  600: '#0047d6',
-  700: '#0036ad',
-  800: '#00298a',
-  900: '#051953',
+  400: '#0D5AA6', // Highlight Blue - Glow / accent
+  500: '#0B3EDB', // Vivid Blue - Gradient highlight / Accent
+  600: '#0A2B6B', // Royal Blue - Primary gradient / Primary
+  700: '#082358',
+  800: '#071c42',
+  900: '#07162E', // Deep Navy - Dark background
 };
 
 export const gray = {

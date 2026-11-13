@@ -23,8 +23,8 @@ const DEFAULT_SLIDES = [
     subtitle: 'Pure dairy pouches, artisan whole-wheat breads, farm fresh eggs & butter at morning speed',
     buttonText: 'Shop Breakfast',
     link: '/category/dairy-bread-eggs',
-    bgGradient: 'from-[#002b80] via-[#0055ff] to-[#38bdf8]',
-    buttonClass: 'bg-white text-[#0055ff] hover:bg-blue-50',
+    bgGradient: 'from-[#002b80] via-[#0B3EDB] to-[#38bdf8]',
+    buttonClass: 'bg-white text-[#0B3EDB] hover:bg-blue-50',
     image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=1200&q=80',
     alt: 'Fresh dairy, breads and breakfast essentials'
   },
@@ -75,7 +75,7 @@ const HeroBannerSlider = () => {
             subtitle: s.subtitle || 'Express doorstep grocery delivery in Indore',
             buttonText: s.buttonText || 'Shop Now',
             link: s.link || '/categories',
-            bgGradient: s.bgGradient || (idx % 2 === 0 ? 'from-[#064e3b] via-[#047857] to-[#10b981]' : 'from-[#002b80] via-[#0055ff] to-[#38bdf8]'),
+            bgGradient: s.bgGradient || (idx % 2 === 0 ? 'from-[#064e3b] via-[#047857] to-[#10b981]' : 'from-[#002b80] via-[#0B3EDB] to-[#38bdf8]'),
             buttonClass: 'bg-white text-gray-900 hover:bg-gray-100',
             image: s.image || DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image,
             alt: s.alt || s.title || 'Banner Slide'

@@ -81,8 +81,8 @@ export default function SideMenu() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-            <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#0055ff', letterSpacing: '0.4px' }}>
-              INDORE OPS LIVE
+            <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#0B3EDB', letterSpacing: '0.4px' }}>
+              HYPERLOCAL OPS LIVE
             </Typography>
           </Box>
           <Typography sx={{ fontSize: '10px', fontWeight: 800, color: '#475569', bgcolor: '#ffffff', px: 1, py: 0.2, borderRadius: '6px', border: '1px solid rgba(0, 85, 255, 0.12)' }}>
@@ -107,22 +107,22 @@ export default function SideMenu() {
         <MenuContent />
       </Box>
 
-      <Divider sx={{ borderColor: 'rgba(0, 85, 255, 0.08)' }} />
+      <Divider sx={{ borderColor: 'rgba(11, 62, 219, 0.08)' }} />
 
       {/* Bottom Profile & Logout Footer */}
-      <Box sx={{ p: 1.8, bgcolor: 'rgba(0, 85, 255, 0.02)' }}>
+      <Box sx={{ p: 1.8, bgcolor: 'rgba(11, 62, 219, 0.02)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
             <Avatar
               sx={{
                 width: 36,
                 height: 36,
-                bgcolor: '#0055ff',
+                bgcolor: '#0A2B6B',
                 color: '#ffffff',
                 fontSize: '0.82rem',
                 fontWeight: 800,
-                boxShadow: '0 2px 8px rgba(0, 85, 255, 0.3)',
-                border: '2px solid #bfdbfe'
+                boxShadow: '0 2px 8px rgba(11, 62, 219, 0.3)',
+                border: '2px solid #bcd4ff'
               }}
             >
               {((user?.name || 'Admin').split(' ').map((n) => n[0]).slice(0, 2).join('')).toUpperCase()}
@@ -132,7 +132,7 @@ export default function SideMenu() {
                 sx={{
                   fontSize: '0.82rem',
                   fontWeight: 800,
-                  color: '#0f172a',
+                  color: '#07162E',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -141,7 +141,7 @@ export default function SideMenu() {
               >
                 {user?.name || 'Super Admin'}
               </Typography>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#0055ff', lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#0B3EDB', lineHeight: 1 }}>
                 {(user as any)?.roleName || (user?.role === 'admin' ? 'Super Admin' : user?.role || 'Admin')}
               </Typography>
             </Box>

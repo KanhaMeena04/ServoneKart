@@ -30,7 +30,7 @@ class EcdkartLogo extends StatelessWidget {
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF0055FF), Color(0xFF00B4D8)],
+                colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

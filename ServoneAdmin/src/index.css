@@ -1,20 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --primary-blue: #0055ff;
-  --primary-dark: #0043c7;
-  --accent-cyan: #00b4d8;
-  --dark-black: #0f172a;
-  --light-blue: #93c5fd;
-  --light-cyan: #38bdf8;
+  --brand-deep-navy: #07162E;
+  --brand-royal-blue: #0A2B6B;
+  --brand-vivid-blue: #0B3EDB;
+  --brand-highlight-blue: #0D5AA6;
+  --brand-gradient: linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%);
+
+  --primary-blue: #0B3EDB;
+  --primary-dark: #07162E;
+  --royal-blue: #0A2B6B;
+  --accent-cyan: #0D5AA6;
+  --dark-black: #07162E;
+  --light-blue: #94beff;
+  --light-cyan: #5c98ff;
   --bg-offwhite: #f8faff;
   --bg-cream: #eff6ff;
 
   /* Backward-compatible variable aliases */
-  --primary-green: #0055ff;
-  --primary-dark: #0043c7;
-  --accent-orange: #00b4d8;
-  --light-green: #93c5fd;
+  --primary-green: #0B3EDB;
+  --accent-orange: #0D5AA6;
+  --light-green: #94beff;
   --light-orange: #60a5fa;
 }
 
@@ -49,13 +55,13 @@ main {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-radius: 16px !important;
-  border: 1px solid rgba(0, 85, 255, 0.12) !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 85, 255, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(11, 62, 219, 0.12) !important;
+  box-shadow: 0 4px 20px -2px rgba(11, 62, 219, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .MuiPaper-root:hover {
-  box-shadow: 0 10px 25px -5px rgba(0, 85, 255, 0.14), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
+  box-shadow: 0 10px 25px -5px rgba(11, 62, 219, 0.14), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
 }
 
 /* Primary Headings & Accents */
@@ -80,7 +86,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0055ff;
+  background: #0B3EDB;
 }
 
 /* Remove unwanted margins from header Stack seen in DevTools */
@@ -107,7 +113,7 @@ input:-webkit-autofill:active {
   z-index: 999999 !important;
   border-radius: 12px !important;
   border: 1px solid #bfdbfe !important;
-  box-shadow: 0 10px 30px rgba(0, 85, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(11, 62, 219, 0.15) !important;
   font-family: 'Plus Jakarta Sans', sans-serif !important;
   margin-top: 4px !important;
 }
@@ -126,7 +132,7 @@ input:-webkit-autofill:active {
 .pac-item-query {
   font-size: 14px !important;
   font-weight: 700 !important;
-  color: #0055ff !important;
+  color: #0B3EDB !important;
 }
 
 @layer utilities {

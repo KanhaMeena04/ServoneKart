@@ -22,7 +22,7 @@ const IMAGEKIT_PUBLIC_KEY = 'public_bndzwvE17qu6mX6x96Ak/PhnGY0=';
 
 const GRADIENT_PRESETS = [
   { label: '🌿 Farm Emerald Green', value: 'from-[#064e3b] via-[#047857] to-[#10b981]' },
-  { label: '⚡ Tricelyn Royal Blue', value: 'from-[#002b80] via-[#0055ff] to-[#38bdf8]' },
+  { label: '⚡ Tricelyn Royal Blue', value: 'from-[#002b80] via-[#0B3EDB] to-[#38bdf8]' },
   { label: '🍊 Citrus Sunset Orange', value: 'from-[#7c2d12] via-[#c2410c] to-[#ea580c]' },
   { label: '🍇 Royal Grape Purple', value: 'from-[#3b0764] via-[#7c3aed] to-[#a855f7]' },
   { label: '🧼 Clean Cyan Blue', value: 'from-[#0c4a6e] via-[#0284c7] to-[#0ea5e9]' },
@@ -56,7 +56,7 @@ const EditRestaurantBannerForm = () => {
     badge: '',
     buttonText: 'Shop Now',
     link: '/categories',
-    bgGradient: 'from-[#002b80] via-[#0055ff] to-[#38bdf8]',
+    bgGradient: 'from-[#002b80] via-[#0B3EDB] to-[#38bdf8]',
     position: 1,
     restaurant: 'all',
     city: 'all',
@@ -89,7 +89,7 @@ const EditRestaurantBannerForm = () => {
           badge: banner.badge || '',
           buttonText: banner.buttonText || 'Shop Now',
           link: banner.link || '/categories',
-          bgGradient: banner.bgGradient || 'from-[#002b80] via-[#0055ff] to-[#38bdf8]',
+          bgGradient: banner.bgGradient || 'from-[#002b80] via-[#0B3EDB] to-[#38bdf8]',
           position: banner.position || 1,
           restaurant: banner.restaurant?._id || banner.restaurant || 'all',
           city: banner.city?._id || banner.city || 'all',
@@ -162,7 +162,7 @@ const EditRestaurantBannerForm = () => {
     payload.append('badge', formData.badge || '');
     payload.append('buttonText', formData.buttonText || 'Shop Now');
     payload.append('link', formData.link || '/categories');
-    payload.append('bgGradient', formData.bgGradient || 'from-[#002b80] via-[#0055ff] to-[#38bdf8]');
+    payload.append('bgGradient', formData.bgGradient || 'from-[#002b80] via-[#0B3EDB] to-[#38bdf8]');
     payload.append('position', Number(formData.position) || 1);
     payload.append('city', formData.city || 'all');
     payload.append('isActive', formData.status === 'active');
@@ -200,7 +200,7 @@ const EditRestaurantBannerForm = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-              <AutoAwesome className="text-[#0055ff]" />
+              <AutoAwesome className="text-[#0B3EDB]" />
               Edit Banner / Promo Card
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -235,17 +235,17 @@ const EditRestaurantBannerForm = () => {
                   onClick={() => setFormData(p => ({ ...p, placement: 'hero' }))}
                   className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     formData.placement === 'hero'
-                      ? 'border-[#0055ff] bg-white shadow-xs'
+                      ? 'border-[#0B3EDB] bg-white shadow-xs'
                       : 'border-gray-200 bg-white/60 hover:border-gray-300'
                   }`}
                 >
                   <FormControlLabel
                     value="hero"
-                    control={<Radio sx={{ color: '#0055ff', '&.Mui-checked': { color: '#0055ff' } }} />}
+                    control={<Radio sx={{ color: '#0B3EDB', '&.Mui-checked': { color: '#0B3EDB' } }} />}
                     label={
                       <div className="ml-1">
                         <div className="flex items-center gap-1.5 font-bold text-gray-900">
-                          <ViewCarousel className="text-[#0055ff] text-xl" />
+                          <ViewCarousel className="text-[#0B3EDB] text-xl" />
                           <span>Hero Carousel Slider</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">Top interactive hero banner with full bleed artwork</p>
@@ -258,13 +258,13 @@ const EditRestaurantBannerForm = () => {
                   onClick={() => setFormData(p => ({ ...p, placement: 'offer_card' }))}
                   className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     formData.placement === 'offer_card'
-                      ? 'border-[#0055ff] bg-white shadow-xs'
+                      ? 'border-[#0B3EDB] bg-white shadow-xs'
                       : 'border-gray-200 bg-white/60 hover:border-gray-300'
                   }`}
                 >
                   <FormControlLabel
                     value="offer_card"
-                    control={<Radio sx={{ color: '#0055ff', '&.Mui-checked': { color: '#0055ff' } }} />}
+                    control={<Radio sx={{ color: '#0B3EDB', '&.Mui-checked': { color: '#0B3EDB' } }} />}
                     label={
                       <div className="ml-1">
                         <div className="flex items-center gap-1.5 font-bold text-gray-900">
@@ -292,7 +292,7 @@ const EditRestaurantBannerForm = () => {
                     required
                     value={formData.title}
                     onChange={handleChange}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none focus:border-[#0055ff]"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none focus:border-[#0B3EDB]"
                   />
                 </div>
 
@@ -305,7 +305,7 @@ const EditRestaurantBannerForm = () => {
                     name="subtitle"
                     value={formData.subtitle}
                     onChange={handleChange}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none focus:border-[#0055ff]"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none focus:border-[#0B3EDB]"
                   />
                 </div>
 
@@ -320,7 +320,7 @@ const EditRestaurantBannerForm = () => {
                       value={formData.badge}
                       onChange={handleChange}
                       placeholder="e.g. FLAT 30% OFF"
-                      className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-[#0055ff]"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-[#0B3EDB]"
                     />
                   </div>
 
@@ -333,7 +333,7 @@ const EditRestaurantBannerForm = () => {
                       name="buttonText"
                       value={formData.buttonText}
                       onChange={handleChange}
-                      className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-[#0055ff]"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-[#0B3EDB]"
                     />
                   </div>
                 </div>
@@ -436,7 +436,7 @@ const EditRestaurantBannerForm = () => {
                       max={99}
                       value={formData.position}
                       onChange={handleChange}
-                      className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-[#0055ff]"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-[#0B3EDB]"
                     />
                   </div>
 
@@ -467,7 +467,7 @@ const EditRestaurantBannerForm = () => {
                       variant="contained"
                       component="label"
                       disabled={uploading}
-                      sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                      sx={{ backgroundColor: '#0B3EDB', '&:hover': { backgroundColor: '#0A2B6B' } }}
                       className="capitalize shadow-none rounded-xl text-xs py-2 px-4"
                     >
                       {uploading ? 'Uploading...' : 'Replace Image'}
@@ -485,7 +485,7 @@ const EditRestaurantBannerForm = () => {
                       setPreview(e.target.value);
                     }}
                     placeholder="https://..."
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-mono outline-none focus:border-[#0055ff]"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-mono outline-none focus:border-[#0B3EDB]"
                   />
                 </div>
               </div>
@@ -529,7 +529,7 @@ const EditRestaurantBannerForm = () => {
                 type="submit"
                 disabled={loading || uploading}
                 variant="contained"
-                sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                sx={{ backgroundColor: '#0B3EDB', '&:hover': { backgroundColor: '#0A2B6B' } }}
                 className="px-8 py-2.5 capitalize rounded-xl font-bold shadow-md"
               >
                 {loading ? 'Saving...' : '💾 Save Changes & Update Live'}

@@ -120,7 +120,7 @@ const CartDrawer = () => {
           <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-16">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
-                <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-[#0055ff]">
+                <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-[#0B3EDB]">
                   <ShoppingBag className="w-10 h-10" />
                 </div>
                 <div>
@@ -131,7 +131,7 @@ const CartDrawer = () => {
                 </div>
                 <button
                   onClick={() => setIsCartDrawerOpen(false)}
-                  className="px-6 py-2.5 bg-[#0055ff] text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+                  className="px-6 py-2.5 bg-[#0B3EDB] text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
                 >
                   Start Shopping
                 </button>
@@ -182,7 +182,7 @@ const CartDrawer = () => {
                 {storeGroups.map((group) => (
                   <div key={group.storeId} className="bg-white rounded-2xl p-3 border border-gray-100 shadow-2xs space-y-2">
                     <div className="flex items-center justify-between px-1 pb-1.5 border-b border-gray-100">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#0055ff]">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#0B3EDB]">
                         <Store className="w-3.5 h-3.5" />
                         <span className="truncate max-w-[220px]">{group.storeName}</span>
                       </span>
@@ -254,7 +254,7 @@ const CartDrawer = () => {
                 {/* Promo Code Input */}
                 <div className="p-3.5 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-2.5">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
-                    <Tag className="w-3.5 h-3.5 text-[#0055ff]" />
+                    <Tag className="w-3.5 h-3.5 text-[#0B3EDB]" />
                     <span>Apply Promocode / Coupon</span>
                   </div>
 
@@ -281,11 +281,11 @@ const CartDrawer = () => {
                         value={promoCodeInput}
                         onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
                         placeholder="e.g. SAVE25, WELCOME50"
-                        className="flex-1 px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl uppercase font-bold focus:outline-none focus:border-[#0055ff]"
+                        className="flex-1 px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl uppercase font-bold focus:outline-none focus:border-[#0B3EDB]"
                       />
                       <button
                         onClick={() => handleApplyPromo()}
-                        className="px-4 py-1.5 bg-[#0055ff] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition"
+                        className="px-4 py-1.5 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition"
                       >
                         Apply
                       </button>
@@ -310,7 +310,7 @@ const CartDrawer = () => {
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-black text-amber-900">WELCOME50</span>
-                            <span className="text-[10px] font-bold text-[#0055ff]">APPLY</span>
+                            <span className="text-[10px] font-bold text-[#0B3EDB]">APPLY</span>
                           </div>
                           <p className="text-[10px] text-amber-700 mt-0.5">Flat ₹50 OFF</p>
                         </div>
@@ -320,7 +320,7 @@ const CartDrawer = () => {
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-black text-blue-900">TRICELYN20</span>
-                            <span className="text-[10px] font-bold text-[#0055ff]">APPLY</span>
+                            <span className="text-[10px] font-bold text-[#0B3EDB]">APPLY</span>
                           </div>
                           <p className="text-[10px] text-blue-700 mt-0.5">20% OFF up to ₹100</p>
                         </div>

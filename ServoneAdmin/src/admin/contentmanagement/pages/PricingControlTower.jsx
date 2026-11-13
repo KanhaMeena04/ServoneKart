@@ -48,7 +48,7 @@ import {
 } from "@mui/icons-material";
 import api from "../../../utils/api";
 
-const PRIMARY_COLOR = "#0055ff";
+const PRIMARY_COLOR = "#0B3EDB";
 const ACCENT_COLOR = "#021b44";
 
 export default function PricingControlTower() {

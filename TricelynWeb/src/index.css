@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --brand-deep-navy: #07162E;
+  --brand-royal-blue: #0A2B6B;
+  --brand-vivid-blue: #0B3EDB;
+  --brand-highlight-blue: #0D5AA6;
+  --brand-gradient: linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%);
+}
+
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%);
+}
+
 @layer base {
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

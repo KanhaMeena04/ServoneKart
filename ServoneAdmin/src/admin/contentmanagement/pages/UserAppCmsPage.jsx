@@ -40,7 +40,7 @@ const UserAppCmsPage = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition whitespace-nowrap ${
                 isActive
-                  ? "bg-[#0055ff] text-white shadow-md"
+                  ? "bg-[#0B3EDB] text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
             >

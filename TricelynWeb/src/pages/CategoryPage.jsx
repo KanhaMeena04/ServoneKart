@@ -161,7 +161,7 @@ const CategoryPage = () => {
               to={`/category/${cat.slug}`}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
                 isActive
-                  ? 'bg-[#0055ff] text-white shadow-xs'
+                  ? 'bg-[#0B3EDB] text-white shadow-xs'
                   : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -247,7 +247,7 @@ const CategoryPage = () => {
                 onClick={() => setActiveSubcategory('all')}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
                   activeSubcategory === 'all'
-                    ? 'bg-[#0055ff] text-white shadow-xs'
+                    ? 'bg-[#0B3EDB] text-white shadow-xs'
                     : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -263,7 +263,7 @@ const CategoryPage = () => {
                     onClick={() => setActiveSubcategory(subKey)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
                       isSelected
-                        ? 'bg-[#0055ff] text-white shadow-xs'
+                        ? 'bg-[#0B3EDB] text-white shadow-xs'
                         : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
                     }`}
                   >

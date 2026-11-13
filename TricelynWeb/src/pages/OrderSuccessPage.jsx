@@ -41,7 +41,7 @@ const OrderSuccessPage = () => {
         {state.fulfilmentGroup && (
           <div className="flex justify-between items-center border-b border-gray-100 pb-3">
             <span className="text-xs text-gray-500 font-medium">Fulfilment Group:</span>
-            <span className="text-xs font-mono font-bold text-[#0055ff]">{state.fulfilmentGroup}</span>
+            <span className="text-xs font-mono font-bold text-[#0B3EDB]">{state.fulfilmentGroup}</span>
           </div>
         )}
 
@@ -70,7 +70,7 @@ const OrderSuccessPage = () => {
               <div key={ord._id} className="py-2.5 flex items-center justify-between gap-2 text-xs">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 font-extrabold text-gray-900 truncate">
-                    <Store className="w-3.5 h-3.5 text-[#0055ff] flex-shrink-0" />
+                    <Store className="w-3.5 h-3.5 text-[#0B3EDB] flex-shrink-0" />
                     <span className="truncate">{ord.storeName || ord.restaurantName || 'Partner Store'}</span>
                   </div>
                   <p className="text-[11px] text-gray-500">
