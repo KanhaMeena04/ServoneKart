@@ -47,6 +47,8 @@ class _GroceryPageState extends State<GroceryPage> {
   final PageController _heroPageCtrl = PageController();
   final TextEditingController _searchCtrl = TextEditingController();
 
+  Color get primaryGreen => AppColors.primary;
+
   @override
   void initState() {
     super.initState();
@@ -189,7 +191,7 @@ class _GroceryPageState extends State<GroceryPage> {
       return true;
     }).toList();
 
-    final primaryGreen = const Color(0xFF16A34A);
+    final primaryGreen = AppColors.primary;
     final firstChar = userProvider.name.isNotEmpty ? userProvider.name[0].toUpperCase() : 'U';
 
     return Scaffold(
@@ -205,7 +207,8 @@ class _GroceryPageState extends State<GroceryPage> {
                 SliverToBoxAdapter(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF064E3B) : primaryGreen,
+                      gradient: isDark ? null : AppColors.brandGradient,
+                      color: isDark ? AppColors.deepNavy : null,
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(24),
                         bottomRight: Radius.circular(24),
@@ -1422,7 +1425,7 @@ class _StoreCatalogBottomSheetState extends State<_StoreCatalogBottomSheet> {
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     final cart = context.watch<CartProvider>();
-    final primaryGreen = const Color(0xFF16A34A);
+    final primaryGreen = AppColors.primary;
     final sectionTitles = ['All', ..._catalogSections.map((s) => (s['name'] ?? 'Items').toString())];
 
     final List<Map<String, dynamic>> visibleProducts = [];
