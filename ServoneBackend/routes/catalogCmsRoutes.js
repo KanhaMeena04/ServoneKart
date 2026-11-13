@@ -14,6 +14,7 @@ const {
   updateProductPriceOverride,
   updateProductStatus,
   updateAdminProductFull,
+  deleteAdminProduct,
   getCmsAuditLogs,
 } = require("../controllers/catalogCmsController");
 
@@ -34,6 +35,7 @@ router.post("/products", protect, admin, createAdminProduct);
 router.put("/products/:id/price-override", protect, admin, updateProductPriceOverride);
 router.patch("/products/:id/status", protect, admin, updateProductStatus);
 router.put("/products/:id", protect, admin, updateAdminProductFull);
+router.delete("/products/:id", protect, admin, deleteAdminProduct);
 
 // Audit Log Route
 router.get("/audit-logs", protect, admin, getCmsAuditLogs);

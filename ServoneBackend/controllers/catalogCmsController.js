@@ -301,24 +301,59 @@ exports.createAdminProduct = async (req, res) => {
       addOns,
     } = req.body;
 
+    const basePriceNum = Number(basePrice || 0);
+    const mrpNum = Number(mrp || basePriceNum);
+    const sellingPriceNum = Number(offerPrice || basePriceNum);
+    const b2bPriceNum = Math.max(10, Math.round(sellingPriceNum * 0.88));
+
     const product = await Product.create({
       restaurant: restaurantId,
       category: categoryId,
+      categoryId: categoryId,
       subcategory: subcategory || "",
+      vertical: "grocery",
+      sku: `TRC-${Date.now().toString().slice(-6)}`,
       name: typeof name === "string" ? { en: name } : name,
       description: typeof description === "string" ? { en: description } : description,
       image: image || "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400",
-      basePrice: Number(basePrice || 0),
-      mrp: Number(mrp || basePrice || 0),
-      discountPercent: Number(discountPercent || 0),
-      offerPrice: offerPrice ? Number(offerPrice) : undefined,
+      basePrice: basePriceNum,
+      sellingPrice: sellingPriceNum,
+      mrp: mrpNum,
+      b2bPrice: b2bPriceNum,
+      discountPercent: Number(discountPercent || (mrpNum > sellingPriceNum ? Math.round(((mrpNum - sellingPriceNum) / mrpNum) * 100) : 0)),
+      offerPrice: sellingPriceNum,
       preparationTime: Number(preparationTime || 15),
       isVeg: isVeg !== false,
       available: true,
+      inStock: true,
+      outOfStock: false,
       isApproved: true,
+      isPublished: true,
+      approvalStatus: "approved",
+      approvedAt: new Date(),
       variations: Array.isArray(variations) ? variations : [],
       addOns: Array.isArray(addOns) ? addOns : [],
     });
+
+    if (restaurantId) {
+      await Restaurant.findByIdAndUpdate(restaurantId, {
+        $addToSet: { product: product._id },
+        $push: {
+          menu: {
+            _id: product._id,
+            name: typeof name === "string" ? name : (name?.en || "Product"),
+            category: subcategory || "Grocery",
+            price: sellingPriceNum,
+            basePrice: basePriceNum,
+            sellingPrice: sellingPriceNum,
+            mrp: mrpNum,
+            isVeg: isVeg !== false,
+            isAvailable: true,
+            isApproved: true,
+          }
+        }
+      }).catch(() => null);
+    }
 
     await AuditLog.log({
       entity: "Product",
@@ -495,6 +530,39 @@ exports.updateAdminProductFull = async (req, res) => {
       message: "Product updated successfully",
       product: formatProductForUser(product),
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteAdminProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    const restId = product.restaurant;
+    await Product.findByIdAndDelete(id);
+
+    if (restId) {
+      await Restaurant.findByIdAndUpdate(restId, {
+        $pull: { product: id, menu: { _id: id } }
+      }).catch(() => null);
+    }
+
+    await AuditLog.log({
+      entity: "Product",
+      entityId: id,
+      action: "deleted",
+      userId: req.user?._id,
+      userRole: "admin",
+      changes: { field: "product", oldValue: product, newValue: null },
+      reason: "Admin deleted product from Catalog Master Control",
+    });
+
+    res.status(200).json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
