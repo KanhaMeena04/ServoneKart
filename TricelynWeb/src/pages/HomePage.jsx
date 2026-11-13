@@ -24,6 +24,7 @@ import { groceryService } from '../services/api';
 import { usePlatform } from '../context/PlatformContext';
 import { useLocation } from '../context/LocationContext';
 import { CATEGORIES, BEST_SELLERS, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
+import banner111 from '../assets/banner111.jpg';
 
 // Quick-Commerce Mobile Category Groups (Matches Reference Screenshots 1 & 2)
 const MOBILE_CATEGORY_GROUPS = [
@@ -457,96 +458,106 @@ const HomePage = () => {
         </section>
 
         {/* ============================================================
-            5. DELIVERY PARTNER PRIORITY BANNER (Screenshot 2: Modern & Dynamic)
+            5. DELIVERY PARTNER PRIORITY BANNER (Using TricelynWeb/src/assets/banner111.jpg)
            ============================================================ */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#021028] via-[#051c44] to-[#003db3] text-white p-5 sm:p-7 lg:p-8 shadow-xl border border-blue-400/20">
-          {/* Subtle Ambient Decorative Glows */}
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#0055ff]/20 rounded-full blur-3xl pointer-events-none" />
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/80 bg-gray-100">
+          
+          {/* Master Panorama Background Image */}
+          <div className="absolute inset-0">
+            <img
+              src={banner111}
+              alt="Your Groceries Our Priority"
+              className="w-full h-full object-cover object-center"
+            />
+            {/* Ambient Overlay for crystal clear mobile legibility while keeping fresh groceries & rider visible */}
+            <div className="absolute inset-0 bg-white/65 sm:bg-white/40 md:bg-transparent backdrop-blur-[1px] md:backdrop-blur-none" />
+          </div>
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center gap-6">
-            
-            {/* Left Column: Heading, Subtitle & Action CTA */}
-            <div className="lg:col-span-5 space-y-2.5 sm:space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-[10px] sm:text-xs font-bold tracking-wide uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          {/* Banner Content Container (Positioned inside the image) */}
+          <div className="relative z-10 py-5 px-3 sm:py-8 sm:px-6 lg:py-10 lg:px-8">
+            <div className="max-w-xl lg:max-w-2xl mx-auto backdrop-blur-md bg-white/85 sm:bg-white/80 md:bg-white/90 rounded-2xl p-4 sm:p-6 lg:p-7 border border-white/90 shadow-md text-center flex flex-col items-center">
+              
+              {/* Badge */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0055ff]/10 border border-[#0055ff]/25 text-[#0055ff] text-[10px] sm:text-xs font-bold tracking-wide uppercase shadow-2xs mb-2">
+                <span className="w-2 h-2 rounded-full bg-[#0055ff] animate-pulse" />
                 <span>Hyperlocal Express • 10-15 Mins</span>
               </div>
 
-              <h3 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight leading-tight">
+              {/* Dynamic Title */}
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-900 tracking-tight leading-tight">
                 {priorityBanner.title ? (
                   priorityBanner.title.includes('.') ? (
                     <>
-                      {priorityBanner.title.split('.')[0]}.<br />
-                      <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
+                      {priorityBanner.title.split('.')[0]}.<br className="hidden sm:inline" />{' '}
+                      <span className="text-[#0055ff]">
                         {priorityBanner.title.split('.').slice(1).join('.')}
                       </span>
                     </>
                   ) : (
-                    <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
+                    <span className="text-[#0055ff]">
                       {priorityBanner.title}
                     </span>
                   )
                 ) : (
                   <>
-                    Your Groceries.<br />
-                    <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
-                      Our Priority.
-                    </span>
+                    Your Groceries.{' '}
+                    <span className="text-[#0055ff]">Our Priority.</span>
                   </>
                 )}
               </h3>
 
-              <p className="text-xs sm:text-sm text-blue-200/90 font-medium">
+              {/* Subtitle */}
+              <p className="text-xs sm:text-sm text-gray-600 font-semibold mt-1 max-w-md">
                 {priorityBanner.subtitle || "Fast. Safe. Reliable doorstep delivery in 10-15 minutes."}
               </p>
 
-              <div className="pt-1 sm:pt-2">
+              {/* CTA Button */}
+              <div className="mt-3">
                 <Link
                   to={priorityBanner.buttonLink || "/policy/shipping"}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-blue-900/40 hover:shadow-blue-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 border border-white/20"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0055ff] hover:bg-[#0047d4] text-white rounded-full text-xs sm:text-sm font-bold shadow-md shadow-blue-600/30 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                 >
                   <span>{priorityBanner.buttonText || "Learn More"}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
+
+              {/* 3 Step Cards (Order -> Pick -> Deliver) */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mt-4 pt-3.5 border-t border-gray-200/70">
+                
+                <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-[#0055ff] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                    <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Order</h4>
+                  <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
+                    In seconds
+                  </p>
+                </div>
+
+                <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                    <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Pick</h4>
+                  <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
+                    Fresh packed
+                  </p>
+                </div>
+
+                <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                    <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Deliver</h4>
+                  <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
+                    10-15 mins
+                  </p>
+                </div>
+
+              </div>
+
             </div>
-
-            {/* Right Column: 3 Frosted Steps (Order -> Pick -> Deliver) */}
-            <div className="lg:col-span-7 grid grid-cols-3 gap-2.5 sm:gap-4 border-t lg:border-t-0 lg:border-l border-white/10 pt-4 lg:pt-0 lg:pl-6">
-              
-              <div className="group rounded-xl p-3 sm:p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 flex flex-col items-center sm:items-start text-center sm:text-left">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
-                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">Order</h4>
-                <p className="text-[10px] sm:text-xs text-blue-200/80 mt-0.5 leading-snug">
-                  Place order in seconds
-                </p>
-              </div>
-
-              <div className="group rounded-xl p-3 sm:p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 flex flex-col items-center sm:items-start text-center sm:text-left">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
-                  <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">Pick</h4>
-                <p className="text-[10px] sm:text-xs text-blue-200/80 mt-0.5 leading-snug">
-                  Freshly picked & packed
-                </p>
-              </div>
-
-              <div className="group rounded-xl p-3 sm:p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 flex flex-col items-center sm:items-start text-center sm:text-left">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
-                  <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">Deliver</h4>
-                <p className="text-[10px] sm:text-xs text-blue-200/80 mt-0.5 leading-snug">
-                  10-15 min to your door
-                </p>
-              </div>
-
-            </div>
-
           </div>
         </section>
 
