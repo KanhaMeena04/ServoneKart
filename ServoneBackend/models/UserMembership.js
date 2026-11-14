@@ -91,3 +91,4 @@ userMembershipSchema.index({ userId: 1, status: 1 });
 userMembershipSchema.index({ targetAudience: 1, status: 1 });
 
 module.exports = mongoose.model('UserMembership', userMembershipSchema);
+

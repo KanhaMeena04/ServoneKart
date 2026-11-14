@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const riderSchema = new mongoose.Schema({
-    user: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true, 
-        unique: true 
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        unique: true
     },
     name: { type: String },
     email: { type: String },
@@ -25,7 +25,7 @@ const riderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: {}
     },
-    workCity: { type: String, default: "" }, 
+    workCity: { type: String, default: "" },
     workZone: { type: String, default: "" },
     serviceArea: {
         type: mongoose.Schema.Types.ObjectId,
@@ -59,28 +59,28 @@ const riderSchema = new mongoose.Schema({
         otpExpires: { type: Date },
         otpAttempts: { type: Number, default: 0 }
     },
-    riderVerified: { type: Boolean, default: false }, 
-    isOnline: { type: Boolean, default: false },      
-    isAvailable: { type: Boolean, default: false },    
+    riderVerified: { type: Boolean, default: false },
+    isOnline: { type: Boolean, default: false },
+    isAvailable: { type: Boolean, default: false },
     breakMode: { type: Boolean, default: false },
     breakReason: { type: String },
     sosActive: { type: Boolean, default: false },
     sosLastAt: { type: Date },
-    sosLocation: { type: { type: String, default: 'Point' }, coordinates: { type: [Number], default: [0,0] } },
-    verificationStatus: { 
-        type: String, 
-        enum: ['pending', 'approved', 'rejected', 'suspended', 'verified'], 
-        default: 'pending' 
+    sosLocation: { type: { type: String, default: 'Point' }, coordinates: { type: [Number], default: [0, 0] } },
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'suspended', 'verified'],
+        default: 'pending'
     },
     rejectionReason: { type: String },
     rejectionDate: { type: Date },
     rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     currentLocation: {
         type: { type: String, default: 'Point' },
-        coordinates: { type: [Number], default: [77.0658, 28.2888], index: '2dsphere' } 
+        coordinates: { type: [Number], default: [77.0658, 28.2888], index: '2dsphere' }
     },
     lastLocationUpdateAt: { type: Date },
-    rating: { 
+    rating: {
         average: { type: Number, default: 4.8, min: 0, max: 5 },
         count: { type: Number, default: 0 },
         breakdown: {
@@ -104,13 +104,13 @@ const riderSchema = new mongoose.Schema({
 }, { timestamps: true, strict: false });
 
 riderSchema.pre("save", async function (next) {
-  if (!this.riderId || !/^RDR\d+/i.test(this.riderId)) {
-    try {
-      const { getNextRiderId } = require("../utils/idGenerator");
-      this.riderId = await getNextRiderId();
-    } catch (_) {}
-  }
-  if (typeof next === "function") next();
+    if (!this.riderId || !/^RDR\d+/i.test(this.riderId)) {
+        try {
+            const { getNextRiderId } = require("../utils/idGenerator");
+            this.riderId = await getNextRiderId();
+        } catch (_) { }
+    }
+    if (typeof next === "function") next();
 });
 
 riderSchema.index({ "currentLocation": "2dsphere" });

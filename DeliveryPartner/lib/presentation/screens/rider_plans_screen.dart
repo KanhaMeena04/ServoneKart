@@ -480,3 +480,4 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
     );
   }
 }
+

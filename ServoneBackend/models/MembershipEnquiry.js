@@ -62,3 +62,4 @@ const membershipEnquirySchema = new mongoose.Schema(
 membershipEnquirySchema.index({ type: 1, createdAt: -1 });
 
 module.exports = mongoose.model('MembershipEnquiry', membershipEnquirySchema);
+

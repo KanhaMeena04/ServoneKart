@@ -83,3 +83,4 @@ const membershipPlanSchema = new mongoose.Schema(
 membershipPlanSchema.index({ targetAudience: 1, isActive: 1, sortOrder: 1 });
 
 module.exports = mongoose.model('MembershipPlan', membershipPlanSchema);
+

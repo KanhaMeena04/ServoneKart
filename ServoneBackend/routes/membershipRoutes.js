@@ -46,3 +46,4 @@ router.get('/admin/enquiries', adminGetEnquiries);
 router.put('/admin/enquiries/:id/status', adminUpdateEnquiryStatus);
 
 module.exports = router;
+
