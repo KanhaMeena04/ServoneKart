@@ -43,6 +43,31 @@ const membershipEnquirySchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    planId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MembershipPlan',
+    },
+    planName: {
+      type: String,
+      default: '',
+    },
+    planPrice: {
+      type: Number,
+      default: 0,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'free', 'failed'],
+      default: 'free',
+    },
+    paymentMethod: {
+      type: String,
+      default: 'None',
+    },
+    transactionId: {
+      type: String,
+      default: '',
+    },
     status: {
       type: String,
       enum: ['pending', 'contacted', 'approved', 'rejected'],

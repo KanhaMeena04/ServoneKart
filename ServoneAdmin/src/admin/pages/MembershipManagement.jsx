@@ -413,16 +413,31 @@ export default function MembershipManagement() {
                       <Typography variant="h6" sx={{ fontWeight: 800, color: '#07162E' }}>
                         {plan.name}
                       </Typography>
-                      <Chip
-                        label={plan.badge || 'PREMIER'}
-                        size="small"
-                        sx={{
-                          bgcolor: plan.badgeColor || '#0B3EDB',
-                          color: '#fff',
-                          fontWeight: 800,
-                          fontSize: 10,
-                        }}
-                      />
+                      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                        {plan.price === 0 ? (
+                          <Chip
+                            label="BASE FREE"
+                            size="small"
+                            sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 800, fontSize: 10 }}
+                          />
+                        ) : (
+                          <Chip
+                            label="PAID PLAN"
+                            size="small"
+                            sx={{ bgcolor: '#ecfdf5', color: '#059669', fontWeight: 800, fontSize: 10 }}
+                          />
+                        )}
+                        <Chip
+                          label={plan.badge || 'PREMIER'}
+                          size="small"
+                          sx={{
+                            bgcolor: plan.badgeColor || '#0B3EDB',
+                            color: '#fff',
+                            fontWeight: 800,
+                            fontSize: 10,
+                          }}
+                        />
+                      </Box>
                     </Box>
 
                     {plan.subtitle && (
@@ -621,6 +636,7 @@ export default function MembershipManagement() {
                   <TableCell sx={{ fontWeight: 800 }}>Type</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Name / Store</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Mobile</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Plan & Payment</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Area / Sector</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Vehicle / Live Items</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Applied On</TableCell>
@@ -647,6 +663,40 @@ export default function MembershipManagement() {
                       {enq.fullName || enq.storeName || enq.ownerName || 'Applicant'}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{enq.mobile}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontSize: 12 }}>
+                          {enq.planName || 'Base Free'}
+                        </Typography>
+                        <Chip
+                          label={
+                            enq.paymentStatus === 'paid'
+                              ? `PAID (₹${enq.planPrice})`
+                              : enq.paymentStatus === 'pending'
+                              ? `PENDING (₹${enq.planPrice})`
+                              : 'FREE'
+                          }
+                          size="small"
+                          sx={{
+                            fontWeight: 800,
+                            fontSize: 9,
+                            width: 'fit-content',
+                            bgcolor:
+                              enq.paymentStatus === 'paid'
+                                ? '#ecfdf5'
+                                : enq.paymentStatus === 'pending'
+                                ? '#fffbeb'
+                                : '#f1f5f9',
+                            color:
+                              enq.paymentStatus === 'paid'
+                                ? '#059669'
+                                : enq.paymentStatus === 'pending'
+                                ? '#b45309'
+                                : '#475569',
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
                     <TableCell>{enq.area || '—'}</TableCell>
                     <TableCell>{enq.vehicleType || enq.liveItems || '—'}</TableCell>
                     <TableCell sx={{ fontSize: 12 }}>

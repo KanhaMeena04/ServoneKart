@@ -65,6 +65,10 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
           setState(() {
             _activeSubscription = data['subscription'] as Map<String, dynamic>?;
           });
+        } else {
+          setState(() {
+            _activeSubscription = null;
+          });
         }
       }
     } catch (e) {
@@ -72,7 +76,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
     }
   }
 
-  Future<void> _subscribeToPlan(Map<String, dynamic> plan) async {
+  Future<void> _subscribeToPlan(Map<String, dynamic> plan, String paymentMethod) async {
     setState(() => _isSubscribing = true);
     try {
       final token = await AuthService.getToken();
@@ -82,26 +86,22 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
+      final txnId = 'TXN-RIDER-${DateTime.now().millisecondsSinceEpoch}';
       final body = jsonEncode({
         'planId': plan['_id'],
         'targetAudience': 'rider',
-        'paymentMethod': 'Online',
+        'paymentMethod': paymentMethod,
+        'transactionId': txnId,
         'userId': user?['_id'] ?? user?['id'],
         'userName': user?['name'] ?? 'Rider Partner',
-        'userPhone': user?['phone'] ?? '',
+        'userPhone': user?['phone'] ?? user?['mobile'] ?? '',
       });
 
       final res = await http.post(url, headers: headers, body: body).timeout(const Duration(seconds: 12));
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data['message'] ?? 'Successfully activated Pro Rider Pass!'),
-              backgroundColor: const Color(0xFF0B3EDB),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          _showCelebrationDialog(plan, txnId);
           _fetchMySubscription();
         }
       } else {
@@ -121,6 +121,264 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
     } finally {
       if (mounted) setState(() => _isSubscribing = false);
     }
+  }
+
+  void _showCelebrationDialog(Map<String, dynamic> plan, String txnId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.two_wheeler, color: Color(0xFF0B3EDB), size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${plan['name']} Activated!',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF07162E),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your Pro Rider status is live! Enjoy upfront payouts & priority dispatch.',
+              style: GoogleFonts.poppins(fontSize: 12.5, color: const Color(0xFF64748B), height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B3EDB),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'BADGE: ${plan['badge'] ?? 'PRO RIDER'} ✦',
+                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ref: $txnId',
+              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontFamily: 'monospace'),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B3EDB),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                ),
+                child: Text('Start Riding', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentBottomSheet(Map<String, dynamic> plan) {
+    String selectedMethod = 'UPI';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plan['name'] ?? 'Pro Pass',
+                        style: GoogleFonts.poppins(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF07162E),
+                        ),
+                      ),
+                      Text(
+                        'Rider Partner · ${plan['billingCycle'] ?? 'day'}',
+                        style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '₹${plan['price']}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF0B3EDB),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              Text(
+                'Select Payment Option',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF07162E)),
+              ),
+              const SizedBox(height: 10),
+
+              // UPI Option
+              _paymentOptionTile(
+                icon: Icons.qr_code_2,
+                title: 'UPI / Google Pay / PhonePe',
+                subtitle: 'Instant deduction & pass activation',
+                isSelected: selectedMethod == 'UPI',
+                onTap: () => setSheetState(() => selectedMethod = 'UPI'),
+              ),
+              // Rider Wallet
+              _paymentOptionTile(
+                icon: Icons.account_balance_wallet,
+                title: 'Rider Payout Wallet',
+                subtitle: 'Deduct from accumulated delivery earnings',
+                isSelected: selectedMethod == 'Wallet',
+                onTap: () => setSheetState(() => selectedMethod = 'Wallet'),
+              ),
+              // Card Option
+              _paymentOptionTile(
+                icon: Icons.credit_card,
+                title: 'Debit / Credit Card',
+                subtitle: 'Visa, MasterCard, RuPay',
+                isSelected: selectedMethod == 'Card',
+                onTap: () => setSheetState(() => selectedMethod = 'Card'),
+              ),
+              // Instant Test Pay
+              _paymentOptionTile(
+                icon: Icons.flash_on,
+                title: 'Instant Test Pass (Demo)',
+                subtitle: 'One-click activation for test rides',
+                isSelected: selectedMethod == 'TestPay',
+                onTap: () => setSheetState(() => selectedMethod = 'TestPay'),
+              ),
+
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _subscribeToPlan(plan, selectedMethod);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0B3EDB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Pay ₹${plan['price']} & Activate Pass',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paymentOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0B3EDB).withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade600, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? const Color(0xFF07162E) : Colors.grey.shade800,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -159,7 +417,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                         BoxShadow(
                           color: const Color(0xFF07162E).withValues(alpha: 0.3),
                           blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -190,7 +448,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
 
                   const SizedBox(height: 18),
 
-                  // ── Active Subscription Badge Card (If Active) ──
+                  // ── Active Subscription Badge Card ──
                   if (_activeSubscription != null) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -260,11 +518,38 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                       ),
                     ),
                     const SizedBox(height: 18),
+                  ] else ...[
+                    // Default Base Free Rider Status Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Color(0xFF059669), size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Current Plan: Base Free (Deliver freely anytime without upfront fee)',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
                   ],
 
                   // ── Rider Plans Grid ──
                   ..._plans.map((p) {
-                    final isPro = p['price'] > 0;
+                    final isPro = (p['price'] as num? ?? 0) > 0;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(20),
@@ -330,7 +615,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                                   color: const Color(0xFF07162E),
                                 ),
                               ),
-                              if (p['price'] > 0) ...[
+                              if ((p['price'] as num? ?? 0) > 0) ...[
                                 const SizedBox(width: 4),
                                 Text(
                                   'a ${p['billingCycle']}',
@@ -393,7 +678,20 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                             width: double.infinity,
                             height: 46,
                             child: ElevatedButton(
-                              onPressed: _isSubscribing ? null : () => _subscribeToPlan(p as Map<String, dynamic>),
+                              onPressed: _isSubscribing
+                                  ? null
+                                  : () {
+                                      if (isPro) {
+                                        _showPaymentBottomSheet(p as Map<String, dynamic>);
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Base Free is already your default plan. Ride freely!'),
+                                            backgroundColor: Color(0xFF0B3EDB),
+                                          ),
+                                        );
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: isPro ? const Color(0xFF0B3EDB) : const Color(0xFF07162E),
                                 foregroundColor: Colors.white,
@@ -401,7 +699,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                                 elevation: 0,
                               ),
                               child: Text(
-                                isPro ? 'Activate ${p['name']}' : 'Selected by Default',
+                                isPro ? 'Activate ${p['name']} (Pay ₹${p['price']})' : 'Base Free (Default Active)',
                                 style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 13),
                               ),
                             ),
@@ -480,4 +778,3 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
     );
   }
 }
-

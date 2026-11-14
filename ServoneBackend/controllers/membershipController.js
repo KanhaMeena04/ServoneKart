@@ -9,6 +9,38 @@ const Restaurant = require('../models/Restaurant');
 const DEFAULT_PLANS = [
   // ================= 1. USER / CUSTOMER PREMIER PLANS =================
   {
+    name: 'Base (Free)',
+    targetAudience: 'user',
+    price: 0,
+    originalPrice: 0,
+    billingCycle: 'month',
+    tag: 'BASE FREE',
+    badge: 'STANDARD',
+    badgeColor: '#64748B',
+    isDefault: true,
+    subtitle: 'Order fresh groceries anytime with standard delivery.',
+    description: 'No subscription required. Shop thousands of grocery, fresh fruits & daily essentials freely.',
+    features: [
+      'Standard 15-20 min hyperlocal delivery',
+      'Real-time live order & rider tracking',
+      'Pay via UPI, Cards, NetBanking or POD',
+      'Standard delivery fee & surge pricing',
+      'Standard customer support queue',
+    ],
+    perks: [
+      {
+        title: 'Always Free',
+        description: 'Order freely as many times as you like without any monthly membership fee.',
+      },
+      {
+        title: 'Full Store Access',
+        description: 'Access all local supermarket aisles, stores and daily offers.',
+      },
+    ],
+    isActive: true,
+    sortOrder: 0,
+  },
+  {
     name: 'Tricelyn Premier Monthly',
     targetAudience: 'user',
     price: 99,
@@ -17,6 +49,7 @@ const DEFAULT_PLANS = [
     tag: 'PREMIER',
     badge: 'PREMIER',
     badgeColor: '#0B3EDB',
+    isDefault: false,
     subtitle: 'Real perks, no free-delivery tricks.',
     description: 'Priority delivery, zero surge fees, COD access, and VIP freshness guarantee.',
     features: [
@@ -39,37 +72,13 @@ const DEFAULT_PLANS = [
         title: 'Priority is fair',
         description: 'Priority applies when riders are short, and non-members never wait beyond a set limit.',
       },
-    ],
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    name: 'Tricelyn Premier Quarterly',
-    targetAudience: 'user',
-    price: 249,
-    originalPrice: 399,
-    billingCycle: 'quarter',
-    tag: 'POPULAR',
-    badge: 'PREMIER PLUS',
-    badgeColor: '#0A2B6B',
-    subtitle: '3 Months of peak savings & VIP delivery.',
-    description: 'Save 20% compared to monthly. Includes extra cashback & instant re-delivery.',
-    features: [
-      'All monthly Premier perks included',
-      'Extra 5% instant cashback on all grocery orders',
-      'Free express delivery on orders above ₹149',
-      'Dedicated VIP 24/7 priority customer helpline',
-      'Instant zero-question re-delivery on quality issues',
-      'Exclusive seasonal fest & Diwali gift boxes',
-    ],
-    perks: [
       {
-        title: 'Guaranteed Slot Booking',
-        description: 'Reserve prime 6 AM - 8 AM early morning milk & vegetable slots 24 hours in advance.',
+        title: 'Instant Freshness Guarantee',
+        description: 'Not satisfied with produce freshness? One-tap instant refund or re-delivery straight from your order details screen. No friction.',
       },
     ],
     isActive: true,
-    sortOrder: 2,
+    sortOrder: 1,
   },
   {
     name: 'Tricelyn Premier Annual',
@@ -77,9 +86,10 @@ const DEFAULT_PLANS = [
     price: 799,
     originalPrice: 1199,
     billingCycle: 'year',
-    tag: 'BEST VALUE',
+    tag: 'BEST VALUE · VIP',
     badge: 'PREMIER VIP',
     badgeColor: '#07162E',
+    isDefault: false,
     subtitle: 'Ultimate peace of mind for the entire year.',
     description: 'Best rate at just ₹66/month. Unlimited zero-surge deliveries 365 days a year.',
     features: [
@@ -89,15 +99,20 @@ const DEFAULT_PLANS = [
       'Dedicated personal concierge for bulk and rare orders',
       'Free surprise gourmet tasting box every quarter',
       'Highest priority dispatch on rainy and high-demand days',
+      'Cash on delivery on all eligible orders',
     ],
     perks: [
       {
-        title: 'Concierge Support',
-        description: 'Direct phone line to executive support team for instantaneous order resolution.',
+        title: 'Concierge VIP Support',
+        description: 'Direct priority phone line to senior support team for instantaneous resolution.',
+      },
+      {
+        title: 'Guaranteed 6 AM Slots',
+        description: 'Reserve prime 6 AM - 8 AM early morning milk & produce slots 24 hours in advance.',
       },
     ],
     isActive: true,
-    sortOrder: 3,
+    sortOrder: 2,
   },
 
   // ================= 2. RIDER PARTNER PLANS =================
@@ -110,6 +125,7 @@ const DEFAULT_PLANS = [
     tag: 'BASE',
     badge: 'STANDARD RIDER',
     badgeColor: '#0A2B6B',
+    isDefault: true,
     subtitle: 'Start earning immediately with zero upfront fee.',
     description: 'Short rides near your station, clear pay shown after delivery.',
     features: [
@@ -127,7 +143,7 @@ const DEFAULT_PLANS = [
     ],
     commissionRate: '₹9 cut per order',
     isActive: true,
-    sortOrder: 1,
+    sortOrder: 0,
   },
   {
     name: 'Pro Day Pass',
@@ -138,6 +154,7 @@ const DEFAULT_PLANS = [
     tag: 'PRO, DAY PASS',
     badge: 'PRO RIDER',
     badgeColor: '#0B3EDB',
+    isDefault: false,
     subtitle: 'Max earnings on busy days with high order density.',
     description: 'Plus ₹4 to ₹9 per order, set by basket size. See your payout before you accept.',
     features: [
@@ -155,7 +172,7 @@ const DEFAULT_PLANS = [
     ],
     commissionRate: '+₹4 to ₹9 bonus/order',
     isActive: true,
-    sortOrder: 2,
+    sortOrder: 1,
   },
   {
     name: 'Pro Monthly Super Rider',
@@ -166,6 +183,7 @@ const DEFAULT_PLANS = [
     tag: 'MAX EARNINGS',
     badge: 'ELITE RIDER',
     badgeColor: '#07162E',
+    isDefault: false,
     subtitle: 'Full month pass for dedicated delivery professionals.',
     description: 'Save 50% vs daily pass. Maximum priority on high-ticket supermarket orders.',
     features: [
@@ -184,10 +202,39 @@ const DEFAULT_PLANS = [
     ],
     commissionRate: 'Lowest platform commission (flat 4%)',
     isActive: true,
-    sortOrder: 3,
+    sortOrder: 2,
   },
 
   // ================= 3. VENDOR / SUPERMARKET PLANS =================
+  {
+    name: 'Base (Free)',
+    targetAudience: 'vendor',
+    price: 0,
+    originalPrice: 0,
+    billingCycle: 'one-time',
+    tag: 'BASE LISTING',
+    badge: 'BASIC STORE',
+    badgeColor: '#64748B',
+    isDefault: true,
+    subtitle: 'List your supermarket with zero upfront fee.',
+    description: 'Start receiving orders online with standard commission and delivery fleet.',
+    features: [
+      'Zero upfront onboarding fee',
+      'Standard 8% to 10% category commission',
+      'Store profile & catalog listed on Tricelyn app',
+      'Tricelyn delivery fleet handles pickups in 10-15 mins',
+      'Weekly bank settlement',
+    ],
+    perks: [
+      {
+        title: 'Zero Risk',
+        description: 'Join without any upfront capital and start getting online customer orders.',
+      },
+    ],
+    commissionRate: '8% to 10% commission',
+    isActive: true,
+    sortOrder: 0,
+  },
   {
     name: 'Supermarket Launch (< 3,000 items)',
     targetAudience: 'vendor',
@@ -197,6 +244,7 @@ const DEFAULT_PLANS = [
     tag: 'STARTER',
     badge: 'VERIFIED MERCHANT',
     badgeColor: '#0A2B6B',
+    isDefault: false,
     subtitle: 'Onboarding & complete catalogue digitization under 3,000 items.',
     description: 'Reach customers nearby, keep your name & rating in front of them.',
     features: [
@@ -225,6 +273,7 @@ const DEFAULT_PLANS = [
     tag: 'RECOMMENDED',
     badge: 'SUPERMARKET PARTNER',
     badgeColor: '#0B3EDB',
+    isDefault: false,
     subtitle: 'Full hypermarket digitization with 3,000+ live items & barcode sync.',
     description: 'Complete catalogue with barcodes, prices & shelf codes. Priority store ranking.',
     features: [
@@ -245,43 +294,20 @@ const DEFAULT_PLANS = [
     isActive: true,
     sortOrder: 2,
   },
-  {
-    name: 'Merchant Growth Club',
-    targetAudience: 'vendor',
-    price: 2999,
-    originalPrice: 4999,
-    billingCycle: 'month',
-    tag: 'HIGH GROWTH',
-    badge: 'PREMIER STORE',
-    badgeColor: '#07162E',
-    subtitle: 'Marketing accelerator to dominate your 5km hyperlocal radius.',
-    description: 'Sponsored visibility, locality push notifications, and 0% commission on pickup.',
-    features: [
-      'Top sponsored banner slot in your neighborhood',
-      '2x monthly push notification broadcast to nearby customers',
-      '0% commission on all customer self-pickup orders',
-      'Advanced basket analytics and trending grocery insights',
-      'Dedicated dispute resolution support manager',
-    ],
-    perks: [
-      {
-        title: 'Marketing Power',
-        description: 'Keep your store top-of-mind for thousands of households in your postal code.',
-      },
-    ],
-    commissionRate: '0% on self-pickup / standard online',
-    isActive: true,
-    sortOrder: 3,
-  },
 ];
 
-// Helper to seed plans if empty
+// Helper to seed plans if empty or missing default plans
 const seedDefaultPlansIfEmpty = async () => {
   try {
-    const count = await MembershipPlan.countDocuments();
-    if (count === 0) {
-      await MembershipPlan.insertMany(DEFAULT_PLANS);
-      console.log('✅ Successfully seeded 9 default membership plans for User, Rider, Vendor.');
+    for (const plan of DEFAULT_PLANS) {
+      const exists = await MembershipPlan.findOne({
+        name: plan.name,
+        targetAudience: plan.targetAudience,
+      });
+      if (!exists) {
+        await MembershipPlan.create(plan);
+        console.log(`✅ Seeded membership plan: ${plan.name} (${plan.targetAudience})`);
+      }
     }
   } catch (err) {
     console.error('Error seeding membership plans:', err.message);
@@ -440,13 +466,23 @@ exports.subscribePlan = async (req, res) => {
 // 3. GET /api/memberships/my-subscription
 exports.getMySubscription = async (req, res) => {
   try {
+    await seedDefaultPlansIfEmpty();
     const userId = req.user?._id || req.query.userId;
     const targetAudience = req.query.targetAudience || 'user';
+
+    // Find the default Base Free plan for this audience
+    const basePlan = (await MembershipPlan.findOne({
+      targetAudience,
+      price: 0,
+      isActive: true,
+    })) || (await MembershipPlan.findOne({ targetAudience, isActive: true }).sort({ sortOrder: 1, price: 1 }));
 
     if (!userId) {
       return res.status(200).json({
         success: true,
         hasActiveSubscription: false,
+        isBasePlan: true,
+        basePlan,
         subscription: null,
         badge: null,
       });
@@ -464,6 +500,8 @@ exports.getMySubscription = async (req, res) => {
       return res.status(200).json({
         success: true,
         hasActiveSubscription: false,
+        isBasePlan: true,
+        basePlan,
         subscription: null,
         badge: null,
       });
@@ -478,6 +516,8 @@ exports.getMySubscription = async (req, res) => {
         success: true,
         hasActiveSubscription: false,
         isExpired: true,
+        isBasePlan: true,
+        basePlan,
         subscription,
         badge: null,
       });
@@ -486,9 +526,11 @@ exports.getMySubscription = async (req, res) => {
     return res.status(200).json({
       success: true,
       hasActiveSubscription: true,
+      isBasePlan: false,
       subscription,
+      basePlan,
       badge: {
-        text: subscription.badgeText || 'PREMIER',
+        text: subscription.badgeText || (targetAudience === 'rider' ? 'PRO RIDER' : targetAudience === 'vendor' ? 'SUPERMARKET PARTNER' : 'PREMIER'),
         color: subscription.planId?.badgeColor || '#0B3EDB',
         planName: subscription.planName,
         expiresAt: subscription.endDate,
@@ -537,14 +579,8 @@ exports.checkBadge = async (req, res) => {
 // 5. POST /api/memberships/enquiry (For "Apply to ride" and "Apply to join supermarket")
 exports.submitEnquiry = async (req, res) => {
   try {
-    const { type, fullName, storeName, ownerName, mobile, vehicleType, area, liveItems, notes } = req.body;
-
-    if (!mobile) {
-      return res.status(400).json({ success: false, message: 'Mobile number is required' });
-    }
-
-    const enquiry = await MembershipEnquiry.create({
-      type: type || 'rider',
+    const {
+      type,
       fullName,
       storeName,
       ownerName,
@@ -553,11 +589,42 @@ exports.submitEnquiry = async (req, res) => {
       area,
       liveItems,
       notes,
+      planId,
+      planName,
+      planPrice,
+      paymentMethod,
+      transactionId,
+      isPaid,
+    } = req.body;
+
+    if (!mobile) {
+      return res.status(400).json({ success: false, message: 'Mobile number is required' });
+    }
+
+    const priceNum = Number(planPrice || 0);
+    const enquiry = await MembershipEnquiry.create({
+      type: type || 'rider',
+      fullName: fullName || ownerName || '',
+      storeName: storeName || '',
+      ownerName: ownerName || fullName || '',
+      mobile,
+      vehicleType: vehicleType || '',
+      area: area || '',
+      liveItems: liveItems || '',
+      notes: notes || '',
+      planId: planId || null,
+      planName: planName || '',
+      planPrice: priceNum,
+      paymentStatus: isPaid ? 'paid' : priceNum > 0 ? 'pending' : 'free',
+      paymentMethod: paymentMethod || (isPaid ? 'Online' : 'None'),
+      transactionId: transactionId || (isPaid ? `TXN-APP-${Date.now()}` : ''),
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Application submitted successfully! Our onboarding team will contact you shortly.',
+      message: isPaid
+        ? `Application and payment of ₹${priceNum} received successfully! Our onboarding team will verify and activate your account.`
+        : 'Application submitted successfully! Our onboarding team will contact you shortly.',
       data: enquiry,
     });
   } catch (error) {
@@ -603,6 +670,7 @@ exports.adminCreatePlan = async (req, res) => {
       features,
       perks,
       commissionRate,
+      isDefault,
       isActive,
       sortOrder,
     } = req.body;
@@ -625,6 +693,7 @@ exports.adminCreatePlan = async (req, res) => {
       features: Array.isArray(features) ? features : typeof features === 'string' ? features.split('\n').filter(Boolean) : [],
       perks: Array.isArray(perks) ? perks : [],
       commissionRate: commissionRate || '',
+      isDefault: Boolean(isDefault || Number(price) === 0),
       isActive: isActive !== undefined ? isActive : true,
       sortOrder: Number(sortOrder || 0),
     });

@@ -47,7 +47,12 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
           setState(() {
             _plans = list;
             if (list.isNotEmpty && _selectedPlan == null) {
-              _selectedPlan = list[0] as Map<String, dynamic>;
+              // Default to the first paid plan or first plan
+              final defaultPaid = list.firstWhere(
+                (p) => (p['price'] as num? ?? 0) > 0,
+                orElse: () => list[0],
+              );
+              _selectedPlan = defaultPaid as Map<String, dynamic>;
             }
           });
         }
@@ -72,6 +77,10 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
           setState(() {
             _activeSubscription = data['subscription'] as Map<String, dynamic>?;
           });
+        } else {
+          setState(() {
+            _activeSubscription = null;
+          });
         }
       }
     } catch (e) {
@@ -79,32 +88,32 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
     }
   }
 
-  Future<void> _subscribeToPlan(Map<String, dynamic> plan) async {
+  Future<void> _subscribeToPlan(Map<String, dynamic> plan, String paymentMethod) async {
     setState(() => _isSubscribing = true);
     try {
       final token = await AuthService.getToken();
+      final user = await AuthService.getUser();
       final url = Uri.parse('${AppConstants.baseUrl}/memberships/subscribe');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
+      final txnId = 'TXN-APP-${DateTime.now().millisecondsSinceEpoch}';
       final body = jsonEncode({
         'planId': plan['_id'],
         'targetAudience': 'user',
-        'paymentMethod': 'Online',
+        'paymentMethod': paymentMethod,
+        'transactionId': txnId,
+        'userId': user?['_id'] ?? user?['id'],
+        'userName': user?['name'] ?? 'Customer',
+        'userPhone': user?['phone'] ?? user?['mobile'] ?? '',
       });
 
       final res = await http.post(url, headers: headers, body: body).timeout(const Duration(seconds: 12));
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data['message'] ?? 'Successfully subscribed to Premier!'),
-              backgroundColor: const Color(0xFF0B3EDB),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          _showCelebrationDialog(plan, txnId);
           _fetchMySubscription();
         }
       } else {
@@ -131,6 +140,264 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
     }
   }
 
+  void _showCelebrationDialog(Map<String, dynamic> plan, String txnId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.workspace_premium, color: Color(0xFF0B3EDB), size: 40),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Welcome to Premier!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF07162E),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your ${plan['name']} is now active with all VIP perks & zero surge fees.',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF07162E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'BADGE: ${plan['badge'] ?? 'PREMIER'} ✦',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ref: $txnId',
+              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontFamily: 'monospace'),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B3EDB),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                ),
+                child: const Text('Start Shopping', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentBottomSheet(Map<String, dynamic> plan) {
+    String selectedMethod = 'UPI';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plan['name'] ?? 'Premier Plan',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF07162E),
+                        ),
+                      ),
+                      Text(
+                        'Billing: ${plan['billingCycle'] ?? 'month'}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '₹${plan['price']}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0B3EDB),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              const Text(
+                'Select Payment Method',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF07162E)),
+              ),
+              const SizedBox(height: 10),
+
+              // UPI Option
+              _paymentOptionTile(
+                icon: Icons.qr_code_2,
+                title: 'UPI / QR Code',
+                subtitle: 'Google Pay, PhonePe, Paytm, BHIM',
+                isSelected: selectedMethod == 'UPI',
+                onTap: () => setSheetState(() => selectedMethod = 'UPI'),
+              ),
+              // Card Option
+              _paymentOptionTile(
+                icon: Icons.credit_card,
+                title: 'Credit / Debit Card',
+                subtitle: 'Visa, MasterCard, RuPay',
+                isSelected: selectedMethod == 'Card',
+                onTap: () => setSheetState(() => selectedMethod = 'Card'),
+              ),
+              // Net Banking
+              _paymentOptionTile(
+                icon: Icons.account_balance,
+                title: 'Net Banking',
+                subtitle: 'All major Indian banks supported',
+                isSelected: selectedMethod == 'NetBanking',
+                onTap: () => setSheetState(() => selectedMethod = 'NetBanking'),
+              ),
+              // Instant Test Pay Option
+              _paymentOptionTile(
+                icon: Icons.flash_on,
+                title: 'Instant One-Tap Test Pay',
+                subtitle: 'Zero friction instant verification demo',
+                isSelected: selectedMethod == 'TestPay',
+                onTap: () => setSheetState(() => selectedMethod = 'TestPay'),
+              ),
+
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _subscribeToPlan(plan, selectedMethod);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0B3EDB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Pay ₹${plan['price']} & Activate Now',
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paymentOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0B3EDB).withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade600, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? const Color(0xFF07162E) : Colors.grey.shade800,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,6 +416,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -173,7 +441,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── Active Subscription Banner (If Active) ──
+                  // ── Active Subscription Banner ──
                   if (_activeSubscription != null) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -250,6 +518,29 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                  ] else ...[
+                    // Default Base Free Active Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Color(0xFF059669), size: 18),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Current Plan: Base Free (Order freely anytime without subscription fees)',
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
 
                   // ── Plan Selector Chips ──
@@ -259,12 +550,15 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                       child: Row(
                         children: _plans.map((p) {
                           final isSelected = _selectedPlan?['_id'] == p['_id'];
+                          final price = p['price'] as num? ?? 0;
+                          final labelText = price == 0 ? 'Base Free · ₹0' : '${p['name']} · ₹$price';
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
-                              label: Text('${p['name']} · ₹${p['price']}'),
+                              label: Text(labelText),
                               selected: isSelected,
-                              selectedColor: AppColors.primary,
+                              selectedColor: const Color(0xFF0B3EDB),
+                              backgroundColor: Colors.white,
                               labelStyle: TextStyle(
                                 color: isSelected ? Colors.white : const Color(0xFF334155),
                                 fontWeight: FontWeight.bold,
@@ -279,7 +573,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                     const SizedBox(height: 16),
                   ],
 
-                  // ── Main Premier Plan Card (Matching Screenshot 1) ──
+                  // ── Main Premier Plan Card ──
                   if (_selectedPlan != null) ...[
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -384,7 +678,21 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                             width: double.infinity,
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: _isSubscribing ? null : () => _subscribeToPlan(_selectedPlan!),
+                              onPressed: _isSubscribing
+                                  ? null
+                                  : () {
+                                      final price = _selectedPlan?['price'] as num? ?? 0;
+                                      if (price == 0) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Base Free is already active by default. You can order freely!'),
+                                            backgroundColor: Color(0xFF0B3EDB),
+                                          ),
+                                        );
+                                      } else {
+                                        _showPaymentBottomSheet(_selectedPlan!);
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0B3EDB),
                                 foregroundColor: Colors.white,
@@ -398,7 +706,11 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                     )
                                   : Text(
-                                      _activeSubscription != null ? 'Renew Premier' : 'Choose Premier',
+                                      (_selectedPlan?['price'] as num? ?? 0) == 0
+                                          ? 'Base Free (Default Active)'
+                                          : _activeSubscription != null
+                                              ? 'Renew Premier (Pay ₹${_selectedPlan?['price']})'
+                                              : 'Choose Premier (Pay ₹${_selectedPlan?['price']})',
                                       style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                                     ),
                             ),
@@ -477,6 +789,46 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                     ),
                   ),
 
+                  const SizedBox(height: 12),
+
+                  // Freshness Guarantee Gradient Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF07162E), Color(0xFF0A2B6B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Instant Freshness Guarantee',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Not satisfied with produce freshness? One-tap instant refund or re-delivery straight from your order details screen. No friction.',
+                          style: TextStyle(fontSize: 12.5, color: Color(0xFFE0E7FF), height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -484,4 +836,3 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
     );
   }
 }
-

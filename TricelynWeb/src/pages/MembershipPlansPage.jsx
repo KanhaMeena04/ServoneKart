@@ -66,6 +66,7 @@ export default function MembershipPlansPage() {
     vehicleType: '',
     area: '',
   });
+  const [riderPlanChoice, setRiderPlanChoice] = useState('free'); // 'free' | 'pro'
   const [riderSubmitting, setRiderSubmitting] = useState(false);
   const [riderSubmitted, setRiderSubmitted] = useState(false);
 
@@ -76,8 +77,17 @@ export default function MembershipPlansPage() {
     area: '',
     liveItems: '',
   });
+  const [vendorPlanChoice, setVendorPlanChoice] = useState('free'); // 'free' | 'starter' | 'pro'
   const [vendorSubmitting, setVendorSubmitting] = useState(false);
   const [vendorSubmitted, setVendorSubmitted] = useState(false);
+
+  // Payment method state
+  const [selectedUpiApp, setSelectedUpiApp] = useState('gpay');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [selectedBank, setSelectedBank] = useState('HDFC Bank');
+  const [lastTxnId, setLastTxnId] = useState('');
 
   const applyFormRef = useRef(null);
 
@@ -124,7 +134,7 @@ export default function MembershipPlansPage() {
 
   // Handle plan purchase click
   const handleChoosePlan = (plan) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !plan.isApplication) {
       setIsAuthModalOpen(true);
       return;
     }
@@ -133,34 +143,55 @@ export default function MembershipPlansPage() {
     setIsCheckoutModalOpen(true);
   };
 
-  // Execute Subscription
+  // Execute Subscription / Application Payment
   const handleConfirmSubscribe = async () => {
     if (!planToSubscribe) return;
     try {
       setSubscribing(true);
-      const res = await membershipService.subscribePlan({
-        planId: planToSubscribe._id,
-        targetAudience: planToSubscribe.targetAudience,
-        paymentMethod,
-        userName: user?.name || 'Customer',
-        userPhone: user?.phone || user?.mobile || '',
-      });
+      const generatedTxn = `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      setLastTxnId(generatedTxn);
 
-      if (res.data?.success) {
+      if (planToSubscribe.isApplication) {
+        // Application payment flow
+        await membershipService.submitEnquiry({
+          ...planToSubscribe.applicantData,
+          planName: planToSubscribe.name,
+          planPrice: planToSubscribe.price,
+          paymentMethod,
+          transactionId: generatedTxn,
+          isPaid: true,
+        });
+
+        if (planToSubscribe.targetAudience === 'rider') setRiderSubmitted(true);
+        if (planToSubscribe.targetAudience === 'vendor') setVendorSubmitted(true);
         setSubscriptionSuccess(true);
-        setMySubscription(res.data.data);
+      } else {
+        // Direct plan subscription flow
+        const res = await membershipService.subscribePlan({
+          planId: planToSubscribe._id,
+          targetAudience: planToSubscribe.targetAudience,
+          paymentMethod,
+          transactionId: generatedTxn,
+          userName: user?.name || 'Customer',
+          userPhone: user?.phone || user?.mobile || '',
+        });
 
-        // Update local auth context with new membership badge
-        if (updateUserData && res.data.badge) {
-          updateUserData({
-            membershipBadge: res.data.badge.text,
-            isPremier: true,
-          });
+        if (res.data?.success) {
+          setSubscriptionSuccess(true);
+          setMySubscription(res.data.data);
+
+          // Update local auth context with new membership badge
+          if (updateUserData && res.data.badge) {
+            updateUserData({
+              membershipBadge: res.data.badge.text,
+              isPremier: true,
+            });
+          }
         }
       }
     } catch (err) {
       console.error('Subscription error:', err);
-      alert(err.response?.data?.message || 'Failed to activate subscription. Please try again.');
+      alert(err.response?.data?.message || 'Failed to activate. Please try again.');
     } finally {
       setSubscribing(false);
     }
@@ -173,11 +204,32 @@ export default function MembershipPlansPage() {
       alert('Please enter your mobile number');
       return;
     }
+
+    if (riderPlanChoice === 'pro') {
+      const proPlan = plans.find((p) => p.price > 0 && p.targetAudience === 'rider') || {
+        _id: 'rider-pro-day',
+        name: 'Pro Day Pass (Rider Partner)',
+        price: 99,
+        billingCycle: 'day',
+        targetAudience: 'rider',
+        badge: 'PRO RIDER',
+      };
+      handleChoosePlan({
+        ...proPlan,
+        isApplication: true,
+        applicantData: { ...riderForm, type: 'rider' },
+      });
+      return;
+    }
+
     try {
       setRiderSubmitting(true);
       await membershipService.submitEnquiry({
         type: 'rider',
         ...riderForm,
+        planName: 'Base (Free)',
+        planPrice: 0,
+        paymentStatus: 'free',
       });
       setRiderSubmitted(true);
     } catch (err) {
@@ -195,11 +247,33 @@ export default function MembershipPlansPage() {
       alert('Please enter your store name and mobile number');
       return;
     }
+
+    if (vendorPlanChoice !== 'free') {
+      const isPro = vendorPlanChoice === 'pro';
+      const vendorPlan = {
+        _id: isPro ? 'vendor-pro-3000' : 'vendor-starter-3000',
+        name: isPro ? 'Supermarket Pro (3,000+ items)' : 'Supermarket Starter (< 3,000 items)',
+        price: isPro ? 25000 : 10000,
+        billingCycle: 'one-time',
+        targetAudience: 'vendor',
+        badge: isPro ? 'SUPERMARKET PARTNER' : 'VERIFIED MERCHANT',
+      };
+      handleChoosePlan({
+        ...vendorPlan,
+        isApplication: true,
+        applicantData: { ...vendorForm, type: 'vendor' },
+      });
+      return;
+    }
+
     try {
       setVendorSubmitting(true);
       await membershipService.submitEnquiry({
         type: 'vendor',
         ...vendorForm,
+        planName: 'Base Listing (Free)',
+        planPrice: 0,
+        paymentStatus: 'free',
       });
       setVendorSubmitted(true);
     } catch (err) {
@@ -356,12 +430,28 @@ export default function MembershipPlansPage() {
                         VIP Active
                       </span>
                     </div>
+                  ) : selectedPlan.price === 0 ? (
+                    <div className="space-y-3">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-2.5 text-xs font-bold text-slate-700">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>Base Free Tier Active by Default — You can order freely anytime without subscription!</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const paidPlan = plans.find((p) => p.price > 0) || plans[1];
+                          if (paidPlan) setSelectedPlan(paidPlan);
+                        }}
+                        className="w-full py-3 rounded-2xl bg-white border border-[#0B3EDB] text-[#0B3EDB] hover:bg-blue-50 font-black text-xs transition"
+                      >
+                        Upgrade to Premier (₹99/mo)
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => handleChoosePlan(selectedPlan)}
                       className="w-full py-3.5 px-6 rounded-2xl bg-[#0B3EDB] hover:bg-[#0A2B6B] active:scale-[0.99] text-white font-black text-sm transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
                     >
-                      <span>Choose Premier</span>
+                      <span>Choose Premier (Pay ₹{selectedPlan.price} & Activate)</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   )}
@@ -644,12 +734,56 @@ export default function MembershipPlansPage() {
                       </div>
                     </div>
 
+                    {/* Plan Selection for Rider */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1.5">
+                        Choose Starting Rider Plan:
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setRiderPlanChoice('free')}
+                          className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
+                            riderPlanChoice === 'free'
+                              ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>Base Free</span>
+                            <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full">₹0</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal mt-0.5">Start delivering with zero fee</p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setRiderPlanChoice('pro')}
+                          className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
+                            riderPlanChoice === 'pro'
+                              ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>Pro Day Pass</span>
+                            <span className="text-[10px] bg-[#0B3EDB] text-white px-1.5 py-0.2 rounded-full">₹99</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal mt-0.5">+₹4 to ₹9 bonus on all orders</p>
+                        </button>
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       disabled={riderSubmitting}
                       className="w-full py-3 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-xs transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
                     >
-                      {riderSubmitting ? 'Submitting...' : 'Apply to ride'}
+                      {riderSubmitting
+                        ? 'Processing...'
+                        : riderPlanChoice === 'pro'
+                        ? 'Apply & Pay ₹99 (Pro Rider)'
+                        : 'Apply to ride (Base Free)'}
                     </button>
                   </form>
                 )}
@@ -880,12 +1014,74 @@ export default function MembershipPlansPage() {
                     />
                   </div>
 
+                  {/* Onboarding Tier Selection for Vendor */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1.5">
+                      Select Supermarket Onboarding Tier:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVendorPlanChoice('free')}
+                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
+                          vendorPlanChoice === 'free'
+                            ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>Base Free</span>
+                          <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full">₹0</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-normal mt-0.5">Free basic listing</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVendorPlanChoice('starter')}
+                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
+                          vendorPlanChoice === 'starter'
+                            ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>Starter</span>
+                          <span className="text-[10px] bg-[#0A2B6B] text-white px-1.5 py-0.2 rounded-full">₹10K</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-normal mt-0.5">&lt; 3,000 live items</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVendorPlanChoice('pro')}
+                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
+                          vendorPlanChoice === 'pro'
+                            ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>Supermarket Pro</span>
+                          <span className="text-[10px] bg-[#0B3EDB] text-white px-1.5 py-0.2 rounded-full">₹25K</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-normal mt-0.5">3,000+ items & 5% cut</p>
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={vendorSubmitting}
                     className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-xs sm:text-sm transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
                   >
-                    {vendorSubmitting ? 'Submitting...' : 'Apply to join'}
+                    {vendorSubmitting
+                      ? 'Processing...'
+                      : vendorPlanChoice === 'starter'
+                      ? 'Apply & Pay ₹10,000 Onboarding Fee'
+                      : vendorPlanChoice === 'pro'
+                      ? 'Apply & Pay ₹25,000 Pro Onboarding Fee'
+                      : 'Apply to join (Base Free Listing)'}
                   </button>
                 </form>
               )}
@@ -899,33 +1095,60 @@ export default function MembershipPlansPage() {
       {/* ================= CHECKOUT / ACTIVATION MODAL ================= */}
       {isCheckoutModalOpen && planToSubscribe && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative max-h-[92vh] overflow-y-auto no-scrollbar">
             <button
               onClick={() => setIsCheckoutModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
             {subscriptionSuccess ? (
-              <div className="text-center py-6">
-                <div className="w-16 h-16 bg-blue-50 text-[#0B3EDB] rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-blue-200">
-                  <Crown className="w-8 h-8" />
+              <div className="text-center py-6 animate-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-200 shadow-sm">
+                  <CheckCircle2 className="w-9 h-9" />
                 </div>
                 <h3 className="text-xl font-black text-slate-900 mb-1">
-                  Welcome to {planToSubscribe.name}!
+                  Payment Successful!
                 </h3>
-                <p className="text-xs text-slate-500 mb-6">
-                  Your VIP benefits and {planToSubscribe.badge || 'PREMIER'} badge are now active on your account.
+                <p className="text-xs text-slate-500 mb-4">
+                  {planToSubscribe.isApplication
+                    ? `Your application with ${planToSubscribe.name} has been received and verified.`
+                    : `Welcome to ${planToSubscribe.name}! Your VIP benefits are now live.`}
                 </p>
-                <div className="inline-block bg-[#0B3EDB] text-white text-xs font-black px-4 py-1.5 rounded-full mb-6 shadow-sm">
-                  Badge: {planToSubscribe.badge || 'PREMIER'} ✦
+
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6 text-left space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Plan:</span>
+                    <span className="font-bold text-slate-800">{planToSubscribe.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Amount Paid:</span>
+                    <span className="font-bold text-emerald-600">₹{planToSubscribe.price}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Payment Mode:</span>
+                    <span className="font-semibold text-slate-700">{paymentMethod}</span>
+                  </div>
+                  {lastTxnId && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Transaction Ref:</span>
+                      <span className="font-mono text-[11px] text-slate-600">{lastTxnId}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-1 border-t border-slate-200">
+                    <span className="text-slate-500">Membership Badge:</span>
+                    <span className="font-black text-[#0B3EDB] bg-blue-50 px-2 py-0.5 rounded-full">
+                      {planToSubscribe.badge || 'PREMIER'} ✦
+                    </span>
+                  </div>
                 </div>
+
                 <button
                   onClick={() => setIsCheckoutModalOpen(false)}
-                  className="w-full py-3 rounded-full bg-[#0B3EDB] text-white font-bold text-xs"
+                  className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-bold text-xs sm:text-sm shadow-md transition"
                 >
-                  Done
+                  Continue & Explore
                 </button>
               </div>
             ) : (
@@ -933,58 +1156,188 @@ export default function MembershipPlansPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <Crown className="w-5 h-5 text-[#0B3EDB]" />
                   <h3 className="text-lg font-black text-slate-900">
-                    Activate Membership
+                    Complete Payment & Activate
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 mb-5">
-                  Confirm plan activation for your account.
+                  Secure checkout powered by Tricelyn Payments Gateway.
                 </p>
 
                 {/* Plan Summary Card */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-5">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-black text-slate-900">
-                      {planToSubscribe.name}
-                    </span>
-                    <span className="text-sm font-black text-[#0B3EDB]">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 mb-5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-black text-slate-900">
+                        {planToSubscribe.name}
+                      </span>
+                      <span className="text-[10px] bg-[#0B3EDB] text-white font-black px-2 py-0.5 rounded-full uppercase">
+                        {planToSubscribe.badge || 'VIP'}
+                      </span>
+                    </div>
+                    <span className="text-lg font-black text-[#0B3EDB]">
                       ₹{planToSubscribe.price}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    Billing Cycle: {planToSubscribe.billingCycle}
-                  </p>
+                  <div className="flex items-center justify-between text-[11px] text-slate-600">
+                    <span>Target: {planToSubscribe.targetAudience?.toUpperCase() || 'USER'}</span>
+                    <span>Billing: {planToSubscribe.billingCycle}</span>
+                  </div>
                 </div>
 
                 {/* Payment Method Selector */}
-                <div className="mb-6 space-y-2">
+                <div className="mb-5 space-y-2.5">
                   <label className="block text-xs font-bold text-slate-700">
                     Select Payment Method:
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('Online')}
-                      className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition ${
-                        paymentMethod === 'Online'
-                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB]'
+                      onClick={() => setPaymentMethod('UPI')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
+                        paymentMethod === 'UPI'
+                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <CreditCard className="w-4 h-4" />
-                      Online / UPI
+                      <Zap className="w-4 h-4 text-emerald-600" />
+                      <span>UPI / QR</span>
                     </button>
+
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('Wallet')}
-                      className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition ${
-                        paymentMethod === 'Wallet'
-                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB]'
+                      onClick={() => setPaymentMethod('Card')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
+                        paymentMethod === 'Card'
+                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <Wallet className="w-4 h-4" />
-                      Wallet
+                      <CreditCard className="w-4 h-4 text-blue-600" />
+                      <span>Debit/Card</span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('NetBanking')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
+                        paymentMethod === 'NetBanking'
+                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
+                          : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Banknote className="w-4 h-4 text-amber-600" />
+                      <span>Net Banking</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('TestPay')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
+                        paymentMethod === 'TestPay'
+                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
+                          : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      <span>Instant Test</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-form based on selected payment method */}
+                {paymentMethod === 'UPI' && (
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-5 space-y-3">
+                    <p className="text-[11px] font-bold text-slate-700">Choose UPI App:</p>
+                    <div className="grid grid-cols-4 gap-2 text-[11px]">
+                      {['Google Pay', 'PhonePe', 'Paytm', 'BHIM'].map((app) => (
+                        <div
+                          key={app}
+                          className="p-2 bg-white rounded-xl border border-slate-200 text-center font-bold text-slate-700 hover:border-blue-400 cursor-pointer shadow-xs"
+                        >
+                          {app}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Enter UPI ID</label>
+                      <input
+                        type="text"
+                        placeholder="yourname@okhdfcbank"
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === 'Card' && (
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-5 space-y-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Card Number</label>
+                      <input
+                        type="text"
+                        placeholder="4532 •••• •••• 8892"
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Expiry (MM/YY)</label>
+                        <input
+                          type="text"
+                          placeholder="08/28"
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">CVV</label>
+                        <input
+                          type="password"
+                          maxLength={4}
+                          placeholder="•••"
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === 'NetBanking' && (
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-5 space-y-2">
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Select Bank</label>
+                    <select
+                      value={selectedBank}
+                      onChange={(e) => setSelectedBank(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 font-bold"
+                    >
+                      <option value="HDFC Bank">HDFC Bank</option>
+                      <option value="State Bank of India">State Bank of India (SBI)</option>
+                      <option value="ICICI Bank">ICICI Bank</option>
+                      <option value="Axis Bank">Axis Bank</option>
+                      <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                    </select>
+                  </div>
+                )}
+
+                {paymentMethod === 'TestPay' && (
+                  <div className="p-3 bg-purple-50 rounded-2xl border border-purple-200 mb-5 text-[11px] text-purple-800 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                    <span>Instant demo pay mode: Authorizes and activates immediately without real money deduction.</span>
+                  </div>
+                )}
+
+                {/* Cost Breakdown */}
+                <div className="border-t border-slate-100 pt-3 mb-5 space-y-1 text-xs">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Plan Subtotal:</span>
+                    <span>₹{planToSubscribe.price}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Taxes & GST (18% included):</span>
+                    <span>₹0</span>
+                  </div>
+                  <div className="flex justify-between font-black text-slate-900 text-sm pt-1 border-t border-slate-100">
+                    <span>Total Amount:</span>
+                    <span className="text-[#0B3EDB]">₹{planToSubscribe.price}</span>
                   </div>
                 </div>
 
@@ -992,9 +1345,16 @@ export default function MembershipPlansPage() {
                 <button
                   onClick={handleConfirmSubscribe}
                   disabled={subscribing}
-                  className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-sm transition shadow-lg shadow-blue-500/20 active:scale-95"
+                  className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-sm transition shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
                 >
-                  {subscribing ? 'Activating...' : `Pay ₹${planToSubscribe.price} & Activate`}
+                  {subscribing ? (
+                    <span>Processing Payment...</span>
+                  ) : (
+                    <>
+                      <span>Pay ₹{planToSubscribe.price} & Activate</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
             )}

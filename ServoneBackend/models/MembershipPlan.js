@@ -65,6 +65,10 @@ const membershipPlanSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
     isActive: {
       type: Boolean,
       default: true,

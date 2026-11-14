@@ -71,6 +71,10 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
           setState(() {
             _activeSubscription = data['subscription'] as Map<String, dynamic>?;
           });
+        } else {
+          setState(() {
+            _activeSubscription = null;
+          });
         }
       }
     } catch (e) {
@@ -78,7 +82,7 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
     }
   }
 
-  Future<void> _subscribeToPlan(Map<String, dynamic> plan) async {
+  Future<void> _subscribeToPlan(Map<String, dynamic> plan, String paymentMethod) async {
     setState(() => _isSubscribing = true);
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -92,10 +96,12 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
         'Content-Type': 'application/json',
         if (token.isNotEmpty) 'Authorization': 'Bearer $token',
       };
+      final txnId = 'TXN-STORE-${DateTime.now().millisecondsSinceEpoch}';
       final body = jsonEncode({
         'planId': plan['_id'],
         'targetAudience': 'vendor',
-        'paymentMethod': 'Online',
+        'paymentMethod': paymentMethod,
+        'transactionId': txnId,
         'userId': restId,
         'userName': prefs.getString('restaurantName') ?? 'Supermarket Partner',
       });
@@ -104,13 +110,7 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data['message'] ?? 'Successfully upgraded supermarket merchant plan!'),
-              backgroundColor: const Color(0xFF0B3EDB),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          _showCelebrationDialog(plan, txnId);
           _fetchMySubscription();
         }
       } else {
@@ -130,6 +130,264 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
     } finally {
       if (mounted) setState(() => _isSubscribing = false);
     }
+  }
+
+  void _showCelebrationDialog(Map<String, dynamic> plan, String txnId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.store, color: Color(0xFF0B3EDB), size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Store Upgraded!',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF07162E),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your supermarket is now verified under ${plan['name']}. Enjoy priority customer ranking.',
+              style: GoogleFonts.poppins(fontSize: 12.5, color: const Color(0xFF64748B), height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B3EDB),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'BADGE: ${plan['badge'] ?? 'VERIFIED MERCHANT'} ✦',
+                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ref: $txnId',
+              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontFamily: 'monospace'),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B3EDB),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                ),
+                child: Text('Go to Store Dashboard', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentBottomSheet(Map<String, dynamic> plan) {
+    String selectedMethod = 'NetBanking';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plan['name'] ?? 'Supermarket Package',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF07162E),
+                        ),
+                      ),
+                      Text(
+                        'Merchant Onboarding · ${plan['billingCycle'] ?? 'one-time'}',
+                        style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '₹${plan['price']}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF0B3EDB),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              Text(
+                'Select Payment Option',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF07162E)),
+              ),
+              const SizedBox(height: 10),
+
+              // Net Banking
+              _paymentOptionTile(
+                icon: Icons.account_balance,
+                title: 'Net Banking / Business Account',
+                subtitle: 'HDFC, SBI, ICICI, Axis corporate banking',
+                isSelected: selectedMethod == 'NetBanking',
+                onTap: () => setSheetState(() => selectedMethod = 'NetBanking'),
+              ),
+              // UPI
+              _paymentOptionTile(
+                icon: Icons.qr_code_2,
+                title: 'UPI / Merchant QR',
+                subtitle: 'Google Pay, PhonePe, Paytm Business',
+                isSelected: selectedMethod == 'UPI',
+                onTap: () => setSheetState(() => selectedMethod = 'UPI'),
+              ),
+              // Card
+              _paymentOptionTile(
+                icon: Icons.credit_card,
+                title: 'Business Debit / Credit Card',
+                subtitle: 'Corporate Visa, MasterCard, RuPay',
+                isSelected: selectedMethod == 'Card',
+                onTap: () => setSheetState(() => selectedMethod = 'Card'),
+              ),
+              // Instant Test Pay
+              _paymentOptionTile(
+                icon: Icons.flash_on,
+                title: 'Instant Test Onboarding (Demo)',
+                subtitle: 'Immediate package activation for demonstration',
+                isSelected: selectedMethod == 'TestPay',
+                onTap: () => setSheetState(() => selectedMethod = 'TestPay'),
+              ),
+
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _subscribeToPlan(plan, selectedMethod);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0B3EDB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Pay ₹${plan['price']} & Activate Package',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paymentOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0B3EDB).withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade600, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? const Color(0xFF07162E) : Colors.grey.shade800,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -208,7 +466,7 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
 
                   const SizedBox(height: 20),
 
-                  // ── Active Subscription Banner (If Active) ──
+                  // ── Active Subscription Banner ──
                   if (_activeSubscription != null) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -244,6 +502,33 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                  ] else ...[
+                    // Default Base Free Listing Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Color(0xFF059669), size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Current Plan: Base Free Listing (Sell with standard commission, zero upfront fee)',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
 
                   // ── Onboarding & Membership Packages ──
@@ -254,13 +539,17 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
                   const SizedBox(height: 12),
 
                   ..._plans.map((p) {
+                    final isFree = (p['price'] as num? ?? 0) == 0;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(
+                          color: !isFree ? const Color(0xFF0B3EDB).withValues(alpha: 0.3) : const Color(0xFFE2E8F0),
+                          width: !isFree ? 1.5 : 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.03),
@@ -282,7 +571,7 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0B3EDB),
+                                  color: isFree ? const Color(0xFF64748B) : const Color(0xFF0B3EDB),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -298,14 +587,20 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
-                                '₹${p['price']}',
-                                style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w900, color: const Color(0xFF0B3EDB)),
+                                isFree ? 'Free' : '₹${p['price']}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  color: isFree ? const Color(0xFF07162E) : const Color(0xFF0B3EDB),
+                                ),
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '/ ${p['billingCycle']}',
-                                style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
-                              ),
+                              if (!isFree) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '/ ${p['billingCycle']}',
+                                  style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ],
                           ),
                           if (p['commissionRate'] != null && p['commissionRate'].toString().isNotEmpty) ...[
@@ -345,15 +640,28 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
                             width: double.infinity,
                             height: 46,
                             child: ElevatedButton(
-                              onPressed: _isSubscribing ? null : () => _subscribeToPlan(p as Map<String, dynamic>),
+                              onPressed: _isSubscribing
+                                  ? null
+                                  : () {
+                                      if (isFree) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Base Free is already your active store tier!'),
+                                            backgroundColor: Color(0xFF0B3EDB),
+                                          ),
+                                        );
+                                      } else {
+                                        _showPaymentBottomSheet(p as Map<String, dynamic>);
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0B3EDB),
+                                backgroundColor: isFree ? const Color(0xFF07162E) : const Color(0xFF0B3EDB),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 elevation: 0,
                               ),
                               child: Text(
-                                'Select Package',
+                                isFree ? 'Base Free (Default Active)' : 'Select Package (Pay ₹${p['price']})',
                                 style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 13),
                               ),
                             ),
@@ -401,15 +709,15 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF07162E))),
-          const SizedBox(height: 3),
-          Text(desc, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B), height: 1.35)),
+          const SizedBox(height: 4),
+          Text(desc, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B))),
         ],
       ),
     );
@@ -427,9 +735,7 @@ class _VendorPlansScreenState extends State<VendorPlansScreen> {
             margin: const EdgeInsets.only(top: 6, right: 10),
             decoration: const BoxDecoration(color: Color(0xFF0B3EDB), shape: BoxShape.circle),
           ),
-          Expanded(
-            child: Text(text, style: GoogleFonts.poppins(fontSize: 12.5, color: const Color(0xFF334155))),
-          ),
+          Expanded(child: Text(text, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF334155)))),
         ],
       ),
     );
