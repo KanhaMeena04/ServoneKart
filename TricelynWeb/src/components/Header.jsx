@@ -27,7 +27,7 @@ import { useLocation } from '../context/LocationContext';
 import { usePlatform } from '../context/PlatformContext';
 import { groceryService } from '../services/api';
 import { ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/newlogo.png';
 
 const POPULAR_SEARCH_CHIPS = ['Milk', 'Fresh Bread', 'Farm Eggs', 'Amul Paneer', 'Aashirvaad Atta', 'Lays Chips', 'Coca Cola', 'Butter', 'Maggi Noodles'];
 

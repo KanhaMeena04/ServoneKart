@@ -13,7 +13,7 @@ import {
   HeartHandshake,
   Headphones 
 } from 'lucide-react';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/newlogo.png';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
