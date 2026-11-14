@@ -249,7 +249,7 @@ class _NavBarItem extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color _activeColor = Color(0xFF248C70); // Primary Green
+  static const Color _activeColor = Color(0xFF0B3EDB); // Primary Green
   static const Color _inactiveColor = Color(0xFF9CA3AF); // gray
 
   @override
@@ -1138,7 +1138,7 @@ class _HomeTabState extends State<_HomeTab> {
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF248C70),
+              backgroundColor: const Color(0xFF0B3EDB),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -1175,14 +1175,14 @@ class _HomeTabState extends State<_HomeTab> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.black : const Color(0xFF248C70),
+                      color: isDark ? Colors.black : const Color(0xFF0B3EDB),
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(28.0),
                         bottomRight: Radius.circular(28.0),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: isDark ? Colors.transparent : const Color(0xFF248C70).withValues(alpha: 0.25),
+                          color: isDark ? Colors.transparent : const Color(0xFF0B3EDB).withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -1291,9 +1291,9 @@ class _HomeTabState extends State<_HomeTab> {
                                         errorBuilder: (context, error, stack) {
                                           debugPrint('❌ Banner image load error: $error | URL: ${banner.imageUrl}');
                                           return Container(
-                                            color: const Color(0xFF248C70).withValues(alpha: 0.2),
+                                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.2),
                                             child: const Center(
-                                              child: Icon(Icons.local_offer, color: Color(0xFF248C70), size: 48),
+                                              child: Icon(Icons.local_offer, color: Color(0xFF0B3EDB), size: 48),
                                             ),
                                           );
                                         },
@@ -1303,7 +1303,7 @@ class _HomeTabState extends State<_HomeTab> {
                                             color: Colors.grey[100],
                                             child: const Center(
                                               child: CircularProgressIndicator(
-                                                color: Color(0xFF248C70),
+                                                color: Color(0xFF0B3EDB),
                                                 strokeWidth: 2,
                                               ),
                                             ),
@@ -2314,7 +2314,7 @@ class _HomeTabState extends State<_HomeTab> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF248C70),
+                      backgroundColor: const Color(0xFF0B3EDB),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
@@ -2472,7 +2472,7 @@ class _RecommendedRestaurantCard extends StatelessWidget {
                                     : 'Removed ${restaurant.name} from Favourites',
                               ),
                               duration: const Duration(seconds: 1),
-                              backgroundColor: isFav ? const Color(0xFF248C70) : Colors.grey.shade800,
+                              backgroundColor: isFav ? const Color(0xFF0B3EDB) : Colors.grey.shade800,
                             ),
                           );
                         },
@@ -3456,7 +3456,7 @@ class _AnimatedDeliveryPickupToggle extends StatelessWidget {
                         Icon(
                           Icons.delivery_dining_rounded,
                           size: 20,
-                          color: isDelivery ? Colors.white : const Color(0xFF248C70),
+                          color: isDelivery ? Colors.white : const Color(0xFF0B3EDB),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -3464,7 +3464,7 @@ class _AnimatedDeliveryPickupToggle extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: isDelivery ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF248C70)),
+                            color: isDelivery ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF0B3EDB)),
                           ),
                         ),
                       ],
@@ -3483,7 +3483,7 @@ class _AnimatedDeliveryPickupToggle extends StatelessWidget {
                         Icon(
                           Icons.storefront_rounded,
                           size: 20,
-                          color: !isDelivery ? Colors.white : const Color(0xFF248C70),
+                          color: !isDelivery ? Colors.white : const Color(0xFF0B3EDB),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -3491,7 +3491,7 @@ class _AnimatedDeliveryPickupToggle extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: !isDelivery ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF248C70)),
+                            color: !isDelivery ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF0B3EDB)),
                           ),
                         ),
                       ],
@@ -3785,7 +3785,7 @@ class _PopularDishHomeCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70),
+                        color: const Color(0xFF0B3EDB),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -4218,7 +4218,7 @@ class _RecentOrdersSectionState extends State<_RecentOrdersSection> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.history_rounded, color: Color(0xFF248C70), size: 22),
+                  const Icon(Icons.history_rounded, color: Color(0xFF0B3EDB), size: 22),
                   const SizedBox(width: 6),
                   Text(
                     'Recent Orders',
@@ -4286,10 +4286,10 @@ class _RecentOrdersSectionState extends State<_RecentOrdersSection> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF248C70).withValues(alpha: 0.1),
+                      color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF248C70), size: 22),
+                    child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF0B3EDB), size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -4324,7 +4324,7 @@ class _RecentOrdersSectionState extends State<_RecentOrdersSection> {
                         SnackBar(
                           content: Text('Reordered from $restName!'),
                           duration: const Duration(seconds: 2),
-                          backgroundColor: const Color(0xFF248C70),
+                          backgroundColor: const Color(0xFF0B3EDB),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       );
@@ -4333,7 +4333,7 @@ class _RecentOrdersSectionState extends State<_RecentOrdersSection> {
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isReordered ? Colors.green : const Color(0xFF248C70),
+                      backgroundColor: isReordered ? Colors.green : const Color(0xFF0B3EDB),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -4425,7 +4425,7 @@ class _RotatingThaliWidgetState extends State<RotatingThaliWidget>
                   errorBuilder: (_, __, ___) => const Icon(
                     Icons.restaurant,
                     size: 100,
-                    color: Color(0xFF248C70),
+                    color: Color(0xFF0B3EDB),
                   ),
                 ),
               ),
@@ -4566,10 +4566,10 @@ class _SuperAppServicesSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF248C70).withValues(alpha: 0.12),
+                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.grid_view_rounded, color: Color(0xFF248C70), size: 18),
+                child: const Icon(Icons.grid_view_rounded, color: Color(0xFF0B3EDB), size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -4599,7 +4599,7 @@ class _SuperAppServicesSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF248C70),
+                  color: const Color(0xFF0B3EDB),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(

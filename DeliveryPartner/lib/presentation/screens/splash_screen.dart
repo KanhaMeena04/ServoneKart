@@ -121,112 +121,137 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         _navigateIfReady();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: AnimatedBuilder(
-                      animation: _pulseController,
-                      builder: (context, child) {
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Outer Pulse
-                            Transform.scale(
-                              scale: 1.0 + (_pulseController.value * 0.4),
-                              child: Container(
-                                width: 140,
-                                height: 140,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF07162E), // Deep Navy
+                Color(0xFF0A2B6B), // Royal Blue
+                Color(0xFF0B3EDB), // Vivid Blue
+              ],
+            ),
+          ),
+          child: Center(
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Outer Pulse Glow
+                              Transform.scale(
+                                scale: 1.0 + (_pulseController.value * 0.4),
+                                child: Container(
+                                  width: 170,
+                                  height: 170,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF0B3EDB).withValues(alpha: 0.2),
+                                  ),
+                                ),
+                              ),
+                              // Inner Pulse
+                              Transform.scale(
+                                scale: 1.0 + (_pulseController.value * 0.2),
+                                child: Container(
+                                  width: 150,
+                                  height: 150,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF0D5AA6).withValues(alpha: 0.35),
+                                  ),
+                                ),
+                              ),
+                              // Main Logo Card (Glassmorphic)
+                              Container(
+                                width: 130,
+                                height: 130,
+                                padding: const EdgeInsets.all(18),
                                 decoration: BoxDecoration(
+                                  color: Colors.white,
                                   shape: BoxShape.circle,
-                                  color: const Color(0xFF248C70).withValues(alpha: 0.1),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF0B3EDB).withValues(alpha: 0.4),
+                                      blurRadius: 36,
+                                      spreadRadius: 6,
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.25),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Image.asset(
+                                  'assets/logo.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    Icons.two_wheeler_rounded,
+                                    size: 72,
+                                    color: Color(0xFF0B3EDB),
+                                  ),
                                 ),
                               ),
-                            ),
-                            // Inner Pulse
-                            Transform.scale(
-                              scale: 1.0 + (_pulseController.value * 0.2),
-                              child: Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFF248C70).withValues(alpha: 0.2),
-                                ),
-                              ),
-                            ),
-                            // Main Logo Container
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF248C70).withValues(alpha: 0.2),
-                                    blurRadius: 30,
-                                    spreadRadius: 5,
-                                  )
-                                ],
-                              ),
-                              child: Image.asset(
-                                'splash_logo.png',
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.delivery_dining_rounded,
-                                  size: 120,
-                                  color: Color(0xFF248C70),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    ),
-                  ),
-                  const SizedBox(height: 50),
-                  SlideTransition(
-                    position: _textSlideAnimation,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Column(
-                        children: [
-                          Text(
-                            'TRICELYN RIDER',
-                            style: GoogleFonts.poppins(
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                              color: const Color(0xFF2C2C2C),
-                              letterSpacing: 2.5,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Delivering Freshness',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF248C70),
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 60),
-                          _DotLoadingIndicator(),
-                        ],
+                            ],
+                          );
+                        },
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(height: 42),
+                    SlideTransition(
+                      position: _textSlideAnimation,
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Column(
+                          children: [
+                            Text(
+                              'TRICELYN RIDER',
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 3.0,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                              ),
+                              child: Text(
+                                'Ride · Earn · 10-15 Min Express Fleet',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF93C5FD),
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 48),
+                            _DotLoadingIndicator(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -296,9 +321,9 @@ class _DotLoadingIndicatorState extends State<_DotLoadingIndicator> with SingleT
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildDot(0, const Color(0xFF248C70)), // Green
-          _buildDot(1, Colors.orange), // Orange
-          _buildDot(2, const Color(0xFF248C70)), // Green
+          _buildDot(0, Colors.white),
+          _buildDot(1, const Color(0xFF60A5FA)), // Light Blue
+          _buildDot(2, const Color(0xFF0B3EDB)), // Vivid Blue
         ],
       ),
     );

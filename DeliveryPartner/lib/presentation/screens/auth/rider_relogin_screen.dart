@@ -22,7 +22,7 @@ class _RiderReloginScreenState extends State<RiderReloginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _phoneController;
 
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
 
   @override
   void initState() {
@@ -179,12 +179,16 @@ class _RiderReloginScreenState extends State<RiderReloginScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Image.asset(
-                                'splash_logo.png',
+                                'assets/logo.png',
                                 fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.delivery_dining_rounded,
-                                  size: 45,
-                                  color: primaryGreen,
+                                errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  'splash_logo.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    Icons.delivery_dining_rounded,
+                                    size: 45,
+                                    color: primaryGreen,
+                                  ),
                                 ),
                               ),
                             ),

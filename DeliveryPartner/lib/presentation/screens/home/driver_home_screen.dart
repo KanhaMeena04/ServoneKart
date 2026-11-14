@@ -21,6 +21,7 @@ import '../auth/profile_screen.dart';
 import '../onboarding_screen.dart';
 import '../order/order_tracking_screen.dart';
 import '../wallet/rider_wallet_screen.dart';
+import '../rider_plans_screen.dart';
 import 'widgets/notifications_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -49,9 +50,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
   bool _isRingtonePlaying = false;
 
   // Tricelyn brand colors
-  static const Color primaryGreen = Color(0xFF248C70);
-  static const Color lightGreen = Color(0xFFE8F5E9);
-  static const Color darkBlack = Color(0xFF1E2022);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color lightGreen = Color(0xFFEFF6FF);
+  static const Color darkBlack = Color(0xFF07162E);
 
   @override
   void initState() {
@@ -879,6 +880,53 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Rider Pro / Membership Plans Button
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0B3EDB).withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const RiderPlansScreen()),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFBBF24), size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'PLANS',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -2571,7 +2619,7 @@ class InlineDeliveryOtpForm extends StatefulWidget {
 }
 
 class _InlineDeliveryOtpFormState extends State<InlineDeliveryOtpForm> {
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
   
   final TextEditingController _otpController = TextEditingController();
   bool _isSendingOtp = false;

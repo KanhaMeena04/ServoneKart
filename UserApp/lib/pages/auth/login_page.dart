@@ -124,7 +124,7 @@ class _LoginPageState extends State<LoginPage>
                             width: 24,
                             child: Checkbox(
                               value: isChecked,
-                              activeColor: const Color(0xFF248C70),
+                              activeColor: const Color(0xFF0B3EDB),
                               onChanged: (value) {
                                 setState(() {
                                   isChecked = value ?? false;
@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isChecked ? const Color(0xFF248C70) : Colors.grey.shade400,
+                      backgroundColor: isChecked ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -302,7 +302,7 @@ class _LoginPageState extends State<LoginPage>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Mobile verified! Please enter your details to complete registration.'),
-            backgroundColor: Color(0xFF248C70),
+            backgroundColor: Color(0xFF0B3EDB),
             duration: Duration(seconds: 3),
           ),
         );
@@ -549,7 +549,7 @@ class _LoginPageState extends State<LoginPage>
       child: TextFormField(
         controller: _otpControllers[index],
         focusNode: _otpFocusNodes[index],
-        cursorColor: const Color(0xFF248C70),
+        cursorColor: const Color(0xFF0B3EDB),
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         maxLength: 1,
@@ -568,7 +568,7 @@ class _LoginPageState extends State<LoginPage>
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF248C70), width: 2),
+            borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 2),
           ),
           filled: true,
           fillColor: Colors.white,
@@ -632,11 +632,25 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   Positioned(
                     bottom: 10,
-                    child: Image.asset(
-                      'assets/splash_logo.png', // ECDKART logo
-                      height: 80,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(height: 80),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.12),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        height: 52,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const SizedBox(height: 52),
+                      ),
                     ),
                   ),
                 ],
@@ -647,19 +661,21 @@ class _LoginPageState extends State<LoginPage>
             
             // "Welcome Back!" and subtext
             const Text(
-              'Welcome Back!',
+              'Welcome to Tricelyn',
               style: TextStyle(
                 fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF07162E),
+                letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'Log in to continue your meal journey',
+              'Fresh groceries & essentials delivered in 10-15 mins',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+                fontSize: 13,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
               ),
             ),
             
@@ -696,7 +712,7 @@ class _LoginPageState extends State<LoginPage>
                         TextSpan(
                           text: 'Register Now',
                           style: TextStyle(
-                            color: Color(0xFF248C70), // Changed to Green
+                            color: Color(0xFF0B3EDB), // Changed to Green
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -767,7 +783,7 @@ class _LoginPageState extends State<LoginPage>
           // Phone field with flag + country code prefix
           TextFormField(
             controller: _phoneController,
-            cursorColor: const Color(0xFF248C70),
+            cursorColor: const Color(0xFF0B3EDB),
             keyboardType: TextInputType.phone,
             maxLength: 10,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -812,7 +828,7 @@ class _LoginPageState extends State<LoginPage>
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide:
-                    const BorderSide(color: Color(0xFF248C70), width: 2),
+                    const BorderSide(color: Color(0xFF0B3EDB), width: 2),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -845,10 +861,10 @@ class _LoginPageState extends State<LoginPage>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _onContinue,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF248C70), // Changed to Green
+                backgroundColor: const Color(0xFF0B3EDB), // Changed to Green
                 foregroundColor: Colors.white,
                 disabledBackgroundColor:
-                    const Color(0xFF248C70).withValues(alpha: 0.6),
+                    const Color(0xFF0B3EDB).withValues(alpha: 0.6),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -898,7 +914,7 @@ class _LoginPageState extends State<LoginPage>
         // User Name / Identifier field
         TextFormField(
           controller: _usernameController,
-          cursorColor: const Color(0xFF248C70),
+          cursorColor: const Color(0xFF0B3EDB),
           keyboardType: TextInputType.text,
           style: const TextStyle(
             fontSize: 15,
@@ -908,7 +924,7 @@ class _LoginPageState extends State<LoginPage>
           decoration: InputDecoration(
             hintText: 'Enter User Name, Mobile or Email',
             hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
-            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF248C70)),
+            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF0B3EDB)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -916,7 +932,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF248C70), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 2),
             ),
             filled: true,
             fillColor: Colors.white,
@@ -929,7 +945,7 @@ class _LoginPageState extends State<LoginPage>
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          cursorColor: const Color(0xFF248C70),
+          cursorColor: const Color(0xFF0B3EDB),
           style: const TextStyle(
             fontSize: 15,
             color: AppColors.textPrimary,
@@ -938,7 +954,7 @@ class _LoginPageState extends State<LoginPage>
           decoration: InputDecoration(
             hintText: 'Enter Password',
             hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
-            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF248C70)),
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF0B3EDB)),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -955,7 +971,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF248C70), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 2),
             ),
             filled: true,
             fillColor: Colors.white,
@@ -970,9 +986,9 @@ class _LoginPageState extends State<LoginPage>
           child: ElevatedButton(
             onPressed: _isLoading ? null : _loginWithUsernamePassword,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF248C70),
+              backgroundColor: const Color(0xFF0B3EDB),
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFF248C70).withValues(alpha: 0.6),
+              disabledBackgroundColor: const Color(0xFF0B3EDB).withValues(alpha: 0.6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1039,7 +1055,7 @@ class _LoginPageState extends State<LoginPage>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: const Color(0xFF248C70),
+              color: const Color(0xFF0B3EDB),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1055,9 +1071,9 @@ class _LoginPageState extends State<LoginPage>
           child: ElevatedButton(
             onPressed: _isLoading ? null : _verifyOtp,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF248C70), // Changed to Green
+              backgroundColor: const Color(0xFF0B3EDB), // Changed to Green
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFF248C70).withValues(alpha: 0.6),
+              disabledBackgroundColor: const Color(0xFF0B3EDB).withValues(alpha: 0.6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1090,7 +1106,7 @@ class _LoginPageState extends State<LoginPage>
                   child: const Text(
                     'Resend OTP',
                     style: TextStyle(
-                      color: const Color(0xFF248C70),
+                      color: const Color(0xFF0B3EDB),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -1267,7 +1283,7 @@ class _FooterItem extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color _green = Color(0xFF248C70);
+  static const Color _green = Color(0xFF0B3EDB);
   static const Color _gray = Color(0xFF9CA3AF);
 
   @override

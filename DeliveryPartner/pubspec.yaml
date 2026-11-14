@@ -125,6 +125,7 @@ flutter:
     - assets/bank_header.jpg
     - assets/welcome_header.jpg
     - assets/welcome_back.png
+    - assets/logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

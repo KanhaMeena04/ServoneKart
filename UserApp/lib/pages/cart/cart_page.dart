@@ -264,7 +264,7 @@ class _CartPageState extends State<CartPage> {
                               Container(
                                 height: 3,
                                 color: selectedTab == 'delivery'
-                                    ? const Color(0xFF248C70)
+                                    ? AppColors.primary
                                     : Colors.transparent,
                               ),
                             ],
@@ -294,7 +294,7 @@ class _CartPageState extends State<CartPage> {
                               Container(
                                 height: 3,
                                 color: selectedTab == 'pickup'
-                                    ? const Color(0xFF248C70)
+                                    ? AppColors.primary
                                     : Colors.transparent,
                               ),
                             ],
@@ -341,14 +341,14 @@ class _CartPageState extends State<CartPage> {
                             padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_month, size: 18, color: Color(0xFF248C70)),
+                                Icon(Icons.calendar_month, size: 18, color: AppColors.primary),
                                 SizedBox(width: 4),
                                 Text(
                                   'Calendar',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF248C70),
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ],
@@ -444,20 +444,20 @@ class _CartPageState extends State<CartPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
+                        color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF248C70).withValues(alpha: 0.3)),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: const [
-                          Icon(Icons.bolt, color: Color(0xFF248C70), size: 20),
+                          Icon(Icons.bolt, color: AppColors.primary, size: 20),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Smart Preparation Buffer: ~15 mins prep time + 15 mins grace period at counter.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF1B5E20),
+                                color: Color(0xFF0A2B6B),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -505,7 +505,7 @@ class _CartPageState extends State<CartPage> {
                       height: 50,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Text(
@@ -1391,13 +1391,13 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF248C70).withValues(alpha: 0.3)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.storefront_rounded, color: Color(0xFF248C70), size: 22),
+                  const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -1408,7 +1408,7 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1B5E20),
+                            color: Color(0xFF07162E),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1416,7 +1416,7 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
                           '⚡ Smart Prep Buffer & 15-min Grace Period',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF2E7D32),
+                            color: Color(0xFF0A2B6B),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1428,7 +1428,7 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -2896,10 +2896,10 @@ class _DeliveryRespectNoteCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF248C70).withOpacity(0.08),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF248C70).withOpacity(0.25),
+          color: AppColors.primary.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
@@ -2908,12 +2908,12 @@ class _DeliveryRespectNoteCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF248C70).withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.favorite_rounded,
-              color: Color(0xFF248C70),
+              color: AppColors.primary,
               size: 20,
             ),
           ),

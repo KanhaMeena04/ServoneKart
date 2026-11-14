@@ -70,7 +70,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rider Wallet & COD', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF248C70),
+        backgroundColor: const Color(0xFF0B3EDB),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -82,10 +82,10 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF248C70)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0B3EDB)))
           : RefreshIndicator(
               onRefresh: _loadWalletData,
-              color: const Color(0xFF248C70),
+              color: const Color(0xFF0B3EDB),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16.0),
@@ -151,16 +151,16 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF248C70).withValues(alpha: 0.3)),
+                          border: Border.all(color: const Color(0xFF0B3EDB).withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.info_outline, color: Color(0xFF248C70), size: 28),
+                            const Icon(Icons.info_outline, color: Color(0xFF0B3EDB), size: 28),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 'COD Warning: Cash in hand is near limit (₹${_cashInHand.toStringAsFixed(0)} / ₹${_cashLimit.toStringAsFixed(0)}). Deposit cash soon to avoid account freeze.',
-                                style: const TextStyle(color: Color(0xFF248C70), fontWeight: FontWeight.w500, fontSize: 13),
+                                style: const TextStyle(color: Color(0xFF0B3EDB), fontWeight: FontWeight.w500, fontSize: 13),
                               ),
                             ),
                           ],
@@ -172,7 +172,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF248C70), Color(0xFF248C70)],
+                          colors: [Color(0xFF0B3EDB), Color(0xFF0B3EDB)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -213,7 +213,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                               Text('Total Delivered Earnings: ₹${_totalEarnings.toStringAsFixed(0)}',
                                   style: const TextStyle(color: Colors.white, fontSize: 13)),
                               const Chip(
-                                label: Text('Paid Weekly', style: TextStyle(color: Color(0xFF248C70), fontSize: 11, fontWeight: FontWeight.bold)),
+                                label: Text('Paid Weekly', style: TextStyle(color: Color(0xFF0B3EDB), fontSize: 11, fontWeight: FontWeight.bold)),
                                 backgroundColor: Colors.white,
                                 visualDensity: VisualDensity.compact,
                               ),
@@ -244,7 +244,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                                               ),
                                             ],
                                           ),
-                                          backgroundColor: const Color(0xFF248C70),
+                                          backgroundColor: const Color(0xFF0B3EDB),
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                         ),
@@ -257,7 +257,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: const Text('Minimum balance to request payout is ₹200'),
-                                          backgroundColor: const Color(0xFF248C70),
+                                          backgroundColor: const Color(0xFF0B3EDB),
                                           behavior: SnackBarBehavior.floating,
                                         ),
                                       );
@@ -265,13 +265,13 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                                   },
                                   icon: Icon(
                                     isVerified ? Icons.payments_rounded : Icons.lock_clock_rounded,
-                                    color: const Color(0xFF248C70),
+                                    color: const Color(0xFF0B3EDB),
                                     size: 18,
                                   ),
                                   label: Text(
                                     isVerified ? 'Request Payout Now' : 'Payout Locked (Pending Approval)',
                                     style: TextStyle(
-                                      color: const Color(0xFF248C70),
+                                      color: const Color(0xFF0B3EDB),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -441,7 +441,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF248C70),
+          backgroundColor: const Color(0xFF0B3EDB),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -525,10 +525,10 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF248C70).withValues(alpha: 0.12),
+                              color: const Color(0xFF0B3EDB).withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF248C70), size: 22),
+                            child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF0B3EDB), size: 22),
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -555,7 +555,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF0FDF4),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF248C70).withValues(alpha: 0.25)),
+                      border: Border.all(color: const Color(0xFF0B3EDB).withValues(alpha: 0.25)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -566,7 +566,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                         ),
                         Text(
                           '₹${_availableBalance.toStringAsFixed(2)}',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF248C70)),
+                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0B3EDB)),
                         ),
                       ],
                     ),
@@ -581,14 +581,14 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                     keyboardType: TextInputType.number,
                     style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.currency_rupee_rounded, color: Color(0xFF248C70), size: 22),
+                      prefixIcon: const Icon(Icons.currency_rupee_rounded, color: Color(0xFF0B3EDB), size: 22),
                       hintText: 'Enter amount (min ₹200)',
                       hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400], fontWeight: FontWeight.normal),
                       filled: true,
                       fillColor: Colors.grey[50],
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF248C70), width: 1.5)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 1.5)),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -621,21 +621,21 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                               color: selectedMethod == 'upi' ? const Color(0xFFF0FDF4) : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: selectedMethod == 'upi' ? const Color(0xFF248C70) : Colors.grey[300]!,
+                                color: selectedMethod == 'upi' ? const Color(0xFF0B3EDB) : Colors.grey[300]!,
                                 width: selectedMethod == 'upi' ? 1.8 : 1,
                               ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.payments_outlined, color: selectedMethod == 'upi' ? const Color(0xFF248C70) : Colors.grey[600], size: 18),
+                                Icon(Icons.payments_outlined, color: selectedMethod == 'upi' ? const Color(0xFF0B3EDB) : Colors.grey[600], size: 18),
                                 const SizedBox(width: 6),
                                 Text(
                                   'UPI ID',
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: selectedMethod == 'upi' ? FontWeight.bold : FontWeight.w500,
-                                    color: selectedMethod == 'upi' ? const Color(0xFF248C70) : Colors.grey[700],
+                                    color: selectedMethod == 'upi' ? const Color(0xFF0B3EDB) : Colors.grey[700],
                                   ),
                                 ),
                               ],
@@ -653,21 +653,21 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                               color: selectedMethod == 'bank' ? const Color(0xFFF0FDF4) : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: selectedMethod == 'bank' ? const Color(0xFF248C70) : Colors.grey[300]!,
+                                color: selectedMethod == 'bank' ? const Color(0xFF0B3EDB) : Colors.grey[300]!,
                                 width: selectedMethod == 'bank' ? 1.8 : 1,
                               ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.account_balance_outlined, color: selectedMethod == 'bank' ? const Color(0xFF248C70) : Colors.grey[600], size: 18),
+                                Icon(Icons.account_balance_outlined, color: selectedMethod == 'bank' ? const Color(0xFF0B3EDB) : Colors.grey[600], size: 18),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Bank Account',
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: selectedMethod == 'bank' ? FontWeight.bold : FontWeight.w500,
-                                    color: selectedMethod == 'bank' ? const Color(0xFF248C70) : Colors.grey[700],
+                                    color: selectedMethod == 'bank' ? const Color(0xFF0B3EDB) : Colors.grey[700],
                                   ),
                                 ),
                               ],
@@ -794,7 +794,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                                         'Payout request of ₹${numAmount.toStringAsFixed(0)} submitted to Admin successfully!',
                                         style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                                       ),
-                                      backgroundColor: const Color(0xFF248C70),
+                                      backgroundColor: const Color(0xFF0B3EDB),
                                       behavior: SnackBarBehavior.floating,
                                     ),
                                   );
@@ -817,7 +817,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF248C70),
+                        backgroundColor: const Color(0xFF0B3EDB),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -899,7 +899,7 @@ class _RiderWalletScreenState extends State<RiderWalletScreen> {
             style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B)),
             decoration: InputDecoration(
               isDense: true,
-              prefixIcon: Icon(icon, color: const Color(0xFF248C70), size: 16),
+              prefixIcon: Icon(icon, color: const Color(0xFF0B3EDB), size: 16),
               prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               hintText: hint,
               hintStyle: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[400]),

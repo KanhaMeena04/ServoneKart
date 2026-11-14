@@ -62,7 +62,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
   final _upiIdController = TextEditingController();
   bool _isSubmitting = false;
 
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
 
   @override
   void initState() {

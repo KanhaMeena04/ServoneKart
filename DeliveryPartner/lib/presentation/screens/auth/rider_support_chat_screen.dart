@@ -180,10 +180,10 @@ class _RiderSupportChatScreenState extends State<RiderSupportChatScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFF248C70).withOpacity(0.12),
+                color: const Color(0xFF0B3EDB).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.two_wheeler_rounded, color: Color(0xFF248C70), size: 22),
+              child: const Icon(Icons.two_wheeler_rounded, color: Color(0xFF0B3EDB), size: 22),
             ),
             const SizedBox(width: 10),
             Column(
@@ -213,7 +213,7 @@ class _RiderSupportChatScreenState extends State<RiderSupportChatScreen> {
           // Messages stream
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF248C70)))
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF0B3EDB)))
                 : _messages.isEmpty
                     ? Center(
                         child: Column(
@@ -222,10 +222,10 @@ class _RiderSupportChatScreenState extends State<RiderSupportChatScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF248C70).withOpacity(0.08),
+                                color: const Color(0xFF0B3EDB).withOpacity(0.08),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.support_agent_rounded, color: Color(0xFF248C70), size: 36),
+                              child: const Icon(Icons.support_agent_rounded, color: Color(0xFF0B3EDB), size: 36),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -284,7 +284,7 @@ class _RiderSupportChatScreenState extends State<RiderSupportChatScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                     decoration: BoxDecoration(
-                                      color: isUser ? const Color(0xFF248C70) : Colors.white,
+                                      color: isUser ? const Color(0xFF0B3EDB) : Colors.white,
                                       borderRadius: BorderRadius.only(
                                         topLeft: const Radius.circular(16),
                                         topRight: const Radius.circular(16),
@@ -389,11 +389,11 @@ class _RiderSupportChatScreenState extends State<RiderSupportChatScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70),
+                        color: const Color(0xFF0B3EDB),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF248C70).withOpacity(0.35),
+                            color: const Color(0xFF0B3EDB).withOpacity(0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),

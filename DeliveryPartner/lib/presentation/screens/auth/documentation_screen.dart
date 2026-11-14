@@ -217,7 +217,7 @@ class _DocumentationScreenState extends State<DocumentationScreen> {
                               barrierDismissible: false,
                               builder: (context) => const Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFF248C70),
+                                  color: Color(0xFF0B3EDB),
                                 ),
                               ),
                             );

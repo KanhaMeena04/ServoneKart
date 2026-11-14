@@ -123,7 +123,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
   static const Color lightGreen = Color(0xFFE8F5E9);
   bool _isLoading = false;
   late Map<String, dynamic> _currentOrder;
@@ -766,7 +766,7 @@ class InlineDeliveryOtpForm extends StatefulWidget {
 }
 
 class _InlineDeliveryOtpFormState extends State<InlineDeliveryOtpForm> {
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
 
   final TextEditingController _otpController = TextEditingController();
   bool _isSendingOtp = false;

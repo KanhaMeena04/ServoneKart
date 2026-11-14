@@ -10,7 +10,7 @@ class SelfieVerificationScreen extends StatefulWidget {
 }
 
 class _SelfieVerificationScreenState extends State<SelfieVerificationScreen> {
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
   bool _photoCaptured = false;
 
   void _onNext() {

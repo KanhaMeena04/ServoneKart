@@ -124,8 +124,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       // Tiny subtle dots (3-6px)
       final size = 3.0 + random.nextDouble() * 3.0; 
       
-      // Brand colors
-      final color = i % 2 == 0 ? const Color(0xFF248C70) : Colors.orange.shade400;
+      // Brand colors: vivid blue & light blue glow
+      final color = i % 2 == 0 ? const Color(0xFF0B3EDB) : const Color(0xFF60A5FA);
       
       _particles.add(Particle(
         angle: angle,
@@ -147,11 +147,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF), // 3. Pure white (#FFFFFF), no gradients
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF07162E), // Deep Navy
+              Color(0xFF0A2B6B), // Royal Blue
+              Color(0xFF0B3EDB), // Vivid Blue
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             const Spacer(flex: 3),
             SizedBox(
               width: 250,
@@ -218,47 +229,39 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         child: Transform.scale(
                           scale: scale,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            width: 140,
+                            height: 140,
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: const [
+                              shape: BoxShape.circle,
+                              boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 16,
-                                  offset: Offset(0, 4),
+                                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.45),
+                                  blurRadius: 36,
+                                  spreadRadius: 6,
+                                  offset: const Offset(0, 10),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
-                            child: Container(
-                              width: 112,
-                              height: 112,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF0055FF), Color(0xFF248C70)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF0B3EDB),
+                                  shape: BoxShape.circle,
                                 ),
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: const Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.shopping_basket_rounded,
-                                    color: Colors.white,
-                                    size: 56,
-                                  ),
-                                  Positioned(
-                                    right: 18,
-                                    top: 18,
-                                    child: Icon(
-                                      Icons.bolt_rounded,
-                                      color: Color(0xFFFFD166),
-                                      size: 24,
-                                    ),
-                                  ),
-                                ],
+                                child: const Icon(
+                                  Icons.storefront_rounded,
+                                  color: Colors.white,
+                                  size: 52,
+                                ),
                               ),
                             ),
                           ),
@@ -269,13 +272,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 ],
               ),
             ),
-            const SizedBox(height: 24), // Perfect spacing
+            const SizedBox(height: 32),
             
-            // 6. App Name (Smooth Opacity + 12px Slide Up)
+            // App Name & Merchant Partner Badge
             AnimatedBuilder(
               animation: _mainController,
               builder: (context, child) {
-                // Exact 12px upward movement specification
                 final yOffset = 12.0 * (1.0 - _textSlideProgress.value);
                 
                 return Transform.translate(
@@ -287,20 +289,28 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         Text(
                           'TRICELYN',
                           style: GoogleFonts.poppins(
-                            fontSize: 34,
+                            fontSize: 32,
                             fontWeight: FontWeight.w900, 
-                            color: const Color(0xFF222222), 
-                            letterSpacing: 1.5,
+                            color: Colors.white, 
+                            letterSpacing: 3.0,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'PARTNER',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF248C70),
-                            letterSpacing: 8.0,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          ),
+                          child: Text(
+                            'MERCHANT & STORE PARTNER',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF93C5FD),
+                              letterSpacing: 2.0,
+                            ),
                           ),
                         ),
                       ],

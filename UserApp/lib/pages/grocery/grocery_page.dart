@@ -45,6 +45,8 @@ class _GroceryPageState extends State<GroceryPage> {
   String _selectedCategoryName = 'All';
   int _heroPageIndex = 0;
   final PageController _heroPageCtrl = PageController();
+  final ScrollController _categoryScrollCtrl = ScrollController();
+  Timer? _categoryScrollTimer;
   final TextEditingController _searchCtrl = TextEditingController();
 
   Color get primaryGreen => AppColors.primary;
@@ -53,6 +55,7 @@ class _GroceryPageState extends State<GroceryPage> {
   void initState() {
     super.initState();
     _fetchGroceryData();
+    _startCategoryAutoScroll();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         NotificationApiService.refreshUnreadCount();
@@ -60,10 +63,28 @@ class _GroceryPageState extends State<GroceryPage> {
     });
   }
 
+  void _startCategoryAutoScroll() {
+    _categoryScrollTimer?.cancel();
+    _categoryScrollTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
+      if (!mounted || !_categoryScrollCtrl.hasClients) return;
+      final maxScroll = _categoryScrollCtrl.position.maxScrollExtent;
+      if (maxScroll <= 0) return;
+      final current = _categoryScrollCtrl.offset;
+      final target = (current + 200.0) >= (maxScroll - 10) ? 0.0 : (current + 200.0);
+      _categoryScrollCtrl.animateTo(
+        target,
+        duration: const Duration(milliseconds: 1000),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
   @override
   void dispose() {
     _searchCtrl.dispose();
     _heroPageCtrl.dispose();
+    _categoryScrollTimer?.cancel();
+    _categoryScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -565,16 +586,16 @@ class _GroceryPageState extends State<GroceryPage> {
                                               width: double.infinity,
                                               height: 104,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => const Icon(
+                                              errorBuilder: (_, __, ___) => Icon(
                                                 Icons.shopping_basket_rounded,
                                                 size: 40,
-                                                color: Color(0xFF16A34A),
+                                                color: primaryGreen,
                                               ),
                                             )
-                                          : const Icon(
+                                          : Icon(
                                               Icons.shopping_basket_rounded,
                                               size: 40,
-                                              color: Color(0xFF16A34A),
+                                              color: primaryGreen,
                                             ),
                                     ),
                                   ),
@@ -666,7 +687,7 @@ class _GroceryPageState extends State<GroceryPage> {
                                                           child: ElevatedButton(
                                                             onPressed: () => cart.addGroceryItem(
                                                               prod,
-                                                              storeId: prod.storeId ?? 'store_tricelyn_indore_01',
+                                                              storeId: prod.storeId ?? 'store_tricelyn_hub_01',
                                                               storeName: prod.storeName ?? '${cfg.appName} Partner Store',
                                                               storeImageUrl: prod.restaurantImageUrl ?? '',
                                                             ),
@@ -1260,8 +1281,9 @@ class _GroceryPageState extends State<GroceryPage> {
                 'Shop by Category',
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.3,
+                  color: isDark ? Colors.white : const Color(0xFF07162E),
                 ),
               ),
               GestureDetector(
@@ -1279,96 +1301,120 @@ class _GroceryPageState extends State<GroceryPage> {
                         color: primaryGreen,
                       ),
                     ),
-                    Icon(Icons.chevron_right, size: 16, color: primaryGreen),
+                    Icon(Icons.chevron_right_rounded, size: 16, color: primaryGreen),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: displayCats.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.74,
-            ),
-            itemBuilder: (context, index) {
-              final cat = displayCats[index];
-              final name = (cat['name'] ?? 'Category').toString();
-              final slug = (cat['slug'] ?? '').toString();
-              final image = (cat['image'] ?? '').toString();
-              final isSelected = slug == _selectedCategorySlug;
+          const SizedBox(height: 12),
+          // Single-line Circular Horizontal Scroll
+          SizedBox(
+            height: 96,
+            child: ListView.separated(
+              controller: _categoryScrollCtrl,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: displayCats.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (context, index) {
+                final cat = displayCats[index];
+                final name = (cat['name'] ?? 'Category').toString();
+                final slug = (cat['slug'] ?? '').toString();
+                final image = (cat['image'] ?? '').toString();
+                final isSelected = slug == _selectedCategorySlug;
 
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedCategorySlug = slug;
-                    _selectedCategoryName = name;
-                  });
-                },
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? primaryGreen.withValues(alpha: 0.15)
-                              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF0F6FF)),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected
-                                ? primaryGreen
-                                : (isDark ? Colors.grey[800]! : const Color(0xFFE2E8F0)),
-                            width: isSelected ? 1.5 : 1,
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (_selectedCategorySlug == slug) {
+                        _selectedCategorySlug = '';
+                        _selectedCategoryName = 'All Groceries';
+                      } else {
+                        _selectedCategorySlug = slug;
+                        _selectedCategoryName = name;
+                      }
+                    });
+                  },
+                  child: SizedBox(
+                    width: 68,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: isSelected
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF07162E), Color(0xFF0B3EDB)],
+                                  )
+                                : LinearGradient(
+                                    colors: [
+                                      isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                      isDark ? const Color(0xFF0F172A) : Colors.white,
+                                    ],
+                                  ),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF0B3EDB)
+                                  : (isDark ? Colors.grey[800]! : const Color(0xFFE2E8F0)),
+                              width: isSelected ? 2.2 : 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isSelected
+                                    ? const Color(0xFF0B3EDB).withValues(alpha: 0.3)
+                                    : Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        ),
-                        padding: const EdgeInsets.all(7),
-                        child: Center(
-                          child: image.isNotEmpty
-                              ? SafeImage(
-                                  image,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.shopping_basket_rounded,
-                                    color: primaryGreen,
+                          padding: const EdgeInsets.all(9),
+                          child: ClipOval(
+                            child: image.isNotEmpty
+                                ? SafeImage(
+                                    image,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Icon(
+                                      Icons.fastfood_rounded,
+                                      color: isSelected ? Colors.white : primaryGreen,
+                                      size: 26,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.fastfood_rounded,
+                                    color: isSelected ? Colors.white : primaryGreen,
                                     size: 26,
                                   ),
-                                )
-                              : Icon(
-                                  Icons.shopping_basket_rounded,
-                                  color: primaryGreen,
-                                  size: 26,
-                                ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        Text(
+                          name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected
+                                ? primaryGreen
+                                : (isDark ? Colors.white70 : const Color(0xFF1E293B)),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected
-                            ? primaryGreen
-                            : (isDark ? Colors.white70 : const Color(0xFF1E293B)),
-                        height: 1.15,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
+
   }
 }
 

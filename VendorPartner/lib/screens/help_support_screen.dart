@@ -47,7 +47,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
             decoration: BoxDecoration(
-              color: const Color(0xFF248C70),
+              color: const Color(0xFF0B3EDB),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -94,17 +94,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF248C70).withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: const Color(0xFF0B3EDB).withOpacity(0.3), width: 1.5),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70).withOpacity(0.12),
+                        color: const Color(0xFF0B3EDB).withOpacity(0.12),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF248C70), size: 26),
+                      child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF0B3EDB), size: 26),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -136,7 +136,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF248C70), size: 16),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF0B3EDB), size: 16),
                   ],
                 ),
               ),
@@ -189,7 +189,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                 width: 28,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF248C70).withValues(alpha: 0.12),
+                                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Center(
@@ -198,7 +198,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF248C70),
+                                      color: const Color(0xFF0B3EDB),
                                     ),
                                   ),
                                 ),
@@ -219,7 +219,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                 duration: const Duration(milliseconds: 200),
                                 child: const Icon(
                                   Icons.keyboard_arrow_down,
-                                  color: Color(0xFF248C70),
+                                  color: Color(0xFF0B3EDB),
                                   size: 22,
                                 ),
                               ),
@@ -237,7 +237,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Divider(
-                                  color: const Color(0xFF248C70).withValues(alpha: 0.15),
+                                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.15),
                                   height: 1,
                                 ),
                                 const SizedBox(height: 12),

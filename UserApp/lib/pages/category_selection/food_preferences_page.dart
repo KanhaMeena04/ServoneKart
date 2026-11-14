@@ -99,7 +99,7 @@ class _FoodPreferencesPageState extends State<FoodPreferencesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
-    const primaryColor = Color(0xFF248C70);
+    const primaryColor = Color(0xFF0B3EDB);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,

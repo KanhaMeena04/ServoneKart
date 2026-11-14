@@ -347,7 +347,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                   Row(
                     children: const [
                       Icon(Icons.event_available_rounded,
-                          color: Color(0xFF248C70), size: 24),
+                          color: Color(0xFF0B3EDB), size: 24),
                       SizedBox(width: 10),
                       Text(
                         'Schedule Self Pick-up Slot',
@@ -407,14 +407,14 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                           child: Row(
                             children: [
                               Icon(Icons.calendar_month,
-                                  size: 18, color: Color(0xFF248C70)),
+                                  size: 18, color: Color(0xFF0B3EDB)),
                               SizedBox(width: 4),
                               Text(
                                 'Calendar',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF248C70),
+                                  color: Color(0xFF0B3EDB),
                                 ),
                               ),
                             ],
@@ -518,11 +518,11 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                           color:
-                              const Color(0xFF248C70).withValues(alpha: 0.3)),
+                              const Color(0xFF0B3EDB).withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.bolt, color: Color(0xFF248C70), size: 20),
+                        const Icon(Icons.bolt, color: Color(0xFF0B3EDB), size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -558,7 +558,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                       height: 50,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70),
+                        color: const Color(0xFF0B3EDB),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Text(
@@ -1727,7 +1727,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                             color:
-                                const Color(0xFF248C70).withValues(alpha: 0.3)),
+                                const Color(0xFF0B3EDB).withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1735,7 +1735,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                           Row(
                             children: [
                               const Icon(Icons.event_available,
-                                  color: Color(0xFF248C70), size: 18),
+                                  color: Color(0xFF0B3EDB), size: 18),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -2350,10 +2350,10 @@ class _DeliveryRespectNoteCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF248C70).withOpacity(0.08),
+        color: const Color(0xFF0B3EDB).withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF248C70).withOpacity(0.25),
+          color: const Color(0xFF0B3EDB).withOpacity(0.25),
           width: 1,
         ),
       ),
@@ -2362,12 +2362,12 @@ class _DeliveryRespectNoteCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF248C70).withOpacity(0.12),
+              color: const Color(0xFF0B3EDB).withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.favorite_rounded,
-              color: Color(0xFF248C70),
+              color: Color(0xFF0B3EDB),
               size: 20,
             ),
           ),

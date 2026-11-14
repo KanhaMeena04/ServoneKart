@@ -1,7 +1,9 @@
-import 'package:ecdkart_app/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/theme/app_colors.dart';
+import '../../routes/app_routes.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -17,29 +19,38 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   void initState() {
     super.initState();
-    setOnboardStatus();
+    _setOnboardStatus();
   }
 
-  void setOnboardStatus() async {
-    SharedPreferences pref = await SharedPreferences.getInstance();
+  void _setOnboardStatus() async {
+    final pref = await SharedPreferences.getInstance();
     pref.setBool('onboardStatus', true);
   }
 
   final List<OnboardingItem> _items = [
     OnboardingItem(
       image: 'assets/Group 2072750484.jpg',
-      title: '10-15 Min Superfast Grocery',
-      subtitle: 'Order fresh fruits, vegetables, dairy & daily essentials\ndelivered in minutes across Indore.',
+      tag: 'HYPERLOCAL EXPRESS',
+      title: 'Groceries Delivered in 10-15 Minutes',
+      subtitle:
+          'Farm-fresh fruits, vegetables, dairy, snacks & household staples brought straight to your doorstep at lightning speed.',
+      accentColor: const Color(0xFF0B3EDB),
     ),
     OnboardingItem(
       image: 'assets/onboarding_2.jpg',
-      title: 'Live Rider Tracking',
-      subtitle: 'Real-time GPS tracking of your grocery shipment\nso you know exactly when it arrives at your door.',
+      tag: 'REAL-TIME DISPATCH',
+      title: 'Live 3D GPS Rider Tracking',
+      subtitle:
+          'Watch your order from dark store packing to rider dispatch with second-by-second live map tracking and accurate arrival countdown.',
+      accentColor: const Color(0xFF0A2B6B),
     ),
     OnboardingItem(
       image: 'assets/onboarding_3.jpg',
-      title: '100% Quality & Best Prices',
-      subtitle: 'Direct from verified dark stores and supermarkets\nat prices cheaper than local marts.',
+      tag: 'TRICELYN PREMIER',
+      title: 'VIP Savings & Zero Surge Guarantee',
+      subtitle:
+          'Save big every day with member-only deals, scheduled early morning delivery slots, and zero surge fees even during peak hours.',
+      accentColor: const Color(0xFF07162E),
     ),
   ];
 
@@ -52,8 +63,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void _onNextPressed() async {
     if (_currentPage < _items.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
       );
     } else {
       final pref = await SharedPreferences.getInstance();
@@ -66,6 +77,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -73,139 +86,247 @@ class _OnboardingPageState extends State<OnboardingPage> {
           children: [
             Column(
               children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (page) => setState(() => _currentPage = page),
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                return Column(
-                  children: [
-                    // Top Image with curved bottom
-                    Container(
-                      height: MediaQuery.of(context).size.height * 0.55,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(200),
+                // Top PageView with Image & Curved Bottom
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (page) => setState(() => _currentPage = page),
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          children: [
+                            // Hero Image Banner
+                            Container(
+                              height: size.height * 0.48,
+                              width: double.infinity,
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(32),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF07162E).withValues(alpha: 0.12),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(32),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.asset(
+                                      item.image,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Container(
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [Color(0xFF07162E), Color(0xFF0B3EDB)],
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Icon(Icons.shopping_bag_rounded, size: 80, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                    // Gradient overlay for smooth readability
+                                    Positioned.fill(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.black.withValues(alpha: 0.15),
+                                              Colors.transparent,
+                                              Colors.black.withValues(alpha: 0.35),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Tag Pill
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFF0B3EDB).withValues(alpha: 0.2)),
+                              ),
+                              child: Text(
+                                item.tag,
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFF0B3EDB),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            // Main Title
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Text(
+                                item.title,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.w900,
+                                  color: const Color(0xFF07162E),
+                                  height: 1.25,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // Subtitle
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              child: Text(
+                                item.subtitle,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: const Color(0xFF64748B),
+                                  height: 1.5,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        image: DecorationImage(
-                          image: AssetImage(_items[index].image),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    // Main Title
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        _items[index].title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Subtitle
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        _items[index].subtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey.shade600,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          
-          // Bottom Section
-          Padding(
-            padding: const EdgeInsets.only(bottom: 50, left: 24, right: 24),
-            child: Column(
-              children: [
-                // 3-Dots Indicator
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _items.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      height: 4,
-                      width: _currentPage == index ? 24 : 12,
-                      decoration: BoxDecoration(
-                        color: _currentPage == index 
-                            ? const Color(0xFF248C70) // Green color for active dot
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(height: 40),
-                // Next/Get Started Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _onNextPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF248C70), // Green button color
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+
+                // Bottom Section: Dots + Button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
+                  child: Column(
+                    children: [
+                      // Animated Dots Indicator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _items.length,
+                          (index) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            height: 6,
+                            width: _currentPage == index ? 28 : 8,
+                            decoration: BoxDecoration(
+                              gradient: _currentPage == index
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                                    )
+                                  : null,
+                              color: _currentPage == index ? null : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
                       ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      _currentPage == _items.length - 1 ? 'Get Started' : 'Next',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+
+                      const SizedBox(height: 24),
+
+                      // Next / Get Started Gradient Button
+                      Container(
+                        width: double.infinity,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0B3EDB).withValues(alpha: 0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _onNextPressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _currentPage == _items.length - 1 ? 'Start Shopping' : 'Continue',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
 
-      // Top Right Skip Button
+            // Top Right Skip Button
             Positioned(
-              top: 12,
-              right: 16,
-              child: TextButton(
-                onPressed: () async {
+              top: 16,
+              right: 24,
+              child: GestureDetector(
+                onTap: () async {
                   final pref = await SharedPreferences.getInstance();
                   await pref.setBool('onboardStatus', true);
                   if (context.mounted) {
                     context.go(AppRoutes.home);
                   }
                 },
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.black.withOpacity(0.05),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
-                child: const Text(
-                  'Skip',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    'Skip',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF475569),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -219,14 +340,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
 class OnboardingItem {
   final String image;
+  final String tag;
   final String title;
   final String subtitle;
+  final Color accentColor;
 
   OnboardingItem({
     required this.image,
+    required this.tag,
     required this.title,
     required this.subtitle,
+    required this.accentColor,
   });
 }
-
-

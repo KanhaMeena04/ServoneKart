@@ -234,7 +234,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF248C70),
+                              color: Color(0xFF0B3EDB),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -306,7 +306,7 @@ class _RegisterPageState extends State<RegisterPage> {
         SnackBar(
           content:
               Text('Welcome, $fullName! Registration completed successfully.'),
-          backgroundColor: const Color(0xFF248C70),
+          backgroundColor: const Color(0xFF0B3EDB),
         ),
       );
       if (Navigator.canPop(context)) {
@@ -390,7 +390,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(
-                                  color: Color(0xFF248C70), width: 2),
+                                  color: Color(0xFF0B3EDB), width: 2),
                             ),
                           ),
                           onChanged: (val) {
@@ -406,14 +406,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 20),
                   if (isVerifying)
-                    const CircularProgressIndicator(color: Color(0xFF248C70))
+                    const CircularProgressIndicator(color: Color(0xFF0B3EDB))
                   else
                     SizedBox(
                       width: double.infinity,
                       height: 44,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF248C70),
+                          backgroundColor: const Color(0xFF0B3EDB),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
@@ -460,7 +460,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               const SnackBar(
                                 content: Text(
                                     'Account registered & verified successfully!'),
-                                backgroundColor: Color(0xFF248C70),
+                                backgroundColor: Color(0xFF0B3EDB),
                               ),
                             );
 
@@ -603,11 +603,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.check_circle_rounded,
-                                      color: Color(0xFF248C70), size: 18),
+                                      color: Color(0xFF0B3EDB), size: 18),
                                   SizedBox(width: 4),
                                   Text('Verified',
                                       style: TextStyle(
-                                          color: Color(0xFF248C70),
+                                          color: Color(0xFF0B3EDB),
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold)),
                                 ],
@@ -633,7 +633,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _onCreateAccount,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF248C70),
+                          backgroundColor: const Color(0xFF0B3EDB),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -770,7 +770,7 @@ class _RegisterPageState extends State<RegisterPage> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide:
-                    const BorderSide(color: Color(0xFF248C70), width: 1.5),
+                    const BorderSide(color: Color(0xFF0B3EDB), width: 1.5),
               ),
               filled: true,
               fillColor: readOnly ? Colors.grey.shade50 : Colors.white,

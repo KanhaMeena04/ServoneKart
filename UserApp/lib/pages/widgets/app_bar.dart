@@ -52,7 +52,14 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.black : const Color(0xFF248C70),
+        gradient: isDark
+            ? null
+            : const LinearGradient(
+                colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        color: isDark ? Colors.black : const Color(0xFF07162E),
         borderRadius: widget.showBottomRadius
             ? const BorderRadius.only(
                 bottomLeft: Radius.circular(24.0),

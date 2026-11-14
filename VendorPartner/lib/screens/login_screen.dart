@@ -3290,7 +3290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       Color(0xFF1E3A34),
-                      Color(0xFF248C70),
+                      Color(0xFF0B3EDB),
                       Color(0xFF1A5A4A),
                     ],
                   ),
@@ -6983,7 +6983,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // 3 Key Benefit Feature Cards
         _buildPartnerFeatureRow(
           icon: Icons.delivery_dining_rounded,
-          iconColor: const Color(0xFF248C70),
+          iconColor: const Color(0xFF0B3EDB),
           title: 'Hyperlocal Delivery Fleet',
           subtitle: isGrocery
               ? 'Dedicated rider network ensuring rapid 10-20 min doorstep grocery delivery.'

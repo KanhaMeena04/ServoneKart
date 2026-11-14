@@ -353,7 +353,7 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     final cfg = context.watch<PlatformConfigProvider>();
-    final primaryColor = const Color(0xFF248C70);
+    final primaryColor = const Color(0xFF0B3EDB);
     final accentOrange = const Color(0xFFE89D1E);
     final cart = context.watch<CartProvider>();
     final isGrocery = cfg.isGroceryActive;

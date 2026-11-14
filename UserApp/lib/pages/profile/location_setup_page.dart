@@ -319,7 +319,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
             ),
             Text(
               'Search area, street or use GPS',
-              style: TextStyle(color: Color(0xFF248C70), fontWeight: FontWeight.w600, fontSize: 11),
+              style: TextStyle(color: Color(0xFF0B3EDB), fontWeight: FontWeight.w600, fontSize: 11),
             ),
           ],
         ),
@@ -347,7 +347,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
                       decoration: InputDecoration(
                         hintText: 'Search area, street, landmark or city...',
                         hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF248C70)),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF0B3EDB)),
                         suffixIcon: _isSearching
                             ? const Padding(
                                 padding: EdgeInsets.all(12.0),
@@ -356,7 +356,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF248C70)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0B3EDB)),
                                   ),
                                 ),
                               )
@@ -386,16 +386,16 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248C70).withValues(alpha: 0.08),
+                        color: const Color(0xFF0B3EDB).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFF248C70).withValues(alpha: 0.25)),
+                        border: Border.all(color: const Color(0xFF0B3EDB).withValues(alpha: 0.25)),
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: const BoxDecoration(
-                              color: Color(0xFF248C70),
+                              color: Color(0xFF0B3EDB),
                               shape: BoxShape.circle,
                             ),
                             child: _isLoading
@@ -419,7 +419,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF248C70),
+                                    color: Color(0xFF0B3EDB),
                                   ),
                                 ),
                                 SizedBox(height: 2),
@@ -430,7 +430,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: Color(0xFF248C70)),
+                          const Icon(Icons.chevron_right_rounded, color: Color(0xFF0B3EDB)),
                         ],
                       ),
                     ),
@@ -521,7 +521,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
               ),
               child: const Icon(
                 Icons.location_on_rounded,
-                color: Color(0xFF248C70),
+                color: Color(0xFF0B3EDB),
                 size: 20,
               ),
             ),
@@ -573,7 +573,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
         if (_savedAddresses.isNotEmpty) ...[
           const Row(
             children: [
-              Icon(Icons.bookmark_rounded, color: Color(0xFF248C70), size: 18),
+              Icon(Icons.bookmark_rounded, color: Color(0xFF0B3EDB), size: 18),
               SizedBox(width: 6),
               Text(
                 'Saved Addresses',
@@ -604,10 +604,10 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF248C70).withValues(alpha: 0.08),
+                    color: const Color(0xFF0B3EDB).withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: const Color(0xFF248C70), size: 20),
+                  child: Icon(icon, color: const Color(0xFF0B3EDB), size: 20),
                 ),
                 title: Text(
                   addr.label,
@@ -714,7 +714,7 @@ class _LocationSetupPageState extends State<LocationSetupPage> {
             ),
             child: const Column(
               children: [
-                Icon(Icons.search_rounded, size: 40, color: Color(0xFF248C70)),
+                Icon(Icons.search_rounded, size: 40, color: Color(0xFF0B3EDB)),
                 SizedBox(height: 12),
                 Text(
                   'Search Your Location',

@@ -544,7 +544,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF248C70),
+        backgroundColor: AppColors.primary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
@@ -619,7 +619,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                     decoration: InputDecoration(
                       hintText: 'Search society, street, landmark, area...',
                       hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-                      prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF248C70)),
+                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
                       suffixIcon: _isSearching
                           ? const Padding(
                               padding: EdgeInsets.all(12.0),
@@ -628,7 +628,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF248C70)),
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                                 ),
                               ),
                             )
@@ -677,7 +677,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
 
                         return ListTile(
                           dense: true,
-                          leading: const Icon(Icons.location_on_outlined, color: Color(0xFF248C70), size: 20),
+                          leading: const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
                           title: Text(
                             mainText,
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
@@ -748,7 +748,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                   const Icon(
                     Icons.location_on_rounded,
                     size: 44,
-                    color: Color(0xFF248C70),
+                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -780,12 +780,12 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF248C70)),
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                             ),
                           )
                         : const Icon(
                             Icons.my_location_rounded,
-                            color: Color(0xFF248C70),
+                            color: AppColors.primary,
                             size: 24,
                           ),
                   ),
@@ -837,12 +837,12 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF248C70).withValues(alpha: 0.12),
+                            color: AppColors.primary.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.location_on_rounded,
-                            color: Color(0xFF248C70),
+                            color: AppColors.primary,
                             size: 18,
                           ),
                         ),
@@ -860,7 +860,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF248C70).withValues(alpha: 0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
@@ -868,7 +868,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF248C70),
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
@@ -893,7 +893,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                                   height: 14,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF248C70)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                                   ),
                                 ),
                                 SizedBox(width: 10),
@@ -934,7 +934,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                               decoration: const InputDecoration(
                                 hintText: 'House / Flat No.*',
                                 hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-                                prefixIcon: Icon(Icons.meeting_room_outlined, color: Color(0xFF248C70), size: 18),
+                                prefixIcon: Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 18),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                               ),
@@ -956,7 +956,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                               decoration: const InputDecoration(
                                 hintText: 'Floor No.',
                                 hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-                                prefixIcon: Icon(Icons.layers_outlined, color: Color(0xFF248C70), size: 18),
+                                prefixIcon: Icon(Icons.layers_outlined, color: AppColors.primary, size: 18),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                               ),
@@ -980,7 +980,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                         decoration: const InputDecoration(
                           hintText: 'Building / Apartment / Society Name',
                           hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-                          prefixIcon: Icon(Icons.apartment_rounded, color: Color(0xFF248C70), size: 18),
+                          prefixIcon: Icon(Icons.apartment_rounded, color: AppColors.primary, size: 18),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         ),
@@ -1082,10 +1082,10 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF248C70) : const Color(0xFFF3F4F6),
+          color: isSelected ? AppColors.primary : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? const Color(0xFF248C70) : const Color(0xFFE5E7EB),
+            color: isSelected ? AppColors.primary : const Color(0xFFE5E7EB),
           ),
         ),
         child: Row(

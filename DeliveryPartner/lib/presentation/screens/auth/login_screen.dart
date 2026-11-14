@@ -27,8 +27,8 @@ class _LoginScreenState extends State<LoginScreen> {
   int _resendCountdown = 30;
   Timer? _timer;
 
-  // App Theme Color
-  static const Color primaryGreen = Color(0xFF248C70);
+  // App Theme Color - Brand Vivid Blue
+  static const Color primaryGreen = Color(0xFF0B3EDB);
 
   @override
   void initState() {
@@ -251,12 +251,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Image.asset(
-                                  'splash_logo.png',
+                                  'assets/logo.png',
                                   fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) => const Icon(
-                                    Icons.delivery_dining_rounded,
-                                    size: 45,
-                                    color: primaryGreen,
+                                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                                    'splash_logo.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) => const Icon(
+                                      Icons.delivery_dining_rounded,
+                                      size: 45,
+                                      color: primaryGreen,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -565,7 +569,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFF0FDF4), Color(0xFFF9FAFB)],
+                              colors: [Color(0xFFEFF6FF), Color(0xFFF8FAFC)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),

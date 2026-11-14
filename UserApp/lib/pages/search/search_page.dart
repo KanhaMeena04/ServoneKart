@@ -840,7 +840,7 @@ class _SearchPageState extends State<SearchPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF248C70),
+                      color: const Color(0xFF0B3EDB),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -907,13 +907,13 @@ class _SearchPageState extends State<SearchPage> {
                                   SnackBar(
                                     content: Text('${item.name} added to cart!'),
                                     duration: const Duration(seconds: 1),
-                                    backgroundColor: const Color(0xFF248C70),
+                                    backgroundColor: const Color(0xFF0B3EDB),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: restaurant.isActive ? const Color(0xFF248C70) : Colors.grey[400],
+                          backgroundColor: restaurant.isActive ? const Color(0xFF0B3EDB) : Colors.grey[400],
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

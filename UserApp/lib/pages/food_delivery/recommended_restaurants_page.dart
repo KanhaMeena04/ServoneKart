@@ -234,7 +234,7 @@ class _RecommendedRestaurantsPageState
                                                       : 'Removed ${r.name} from Favourites',
                                                 ),
                                                 duration: const Duration(seconds: 1),
-                                                backgroundColor: isNowFav ? const Color(0xFF248C70) : Colors.grey.shade800,
+                                                backgroundColor: isNowFav ? const Color(0xFF0B3EDB) : Colors.grey.shade800,
                                               ),
                                             );
                                           },

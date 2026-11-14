@@ -36,7 +36,7 @@ class CodPaymentService {
             content: Text(
               (data['message'] ?? 'COD settlement initiated with Admin Desk').toString(),
             ),
-            backgroundColor: const Color(0xFF248C70),
+            backgroundColor: const Color(0xFF0B3EDB),
           ),
         );
         onSuccess();

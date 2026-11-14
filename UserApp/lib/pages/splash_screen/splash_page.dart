@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/theme/app_colors.dart';
 import '../../routes/app_routes.dart';
-import '../../services/auth_service.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/platform_config_provider.dart';
 
@@ -15,20 +16,45 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
-
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOutBack),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+    );
+
+    _fadeController.forward();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<UserProvider>().fetchProfile();
         context.read<PlatformConfigProvider>().refresh();
       }
     });
-    _timer = Timer(const Duration(milliseconds: 1200), () {
+
+    _timer = Timer(const Duration(milliseconds: 2200), () {
       if (mounted) {
         _navigate();
       }
@@ -38,12 +64,14 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _fadeController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   Future<void> _navigate() async {
-    SharedPreferences pref = await SharedPreferences.getInstance();
-    bool onboardDone = pref.getBool('onboardStatus') ?? false;
+    final pref = await SharedPreferences.getInstance();
+    final bool onboardDone = pref.getBool('onboardStatus') ?? false;
 
     if (mounted) {
       if (!onboardDone) {
@@ -56,98 +84,185 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF07162E),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Logo centered in top half
-          Positioned(
-            top: size.height * 0.2,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Image.asset(
-                'assets/logo.png', // Assuming this is the Waseeny logo
-                width: 250,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const SizedBox(),
+          // ── Ambient Gradient Background ──
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF07162E),
+                  Color(0xFF0A2B6B),
+                  Color(0xFF07162E),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
           ),
-          // Red curve and food at bottom
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              height: size.height * 0.55,
-              child: Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.bottomCenter,
-                children: [
-                  // Red semi circle
-                  Positioned(
-                    bottom: -size.width * 0.2,
-                    child: Container(
-                      width: size.width * 1.4,
-                      height: size.width * 1.4,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF248C70), // Teal Green
-                        shape: BoxShape.circle,
+
+          // ── Radial Glow in Center ──
+          Center(
+            child: AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                final scale = 1.0 + (_pulseController.value * 0.15);
+                return Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    width: 260,
+                    height: 260,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFF0B3EDB).withValues(alpha: 0.35),
+                          const Color(0xFF0D5AA6).withValues(alpha: 0.1),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
                   ),
-                  // Quick-commerce grocery badge in semi-circle
-                  Positioned(
-                    bottom: 64,
-                    left: 24,
-                    right: 24,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 84,
-                          height: 84,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              width: 1.5,
+                );
+              },
+            ),
+          ),
+
+          // ── Main Content Column ──
+          SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 2),
+
+                // Logo Container with Glassmorphic Card
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.3),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 220,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 60),
+                            const SizedBox(height: 8),
+                            Text(
+                              'TRICELYN',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.0,
+                              ),
                             ),
-                          ),
-                          child: const Icon(
-                            Icons.local_grocery_store_rounded,
-                            color: Colors.white,
-                            size: 42,
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Tricelyn Quick Mart',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Fresh groceries & daily staples in 10-15 mins',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 36),
+
+                // Tagline
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B3EDB).withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.flash_on_rounded, color: Colors.amber, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              '10-15 MIN EXPRESS DELIVERY',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Everything you actually want.',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFFDBEAFE),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Spacer(flex: 2),
+
+                // Bottom Loading Indicator
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 32,
+                        height: 3,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: const LinearProgressIndicator(
+                            backgroundColor: Color(0xFF0A2B6B),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0B3EDB)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'India\'s Premier Quick-Commerce',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white38,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],

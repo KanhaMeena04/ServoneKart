@@ -31,7 +31,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   final _yearController = TextEditingController();
   final _regNumberController = TextEditingController();
 
-  static const Color primaryGreen = Color(0xFF248C70);
+  static const Color primaryGreen = Color(0xFF0B3EDB);
 
   final List<String> _vehicleTypes = [
     'Scooter / Motorcycle',
