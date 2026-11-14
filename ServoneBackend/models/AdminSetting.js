@@ -22,6 +22,12 @@ const AdminSettingSchema = new mongoose.Schema(
     isCodEnabled: { type: Boolean, default: true },
     metaTitle: { type: String, trim: true, default: 'Tricelyn - Instant Grocery & Hyperlocal Delivery' },
     metaDescription: { type: String, trim: true, default: 'Tricelyn | Multi-Vendor Quick Commerce Grocery Delivery' },
+    estimatedDeliveryTime: { type: String, trim: true, default: '10-15 Mins' },
+    deliveryHeadline: { type: String, trim: true, default: 'HYPERLOCAL EXPRESS • 10-15 MINS' },
+    deliverySubtext: { type: String, trim: true, default: '10-15 min to your door' },
+    firstOrderFreeDelivery: { type: Boolean, default: true },
+    firstOrderMinAmount: { type: Number, default: 0 },
+    freeDeliveryMinAmount: { type: Number, default: 199 },
     iosAppLink: { type: String, trim: true, default: '' },
     androidAppLink: { type: String, trim: true, default: '' },
     siteEmail: { type: String, trim: true, default: 'care@tricelyn.com' },
@@ -173,6 +179,34 @@ const AdminSettingSchema = new mongoose.Schema(
       minOrderAmountForReward: { type: Number, default: 0 },
       maxRewardPerOrder: { type: Number, default: 200 },
       creditToWallet: { type: Boolean, default: true } // Credit cashback to user wallet
+    },
+
+    // Cancellation Policy Configuration
+    cancellationPolicy: {
+      enabled: { type: Boolean, default: true },
+      title: { type: String, default: 'Order Cancellation & Refund Policy' },
+      windowMinutes: { type: Number, default: 2 },
+      cancellationFee: { type: Number, default: 0 },
+      policyText: {
+        type: String,
+        default: 'Orders can be cancelled free of charge within 2 minutes of placing or before the supermarket accepts the order. Once accepted and packed, standard cancellation charges may apply.'
+      }
+    },
+
+    // Vendor B2B & Wholesale Configuration
+    vendorB2BConfig: {
+      enabled: { type: Boolean, default: true },
+      minOrderQty: { type: Number, default: 10 },
+      wholesaleDiscountPercent: { type: Number, default: 15 },
+      b2bSettlementCycle: { type: String, default: 'Daily' },
+      defaultCommissionPercent: { type: Number, default: 8 }
+    },
+
+    // In-App & Web Announcement Bar
+    announcement: {
+      enabled: { type: Boolean, default: false },
+      text: { type: String, default: '🎉 Get Free Delivery on your first order with code TRICELYN100!' },
+      color: { type: String, default: '#0B3EDB' }
     }
   },
   { timestamps: true }

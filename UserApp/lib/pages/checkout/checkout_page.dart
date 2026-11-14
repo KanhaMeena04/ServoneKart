@@ -950,12 +950,51 @@ class _SummaryStep extends StatelessWidget {
           child: Column(children: [
             _summaryRow('Subtotal', '₹${subtotal.toInt()}'),
             const SizedBox(height: 8),
-            _summaryRow('Delivery', '₹${deliveryFee.toInt()}'),
+            _summaryRow('Delivery', deliveryFee == 0 ? 'FREE' : '₹${deliveryFee.toInt()}'),
             const Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 child: Divider(height: 1, color: Color(0xFFF3F4F6))),
             _summaryRow('Total', '₹${total.toInt()}', isTotal: true),
           ]),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF3C7).withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.shield_outlined, size: 16, color: Color(0xFFD97706)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Cancellation & Refund Policy',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Free cancellation within 2 minutes of placing order or before supermarket accepts.',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

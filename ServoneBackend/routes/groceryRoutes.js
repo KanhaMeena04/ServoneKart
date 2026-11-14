@@ -1202,10 +1202,24 @@ const placeGroceryOrderHandler = async (req, res) => {
 
     const isDbReady = mongoose.connection.readyState === 1;
     const settings = isDbReady ? await ensureSettings().catch(() => null) : null;
-    const baseDeliveryFee = Number(settings?.deliveryCharge ?? 25);
-    const freeDeliveryThreshold = Number(settings?.freeDeliveryThreshold ?? 199);
+    const baseDeliveryFee = Number(settings?.deliveryFeeConfig?.baseFee ?? settings?.deliveryCharge ?? 25);
+    const freeDeliveryThreshold = Number(settings?.freeDeliveryMinAmount ?? settings?.deliveryFeeConfig?.freeDeliveryThreshold ?? settings?.freeDeliveryThreshold ?? 199);
     const platformFeeDefault = Number(settings?.platformFee ?? 5);
     const packagingFeeDefault = Number(settings?.packagingFee ?? 0);
+
+    let isFirstOrderFree = false;
+    if (settings?.firstOrderFreeDelivery !== false && req.user?._id) {
+      try {
+        const OrderModel = require('../models/Order');
+        const prevCount = await OrderModel.countDocuments({
+          customer: req.user._id,
+          status: { $nin: ['cancelled', 'failed'] }
+        });
+        if (prevCount === 0) {
+          isFirstOrderFree = true;
+        }
+      } catch (_) {}
+    }
 
     const rawPayMethod = String(paymentMethod || 'cod').toLowerCase();
     const normPayMethod = ['cod', 'cash', 'cash_on_delivery'].includes(rawPayMethod)
@@ -1354,7 +1368,7 @@ const placeGroceryOrderHandler = async (req, res) => {
 
     for (const grp of vendorGroups.values()) {
       const isPrimary = groupIndex === 0;
-      const deliveryFee = isSelfPickupOrder ? 0 : (isPrimary ? (totalSubtotal >= freeDeliveryThreshold ? 0 : baseDeliveryFee) : 0);
+      const deliveryFee = isSelfPickupOrder ? 0 : (isPrimary ? (isFirstOrderFree || totalSubtotal >= freeDeliveryThreshold ? 0 : baseDeliveryFee) : 0);
       const platformFee = isPrimary ? platformFeeDefault : 0;
       const packagingFee = isPrimary ? packagingFeeDefault : 0;
       const groupTip = isSelfPickupOrder ? 0 : (isPrimary ? Number(tip || 0) : 0);

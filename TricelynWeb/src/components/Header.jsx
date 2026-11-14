@@ -36,7 +36,7 @@ const Header = () => {
   const { user, isAuthenticated, logout, setIsAuthModalOpen } = useAuth();
   const { itemCount, subtotal, setIsCartDrawerOpen, addToCart, getItemQuantity, updateQuantity } = useCart();
   const { selectedLocation, setIsLocationModalOpen } = useLocation();
-  const { platformMode } = usePlatform();
+  const { platformMode, appSettings } = usePlatform();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState([]);
@@ -327,6 +327,17 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 shadow-md">
+      {/* Dynamic Announcement Broadcast Bar */}
+      {appSettings?.announcement?.enabled && appSettings?.announcement?.text && (
+        <div
+          className="text-white text-xs py-1.5 px-4 text-center font-bold tracking-wide flex items-center justify-center gap-2"
+          style={{ backgroundColor: appSettings.announcement.color || '#07162E' }}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <span>{appSettings.announcement.text}</span>
+        </div>
+      )}
+
       {/* ============================================================
           MAIN NAVBAR: TRICELYN BRAND GRADIENT (Responsive Mobile + Desktop)
          ============================================================ */}
@@ -355,7 +366,7 @@ const Header = () => {
                 className="flex-1 flex flex-col items-start px-2 py-0.5 rounded-xl text-left truncate active:bg-white/10 transition"
               >
                 <div className="text-[12px] font-black text-white leading-tight flex items-center gap-1">
-                  <span>Delivery in 10-15 mins</span>
+                  <span>Delivery in {appSettings?.estimatedDeliveryTime || '10-15 mins'}</span>
                 </div>
                 <div className="text-[10px] text-blue-100 font-medium truncate max-w-[160px] flex items-center gap-0.5 leading-tight">
                   <span className="truncate">{selectedLocation?.locality || selectedLocation?.name || 'Vijay Nagar, Indore'}</span>
@@ -480,6 +491,12 @@ const Header = () => {
                 </div>
               </div>
             </button>
+
+            {/* Desktop ETA Pill */}
+            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 text-white border border-white/15 text-xs font-bold flex-shrink-0">
+              <Clock className="w-3.5 h-3.5 text-amber-300" />
+              <span>{appSettings?.estimatedDeliveryTime || '10-15 Mins'}</span>
+            </div>
 
             {/* Search Bar: White Rounded-Full Pill (Matches Mockup) */}
             <div ref={desktopSearchRef} className="flex-1 max-w-2xl relative">

@@ -73,7 +73,18 @@ const SiteSetting = () => {
     codEnable: 'Yes',
     onlinePaymentEnable: 'Yes',
     freeDeliveryEnable: 'Yes',
-    isTaxInclusive: 'Yes'
+    isTaxInclusive: 'Yes',
+    estimatedDeliveryTime: '10-15 Mins',
+    deliveryHeadline: 'HYPERLOCAL EXPRESS • 10-15 MINS',
+    deliverySubtext: '10-15 min to your door',
+    freeDeliveryMinAmount: 199,
+    firstOrderFreeDelivery: 'Yes',
+    cancellationWindowMinutes: 2,
+    cancellationPolicyText: 'Orders can be cancelled free of charge within 2 minutes of placing or before the supermarket accepts the order.',
+    riderBasePay: 25,
+    riderPerKmPay: 6,
+    vendorDefaultCommission: 8,
+    b2bMinOrderQty: 10
   });
 
   const getAuthHeaders = () => {
@@ -101,7 +112,18 @@ const SiteSetting = () => {
           androidAppLink: res.data.androidAppLink || prev.androidAppLink,
           siteEmail: res.data.siteEmail || prev.siteEmail,
           menuColors: res.data.menuColors || prev.menuColors,
-          highlightColors: res.data.highlightColors || prev.highlightColors
+          highlightColors: res.data.highlightColors || prev.highlightColors,
+          estimatedDeliveryTime: res.data.estimatedDeliveryTime || prev.estimatedDeliveryTime,
+          deliveryHeadline: res.data.deliveryHeadline || prev.deliveryHeadline,
+          deliverySubtext: res.data.deliverySubtext || prev.deliverySubtext,
+          freeDeliveryMinAmount: res.data.freeDeliveryMinAmount ?? prev.freeDeliveryMinAmount,
+          firstOrderFreeDelivery: res.data.firstOrderFreeDelivery !== false ? 'Yes' : 'No',
+          cancellationWindowMinutes: res.data.cancellationPolicy?.windowMinutes ?? prev.cancellationWindowMinutes,
+          cancellationPolicyText: res.data.cancellationPolicy?.policyText ?? prev.cancellationPolicyText,
+          riderBasePay: res.data.riderEarningConfig?.baseEarning ?? prev.riderBasePay,
+          riderPerKmPay: res.data.riderEarningConfig?.perKmEarning ?? prev.riderPerKmPay,
+          vendorDefaultCommission: res.data.vendorB2BConfig?.defaultCommissionPercent ?? prev.vendorDefaultCommission,
+          b2bMinOrderQty: res.data.vendorB2BConfig?.minOrderQty ?? prev.b2bMinOrderQty
         }));
       }
     } catch (err) {
@@ -148,7 +170,18 @@ const SiteSetting = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await axios.put(`${API_BASE_URL}/api/settings`, settings, {
+      const payload = {
+        ...settings,
+        firstOrderFreeDelivery: settings.firstOrderFreeDelivery === 'Yes' || settings.firstOrderFreeDelivery === true,
+        freeDeliveryMinAmount: Number(settings.freeDeliveryMinAmount) || 199,
+        cancellationWindowMinutes: Number(settings.cancellationWindowMinutes) || 2,
+        cancellationPolicyText: settings.cancellationPolicyText,
+        riderBasePay: Number(settings.riderBasePay) || 25,
+        riderPerKmPay: Number(settings.riderPerKmPay) || 6,
+        vendorDefaultCommission: Number(settings.vendorDefaultCommission) || 8,
+        b2bMinOrderQty: Number(settings.b2bMinOrderQty) || 10
+      };
+      const res = await axios.put(`${API_BASE_URL}/api/settings`, payload, {
         headers: getAuthHeaders(),
         withCredentials: true
       });
@@ -250,8 +283,99 @@ const SiteSetting = () => {
           <InputField label="Facebook Page" name="facebook" value={settings.facebook} onChange={handleChange} />
           <InputField label="Instagram Page" name="instagram" value={settings.instagram} onChange={handleChange} />
 
+          {/* Quick Commerce Delivery Time & Headline Settings */}
+          <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+            <h3 className="text-base font-bold text-gray-800 mb-4">🚀 Dynamic Delivery & Free Delivery Rules</h3>
+          </div>
+          <InputField
+            label="Estimated Delivery Time (e.g. 10-15 Mins / 15-20 Mins)"
+            name="estimatedDeliveryTime"
+            value={settings.estimatedDeliveryTime}
+            onChange={handleChange}
+          />
+          <InputField
+            label="Banner Top Headline (App & Web)"
+            name="deliveryHeadline"
+            value={settings.deliveryHeadline}
+            onChange={handleChange}
+          />
+          <InputField
+            label="Delivery Subtext (e.g. 10-15 min to your door)"
+            name="deliverySubtext"
+            value={settings.deliverySubtext}
+            onChange={handleChange}
+          />
+          <InputField
+            label="Free Delivery Minimum Order Amount (₹)"
+            name="freeDeliveryMinAmount"
+            type="number"
+            value={settings.freeDeliveryMinAmount}
+            onChange={handleChange}
+          />
+
+          {/* Rider Payout & Vendor B2B Settings */}
+          <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+            <h3 className="text-base font-bold text-gray-800 mb-4">🛵 Rider Pay & 🏪 Vendor Partner B2B Rules</h3>
+          </div>
+          <InputField
+            label="Rider Base Fixed Pay Per Order (₹)"
+            name="riderBasePay"
+            type="number"
+            value={settings.riderBasePay}
+            onChange={handleChange}
+          />
+          <InputField
+            label="Rider Distance Pay (₹ per KM)"
+            name="riderPerKmPay"
+            type="number"
+            value={settings.riderPerKmPay}
+            onChange={handleChange}
+          />
+          <InputField
+            label="Vendor Partner Default Commission (%)"
+            name="vendorDefaultCommission"
+            type="number"
+            value={settings.vendorDefaultCommission}
+            onChange={handleChange}
+          />
+          <InputField
+            label="B2B Wholesale Minimum Order Quantity (Units)"
+            name="b2bMinOrderQty"
+            type="number"
+            value={settings.b2bMinOrderQty}
+            onChange={handleChange}
+          />
+
+          {/* Cancellation Policy Master Settings */}
+          <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+            <h3 className="text-base font-bold text-gray-800 mb-4">🛡️ Order Cancellation Policy (Live on App & Web)</h3>
+          </div>
+          <InputField
+            label="Cancellation Grace Window (Minutes)"
+            name="cancellationWindowMinutes"
+            type="number"
+            value={settings.cancellationWindowMinutes}
+            onChange={handleChange}
+          />
+          <div className="col-span-1 md:col-span-2">
+            <InputField
+              label="Cancellation Policy Text (Shown to customers on Order & Cart screens)"
+              name="cancellationPolicyText"
+              multiline
+              rows={2}
+              value={settings.cancellationPolicyText}
+              onChange={handleChange}
+            />
+          </div>
+
           {/* Switches (Radio Groups) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 col-span-1 md:col-span-2 mt-4">
+            <RadioField
+              label="First-time User Free Delivery"
+              name="firstOrderFreeDelivery"
+              value={settings.firstOrderFreeDelivery}
+              onChange={handleChange}
+            />
             <RadioField label="Email Notifications Enable" name="emailEnable" value={settings.emailEnable} onChange={handleChange} />
             <RadioField label="SMS Enable" name="smsEnable" value={settings.smsEnable} onChange={handleChange} />
             <RadioField label="COD Payment Enable" name="codEnable" value={settings.codEnable} onChange={handleChange} />

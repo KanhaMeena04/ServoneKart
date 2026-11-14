@@ -11,7 +11,8 @@ import {
   Lock,
   HeartHandshake,
   Store,
-  Layers
+  Layers,
+  Clock
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -37,11 +38,13 @@ const CheckoutPage = () => {
     coupon, 
     couponDiscount, 
     grandTotal, 
-    clearCart 
+    clearCart,
+    freeThreshold,
+    isFirstOrderEligible
   } = useCart();
   const { user, isAuthenticated, setIsAuthModalOpen } = useAuth();
   const { selectedLocation } = useLocation();
-  const { platformMode, isCodEnabled } = usePlatform();
+  const { platformMode, isCodEnabled, appSettings } = usePlatform();
 
   // Address state
   const [addressType, setAddressType] = useState('Home');
@@ -498,7 +501,13 @@ const CheckoutPage = () => {
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Charge</span>
                 <span className="font-semibold text-gray-900">
-                  {deliveryFee === 0 ? <span className="text-green-600 font-bold">FREE</span> : `₹${deliveryFee}`}
+                  {deliveryFee === 0 ? (
+                    <span className="text-green-600 font-bold">
+                      FREE {isFirstOrderEligible ? '(1st Order Special)' : ''}
+                    </span>
+                  ) : (
+                    `₹${deliveryFee}`
+                  )}
                 </span>
               </div>
 
@@ -518,6 +527,17 @@ const CheckoutPage = () => {
                 <span>To Pay</span>
                 <span className="text-base text-brand-600">₹{grandTotal.toFixed(0)}</span>
               </div>
+            </div>
+
+            {/* Dynamic Cancellation Policy Notice */}
+            <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-1 text-left">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                <Clock className="w-3.5 h-3.5 text-amber-700" />
+                <span>{appSettings?.cancellationPolicy?.title || 'Cancellation & Refund Policy'}</span>
+              </div>
+              <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+                {appSettings?.cancellationPolicy?.policyText || `Orders can be cancelled free of charge within ${appSettings?.cancellationPolicy?.windowMinutes || 2} minutes of placing or before the supermarket accepts the order.`}
+              </p>
             </div>
 
             <button

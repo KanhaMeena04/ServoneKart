@@ -67,12 +67,16 @@ const MOBILE_CATEGORY_GROUPS = [
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { platformMode, enableFoodDelivery } = usePlatform();
+  const { platformMode, enableFoodDelivery, appSettings } = usePlatform();
   const { selectedLocation } = useLocation();
   const [categories, setCategories] = useState(CATEGORIES);
   const [shuffledCategories, setShuffledCategories] = useState([]);
   const [isMobileCatPaused, setIsMobileCatPaused] = useState(false);
   const mobileCatTrackRef = useRef(null);
+
+  const deliveryTime = appSettings?.estimatedDeliveryTime || '10-15 Mins';
+  const deliveryHeadline = appSettings?.deliveryHeadline || 'Hyperlocal Express • 10-15 Mins';
+  const deliverySubtext = appSettings?.deliverySubtext || `Fast. Safe. Reliable doorstep delivery in ${deliveryTime}.`;
 
   const [bestSellers, setBestSellers] = useState(BEST_SELLERS);
   const [categorySections, setCategorySections] = useState([]);
@@ -342,7 +346,7 @@ const HomePage = () => {
                     Shops Near Me
                   </h2>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                    ⚡ 10-15 Mins Delivery
+                    ⚡ {deliveryTime} Delivery
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 font-medium">
@@ -480,7 +484,7 @@ const HomePage = () => {
               {/* Badge */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3EDB]/10 border border-[#0D5AA6]/30 text-[#0B3EDB] text-[10px] sm:text-xs font-bold tracking-wide uppercase shadow-2xs mb-2">
                 <span className="w-2 h-2 rounded-full bg-[#0B3EDB] animate-pulse" />
-                <span>Hyperlocal Express • 10-15 Mins</span>
+                <span>{deliveryHeadline}</span>
               </div>
 
               {/* Dynamic Title */}
@@ -508,7 +512,7 @@ const HomePage = () => {
 
               {/* Subtitle */}
               <p className="text-xs sm:text-sm text-gray-600 font-semibold mt-1 max-w-md">
-                {priorityBanner.subtitle || "Fast. Safe. Reliable doorstep delivery in 10-15 minutes."}
+                {priorityBanner.subtitle || deliverySubtext}
               </p>
 
               {/* CTA Button */}
@@ -551,7 +555,7 @@ const HomePage = () => {
                   </div>
                   <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Deliver</h4>
                   <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
-                    10-15 mins
+                    {deliveryTime}
                   </p>
                 </div>
 
@@ -576,7 +580,7 @@ const HomePage = () => {
           </div>
 
           {categorySections.map((sec) => (
-            <CategoryProductRow key={sec.slug} section={sec} />
+            <CategoryProductRow key={sec.slug} section={sec} deliveryTime={deliveryTime} />
           ))}
         </div>
 
@@ -588,7 +592,7 @@ const HomePage = () => {
 /**
  * Category-wise Horizontal Product Carousel Row
  */
-const CategoryProductRow = ({ section }) => {
+const CategoryProductRow = ({ section, deliveryTime }) => {
   const scrollRef = useRef(null);
 
   const scroll = (direction) => {
@@ -614,7 +618,7 @@ const CategoryProductRow = ({ section }) => {
             {section.title || section.name}
           </h3>
           <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
-            ⚡ 10-15 MINS
+            ⚡ {(deliveryTime || '10-15 Mins').toUpperCase()}
           </span>
         </div>
 

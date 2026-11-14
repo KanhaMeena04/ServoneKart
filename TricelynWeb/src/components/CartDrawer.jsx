@@ -17,6 +17,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
+import { usePlatform } from '../context/PlatformContext';
 
 const CartDrawer = () => {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ const CartDrawer = () => {
     mrpTotal, 
     totalSavings, 
     deliveryFee, 
+    freeThreshold,
+    isFirstOrderEligible,
     platformFee, 
     coupon, 
     couponDiscount, 
@@ -43,7 +46,9 @@ const CartDrawer = () => {
     setIsCartDrawerOpen 
   } = useCart();
 
+  const { appSettings } = usePlatform();
   const { selectedLocation } = useLocation();
+  const dynamicFreeThreshold = freeThreshold || appSettings?.freeDeliveryMinAmount || 199;
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [copiedShare, setCopiedShare] = useState(false);
 
@@ -160,20 +165,24 @@ const CartDrawer = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-extrabold text-gray-800 flex items-center gap-1.5">
                       <span>🚚</span>
-                      {subtotal >= 199 ? (
-                        <span className="text-emerald-700 font-black">Congratulations! You unlocked FREE Delivery</span>
+                      {deliveryFee === 0 ? (
+                        <span className="text-emerald-700 font-black">
+                          {isFirstOrderEligible
+                            ? '🎉 First Order Special: FREE Delivery Unlocked!'
+                            : 'Congratulations! You unlocked FREE Delivery'}
+                        </span>
                       ) : (
-                        <span>Add items worth <strong className="text-emerald-700">₹{(199 - subtotal).toFixed(0)}</strong> for FREE Delivery</span>
+                        <span>Add items worth <strong className="text-emerald-700">₹{Math.max(0, dynamicFreeThreshold - subtotal).toFixed(0)}</strong> for FREE Delivery</span>
                       )}
                     </span>
                     <span className="text-[10px] font-black text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                      ₹199 Min
+                      {isFirstOrderEligible ? '1st Order FREE' : `₹${dynamicFreeThreshold} Min`}
                     </span>
                   </div>
                   <div className="w-full bg-white rounded-full h-2 overflow-hidden border border-emerald-100">
                     <div 
                       className="bg-gradient-to-r from-emerald-500 to-green-600 h-full rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, Math.round((subtotal / 199) * 100))}%` }}
+                      style={{ width: `${deliveryFee === 0 ? 100 : Math.min(100, Math.round((subtotal / dynamicFreeThreshold) * 100))}%` }}
                     />
                   </div>
                 </div>
@@ -390,13 +399,14 @@ const CartDrawer = () => {
                   </div>
                 </div>
 
-                {/* Cancellation Policy */}
+                {/* Cancellation Policy (Dynamic Admin Driven) */}
                 <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-1">
-                  <h6 className="font-extrabold text-gray-900 text-xs tracking-tight">
-                    Cancellation Policy
+                  <h6 className="font-extrabold text-gray-900 text-xs tracking-tight flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#0B3EDB]" />
+                    <span>{appSettings?.cancellationPolicy?.title || 'Cancellation Policy'}</span>
                   </h6>
                   <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
-                    Orders cannot be cancelled once packed for delivery. In case of unexpected delays, a refund will be provided, if applicable.
+                    {appSettings?.cancellationPolicy?.policyText || `Orders can be cancelled free of charge within ${appSettings?.cancellationPolicy?.windowMinutes || 2} minutes of placing or before the supermarket accepts the order.`}
                   </p>
                 </div>
               </>

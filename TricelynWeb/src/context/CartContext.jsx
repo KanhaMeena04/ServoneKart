@@ -1,11 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { marketingService } from '../services/api';
+import { usePlatform } from './PlatformContext';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
 const resolveProductId = (prod) => String(prod?._id || prod?.id || prod?.slug || '');
 
 export const CartProvider = ({ children }) => {
+  const { appSettings } = usePlatform();
+  const { user } = useAuth();
+
   const [items, setItems] = useState(() => {
     try {
       const saved = localStorage.getItem('tricelyn_cart');
@@ -149,9 +154,14 @@ export const CartProvider = ({ children }) => {
 
   const totalSavings = Math.max(0, mrpTotal - subtotal);
 
-  // Delivery fee logic: Free delivery on ₹199+, else ₹25
-  const deliveryFee = subtotal >= 199 || items.length === 0 ? 0 : 25;
-  const platformFee = items.length > 0 ? 2 : 0;
+  // Dynamic Delivery Fee Logic: Admin configured threshold & First-order perks
+  const freeThreshold = Number(appSettings?.freeDeliveryMinAmount ?? appSettings?.deliveryFeeConfig?.freeDeliveryThreshold ?? 199);
+  const baseFee = Number(appSettings?.deliveryFeeConfig?.baseFee ?? appSettings?.baseDeliveryFee ?? 25);
+  const platformFeeAmount = Number(appSettings?.platformFeeConfig?.fee ?? appSettings?.platformFee ?? 2);
+  const isFirstOrderEligible = Boolean(appSettings?.firstOrderFreeDelivery !== false && (!user?.orderCount || user?.orderCount === 0));
+
+  const deliveryFee = items.length === 0 || subtotal >= freeThreshold || isFirstOrderEligible ? 0 : baseFee;
+  const platformFee = items.length > 0 ? platformFeeAmount : 0;
 
   let couponDiscount = 0;
   if (coupon && subtotal > 0) {
@@ -223,6 +233,8 @@ export const CartProvider = ({ children }) => {
         mrpTotal,
         totalSavings,
         deliveryFee,
+        freeThreshold,
+        isFirstOrderEligible,
         platformFee,
         riderTip,
         setRiderTip,

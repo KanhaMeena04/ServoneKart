@@ -4588,6 +4588,23 @@ exports.customerCancelOrder = async (req, res) => {
       });
     }
 
+    const AdminSetting = require('../models/AdminSetting');
+    const adminSetting = await AdminSetting.getSettings().catch(() => null);
+    const windowMinutes = adminSetting?.cancellationPolicy?.windowMinutes ?? 2;
+    const orderCreatedAt = new Date(order.createdAt || Date.now()).getTime();
+    const elapsedMinutes = (Date.now() - orderCreatedAt) / (60 * 1000);
+    const isWithinGraceWindow = elapsedMinutes <= windowMinutes;
+
+    if (!isWithinGraceWindow && ['preparing', 'ready', 'dispatched', 'out_for_delivery'].includes(order.status) && req.user.role !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: `Cancellation window of ${windowMinutes} minutes has elapsed and store is already packing your order.`
+      });
+    }
+
+    const cancellationFee = (!isWithinGraceWindow && adminSetting?.cancellationPolicy?.cancellationFee) ? Number(adminSetting.cancellationPolicy.cancellationFee) : 0;
+    const refundAmount = Math.max(0, order.totalAmount - cancellationFee);
+
     order.status = 'cancelled';
     order.cancellationReason = reason;
     order.timeline.push({

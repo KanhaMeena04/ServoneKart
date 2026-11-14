@@ -13,6 +13,7 @@ import '../../providers/user_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/grocery_api_service.dart';
 import '../../services/notification_api_service.dart';
+import '../../services/settings_api_service.dart';
 import '../../widgets/safe_image.dart';
 import '../category_product/category_products.dart';
 import '../category_selection/categories_page.dart';
@@ -49,6 +50,7 @@ class _GroceryPageState extends State<GroceryPage> {
   final ScrollController _categoryScrollCtrl = ScrollController();
   Timer? _categoryScrollTimer;
   final TextEditingController _searchCtrl = TextEditingController();
+  String _deliveryTime = '10-15 MINS';
 
   Color get primaryGreen => AppColors.primary;
 
@@ -91,6 +93,13 @@ class _GroceryPageState extends State<GroceryPage> {
 
   Future<void> _fetchGroceryData() async {
     if (mounted) setState(() => _isLoading = true);
+    SettingsApiService.getEstimatedDeliveryTime().then((time) {
+      if (mounted && time.isNotEmpty) {
+        setState(() {
+          _deliveryTime = time.toUpperCase();
+        });
+      }
+    });
     try {
       final results = await Future.wait([
         GroceryApiService.getBanners(),
@@ -281,9 +290,9 @@ class _GroceryPageState extends State<GroceryPage> {
                                                     color: Colors.amber[400],
                                                     borderRadius: BorderRadius.circular(6),
                                                   ),
-                                                  child: const Text(
-                                                    '10-15 MINS',
-                                                    style: TextStyle(
+                                                  child: Text(
+                                                    _deliveryTime,
+                                                    style: const TextStyle(
                                                       fontSize: 8.5,
                                                       fontWeight: FontWeight.w900,
                                                       color: Colors.black87,
@@ -494,9 +503,9 @@ class _GroceryPageState extends State<GroceryPage> {
                             color: isDark ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
-                        const Text(
-                          '10-15 mins',
-                          style: TextStyle(
+                        Text(
+                          _deliveryTime.toLowerCase(),
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF16A34A),
                             fontWeight: FontWeight.bold,
@@ -1012,25 +1021,25 @@ class _GroceryPageState extends State<GroceryPage> {
           ),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '10-15 MIN EXPRESS GROCERY',
-                    style: TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.w900),
+                    '$_deliveryTime EXPRESS GROCERY',
+                    style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.w900),
                   ),
-                  SizedBox(height: 6),
-                  Text(
+                  const SizedBox(height: 6),
+                  const Text(
                     'Fresh Fruits, Dairy &\nDaily Kitchen Staples',
                     style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, height: 1.2),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 42),
+            const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 42),
           ],
         ),
       );

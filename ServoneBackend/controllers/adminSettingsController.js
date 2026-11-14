@@ -73,12 +73,38 @@ const toPublicPayload = (settings) => {
     menuColors: settings?.menuColors || '#0F62FE',
     highlightColors: settings?.highlightColors || '#248C70',
     orderPrefix: settings?.orderPrefix || 'TRC',
+    estimatedDeliveryTime: settings?.estimatedDeliveryTime || '10-15 Mins',
+    deliveryHeadline: settings?.deliveryHeadline || 'HYPERLOCAL EXPRESS • 10-15 MINS',
+    deliverySubtext: settings?.deliverySubtext || '10-15 min to your door',
+    firstOrderFreeDelivery: settings?.firstOrderFreeDelivery !== false,
+    firstOrderMinAmount: settings?.firstOrderMinAmount || 0,
+    freeDeliveryMinAmount: settings?.freeDeliveryMinAmount || settings?.deliveryFeeConfig?.freeDeliveryThreshold || 199,
     deliveryFeeConfig: settings?.deliveryFeeConfig,
     platformFeeConfig: settings?.platformFeeConfig,
     packagingFeeConfig: settings?.packagingFeeConfig,
     surgeConfig: settings?.surgeConfig,
     tipConfig: settings?.tipConfig || { enabled: true, options: [5, 10, 20] },
     taxConfig: settings?.taxConfig || { enabled: true, gstPercent: 5 },
+    rewardConfig: settings?.rewardConfig || { enabled: true, rewardPercentage: 5, maxRewardPerOrder: 200 },
+    cancellationPolicy: settings?.cancellationPolicy || {
+      enabled: true,
+      title: 'Order Cancellation & Refund Policy',
+      windowMinutes: 2,
+      cancellationFee: 0,
+      policyText: 'Orders can be cancelled free of charge within 2 minutes of placing or before the supermarket accepts the order.',
+    },
+    vendorB2BConfig: settings?.vendorB2BConfig || {
+      enabled: true,
+      minOrderQty: 10,
+      wholesaleDiscountPercent: 15,
+      b2bSettlementCycle: 'Daily',
+      defaultCommissionPercent: 8,
+    },
+    announcement: settings?.announcement || {
+      enabled: false,
+      text: '',
+      color: '#0B3EDB',
+    },
     selfPickupConfig: settings?.selfPickupConfig || {
       enabled: true,
       pickupCapacityPerHour: 20,
@@ -173,6 +199,53 @@ exports.updateAdminSettings = async (req, res) => {
 
     if (body.codEnable !== undefined && body.isCodEnabled === undefined) {
       body.isCodEnabled = String(body.codEnable).toLowerCase() !== 'no' && body.codEnable !== false;
+    }
+
+    if (body.firstOrderFreeDelivery !== undefined) {
+      body.firstOrderFreeDelivery = body.firstOrderFreeDelivery === 'Yes' || body.firstOrderFreeDelivery === true || body.firstOrderFreeDelivery === 'true';
+    }
+
+    if (body.freeDeliveryMinAmount !== undefined) {
+      body.freeDeliveryMinAmount = Number(body.freeDeliveryMinAmount) || 199;
+      if (settings.deliveryFeeConfig) {
+        settings.deliveryFeeConfig.freeDeliveryThreshold = body.freeDeliveryMinAmount;
+      }
+    }
+
+    if (body.cancellationWindowMinutes !== undefined || body.cancellationPolicyText !== undefined) {
+      settings.cancellationPolicy = {
+        enabled: true,
+        title: body.cancellationTitle || settings.cancellationPolicy?.title || 'Order Cancellation & Refund Policy',
+        windowMinutes: Number(body.cancellationWindowMinutes ?? settings.cancellationPolicy?.windowMinutes ?? 2),
+        cancellationFee: Number(body.cancellationFee ?? settings.cancellationPolicy?.cancellationFee ?? 0),
+        policyText: body.cancellationPolicyText || settings.cancellationPolicy?.policyText || 'Orders can be cancelled free of charge within 2 minutes of placing or before the supermarket accepts the order.'
+      };
+      delete body.cancellationWindowMinutes;
+      delete body.cancellationPolicyText;
+    }
+
+    if (body.riderBasePay !== undefined || body.riderPerKmPay !== undefined) {
+      settings.riderEarningConfig = {
+        ...(settings.riderEarningConfig?.toObject ? settings.riderEarningConfig.toObject() : settings.riderEarningConfig),
+        baseEarning: Number(body.riderBasePay ?? settings.riderEarningConfig?.baseEarning ?? 25),
+        baseDistanceKm: Number(settings.riderEarningConfig?.baseDistanceKm ?? 2),
+        perKmEarning: Number(body.riderPerKmPay ?? settings.riderEarningConfig?.perKmEarning ?? 6)
+      };
+      delete body.riderBasePay;
+      delete body.riderPerKmPay;
+    }
+
+    if (body.vendorDefaultCommission !== undefined || body.b2bMinOrderQty !== undefined) {
+      settings.vendorB2BConfig = {
+        ...(settings.vendorB2BConfig?.toObject ? settings.vendorB2BConfig.toObject() : settings.vendorB2BConfig),
+        enabled: true,
+        minOrderQty: Number(body.b2bMinOrderQty ?? settings.vendorB2BConfig?.minOrderQty ?? 10),
+        wholesaleDiscountPercent: Number(body.wholesaleDiscountPercent ?? settings.vendorB2BConfig?.wholesaleDiscountPercent ?? 15),
+        b2bSettlementCycle: body.b2bSettlementCycle || settings.vendorB2BConfig?.b2bSettlementCycle || 'Daily',
+        defaultCommissionPercent: Number(body.vendorDefaultCommission ?? settings.vendorB2BConfig?.defaultCommissionPercent ?? 8)
+      };
+      delete body.vendorDefaultCommission;
+      delete body.b2bMinOrderQty;
     }
 
     if (body.adminCommission !== undefined) {
