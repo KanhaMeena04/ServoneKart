@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box,
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -18,7 +16,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControlLabel,
   Checkbox,
   CircularProgress,
   Tooltip,
@@ -31,16 +28,11 @@ import {
   ContentCopy,
   Visibility,
   VisibilityOff,
-  Edit,
   Security,
   Storefront,
   OpenInNew,
   Search,
-  Refresh,
-  CheckCircle,
-  Block,
-  Phone,
-  Email
+  Refresh
 } from '@mui/icons-material';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -85,7 +77,7 @@ export default function VendorCredentialsManagement() {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/admin/vendors/credentials/all`, {
@@ -102,11 +94,11 @@ export default function VendorCredentialsManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchVendors();
-  }, []);
+  }, [fetchVendors]);
 
   const togglePinVisibility = (id) => {
     setVisiblePins(prev => ({ ...prev, [id]: !prev[id] }));

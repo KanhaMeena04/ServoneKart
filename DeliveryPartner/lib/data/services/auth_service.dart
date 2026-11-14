@@ -116,6 +116,22 @@ class AuthService {
     return token != null;
   }
 
+  // Get saved user data
+  static Future<Map<String, dynamic>?> getUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('user_data');
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        return jsonDecode(raw) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    final phone = prefs.getString(_userPhoneKey);
+    if (phone != null) {
+      return {'phone': phone, 'name': 'Rider Partner'};
+    }
+    return null;
+  }
+
   // Check if phone number is already registered (existing user)
   static Future<bool> isPhoneRegistered(String phone) async {
     final cleanPhone = phone.replaceAll(RegExp(r'\D'), '').trim();

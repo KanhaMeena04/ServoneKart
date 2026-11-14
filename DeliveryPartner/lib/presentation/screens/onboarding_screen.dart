@@ -87,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           'assets/logo.png',
                           width: 26,
                           height: 26,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (context, error, stackTrace) => const Icon(
                             Icons.two_wheeler_rounded,
                             color: vividBlue,
                             size: 26,

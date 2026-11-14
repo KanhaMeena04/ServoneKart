@@ -46,7 +46,7 @@ class EcdkartLogo extends StatelessWidget {
               child: Image.asset(
                 'assets/images/logo.png',
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   color: const Color(0xFF0B3EDB),
                   child: const Icon(
                     Icons.storefront_rounded,

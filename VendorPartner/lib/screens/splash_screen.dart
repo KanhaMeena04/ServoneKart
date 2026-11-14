@@ -323,8 +323,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // Particle data model for clean generation
