@@ -117,6 +117,9 @@ const userSchema = new mongoose.Schema(
     codActive: { type: Boolean, default: true },
     isCodBlocked: { type: Boolean, default: false },
     lastNotificationsReadAt: { type: Date },
+    membershipBadge: { type: String, default: "" },
+    isPremier: { type: Boolean, default: false },
+    membershipExpiresAt: { type: Date },
   },
   { timestamps: true }
 );

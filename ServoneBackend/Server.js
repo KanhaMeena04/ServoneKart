@@ -438,6 +438,11 @@ app.use('/api/v1/laundry', laundryRoutes);
 app.use('/api/essentials', essentialsRoutes);
 app.use('/api/v1/essentials', essentialsRoutes);
 
+// === MEMBERSHIP & SUBSCRIPTION SYSTEM (User, Rider, Vendor) ===
+const membershipRoutes = require('./routes/membershipRoutes');
+app.use('/api/memberships', membershipRoutes);
+app.use('/api/v1/memberships', membershipRoutes);
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/health', (req, res) => {
   const mongoose = require('mongoose');

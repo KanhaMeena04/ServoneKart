@@ -68,6 +68,7 @@ const CategoryRequests=lazy(()=>import("../pages/CategoryRequests"))
 const InventoryManagement=lazy(()=>import("../pages/InventoryManagement"))
 const InvoiceManagement=lazy(()=>import("../pages/InvoiceManagement"))
 const VendorCredentialsManagement=lazy(()=>import("../pages/VendorCredentialsManagement"))
+const MembershipManagement=lazy(()=>import("../pages/MembershipManagement"))
 
 const UnitSymbolAdd=lazy(()=>import("../units/pages/AddUnitSymbol"))
 const AddUnit=lazy(()=>import("../units/pages/AddUnit"))
@@ -380,6 +381,8 @@ const AdminRoutes = () => {
 				 <Route path="/payment-reconciliation" element={<PaymentReconciliationPage/>} />
 				 <Route path="/rider-earnings-control" element={<RiderEarningsControlPage/>} />
 				 <Route path="/audit-logs" element={<AuditLogsPage/>} />
+				 <Route path="/memberships" element={<MembershipManagement/>} />
+				 <Route path="/admin/memberships" element={<MembershipManagement/>} />
 
 			 </Route>
     </Routes>

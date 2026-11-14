@@ -97,7 +97,10 @@ const riderSchema = new mongoose.Schema({
     totalOrders: { type: Number, default: 0 },
     totalDeliveries: { type: Number, default: 0 },
     cancelledOrders: { type: Number, default: 0 },
-    averageRating: { type: Number, default: 4.8 }
+    averageRating: { type: Number, default: 4.8 },
+    membershipBadge: { type: String, default: "" },
+    isProRider: { type: Boolean, default: false },
+    membershipExpiresAt: { type: Date }
 }, { timestamps: true, strict: false });
 
 riderSchema.pre("save", async function (next) {

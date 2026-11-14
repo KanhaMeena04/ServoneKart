@@ -39,6 +39,7 @@ import {
   HealthAndSafety,
   LocalGroceryStore,
   Inventory,
+  WorkspacePremium,
 } from '@mui/icons-material'
 import AccountBalanceWallet from "@mui/icons-material/AccountBalanceWallet";
 import RateReview from "@mui/icons-material/RateReview";
@@ -79,6 +80,12 @@ export const menuItems: MenuItemType[] = [
   { text: 'Live Orders', icon: <Assignment />, path: '/order-dashboard', permission: 'Order' },
   { text: 'Live Map', icon: <Map />, path: '/eagles-view', permission: 'Order' },
   { text: 'Customers', icon: <People />, path: '/user-management', permission: 'User' },
+  {
+    text: 'Memberships & VIP',
+    icon: <WorkspacePremium />,
+    path: '/admin/memberships',
+    permission: 'SiteSettings',
+  },
 
   {
     text: 'Dark Stores & Marts',

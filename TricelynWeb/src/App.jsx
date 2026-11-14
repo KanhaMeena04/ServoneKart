@@ -28,6 +28,7 @@ import SearchResultsPage from './pages/SearchResultsPage';
 import AccountOrdersPage from './pages/AccountOrdersPage';
 import SupportPage from './pages/SupportPage';
 import LegalPolicyCenterPage from './pages/LegalPolicyCenterPage';
+import MembershipPlansPage from './pages/MembershipPlansPage';
 
 function App() {
   return (
@@ -58,6 +59,11 @@ function App() {
                     <Route path="/account/orders" element={<AccountOrdersPage />} />
                     <Route path="/account/addresses" element={<AccountOrdersPage />} />
                     <Route path="/support" element={<SupportPage />} />
+                    <Route path="/premier" element={<MembershipPlansPage />} />
+                    <Route path="/membership" element={<MembershipPlansPage />} />
+                    <Route path="/memberships" element={<MembershipPlansPage />} />
+                    <Route path="/ride-with-tricelyn" element={<Navigate to="/premier?tab=rider" replace />} />
+                    <Route path="/sell-with-tricelyn" element={<Navigate to="/premier?tab=vendor" replace />} />
                     <Route path="/policy/:policyType" element={<LegalPolicyCenterPage />} />
                     <Route path="/policies" element={<Navigate to="/policy/refund" replace />} />
                     <Route path="/terms" element={<Navigate to="/policy/terms" replace />} />

@@ -103,6 +103,9 @@ const restaurantSchema = new mongoose.Schema(
       lastRatedAt: { type: Date }
     },
     totalOrders: { type: Number, default: 0 },
+    membershipBadge: { type: String, default: "" },
+    isVerifiedMerchant: { type: Boolean, default: false },
+    membershipExpiresAt: { type: Date },
     totalEarnings: { type: Number, default: 0 },
     totalDeliveries: { type: Number, default: 0 },
     averageOrderValue: { type: Number, default: 0 },

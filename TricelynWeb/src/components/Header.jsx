@@ -365,6 +365,15 @@ const Header = () => {
 
               {/* Profile / Account Button */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Mobile Premier Shortcut */}
+                <Link
+                  to="/premier"
+                  className="w-8 h-8 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center shadow-xs active:scale-95 transition"
+                  title="Tricelyn Premier"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-900" />
+                </Link>
+
                 {isAuthenticated ? (
                   <button
                     onClick={() => navigate('/account')}
@@ -501,6 +510,20 @@ const Header = () => {
 
             {/* Right Action Icons: Auth & Cart (Matches Mockup) */}
             <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Premier Navigation Link (Matches Mockup Screenshot 1) */}
+              <Link
+                to="/premier"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/10 rounded-full transition border border-white/20 active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Premier</span>
+                {user?.membershipBadge && (
+                  <span className="bg-amber-400 text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tight">
+                    {user.membershipBadge}
+                  </span>
+                )}
+              </Link>
+
               {/* Account / Login */}
               {isAuthenticated ? (
                 <div className="relative">

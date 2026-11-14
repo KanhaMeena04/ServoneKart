@@ -111,4 +111,13 @@ export const authService = {
   register: (data) => api.post('/auth/register/initiate', data),
 };
 
+// Membership & Subscription Services
+export const membershipService = {
+  getPlans: (targetAudience = '') => api.get(`/memberships/plans${targetAudience ? `?targetAudience=${targetAudience}` : ''}`),
+  subscribePlan: (data) => api.post('/memberships/subscribe', data),
+  getMySubscription: (targetAudience = 'user') => api.get(`/memberships/my-subscription?targetAudience=${targetAudience}`),
+  checkBadge: (type, id) => api.get(`/memberships/badge/${type}/${id}`),
+  submitEnquiry: (data) => api.post('/memberships/enquiry', data),
+};
+
 export default api;

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'vendor_plans_screen.dart';
 import '../api_constants.dart';
 import '../services/platform_config_service.dart';
 import '../services/restaurant_auth_service.dart';
@@ -629,13 +630,31 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 42),
-                          Text(
-                            _tradeNameController.text.isNotEmpty
-                                ? _tradeNameController.text
-                                : (_isGrocery ? 'Partner Grocery Store' : 'Partner Outlet'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _tradeNameController.text.isNotEmpty
+                                      ? _tradeNameController.text
+                                      : (_isGrocery ? 'Partner Grocery Store' : 'Partner Outlet'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0B3EDB),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'VERIFIED',
+                                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                            ],
                           ),
                           Text(
                             _cuisineController.text.isNotEmpty
@@ -666,6 +685,88 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> with 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Supermarket Partner Plans Banner Card
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const VendorPlansScreen()),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0B3EDB).withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.storefront_rounded, color: Colors.amber, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Sell with Tricelyn',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      'VERIFIED',
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF07162E),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Onboarding · 5-8% commission · Daily settlements',
+                                style: GoogleFonts.poppins(color: const Color(0xFFDBEAFE), fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                      ],
+                    ),
+                  ),
+                ),
+
                 // About Store / Restaurant Card
                 _buildInfoCard(
                   title: _isGrocery ? 'About Store' : 'About Restaurant',
