@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Instagram, 
@@ -6,30 +6,15 @@ import {
   Youtube, 
   Twitter, 
   Linkedin, 
-  ArrowRight, 
   ShieldCheck, 
   Truck, 
   Clock, 
   HeartHandshake,
-  Headphones,
-  Crown,
-  Sparkles
+  Headphones
 } from 'lucide-react';
 import logoImg from '../assets/webslogo.png';
 
 const Footer = () => {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setSubscribed(true);
-      setEmail('');
-      setTimeout(() => setSubscribed(false), 4000);
-    }
-  };
-
   return (
     <footer className="bg-[#07162E] text-white pt-8 pb-12 sm:pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -96,10 +81,6 @@ const Footer = () => {
             <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
               India's premier quick-commerce grocery delivery platform. Fresh fruits, vegetables, dairy, daily staples & snacks delivered to your doorstep in 10-15 minutes.
             </p>
-            <div className="pt-1 text-[11px] text-gray-400">
-              <span className="font-semibold text-gray-300">Express Dark Stores: </span>
-              <span className="text-gray-400">Hyperlocal fulfillment across city zones with 10-15 min doorstep delivery SLA.</span>
-            </div>
           </div>
 
           {/* Quick Links (2 cols) */}
@@ -139,68 +120,25 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Newsletter Subscribe & Socials (4 cols) */}
+          {/* Socials & Connect (4 cols) */}
           <div className="md:col-span-3 lg:col-span-4 space-y-2.5">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Get Exclusive Offers</h4>
-            <p className="text-xs text-gray-400">Subscribe for secret flash sales and coupon codes.</p>
-            
-            <form onSubmit={handleSubscribe} className="space-y-1.5">
-              <div className="relative max-w-sm">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address..."
-                  required
-                  className="w-full px-3 py-2 text-xs bg-black/30 border border-slate-700/80 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 pr-10"
-                />
-                <button
-                  type="submit"
-                  aria-label="Subscribe"
-                  className="absolute right-1 top-1 bottom-1 px-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-bold transition flex items-center justify-center cursor-pointer"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              {subscribed && (
-                <p className="text-[11px] text-green-400 font-medium">✓ Thanks for subscribing! Use code SAVE25 for ₹25 off.</p>
-              )}
-            </form>
-
-            <div className="pt-1.5 flex items-center gap-3">
-              <span className="text-[11px] font-semibold text-gray-300">Connect:</span>
-              <div className="flex items-center gap-2.5 text-gray-400">
-                <a href="#" aria-label="Instagram" className="hover:text-white transition-colors p-1 rounded hover:bg-white/5"><Instagram className="w-3.5 h-3.5" /></a>
-                <a href="#" aria-label="Facebook" className="hover:text-white transition-colors p-1 rounded hover:bg-white/5"><Facebook className="w-3.5 h-3.5" /></a>
-                <a href="#" aria-label="YouTube" className="hover:text-white transition-colors p-1 rounded hover:bg-white/5"><Youtube className="w-3.5 h-3.5" /></a>
-                <a href="#" aria-label="Twitter" className="hover:text-white transition-colors p-1 rounded hover:bg-white/5"><Twitter className="w-3.5 h-3.5" /></a>
-                <a href="#" aria-label="LinkedIn" className="hover:text-white transition-colors p-1 rounded hover:bg-white/5"><Linkedin className="w-3.5 h-3.5" /></a>
-              </div>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Connect With Us</h4>
+            <p className="text-xs text-gray-400">Follow Tricelyn for fresh product updates and daily essentials.</p>
+            <div className="flex items-center gap-2 text-gray-400 pt-1">
+              <a href="#" aria-label="Instagram" className="hover:text-white transition-colors p-2 rounded-xl bg-white/5 hover:bg-white/10"><Instagram className="w-4 h-4" /></a>
+              <a href="#" aria-label="Facebook" className="hover:text-white transition-colors p-2 rounded-xl bg-white/5 hover:bg-white/10"><Facebook className="w-4 h-4" /></a>
+              <a href="#" aria-label="YouTube" className="hover:text-white transition-colors p-2 rounded-xl bg-white/5 hover:bg-white/10"><Youtube className="w-4 h-4" /></a>
+              <a href="#" aria-label="Twitter" className="hover:text-white transition-colors p-2 rounded-xl bg-white/5 hover:bg-white/10"><Twitter className="w-4 h-4" /></a>
+              <a href="#" aria-label="LinkedIn" className="hover:text-white transition-colors p-2 rounded-xl bg-white/5 hover:bg-white/10"><Linkedin className="w-4 h-4" /></a>
             </div>
           </div>
         </div>
 
-        {/* Bottom Copyright Bar - Sleek & Modern with Quick Action Links */}
-        <div className="pt-6 pb-2 flex flex-col md:flex-row items-center justify-between text-xs text-gray-400 gap-3 border-t border-slate-800/60 mt-4">
-          <p>© 2026 Tricelyn Technologies Pvt Ltd. Groceries in minutes, from your own supermarket.</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1 text-gray-400 font-medium text-xs">
-            <Link to="/membership?tab=vendor" className="hover:text-white transition-colors">Sell with Tricelyn</Link>
-            <span className="text-gray-600">•</span>
-            <Link to="/membership?tab=rider" className="hover:text-white transition-colors">Ride with Tricelyn</Link>
-            <span className="text-gray-600">•</span>
-            <Link to="/membership?tab=premier" className="text-amber-300 hover:text-white transition-colors font-bold">✨ Premier</Link>
-            <span className="text-gray-600">•</span>
-            <button
-              onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
-              className="text-blue-400 hover:text-white transition-colors font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <Headphones className="w-3.5 h-3.5 text-emerald-400" />
-              <span>24/7 Live Chat</span>
-            </button>
-            <span className="text-gray-600">•</span>
-            <Link to="/policy/faq" className="hover:text-white transition-colors">Help</Link>
-            <span className="text-gray-600">•</span>
-            <Link to="/policy/terms" className="hover:text-white transition-colors">Terms</Link>
+        {/* Bottom Copyright Bar */}
+        <div className="pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-2 border-t border-slate-800/60 mt-4">
+          <p>© 2026 Tricelyn Technologies Pvt Ltd. All rights reserved.</p>
+          <div className="flex items-center gap-4 text-gray-400 font-medium">
+            <span>Fast · Fresh · Everyday</span>
           </div>
         </div>
 
