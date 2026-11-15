@@ -19,7 +19,8 @@ import {
   Plus,
   Minus,
   TrendingUp,
-  Store
+  Store,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -27,7 +28,7 @@ import { useLocation } from '../context/LocationContext';
 import { usePlatform } from '../context/PlatformContext';
 import { groceryService } from '../services/api';
 import { ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
-import logoImg from '../assets/newlogo.png';
+import logoImg from '../assets/webslogo.png';
 
 const POPULAR_SEARCH_CHIPS = ['Milk', 'Fresh Bread', 'Farm Eggs', 'Amul Paneer', 'Aashirvaad Atta', 'Lays Chips', 'Coca Cola', 'Butter', 'Maggi Noodles'];
 
@@ -359,15 +360,13 @@ const Header = () => {
           <div className="flex flex-col py-2.5 gap-2.5 md:hidden">
             {/* Top Row: Logo, Delivery Dropdown & Profile */}
             <div className="flex items-center justify-between gap-2">
-              {/* Brand Logo */}
+              {/* Brand Logo - Clean borderless */}
               <Link to="/" className="flex items-center flex-shrink-0">
-                <div className="bg-[#0A2B6B] px-2 py-1 rounded-xl border border-white/40 shadow-xs flex items-center">
-                  <img
-                    src={logoImg}
-                    alt="Tricelyn"
-                    className="h-7 w-auto object-contain"
-                  />
-                </div>
+                <img
+                  src={logoImg}
+                  alt="Tricelyn"
+                  className="h-8 sm:h-9 w-auto object-contain"
+                />
               </Link>
 
               {/* Delivery Speed & Location Selector (Matches Reference Screenshot 1) */}
@@ -376,7 +375,8 @@ const Header = () => {
                 className="flex-1 flex flex-col items-start px-2 py-0.5 rounded-xl text-left truncate active:bg-white/10 transition"
               >
                 <div className="text-[12px] font-black text-white leading-tight flex items-center gap-1">
-                  <span>Delivery in {appSettings?.estimatedDeliveryTime || '10-15 mins'}</span>
+                  <span className="text-amber-300 font-extrabold text-sm leading-none">⚡</span>
+                  <span>Delivery in minutes*</span>
                 </div>
                 <div className="text-[10px] text-blue-100 font-medium truncate max-w-[160px] flex items-center gap-0.5 leading-tight">
                   <span className="truncate">{selectedLocation?.locality || selectedLocation?.name || 'Vijay Nagar, Indore'}</span>
@@ -451,33 +451,32 @@ const Header = () => {
           {/* ==================== DESKTOP NAVBAR (>= 768px) ==================== */}
           <div className="hidden md:flex items-center justify-between h-20 py-2 gap-4">
 
-            {/* Brand Logo (Tricelyn Logo) */}
+            {/* Brand Logo - Clean borderless */}
             <Link to="/" className="flex items-center flex-shrink-0 group">
-              <div className="bg-[#0A2B6B] hover:bg-white/10 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/40 shadow-xs transition flex items-center">
-                <img
-                  src={logoImg}
-                  alt="Tricelyn - Everything You Actually Want"
-                  className="h-8 sm:h-9 w-auto object-contain"
-                />
-              </div>
+              <img
+                src={logoImg}
+                alt="Tricelyn - Everything You Actually Want"
+                className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105"
+              />
             </Link>
 
-            {/* Delivery Location Selector (Matches Mockup) */}
+            {/* Delivery Location Selector (Matches Reference Screenshot 1) */}
             <button
               onClick={() => setIsLocationModalOpen(true)}
-              className="hidden md:flex items-center gap-2 text-left px-3 py-1.5 rounded-xl hover:bg-white/10 transition border border-transparent hover:border-white/20 text-white"
+              className="hidden md:flex items-center gap-2.5 text-left px-3 py-1.5 rounded-xl hover:bg-white/10 transition border border-transparent hover:border-white/20 text-white"
               title="Change Delivery Location"
             >
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white flex-shrink-0">
                 <MapPin className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-[10px] font-bold text-blue-200 uppercase tracking-wider flex items-center gap-1">
-                  <span>Deliver to</span>
-                  <ChevronDown className="w-3 h-3 text-white/70" />
+                <div className="text-[12px] font-black text-white flex items-center gap-1 leading-tight">
+                  <span className="text-amber-300 font-extrabold text-sm leading-none">⚡</span>
+                  <span>Delivery in minutes*</span>
+                  <ChevronDown className="w-3 h-3 text-white/80" />
                 </div>
-                <div className="text-xs font-bold text-white truncate max-w-[140px] lg:max-w-[180px]">
-                  {selectedLocation?.name || 'Vijay Nagar, Indore'}
+                <div className="text-xs font-semibold text-blue-100 truncate max-w-[150px] lg:max-w-[200px] leading-tight">
+                  {selectedLocation?.name || selectedLocation?.locality || 'Vijay Nagar, Indore'}
                 </div>
               </div>
             </button>

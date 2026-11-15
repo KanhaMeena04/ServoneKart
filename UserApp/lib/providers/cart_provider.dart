@@ -102,6 +102,8 @@ class CartProvider with ChangeNotifier {
   double _gstPercent = 5.0;
   double _selectedTip = 0.0;
   List<double> _tipOptions = [5.0, 10.0, 20.0];
+  double _donationAmount = 0.0;
+  bool _isDonationChecked = false;
   double _minOrderValue = 0.0;
 
   bool _isDeliveryFeeEnabled = true;
@@ -131,6 +133,20 @@ class CartProvider with ChangeNotifier {
 
   void setSelectedTip(double tip) {
     _selectedTip = isSelfPickup ? 0.0 : tip;
+    notifyListeners();
+  }
+
+  double get donationAmount => _donationAmount;
+  bool get isDonationChecked => _isDonationChecked;
+
+  void toggleDonation([double amount = 1.0]) {
+    if (_isDonationChecked) {
+      _isDonationChecked = false;
+      _donationAmount = 0.0;
+    } else {
+      _isDonationChecked = true;
+      _donationAmount = amount;
+    }
     notifyListeners();
   }
 
@@ -175,9 +191,10 @@ class CartProvider with ChangeNotifier {
     final packaging = safeNum(packagingFee);
     final gst = safeNum(gstAmount);
     final tip = safeNum(tipAmount);
+    final donation = safeNum(_donationAmount);
     final discount = safeNum(_discountAmount);
 
-    double base = subtotal + delivery + platform + packaging + gst + tip;
+    double base = subtotal + delivery + platform + packaging + gst + tip + donation;
     double res = base - discount;
     return safeNum(res < 0 ? 0.0 : res);
   }

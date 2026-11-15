@@ -17,6 +17,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
+import CartPerksCard from '../components/CartPerksCard';
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ const CartPage = () => {
     totalSavings, 
     deliveryFee, 
     platformFee, 
+    riderTip,
+    donationAmount,
     coupon, 
     couponDiscount, 
     couponError, 
@@ -313,6 +316,9 @@ const CartPage = () => {
           )}
         </div>
 
+        {/* Delivery Partner Tip & Orphan Children Education Donation (Matches Screenshot 2) */}
+        <CartPerksCard />
+
         {/* Bill Details */}
         <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-2.5 text-xs">
           <h6 className="font-extrabold text-gray-900 text-xs tracking-tight">
@@ -364,6 +370,22 @@ const CartPage = () => {
             </div>
             <span className="font-bold text-gray-900">₹{platformFee.toFixed(0)}</span>
           </div>
+
+          {donationAmount > 0 && (
+            <div className="flex items-center justify-between text-amber-800 font-semibold">
+              <span className="flex items-center gap-1">
+                <span>🧡 Orphan Children Education</span>
+              </span>
+              <span>₹{donationAmount.toFixed(0)}</span>
+            </div>
+          )}
+
+          {riderTip > 0 && (
+            <div className="flex items-center justify-between text-[#0B3EDB] font-semibold">
+              <span>Delivery partner tip</span>
+              <span>₹{riderTip.toFixed(0)}</span>
+            </div>
+          )}
 
           <div className="border-t border-gray-100 pt-3 mt-1 flex items-center justify-between text-sm font-black text-gray-900">
             <div className="flex items-center gap-1">

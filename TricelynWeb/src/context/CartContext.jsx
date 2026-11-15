@@ -30,6 +30,14 @@ export const CartProvider = ({ children }) => {
   });
 
   const [riderTip, setRiderTip] = useState(0);
+  const [donationAmount, setDonationAmount] = useState(() => {
+    try {
+      const saved = localStorage.getItem('tricelyn_donation');
+      return saved ? JSON.parse(saved) : 0;
+    } catch (e) {
+      return 0;
+    }
+  });
   const [activeOrderId, setActiveOrderId] = useState(() => localStorage.getItem('tricelyn_active_order') || null);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [couponError, setCouponError] = useState(null);
@@ -46,6 +54,14 @@ export const CartProvider = ({ children }) => {
       localStorage.removeItem('tricelyn_coupon');
     }
   }, [coupon]);
+
+  useEffect(() => {
+    if (donationAmount > 0) {
+      localStorage.setItem('tricelyn_donation', JSON.stringify(donationAmount));
+    } else {
+      localStorage.removeItem('tricelyn_donation');
+    }
+  }, [donationAmount]);
 
   useEffect(() => {
     if (activeOrderId) {
@@ -100,8 +116,10 @@ export const CartProvider = ({ children }) => {
     setItems([]);
     setCoupon(null);
     setRiderTip(0);
+    setDonationAmount(0);
     localStorage.removeItem('tricelyn_cart');
     localStorage.removeItem('tricelyn_coupon');
+    localStorage.removeItem('tricelyn_donation');
   };
 
   const getItemQuantity = (productId) => {
@@ -178,7 +196,11 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryFee + platformFee + riderTip);
+  const toggleDonation = (amt = 1) => {
+    setDonationAmount((prev) => (prev > 0 ? 0 : amt));
+  };
+
+  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryFee + platformFee + riderTip + (donationAmount || 0));
 
   const applyCoupon = async (code) => {
     setCouponError(null);
@@ -238,6 +260,9 @@ export const CartProvider = ({ children }) => {
         platformFee,
         riderTip,
         setRiderTip,
+        donationAmount,
+        setDonationAmount,
+        toggleDonation,
         activeOrderId,
         setActiveOrderId,
         coupon,

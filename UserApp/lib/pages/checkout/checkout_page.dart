@@ -228,6 +228,7 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
         if (transactionId != null) 'transactionId': transactionId,
         'totalPrice': payableTotal,
         'tip': _isSelfPickup ? 0.0 : cart.tipAmount,
+        'donation': _isSelfPickup ? 0.0 : cart.donationAmount,
       };
       result = await context.read<OrderProvider>().placeGroceryOrder(groceryPayload);
     } else {
@@ -251,6 +252,7 @@ class _CheckoutFlowState extends State<CheckoutFlow> {
         'totalPrice': payableTotal,
         'deliveryFee': _isSelfPickup ? 0.0 : widget.deliveryFee,
         'tipAmount': _isSelfPickup ? 0.0 : cart.tipAmount,
+        'donation': _isSelfPickup ? 0.0 : cart.donationAmount,
         'status': 'pending',
       };
       result = await context.read<OrderProvider>().placeOrder(orderData);

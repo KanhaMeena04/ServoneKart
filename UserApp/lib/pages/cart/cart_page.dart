@@ -697,8 +697,10 @@ class _CartPageState extends State<CartPage> {
 
                   const SizedBox(height: 12),
 
-                  // 5b. Tip your Rider Section (Dynamic CMS driven)
+                  // 5b. Orphan Children Donation & Tip your Rider Section (Matches Screenshot 2)
                   if (cart.orderType != 'pickup') ...[
+                    _DonationCard(cart: cart),
+                    const SizedBox(height: 10),
                     _TipRiderCard(cart: cart),
                     if (cart.isTipEnabled) const SizedBox(height: 12),
                   ],
@@ -1478,6 +1480,97 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
   }
 }
 
+// ── 5a. Orphan Children Education Donation Card (Matches Screenshot 2) ──────
+class _DonationCard extends StatelessWidget {
+  final CartProvider cart;
+  const _DonationCard({required this.cart});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Peach container with Heart badge
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFE2CC)),
+            ),
+            alignment: Alignment.center,
+            child: const Text('🧡', style: TextStyle(fontSize: 20)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Orphan Children Education donation',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Working towards education, meals & care for orphan children... read more',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF6B7280),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => cart.toggleDonation(1.0),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '₹1',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: cart.isDonationChecked ? AppColors.primary : Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: cart.isDonationChecked ? AppColors.primary : const Color(0xFFD1D5DB),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: cart.isDonationChecked
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── 5b. Tip Rider Card (Matching Screenshot UI, CMS driven) ─────────────────
 class _TipRiderCard extends StatelessWidget {
   final CartProvider cart;
@@ -1692,6 +1785,15 @@ class _BillDetailsCard extends StatelessWidget {
             _BillRow(
               label: 'Delivery partner tip',
               valueStr: '₹${cart.selectedTip.toStringAsFixed(2)}',
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // Orphan Children Education Donation (Matches Screenshot 2)
+          if (cart.donationAmount > 0) ...[
+            _BillRow(
+              label: 'Orphan Children Education donation',
+              valueStr: '₹${cart.donationAmount.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 10),
           ],

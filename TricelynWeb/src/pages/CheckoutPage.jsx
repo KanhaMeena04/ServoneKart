@@ -20,6 +20,7 @@ import { useLocation } from '../context/LocationContext';
 import { usePlatform } from '../context/PlatformContext';
 import { groceryService, orderService } from '../services/api';
 import PaymentModal from '../components/PaymentModal';
+import CartPerksCard from '../components/CartPerksCard';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ const CheckoutPage = () => {
     platformFee, 
     riderTip, 
     setRiderTip, 
+    donationAmount,
     setActiveOrderId,
     coupon, 
     couponDiscount, 
@@ -149,6 +151,7 @@ const CheckoutPage = () => {
       couponCode: coupon?.code || undefined,
       discount: couponDiscount || 0,
       tip: riderTip || 0,
+      donation: donationAmount || 0,
       deliveryFee,
       platformFee,
       subtotal,
@@ -354,41 +357,8 @@ const CheckoutPage = () => {
             </div>
           </div>
 
-          {/* 2. Delivery Partner Tip */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center font-bold">
-                <HeartHandshake className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-gray-900">Tip Your Delivery Partner</h3>
-                <p className="text-[11px] text-gray-500">100% of tips go directly to your rider</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1 flex-wrap">
-              {[
-                { label: 'No Tip', value: 0 },
-                { label: '₹10', value: 10 },
-                { label: '₹20', value: 20 },
-                { label: '₹30', value: 30 },
-                { label: '₹50', value: 50 },
-              ].map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setRiderTip(t.value)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition ${
-                    riderTip === t.value
-                      ? 'bg-pink-600 text-white shadow-sm'
-                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* 2. Orphan Children Education Donation & Tip Partner (Matches Screenshot 2) */}
+          <CartPerksCard />
 
           {/* 3. Payment Method */}
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
@@ -516,8 +486,15 @@ const CheckoutPage = () => {
                 <span className="font-semibold text-gray-900">₹{platformFee}</span>
               </div>
 
+              {donationAmount > 0 && (
+                <div className="flex justify-between text-amber-800 font-semibold">
+                  <span>🧡 Orphan Children Education Donation</span>
+                  <span>₹{donationAmount.toFixed(0)}</span>
+                </div>
+              )}
+
               {riderTip > 0 && (
-                <div className="flex justify-between text-pink-600 font-semibold">
+                <div className="flex justify-between text-[#0B3EDB] font-semibold">
                   <span>Delivery Partner Tip</span>
                   <span>₹{riderTip}</span>
                 </div>
@@ -572,7 +549,11 @@ const CheckoutPage = () => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         amount={grandTotal}
-        customer={{ name: receiverName, phone: receiverPhone }}
+        customer={{ 
+          name: receiverName || user?.name || 'Customer', 
+          phone: receiverPhone || user?.phone, 
+          locality: selectedLocation?.locality || selectedLocation?.name || 'Your location' 
+        }}
         onSwitchToCod={() => {
           setPaymentMethod('cod');
           setIsPaymentModalOpen(false);
