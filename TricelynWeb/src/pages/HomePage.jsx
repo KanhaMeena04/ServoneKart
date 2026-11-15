@@ -6,6 +6,7 @@ import {
   Clock, 
   ChevronRight, 
   ChevronLeft,
+  ChevronUp,
   ShoppingBag, 
   Sparkles, 
   Truck, 
@@ -18,7 +19,8 @@ import {
   ShoppingCart,
   RefreshCw,
   Crown,
-  Bike
+  Bike,
+  MapPin
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import HeroBannerSlider from '../components/HeroBannerSlider';
@@ -69,6 +71,16 @@ const MOBILE_CATEGORY_GROUPS = [
   }
 ];
 
+const POPULAR_AREAS = [
+  { area: 'Scheme 54, Vijay Nagar', city: 'Indore', hub: 'Tricelyn Express Mart' },
+  { area: 'Old Palasia, AB Road', city: 'Indore', hub: 'Fresh Farm Hub' },
+  { area: 'Saket Nagar, Square Market', city: 'Indore', hub: 'Apna Super Kirana' },
+  { area: 'Rajwada, MG Road', city: 'Indore', hub: 'Rajwada Heritage Mart' },
+  { area: 'Bhawarkua Square, IT Park Road', city: 'Indore', hub: 'Malwa Daily Mart' },
+  { area: 'Silicon City, Rau Bypass', city: 'Indore', hub: 'Tricelyn Express Hub' },
+  { area: 'Super Corridor, TCS Square', city: 'Indore', hub: 'Tricelyn Express Hub' }
+];
+
 const HomePage = () => {
   const navigate = useNavigate();
   const { platformMode, enableFoodDelivery, appSettings } = usePlatform();
@@ -95,11 +107,61 @@ const HomePage = () => {
   const [hasSearchedStores, setHasSearchedStores] = useState(false);
   const [searchedStoreQuery, setSearchedStoreQuery] = useState('');
 
+  // Store Finder interactive auto-complete & single line view state
+  const [isAreaInputFocused, setIsAreaInputFocused] = useState(false);
+  const [isStoresExpanded, setIsStoresExpanded] = useState(false);
+  const areaInputRef = useRef(null);
+  const areaSuggestionsRef = useRef(null);
+
+  // Recent Orders Carousel & Auto-scroll / Shuffle
+  const recentOrdersTrackRef = useRef(null);
+  const [isRecentOrdersPaused, setIsRecentOrdersPaused] = useState(false);
+
+  // Click outside to close area suggestions dropdown
+  useEffect(() => {
+    const handleClickOutsideArea = (e) => {
+      if (
+        areaInputRef.current && !areaInputRef.current.contains(e.target) &&
+        areaSuggestionsRef.current && !areaSuggestionsRef.current.contains(e.target)
+      ) {
+        setIsAreaInputFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutsideArea);
+    return () => document.removeEventListener('mousedown', handleClickOutsideArea);
+  }, []);
+
+  // Filtered area suggestions
+  const areaSuggestions = useMemo(() => {
+    const q = areaQuery.trim().toLowerCase();
+    const matchedAreas = POPULAR_AREAS.filter(a => 
+      !q || a.area.toLowerCase().includes(q) || a.city.toLowerCase().includes(q)
+    );
+    const matchedStores = stores.filter(st => {
+      const name = (typeof st.name === 'object' ? (st.name.en || Object.values(st.name)[0] || '') : (st.name || '')).toLowerCase();
+      const addr = (st.address || '').toLowerCase();
+      return !q || name.includes(q) || addr.includes(q);
+    });
+    return { areas: matchedAreas.slice(0, 4), stores: matchedStores.slice(0, 3) };
+  }, [areaQuery, stores]);
+
+  const handleSelectSuggestion = (val) => {
+    setAreaQuery(val);
+    setSearchedStoreQuery(val);
+    setHasSearchedStores(true);
+    setIsAreaInputFocused(false);
+    setTimeout(() => {
+      const el = document.getElementById('searched-shops-container');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   const handleFindStores = (e) => {
     e.preventDefault();
     const q = areaQuery.trim();
     setSearchedStoreQuery(q);
     setHasSearchedStores(true);
+    setIsAreaInputFocused(false);
     setTimeout(() => {
       const el = document.getElementById('searched-shops-container');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -121,7 +183,7 @@ const HomePage = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      orderService.getMyOrders({ limit: 4 })
+      orderService.getMyOrders({ limit: 8 })
         .then((res) => {
           const list = res.data?.orders || res.data?.data || [];
           setRecentOrders(list);
@@ -131,6 +193,24 @@ const HomePage = () => {
       setRecentOrders([]);
     }
   }, [isAuthenticated]);
+
+  // Live auto-shuffle & scroll for Recent Orders every 6 seconds
+  useEffect(() => {
+    if (isRecentOrdersPaused || !recentOrdersTrackRef.current || recentOrders.length <= 1) return;
+    const interval = setInterval(() => {
+      if (recentOrdersTrackRef.current) {
+        const el = recentOrdersTrackRef.current;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (el.scrollLeft >= maxScroll - 20) {
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollBy({ left: 290, behavior: 'smooth' });
+        }
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [isRecentOrdersPaused, recentOrders]);
 
   const handleReorderAll = (ord) => {
     if (!ord.items || ord.items.length === 0) return;
@@ -329,14 +409,82 @@ const HomePage = () => {
                 Groceries in minutes, from your own supermarket.
               </h2>
 
-              <form onSubmit={handleFindStores} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                <input
-                  type="text"
-                  value={areaQuery}
-                  onChange={(e) => setAreaQuery(e.target.value)}
-                  placeholder="Enter your area, society, or shop name"
-                  className="flex-1 px-4 sm:px-5 py-2.5 sm:py-3 bg-white text-gray-900 placeholder:text-gray-400 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition"
-                />
+              <form onSubmit={handleFindStores} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 relative">
+                <div ref={areaInputRef} className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={areaQuery}
+                    onFocus={() => setIsAreaInputFocused(true)}
+                    onChange={(e) => {
+                      setAreaQuery(e.target.value);
+                      setIsAreaInputFocused(true);
+                    }}
+                    placeholder="Enter your area, society, or shop name"
+                    className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-white text-gray-900 placeholder:text-gray-400 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition"
+                  />
+                  {/* Interactive Auto-complete Suggestion Dropdown */}
+                  {isAreaInputFocused && (
+                    <div
+                      ref={areaSuggestionsRef}
+                      className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 text-gray-800 animate-in fade-in max-h-72 overflow-y-auto no-scrollbar divide-y divide-gray-100"
+                    >
+                      {/* Area Suggestions */}
+                      {areaSuggestions.areas.length > 0 && (
+                        <div className="p-2 space-y-1">
+                          <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-[#0B3EDB]" />
+                            <span>Popular Localities & Societies</span>
+                          </div>
+                          {areaSuggestions.areas.map((a, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(a.area)}
+                              className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-blue-50 text-left transition text-xs font-semibold text-gray-800 cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <span className="w-6 h-6 rounded-lg bg-blue-100 text-[#0B3EDB] flex items-center justify-center text-xs flex-shrink-0">
+                                  📍
+                                </span>
+                                <span className="truncate">{a.area}</span>
+                              </div>
+                              <span className="text-[10px] text-gray-400 flex-shrink-0 ml-2">{a.city}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Store Name Suggestions */}
+                      {areaSuggestions.stores.length > 0 && (
+                        <div className="p-2 space-y-1 bg-amber-50/40">
+                          <div className="px-2.5 py-1 text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                            <Store className="w-3 h-3 text-amber-600" />
+                            <span>Partner Grocery Stores</span>
+                          </div>
+                          {areaSuggestions.stores.map((st) => {
+                            const sName = typeof st.name === 'object' ? (st.name.en || Object.values(st.name)[0]) : st.name;
+                            return (
+                              <button
+                                key={st._id || st.id}
+                                type="button"
+                                onClick={() => handleSelectSuggestion(sName)}
+                                className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-white text-left transition text-xs font-semibold text-gray-800 border border-transparent hover:border-amber-200 cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs flex-shrink-0">
+                                    🏪
+                                  </span>
+                                  <span className="truncate">{sName}</span>
+                                </div>
+                                <span className="text-[10px] text-emerald-600 font-bold flex-shrink-0 ml-2">Delivers in mins</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   type="submit"
                   className="px-6 sm:px-7 py-2.5 sm:py-3 bg-[#0B3EDB] hover:bg-blue-600 active:bg-blue-700 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
@@ -348,7 +496,10 @@ const HomePage = () => {
           </div>
 
           {/* ============================================================
-              SEARCHED NEARBY STORES (Revealed ONLY after clicking Find stores)
+              SEARCHED NEARBY STORES (Revealed ONLY after searching Find stores)
+              - Single Line Horizontal Scrolling by default on all screen sizes
+              - View All toggles full grid view
+              - Clear Search hides the section
              ============================================================ */}
           {hasSearchedStores && (
             <div id="searched-shops-container" className="pt-2 animate-in fade-in space-y-4">
@@ -359,7 +510,7 @@ const HomePage = () => {
                       Nearby Partner Stores
                     </h2>
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                      ⚡ Delivery in minutes
+                      Delivery in minutes
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 font-medium">
@@ -369,25 +520,31 @@ const HomePage = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => {
                       setHasSearchedStores(false);
                       setAreaQuery('');
                       setSearchedStoreQuery('');
+                      setIsStoresExpanded(false);
                     }}
                     className="text-xs font-bold text-gray-500 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-xl transition cursor-pointer"
                   >
                     Clear Search
                   </button>
-                  <Link
-                    to={`/stores${searchedStoreQuery ? `?search=${encodeURIComponent(searchedStoreQuery)}` : ''}`}
-                    className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
+                  <button
+                    type="button"
+                    onClick={() => setIsStoresExpanded(!isStoresExpanded)}
+                    className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group cursor-pointer bg-blue-50/80 hover:bg-blue-100 px-3 py-1.5 rounded-xl transition"
                   >
-                    <span>View All</span>
-                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
+                    <span>{isStoresExpanded ? 'Show Single Line' : 'View All'}</span>
+                    {isStoresExpanded ? (
+                      <ChevronUp className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -411,12 +568,22 @@ const HomePage = () => {
                   </button>
                 </div>
               ) : (
-                <div className="flex overflow-x-auto pb-2 scrollbar-none snap-x sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5 -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div
+                  className={
+                    isStoresExpanded
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 animate-in fade-in"
+                      : "flex overflow-x-auto pb-3 gap-3.5 sm:gap-4 snap-x no-scrollbar scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0"
+                  }
+                >
                   {filteredStores.map((store) => (
                     <Link
                       key={store._id || store.id}
                       to={`/store/${store._id || store.id}`}
-                      className="w-[84vw] flex-shrink-0 snap-start sm:w-auto bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                      className={
+                        isStoresExpanded
+                          ? "w-full bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                          : "w-[285px] sm:w-[325px] flex-shrink-0 snap-start bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                      }
                     >
                       <div className="flex items-start gap-3.5">
                         <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition">
@@ -482,111 +649,6 @@ const HomePage = () => {
 
           <PromoOfferBanners />
         </section>
-
-        {/* ============================================================
-            ORDER AGAIN / RECENT ORDERS (Dynamic for Logged-in Customer)
-           ============================================================ */}
-        {isAuthenticated && recentOrders && recentOrders.length > 0 && (
-          <section className="space-y-3 bg-white p-4 sm:p-5 rounded-2xl border border-blue-100 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center">
-                  <RefreshCw className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                    Order Again
-                  </h2>
-                  <p className="text-[11px] sm:text-xs text-gray-500 font-medium">
-                    Repeat your recent grocery essentials in 1 tap
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/account/orders"
-                className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
-              >
-                <span>All Orders</span>
-                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-              {recentOrders.map((ord) => {
-                const orderId = ord._id || ord.orderNumber;
-                const statusLabel = ord.status ? ord.status.replace(/_/g, ' ') : 'Processing';
-                const itemsCount = ord.items?.length || 0;
-                const total = ord.finalAmount || ord.totalAmount || 0;
-                const isDelivered = ord.status === 'delivered';
-
-                return (
-                  <div
-                    key={orderId}
-                    className="p-3.5 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-blue-200 hover:shadow-sm transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between text-[11px] mb-2">
-                        <span className="font-bold text-gray-800">
-                          #{ord.orderNumber || String(orderId).slice(-6)}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] tracking-wider ${
-                          isDelivered
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-blue-50 text-[#0B3EDB] border border-blue-200'
-                        }`}>
-                          {statusLabel}
-                        </span>
-                      </div>
-
-                      {/* Items thumbnails preview */}
-                      <div className="flex items-center gap-1.5 overflow-hidden mb-3">
-                        {(ord.items || []).slice(0, 3).map((it, idx) => (
-                          <div
-                            key={idx}
-                            className="w-10 h-10 rounded-lg bg-white border border-gray-200/80 p-0.5 overflow-hidden flex-shrink-0"
-                            title={it.name}
-                          >
-                            <img
-                              src={it.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&q=80"}
-                              alt={it.name}
-                              className="w-full h-full object-cover rounded"
-                            />
-                          </div>
-                        ))}
-                        {itemsCount > 3 && (
-                          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-[10px] font-black text-[#0B3EDB] flex-shrink-0">
-                            +{itemsCount - 3}
-                          </div>
-                        )}
-                        <div className="ml-1 text-[11px] text-gray-500 font-medium">
-                          {itemsCount} item{itemsCount > 1 ? 's' : ''} • <strong className="text-gray-900 font-bold">₹{total}</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
-                      <button
-                        type="button"
-                        onClick={() => handleReorderAll(ord)}
-                        className="flex-1 py-1.5 px-3 bg-[#0B3EDB] hover:bg-[#07162E] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
-                      >
-                        <ShoppingCart className="w-3.5 h-3.5" />
-                        <span>Reorder</span>
-                      </button>
-                      <Link
-                        to={`/track/${orderId}`}
-                        className="py-1.5 px-2.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-bold transition-colors flex items-center justify-center"
-                        title="Live Track Order"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
 
         {/* ============================================================
             2. SHOP BY CATEGORY SECTION
@@ -711,6 +773,157 @@ const HomePage = () => {
             <CategoryProductRow key={sec.slug} section={sec} deliveryTime={deliveryTime} />
           ))}
         </div>
+
+        {/* ============================================================
+            ORDER AGAIN / RECENT ORDERS (Positioned at bottom just above footer)
+            - Single horizontal scrolling row on mobile and desktop
+            - Auto-scroll & shuffle every 6s (pauses on hover)
+            - Matches Screenshot 5 layout
+           ============================================================ */}
+        {isAuthenticated && recentOrders && recentOrders.length > 0 && (
+          <section
+            onMouseEnter={() => setIsRecentOrdersPaused(true)}
+            onMouseLeave={() => setIsRecentOrdersPaused(false)}
+            onTouchStart={() => setIsRecentOrdersPaused(true)}
+            onTouchEnd={() => setIsRecentOrdersPaused(false)}
+            className="space-y-3.5 bg-white p-4 sm:p-5 rounded-2xl border border-blue-100 shadow-xs relative"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center flex-shrink-0">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                    Order Again
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-gray-500 font-medium">
+                    Repeat your recent grocery essentials in 1 tap
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/account/orders"
+                  className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group mr-1"
+                >
+                  <span>All Orders</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+
+                <div className="hidden sm:flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (recentOrdersTrackRef.current) {
+                        recentOrdersTrackRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+                      }
+                    }}
+                    className="w-7 h-7 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-600 transition shadow-2xs cursor-pointer"
+                    aria-label="Previous Orders"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (recentOrdersTrackRef.current) {
+                        recentOrdersTrackRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                      }
+                    }}
+                    className="w-7 h-7 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-600 transition shadow-2xs cursor-pointer"
+                    aria-label="Next Orders"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Single horizontal line with scrolling & shuffle on mobile & desktop */}
+            <div
+              ref={recentOrdersTrackRef}
+              className="flex overflow-x-auto pb-2 gap-3.5 snap-x no-scrollbar scroll-smooth -mx-1 px-1"
+            >
+              {recentOrders.map((ord) => {
+                const orderId = ord._id || ord.orderNumber;
+                const statusLabel = ord.status ? ord.status.replace(/_/g, ' ') : 'Processing';
+                const itemsCount = ord.items?.length || 0;
+                const total = ord.finalAmount || ord.totalAmount || 0;
+                const isDelivered = ord.status === 'delivered';
+                const isCancelled = ord.status === 'cancelled';
+
+                return (
+                  <div
+                    key={orderId}
+                    className="w-[270px] sm:w-[300px] flex-shrink-0 snap-start p-3.5 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-blue-200 hover:shadow-sm transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-2">
+                        <span className="font-bold text-gray-800">
+                          #{ord.orderNumber || String(orderId).slice(-6)}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] tracking-wider ${
+                          isDelivered
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : isCancelled
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-blue-50 text-[#0B3EDB] border border-blue-200'
+                        }`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+
+                      {/* Items thumbnails preview */}
+                      <div className="flex items-center gap-1.5 overflow-hidden mb-3">
+                        {(ord.items || []).slice(0, 3).map((it, idx) => (
+                          <div
+                            key={idx}
+                            className="w-10 h-10 rounded-lg bg-white border border-gray-200/80 p-0.5 overflow-hidden flex-shrink-0"
+                            title={it.name}
+                          >
+                            <img
+                              src={it.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&q=80"}
+                              alt={it.name}
+                              className="w-full h-full object-cover rounded"
+                            />
+                          </div>
+                        ))}
+                        {itemsCount > 3 && (
+                          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-[10px] font-black text-[#0B3EDB] flex-shrink-0">
+                            +{itemsCount - 3}
+                          </div>
+                        )}
+                        <div className="ml-1 text-[11px] text-gray-500 font-medium truncate">
+                          {itemsCount} item{itemsCount > 1 ? 's' : ''} • <strong className="text-gray-900 font-bold">₹{total}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
+                      <button
+                        type="button"
+                        onClick={() => handleReorderAll(ord)}
+                        className="flex-1 py-1.5 px-3 bg-[#0B3EDB] hover:bg-[#07162E] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>Reorder</span>
+                      </button>
+                      <Link
+                        to={`/track/${orderId}`}
+                        className="py-1.5 px-2.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-bold transition-colors flex items-center justify-center"
+                        title="Live Track Order"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
       </div>
     </div>

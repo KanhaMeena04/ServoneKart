@@ -32,6 +32,14 @@ import logoImg from '../assets/webslogo.png';
 
 const POPULAR_SEARCH_CHIPS = ['Milk', 'Fresh Bread', 'Farm Eggs', 'Amul Paneer', 'Aashirvaad Atta', 'Lays Chips', 'Coca Cola', 'Butter', 'Maggi Noodles'];
 
+const FALLBACK_HEADER_STORES = [
+  { _id: 'store_tricelyn_01', id: 'store_tricelyn_01', name: 'Tricelyn Express Mart - Vijay Nagar', address: 'Scheme 54 Commercial, Vijay Nagar, Indore', rating: 4.8 },
+  { _id: 'store_tricelyn_02', id: 'store_tricelyn_02', name: 'Fresh Farm Hub - Old Palasia', address: 'Palasia Square Plaza, AB Road, Old Palasia', rating: 4.9 },
+  { _id: 'store_tricelyn_03', id: 'store_tricelyn_03', name: 'Apna Super Kirana - Saket Nagar', address: 'Plot 9, Saket Square Market, Saket Nagar', rating: 4.7 },
+  { _id: 'store_tricelyn_04', id: 'store_tricelyn_04', name: 'Rajwada Heritage Mart - MG Road', address: '104, Krishnapura Market, MG Road, Rajwada', rating: 4.8 },
+  { _id: 'store_tricelyn_05', id: 'store_tricelyn_05', name: 'Malwa Daily Mart - Bhawarkua', address: 'Shop 5, Gurukul Tower, Bhawarkua Square', rating: 4.6 }
+];
+
 const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, setIsAuthModalOpen } = useAuth();
@@ -48,23 +56,31 @@ const Header = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [liveSearchResults, setLiveSearchResults] = useState([]);
   const [liveCategoryResults, setLiveCategoryResults] = useState([]);
+  const [liveStoreResults, setLiveStoreResults] = useState([]);
+  const [stores, setStores] = useState(FALLBACK_HEADER_STORES);
   const [isSearchingLive, setIsSearchingLive] = useState(false);
 
   const desktopSearchRef = useRef(null);
   const mobileSearchRef = useRef(null);
 
   useEffect(() => {
-    const fetchCats = async () => {
+    const fetchCatsAndStores = async () => {
       try {
-        const res = await groceryService.getCategories();
-        if (res.data?.data) {
-          setCategories(res.data.data);
+        const [catsRes, storesRes] = await Promise.allSettled([
+          groceryService.getCategories(),
+          groceryService.getStores()
+        ]);
+        if (catsRes.status === 'fulfilled' && catsRes.value.data?.data) {
+          setCategories(catsRes.value.data.data);
+        }
+        if (storesRes.status === 'fulfilled' && storesRes.value.data?.data && storesRes.value.data.data.length > 0) {
+          setStores(storesRes.value.data.data);
         }
       } catch (err) {
-        console.error('Failed to load categories for header:', err);
+        console.error('Failed to load categories/stores for header:', err);
       }
     };
-    fetchCats();
+    fetchCatsAndStores();
   }, []);
 
   // Live Debounced Autocomplete
@@ -72,6 +88,7 @@ const Header = () => {
     if (!searchQuery.trim()) {
       setLiveSearchResults([]);
       setLiveCategoryResults([]);
+      setLiveStoreResults([]);
       setIsSearchingLive(false);
       return;
     }
@@ -83,6 +100,15 @@ const Header = () => {
       (c.slug && c.slug.toLowerCase().includes(q))
     ).slice(0, 4);
     setLiveCategoryResults(matchedCats);
+
+    // Match stores instantly
+    const matchedStores = stores.filter(st => {
+      const name = (typeof st.name === 'object' ? (st.name.en || Object.values(st.name)[0] || '') : (st.name || '')).toLowerCase();
+      const addr = (st.address || '').toLowerCase();
+      const city = (st.city || '').toLowerCase();
+      return name.includes(q) || addr.includes(q) || city.includes(q);
+    }).slice(0, 3);
+    setLiveStoreResults(matchedStores);
 
     setIsSearchingLive(true);
     const timeout = setTimeout(async () => {
@@ -110,7 +136,7 @@ const Header = () => {
     }, 180);
 
     return () => clearTimeout(timeout);
-  }, [searchQuery, categories]);
+  }, [searchQuery, categories, stores]);
 
   // Click outside to close live search dropdown
   useEffect(() => {
@@ -223,6 +249,47 @@ const Header = () => {
                     {cat.name}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Matched Partner Stores (Header Search Suggestion) */}
+            {liveStoreResults.length > 0 && (
+              <div className="p-2 space-y-1 bg-amber-50/30">
+                <div className="px-2 py-1 text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                  <Store className="w-3 h-3 text-amber-600" />
+                  <span>Matching Partner Stores</span>
+                </div>
+                {liveStoreResults.map((st) => {
+                  const storeName = typeof st.name === 'object' ? (st.name.en || Object.values(st.name)[0]) : st.name;
+                  return (
+                    <div
+                      key={st._id || st.id}
+                      onClick={() => {
+                        setIsSearchFocused(false);
+                        navigate(`/store/${st._id || st.id}`);
+                      }}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-white transition cursor-pointer border border-transparent hover:border-amber-200"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                          🏪
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[#0B3EDB]">
+                            {storeName}
+                          </h4>
+                          <p className="text-[10px] text-gray-500 truncate">
+                            {st.address || 'Delivers in minutes'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold text-[#0B3EDB] whitespace-nowrap flex items-center gap-0.5">
+                        <span>Visit</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -375,8 +442,7 @@ const Header = () => {
                 className="flex-1 flex flex-col items-start px-2 py-0.5 rounded-xl text-left truncate active:bg-white/10 transition"
               >
                 <div className="text-[12px] font-black text-white leading-tight flex items-center gap-1">
-                  <span className="text-amber-300 font-extrabold text-sm leading-none">⚡</span>
-                  <span>Delivery in minutes*</span>
+                  <span>Delivery in minutes</span>
                 </div>
                 <div className="text-[10px] text-blue-100 font-medium truncate max-w-[160px] flex items-center gap-0.5 leading-tight">
                   <span className="truncate">{selectedLocation?.locality || selectedLocation?.name || 'Vijay Nagar, Indore'}</span>
@@ -471,8 +537,7 @@ const Header = () => {
               </div>
               <div>
                 <div className="text-[12px] font-black text-white flex items-center gap-1 leading-tight">
-                  <span className="text-amber-300 font-extrabold text-sm leading-none">⚡</span>
-                  <span>Delivery in minutes*</span>
+                  <span>Delivery in minutes</span>
                   <ChevronDown className="w-3 h-3 text-white/80" />
                 </div>
                 <div className="text-xs font-semibold text-blue-100 truncate max-w-[150px] lg:max-w-[200px] leading-tight">
