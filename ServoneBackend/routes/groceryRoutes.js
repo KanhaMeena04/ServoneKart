@@ -152,7 +152,7 @@ const DEFAULT_OFFER_CARDS = [
     subtitle: 'Premium basmati rice, organic dals, pure spices & cold-pressed oils',
     buttonText: 'Order Staples',
     link: '/category/atta-rice-dal',
-    bgGradient: 'from-[#7c2d12] via-[#c2410c] to-[#ea580c]',
+    bgGradient: 'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%)',
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=700&q=80',
     alt: 'Kitchen staples, rice, pulses, and spices'
   },
@@ -163,7 +163,7 @@ const DEFAULT_OFFER_CARDS = [
     subtitle: 'Top brand detergents, floor cleaners, kitchen sprays & air fresheners',
     buttonText: 'Shop Cleaners',
     link: '/category/household-cleaning',
-    bgGradient: 'from-[#0c4a6e] via-[#0284c7] to-[#0ea5e9]',
+    bgGradient: 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%)',
     image: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=700&q=80',
     alt: 'Household cleaning supplies and detergents'
   },
@@ -174,7 +174,7 @@ const DEFAULT_OFFER_CARDS = [
     subtitle: 'Herbal body washes, shampoos, oral hygiene & daily skincare essentials',
     buttonText: 'Explore Range',
     link: '/category/personal-care',
-    bgGradient: 'from-[#312e81] via-[#4f46e5] to-[#7c3aed]',
+    bgGradient: 'linear-gradient(135deg, #0c1a30 0%, #1e3a8a 50%, #2563eb 100%)',
     image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=700&q=80',
     alt: 'Personal care, grooming and skincare products'
   }
@@ -218,7 +218,7 @@ router.get('/banners', async (req, res) => {
               subtitle: b.subtitle || 'Best deals on essentials today',
               buttonText: b.buttonText || 'Order Now',
               link: b.link || (b.targetId ? `/category/${b.targetId}` : '/categories'),
-              bgGradient: b.bgGradient || (idx === 0 ? 'from-[#7c2d12] via-[#c2410c] to-[#ea580c]' : idx === 1 ? 'from-[#0c4a6e] via-[#0284c7] to-[#0ea5e9]' : 'from-[#312e81] via-[#4f46e5] to-[#7c3aed]'),
+              bgGradient: b.bgGradient || (idx === 0 ? 'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%)' : idx === 1 ? 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%)' : 'linear-gradient(135deg, #0c1a30 0%, #1e3a8a 50%, #2563eb 100%)'),
               image: b.image,
               alt: b.title
             }));

@@ -3,6 +3,20 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { groceryService } from '../services/api';
 
+// Official Tricelyn Brand Theme Gradients (Royal Navy, Deep Emerald, Express Cobalt)
+const BRAND_THEME_GRADIENTS = [
+  'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%)', // Signature Tricelyn Royal Blue
+  'linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%)', // Fresh Produce Deep Emerald
+  'linear-gradient(135deg, #0c1a30 0%, #1e3a8a 50%, #2563eb 100%)', // Express Midnight Cobalt
+];
+
+const resolveCardBackground = (card, idx) => {
+  if (card?.bgGradient && (card.bgGradient.includes('linear-gradient') || card.bgGradient.startsWith('#') || card.bgGradient.startsWith('rgb'))) {
+    return card.bgGradient;
+  }
+  return BRAND_THEME_GRADIENTS[idx % BRAND_THEME_GRADIENTS.length];
+};
+
 const DEFAULT_CARDS = [
   {
     id: 'kitchen-staples',
@@ -11,7 +25,7 @@ const DEFAULT_CARDS = [
     subtitle: 'Premium basmati rice, organic dals, pure spices & cold-pressed oils',
     buttonText: 'Order Staples',
     link: '/category/atta-rice-dal',
-    bgGradient: 'from-[#7c2d12] via-[#c2410c] to-[#ea580c]',
+    bgGradient: BRAND_THEME_GRADIENTS[0],
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=700&q=80',
     alt: 'Kitchen staples, rice, pulses, and spices'
   },
@@ -21,8 +35,8 @@ const DEFAULT_CARDS = [
     title: 'Home Care & Disinfectants',
     subtitle: 'Top brand detergents, floor cleaners, kitchen sprays & air fresheners',
     buttonText: 'Shop Cleaners',
-    link: '/category/household-cleaning',
-    bgGradient: 'from-[#0c4a6e] via-[#0284c7] to-[#0ea5e9]',
+    link: '/category/cleaning-essentials',
+    bgGradient: BRAND_THEME_GRADIENTS[1],
     image: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=700&q=80',
     alt: 'Household cleaning supplies and detergents'
   },
@@ -33,7 +47,7 @@ const DEFAULT_CARDS = [
     subtitle: 'Herbal body washes, shampoos, oral hygiene & daily skincare essentials',
     buttonText: 'Explore Range',
     link: '/category/personal-care',
-    bgGradient: 'from-[#312e81] via-[#4f46e5] to-[#7c3aed]',
+    bgGradient: BRAND_THEME_GRADIENTS[2],
     image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=700&q=80',
     alt: 'Personal care, grooming and skincare products'
   }
@@ -56,7 +70,7 @@ const PromoOfferBanners = () => {
             subtitle: c.subtitle || 'Best offers on daily essentials',
             buttonText: c.buttonText || 'Shop Now',
             link: c.link || '/categories',
-            bgGradient: c.bgGradient || (idx === 0 ? 'from-[#7c2d12] via-[#c2410c] to-[#ea580c]' : idx === 1 ? 'from-[#0c4a6e] via-[#0284c7] to-[#0ea5e9]' : 'from-[#312e81] via-[#4f46e5] to-[#7c3aed]'),
+            bgGradient: resolveCardBackground(c, idx),
             image: c.image || DEFAULT_CARDS[idx % DEFAULT_CARDS.length].image,
             alt: c.alt || c.title || 'Offer Card'
           }));
@@ -80,13 +94,18 @@ const PromoOfferBanners = () => {
         - Desktop (>= 768px): 3 Equal side-by-side columns
       */}
       <div className="flex overflow-x-auto pb-2 scrollbar-none snap-x md:grid md:grid-cols-3 gap-3.5 sm:gap-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {cards.map((card) => (
+        {cards.map((card, idx) => (
           <div
-            key={card.id}
-            className={`w-[82vw] sm:w-[70vw] md:w-auto flex-shrink-0 snap-start relative rounded-2xl md:rounded-3xl p-5 sm:p-6 overflow-hidden flex flex-col justify-between min-h-[165px] sm:min-h-[175px] shadow-xs hover:shadow-md transition-all duration-200 group bg-gradient-to-r ${card.bgGradient}`}
+            key={card.id || idx}
+            style={{ background: resolveCardBackground(card, idx) }}
+            className="w-[82vw] sm:w-[70vw] md:w-auto flex-shrink-0 snap-start relative rounded-2xl md:rounded-3xl p-5 sm:p-6 overflow-hidden flex flex-col justify-between min-h-[165px] sm:min-h-[175px] shadow-sm hover:shadow-md transition-all duration-200 group border border-white/10 text-white"
           >
-            {/* Ambient Background Accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+            {/* Ambient Background Glow Accents */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/15 rounded-full blur-xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/20 rounded-full blur-lg pointer-events-none" />
+
+            {/* Left Contrast Protection Shield for 100% Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none" />
 
             {/* Right Image: Edge-to-edge full height, seamlessly blended */}
             <div className="absolute right-0 top-0 bottom-0 w-[45%] sm:w-[42%] pointer-events-none flex items-center justify-end overflow-hidden">
@@ -103,9 +122,9 @@ const PromoOfferBanners = () => {
             </div>
 
             {/* Left Content Area */}
-            <div className="relative z-10 max-w-[62%] sm:max-w-[60%] space-y-1 sm:space-y-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase bg-white/20 text-white border border-white/25 backdrop-blur-2xs">
-                <Sparkles className="w-2.5 h-2.5 text-white" />
+            <div className="relative z-10 max-w-[62%] sm:max-w-[60%] space-y-1 sm:space-y-1.5 drop-shadow-sm">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                <Sparkles className="w-2.5 h-2.5 text-amber-300" />
                 <span>{card.badge}</span>
               </span>
 
