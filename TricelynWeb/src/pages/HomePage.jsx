@@ -16,7 +16,9 @@ import {
   ArrowRight,
   Package,
   ShoppingCart,
-  RefreshCw
+  RefreshCw,
+  Crown,
+  Bike
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import HeroBannerSlider from '../components/HeroBannerSlider';
@@ -600,82 +602,140 @@ const HomePage = () => {
         </section>
 
         {/* ============================================================
-            5. QUICK-COMMERCE EXPRESS BANNER (Sleek, Compact, Fully Responsive)
+            5. BECOME A PLUS / PREMIER MEMBER (For User, Rider & Vendor)
            ============================================================ */}
-        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-[#0B3EDB]/20 bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0B3EDB] text-white">
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg border border-[#0B3EDB]/30 bg-gradient-to-br from-[#07162E] via-[#0A2B6B] to-[#0B3EDB] text-white">
           {/* Subtle Ambient Radial Glows */}
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 p-5 sm:p-7 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            {/* Left Content */}
-            <div className="space-y-3 max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white text-[10px] sm:text-xs font-bold tracking-wide uppercase">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{deliveryHeadline}</span>
+          <div className="relative z-10 p-5 sm:p-7 md:p-8 space-y-6">
+            
+            {/* Top Heading Row */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+                  <Crown className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Tricelyn Membership & Partner Passes</span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
+                  Become a Plus Member.{' '}
+                  <span className="text-cyan-300">Choose Your Privilege.</span>
+                </h3>
+
+                <p className="text-xs sm:text-sm text-blue-100 font-medium leading-relaxed">
+                  Real perks for everyone — Unlimited free delivery for Shoppers, higher earnings for Delivery Riders, and customer growth for Supermarkets.
+                </p>
               </div>
 
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
-                {priorityBanner.title ? (
-                  priorityBanner.title.includes('.') ? (
-                    <>
-                      {priorityBanner.title.split('.')[0]}.<br className="hidden sm:inline" />{' '}
-                      <span className="text-cyan-300">
-                        {priorityBanner.title.split('.').slice(1).join('.')}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-cyan-300">{priorityBanner.title}</span>
-                  )
-                ) : (
-                  <>
-                    Your Groceries.{' '}
-                    <span className="text-cyan-300">Our Priority.</span>
-                  </>
-                )}
-              </h3>
-
-              <p className="text-xs sm:text-sm text-blue-100 font-medium leading-relaxed max-w-md">
-                {priorityBanner.subtitle || deliverySubtext}
-              </p>
-
-              <div className="pt-1">
-                <Link
-                  to={priorityBanner.buttonLink || "/categories"}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#0A2B6B] hover:bg-blue-50 active:bg-blue-100 rounded-full text-xs sm:text-sm font-black shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                  <span>{priorityBanner.buttonText || "Order Now"}</span>
-                  <ArrowRight className="w-4 h-4 text-[#0B3EDB]" />
-                </Link>
-              </div>
+              <Link
+                to="/membership"
+                className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition whitespace-nowrap"
+              >
+                <span>View All Plans</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            {/* Right: 3 Quick Steps / Express Highlights */}
-            <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 md:w-auto flex-shrink-0">
-              <div className="rounded-xl p-3 bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col items-center justify-center min-w-[85px] sm:min-w-[100px]">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
-                  <ShoppingCart className="w-4 h-4 text-cyan-300" />
+            {/* 3 Explore Action Cards (For User, Delivery Partner, Vendor) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 pt-1">
+              
+              {/* Card 1: For Shoppers / Users */}
+              <div className="group rounded-2xl p-4 sm:p-5 bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-cyan-300/60 shadow-xs transition-all duration-300 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-200 border border-cyan-400/30">
+                      Shoppers
+                    </span>
+                  </div>
+
+                  <h4 className="text-base sm:text-lg font-black text-white group-hover:text-cyan-200 transition-colors">
+                    Tricelyn Premier
+                  </h4>
+                  <p className="text-xs text-blue-100 font-medium mt-1 leading-relaxed">
+                    ₹0 delivery fees, priority slots when riders are short & exclusive member savings on every order.
+                  </p>
                 </div>
-                <h4 className="text-xs font-black text-white">Order</h4>
-                <p className="text-[10px] text-blue-200 font-medium">In seconds</p>
+
+                <div className="mt-4 pt-3 border-t border-white/15">
+                  <Link
+                    to="/membership?tab=premier"
+                    className="w-full py-2.5 px-4 bg-white text-[#0A2B6B] hover:bg-cyan-50 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group-hover:scale-[1.02]"
+                  >
+                    <span>Explore User Plans</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#0B3EDB]" />
+                  </Link>
+                </div>
               </div>
 
-              <div className="rounded-xl p-3 bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col items-center justify-center min-w-[85px] sm:min-w-[100px]">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
-                  <Package className="w-4 h-4 text-amber-300" />
+              {/* Card 2: For Delivery Partners / Riders */}
+              <div className="group rounded-2xl p-4 sm:p-5 bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-emerald-300/60 shadow-xs transition-all duration-300 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md">
+                      <Bike className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-400/30">
+                      Delivery Fleet
+                    </span>
+                  </div>
+
+                  <h4 className="text-base sm:text-lg font-black text-white group-hover:text-emerald-200 transition-colors">
+                    Ride with Tricelyn
+                  </h4>
+                  <p className="text-xs text-blue-100 font-medium mt-1 leading-relaxed">
+                    Free base plan or Pro Day Pass. See payout before accept, priority on new orders & weekly bonuses.
+                  </p>
                 </div>
-                <h4 className="text-xs font-black text-white">Pick</h4>
-                <p className="text-[10px] text-blue-200 font-medium">Fresh packed</p>
+
+                <div className="mt-4 pt-3 border-t border-white/15">
+                  <Link
+                    to="/membership?tab=rider"
+                    className="w-full py-2.5 px-4 bg-emerald-400 text-slate-950 hover:bg-emerald-300 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group-hover:scale-[1.02]"
+                  >
+                    <span>Explore Rider Plans</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
+                  </Link>
+                </div>
               </div>
 
-              <div className="rounded-xl p-3 bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col items-center justify-center min-w-[85px] sm:min-w-[100px]">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
-                  <Truck className="w-4 h-4 text-emerald-300" />
+              {/* Card 3: For Supermarket Stores / Vendors */}
+              <div className="group rounded-2xl p-4 sm:p-5 bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-amber-300/60 shadow-xs transition-all duration-300 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white shadow-md">
+                      <Store className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/30">
+                      Merchants
+                    </span>
+                  </div>
+
+                  <h4 className="text-base sm:text-lg font-black text-white group-hover:text-amber-200 transition-colors">
+                    Sell on Tricelyn
+                  </h4>
+                  <p className="text-xs text-blue-100 font-medium mt-1 leading-relaxed">
+                    Sell from your own supermarket. We assign riders, collect payments and settle to your bank account.
+                  </p>
                 </div>
-                <h4 className="text-xs font-black text-white">Deliver</h4>
-                <p className="text-[10px] text-blue-200 font-medium">{deliveryTime}</p>
+
+                <div className="mt-4 pt-3 border-t border-white/15">
+                  <Link
+                    to="/membership?tab=vendor"
+                    className="w-full py-2.5 px-4 bg-amber-400 text-slate-950 hover:bg-amber-300 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group-hover:scale-[1.02]"
+                  >
+                    <span>Explore Vendor Plans</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
+                  </Link>
+                </div>
               </div>
+
             </div>
+
           </div>
         </section>
 

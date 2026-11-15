@@ -11,7 +11,9 @@ import {
   Truck, 
   Clock, 
   HeartHandshake,
-  Headphones 
+  Headphones,
+  Crown,
+  Sparkles
 } from 'lucide-react';
 import logoImg from '../assets/newlogo.png';
 
@@ -79,6 +81,56 @@ const Footer = () => {
           </div>
         </div>
 
+        {/* Premier Membership & 24/7 Support Quick Action Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Card 1: Tricelyn Premier Membership */}
+          <div className="bg-gradient-to-r from-amber-500/15 via-[#0A2B6B]/40 to-blue-600/10 border border-amber-400/30 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 shadow-md">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-sm font-black text-white">Tricelyn Premier</h4>
+                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-amber-400 text-slate-950 rounded">Plus Member</span>
+                </div>
+                <p className="text-xs text-gray-300">Unlimited free delivery & exclusive member savings.</p>
+              </div>
+            </div>
+            <Link
+              to="/membership"
+              className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl transition shadow-sm whitespace-nowrap flex items-center gap-1 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Explore Premier</span>
+            </Link>
+          </div>
+
+          {/* Card 2: 24/7 Dedicated Live Support Chat */}
+          <div className="bg-gradient-to-r from-emerald-500/15 via-[#0A2B6B]/40 to-blue-600/10 border border-emerald-400/30 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Headphones className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-sm font-black text-white">24/7 Live Support</h4>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <p className="text-xs text-gray-300">Instant help with your grocery orders & refunds.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
+              className="px-3.5 py-2 bg-gradient-to-r from-[#0B3EDB] to-blue-600 hover:from-[#07162E] hover:to-[#0B3EDB] text-white font-bold text-xs rounded-xl transition shadow-sm whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer border border-blue-400/40"
+            >
+              <Headphones className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Chat with Support</span>
+            </button>
+          </div>
+        </div>
+
         {/* Main Footer Links & Newsletter - Compact, Proportional Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-slate-800/80">
           
@@ -106,6 +158,9 @@ const Footer = () => {
           <div className="md:col-span-2 lg:col-span-2 space-y-2">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-1.5 text-xs text-gray-400">
+              <li><Link to="/membership" className="text-amber-300 font-bold hover:text-white transition-colors flex items-center gap-1"><span>✨ Tricelyn Premier</span></Link></li>
+              <li><Link to="/membership?tab=rider" className="hover:text-blue-400 transition-colors">Ride with Tricelyn (Rider)</Link></li>
+              <li><Link to="/membership?tab=vendor" className="hover:text-blue-400 transition-colors">Sell with Tricelyn (Vendor)</Link></li>
               <li><Link to="/" className="hover:text-blue-400 transition-colors">Home</Link></li>
               <li><Link to="/categories" className="hover:text-blue-400 transition-colors">All Categories</Link></li>
               <li><Link to="/stores" className="hover:text-blue-400 transition-colors">Nearby Stores</Link></li>

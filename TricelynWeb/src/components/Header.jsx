@@ -385,16 +385,7 @@ const Header = () => {
               </button>
 
               {/* Profile / Account Button */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {/* Mobile Premier Shortcut */}
-                <Link
-                  to="/premier"
-                  className="w-8 h-8 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center shadow-xs active:scale-95 transition"
-                  title="Tricelyn Premier"
-                >
-                  <Sparkles className="w-4 h-4 text-slate-900" />
-                </Link>
-
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {isAuthenticated ? (
                   <button
                     onClick={() => navigate('/account')}
@@ -412,17 +403,6 @@ const Header = () => {
                     <User className="w-4 h-4" />
                   </button>
                 )}
-
-                {/* Mobile 24/7 Support Chat Icon */}
-                <button
-                  onClick={handleOpenChat}
-                  className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center relative border border-white/30 active:scale-95 transition"
-                  title="24/7 Support & Chat"
-                  aria-label="Support & Live Chat"
-                >
-                  <Headphones className="w-4 h-4 text-white" />
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 absolute top-0.5 right-0.5 animate-pulse" />
-                </button>
 
                 {/* Header Cart Icon */}
                 <button
@@ -502,12 +482,6 @@ const Header = () => {
               </div>
             </button>
 
-            {/* Desktop ETA Pill */}
-            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 text-white border border-white/15 text-xs font-bold flex-shrink-0">
-              <Clock className="w-3.5 h-3.5 text-amber-300" />
-              <span>{appSettings?.estimatedDeliveryTime || '10-15 Mins'}</span>
-            </div>
-
             {/* Search Bar: White Rounded-Full Pill (Matches Mockup) */}
             <div ref={desktopSearchRef} className="flex-1 max-w-2xl relative">
               <form
@@ -537,20 +511,6 @@ const Header = () => {
 
             {/* Right Action Icons: Auth & Cart (Matches Mockup) */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              {/* Premier Navigation Link (Matches Mockup Screenshot 1) */}
-              <Link
-                to="/premier"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/10 rounded-full transition border border-white/20 active:scale-95"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Premier</span>
-                {user?.membershipBadge && (
-                  <span className="bg-amber-400 text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tight">
-                    {user.membershipBadge}
-                  </span>
-                )}
-              </Link>
-
               {/* Account / Login */}
               {isAuthenticated ? (
                 <div className="relative">
@@ -604,20 +564,6 @@ const Header = () => {
                   <span className="hidden sm:inline">Login / Signup</span>
                 </button>
               )}
-
-              {/* 24/7 Live Support Chat Pill Button (Beside Cart) */}
-              <button
-                onClick={handleOpenChat}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-white/15 hover:bg-white/25 active:scale-95 text-white rounded-full transition text-xs font-bold border border-white/30 shadow-xs"
-                title="24/7 Customer Support & Chat"
-                aria-label="Support & Live Chat"
-              >
-                <div className="relative flex items-center">
-                  <Headphones className="w-4 h-4 text-white" />
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 animate-pulse" />
-                </div>
-                <span className="hidden lg:inline text-xs font-bold">Support</span>
-              </button>
 
               {/* Cart Button Pill (White / Accent Pill) */}
               <button
