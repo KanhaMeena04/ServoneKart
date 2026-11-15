@@ -15,16 +15,18 @@ import {
   CheckCircle2,
   ArrowRight,
   Package,
-  ShoppingCart
+  ShoppingCart,
+  RefreshCw
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import HeroBannerSlider from '../components/HeroBannerSlider';
 import PromoOfferBanners from '../components/PromoOfferBanners';
-import { groceryService } from '../services/api';
+import { groceryService, orderService } from '../services/api';
 import { usePlatform } from '../context/PlatformContext';
 import { useLocation } from '../context/LocationContext';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { CATEGORIES, BEST_SELLERS, ALL_CATALOG_PRODUCTS } from '../data/groceryCatalog';
-import banner111 from '../assets/banner111.jpg';
 
 // Quick-Commerce Mobile Category Groups (Matches Reference Screenshots 1 & 2)
 const MOBILE_CATEGORY_GROUPS = [
@@ -69,6 +71,9 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { platformMode, enableFoodDelivery, appSettings } = usePlatform();
   const { selectedLocation } = useLocation();
+  const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
+
   const [categories, setCategories] = useState(CATEGORIES);
   const [shuffledCategories, setShuffledCategories] = useState([]);
   const [isMobileCatPaused, setIsMobileCatPaused] = useState(false);
@@ -83,6 +88,34 @@ const HomePage = () => {
   const [bannersData, setBannersData] = useState(null);
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      orderService.getMyOrders({ limit: 4 })
+        .then((res) => {
+          const list = res.data?.orders || res.data?.data || [];
+          setRecentOrders(list);
+        })
+        .catch(() => {});
+    } else {
+      setRecentOrders([]);
+    }
+  }, [isAuthenticated]);
+
+  const handleReorderAll = (ord) => {
+    if (!ord.items || ord.items.length === 0) return;
+    ord.items.forEach((it) => {
+      const prod = it.product || {
+        _id: it._id || it.productId || `item-${Date.now()}`,
+        name: it.name,
+        price: it.price,
+        image: it.image
+      };
+      addToCart(prod, it.quantity || 1);
+    });
+    navigate('/cart');
+  };
 
   // Sync shuffledCategories when categories load
   useEffect(() => {
@@ -253,6 +286,111 @@ const HomePage = () => {
           <HeroBannerSlider />
           <PromoOfferBanners />
         </section>
+
+        {/* ============================================================
+            ORDER AGAIN / RECENT ORDERS (Dynamic for Logged-in Customer)
+           ============================================================ */}
+        {isAuthenticated && recentOrders && recentOrders.length > 0 && (
+          <section className="space-y-3 bg-white p-4 sm:p-5 rounded-2xl border border-blue-100 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                    Order Again
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-gray-500 font-medium">
+                    Repeat your recent grocery essentials in 1 tap
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/account/orders"
+                className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
+              >
+                <span>All Orders</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+              {recentOrders.map((ord) => {
+                const orderId = ord._id || ord.orderNumber;
+                const statusLabel = ord.status ? ord.status.replace(/_/g, ' ') : 'Processing';
+                const itemsCount = ord.items?.length || 0;
+                const total = ord.finalAmount || ord.totalAmount || 0;
+                const isDelivered = ord.status === 'delivered';
+
+                return (
+                  <div
+                    key={orderId}
+                    className="p-3.5 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-blue-200 hover:shadow-sm transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-2">
+                        <span className="font-bold text-gray-800">
+                          #{ord.orderNumber || String(orderId).slice(-6)}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] tracking-wider ${
+                          isDelivered
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-blue-50 text-[#0B3EDB] border border-blue-200'
+                        }`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+
+                      {/* Items thumbnails preview */}
+                      <div className="flex items-center gap-1.5 overflow-hidden mb-3">
+                        {(ord.items || []).slice(0, 3).map((it, idx) => (
+                          <div
+                            key={idx}
+                            className="w-10 h-10 rounded-lg bg-white border border-gray-200/80 p-0.5 overflow-hidden flex-shrink-0"
+                            title={it.name}
+                          >
+                            <img
+                              src={it.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&q=80"}
+                              alt={it.name}
+                              className="w-full h-full object-cover rounded"
+                            />
+                          </div>
+                        ))}
+                        {itemsCount > 3 && (
+                          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-[10px] font-black text-[#0B3EDB] flex-shrink-0">
+                            +{itemsCount - 3}
+                          </div>
+                        )}
+                        <div className="ml-1 text-[11px] text-gray-500 font-medium">
+                          {itemsCount} item{itemsCount > 1 ? 's' : ''} • <strong className="text-gray-900 font-bold">₹{total}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
+                      <button
+                        type="button"
+                        onClick={() => handleReorderAll(ord)}
+                        className="flex-1 py-1.5 px-3 bg-[#0B3EDB] hover:bg-[#07162E] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>Reorder</span>
+                      </button>
+                      <Link
+                        to={`/track/${orderId}`}
+                        className="py-1.5 px-2.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-bold transition-colors flex items-center justify-center"
+                        title="Live Track Order"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ============================================================
             2. SHOP BY CATEGORY SECTION
@@ -462,105 +600,81 @@ const HomePage = () => {
         </section>
 
         {/* ============================================================
-            5. DELIVERY PARTNER PRIORITY BANNER (Using TricelynWeb/src/assets/banner111.jpg)
+            5. QUICK-COMMERCE EXPRESS BANNER (Sleek, Compact, Fully Responsive)
            ============================================================ */}
-        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/80 bg-gray-100">
-          
-          {/* Master Panorama Background Image */}
-          <div className="absolute inset-0">
-            <img
-              src={banner111}
-              alt="Your Groceries Our Priority"
-              className="w-full h-full object-cover object-center"
-            />
-            {/* Ambient Overlay for crystal clear mobile legibility while keeping fresh groceries & rider visible */}
-            <div className="absolute inset-0 bg-white/65 sm:bg-white/40 md:bg-transparent backdrop-blur-[1px] md:backdrop-blur-none" />
-          </div>
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-[#0B3EDB]/20 bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0B3EDB] text-white">
+          {/* Subtle Ambient Radial Glows */}
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Banner Content Container (Positioned inside the image) */}
-          <div className="relative z-10 py-5 px-3 sm:py-8 sm:px-6 lg:py-10 lg:px-8">
-            <div className="max-w-xl lg:max-w-2xl mx-auto backdrop-blur-md bg-white/85 sm:bg-white/80 md:bg-white/90 rounded-2xl p-4 sm:p-6 lg:p-7 border border-white/90 shadow-md text-center flex flex-col items-center">
-              
-              {/* Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3EDB]/10 border border-[#0D5AA6]/30 text-[#0B3EDB] text-[10px] sm:text-xs font-bold tracking-wide uppercase shadow-2xs mb-2">
-                <span className="w-2 h-2 rounded-full bg-[#0B3EDB] animate-pulse" />
+          <div className="relative z-10 p-5 sm:p-7 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            {/* Left Content */}
+            <div className="space-y-3 max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>{deliveryHeadline}</span>
               </div>
 
-              {/* Dynamic Title */}
-              <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-900 tracking-tight leading-tight">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
                 {priorityBanner.title ? (
                   priorityBanner.title.includes('.') ? (
                     <>
                       {priorityBanner.title.split('.')[0]}.<br className="hidden sm:inline" />{' '}
-                      <span className="text-[#0B3EDB]">
+                      <span className="text-cyan-300">
                         {priorityBanner.title.split('.').slice(1).join('.')}
                       </span>
                     </>
                   ) : (
-                    <span className="text-[#0B3EDB]">
-                      {priorityBanner.title}
-                    </span>
+                    <span className="text-cyan-300">{priorityBanner.title}</span>
                   )
                 ) : (
                   <>
                     Your Groceries.{' '}
-                    <span className="text-[#0B3EDB]">Our Priority.</span>
+                    <span className="text-cyan-300">Our Priority.</span>
                   </>
                 )}
               </h3>
 
-              {/* Subtitle */}
-              <p className="text-xs sm:text-sm text-gray-600 font-semibold mt-1 max-w-md">
+              <p className="text-xs sm:text-sm text-blue-100 font-medium leading-relaxed max-w-md">
                 {priorityBanner.subtitle || deliverySubtext}
               </p>
 
-              {/* CTA Button */}
-              <div className="mt-3">
+              <div className="pt-1">
                 <Link
-                  to={priorityBanner.buttonLink || "/policy/shipping"}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#0A2B6B] to-[#0B3EDB] hover:from-[#07162E] hover:to-[#0A2B6B] text-white rounded-full text-xs sm:text-sm font-bold shadow-md shadow-[#0B3EDB]/25 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                  to={priorityBanner.buttonLink || "/categories"}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#0A2B6B] hover:bg-blue-50 active:bg-blue-100 rounded-full text-xs sm:text-sm font-black shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                  <span>{priorityBanner.buttonText || "Learn More"}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{priorityBanner.buttonText || "Order Now"}</span>
+                  <ArrowRight className="w-4 h-4 text-[#0B3EDB]" />
                 </Link>
               </div>
+            </div>
 
-              {/* 3 Step Cards (Order -> Pick -> Deliver) */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mt-4 pt-3.5 border-t border-gray-200/70">
-                
-                <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-                    <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                  <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Order</h4>
-                  <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
-                    In seconds
-                  </p>
+            {/* Right: 3 Quick Steps / Express Highlights */}
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 md:w-auto flex-shrink-0">
+              <div className="rounded-xl p-3 bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col items-center justify-center min-w-[85px] sm:min-w-[100px]">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
+                  <ShoppingCart className="w-4 h-4 text-cyan-300" />
                 </div>
-
-                <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-                    <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                  <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Pick</h4>
-                  <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
-                    Fresh packed
-                  </p>
-                </div>
-
-                <div className="group rounded-xl p-2 sm:p-2.5 bg-white/70 hover:bg-white border border-gray-100/90 shadow-2xs transition-all duration-200 flex flex-col items-center text-center">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-                    <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                  <h4 className="text-[11px] sm:text-xs font-black text-gray-900">Deliver</h4>
-                  <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium line-clamp-1">
-                    {deliveryTime}
-                  </p>
-                </div>
-
+                <h4 className="text-xs font-black text-white">Order</h4>
+                <p className="text-[10px] text-blue-200 font-medium">In seconds</p>
               </div>
 
+              <div className="rounded-xl p-3 bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col items-center justify-center min-w-[85px] sm:min-w-[100px]">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
+                  <Package className="w-4 h-4 text-amber-300" />
+                </div>
+                <h4 className="text-xs font-black text-white">Pick</h4>
+                <p className="text-[10px] text-blue-200 font-medium">Fresh packed</p>
+              </div>
+
+              <div className="rounded-xl p-3 bg-white/10 backdrop-blur-md border border-white/15 text-center flex flex-col items-center justify-center min-w-[85px] sm:min-w-[100px]">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
+                  <Truck className="w-4 h-4 text-emerald-300" />
+                </div>
+                <h4 className="text-xs font-black text-white">Deliver</h4>
+                <p className="text-[10px] text-blue-200 font-medium">{deliveryTime}</p>
+              </div>
             </div>
           </div>
         </section>

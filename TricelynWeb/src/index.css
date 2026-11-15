@@ -54,3 +54,20 @@
   box-shadow: 0 10px 25px -5px rgba(0, 102, 255, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
 
+/* Continuous smooth loop marquee ticker */
+@keyframes continuous-marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee-loop {
+  display: flex;
+  width: max-content;
+  animation: continuous-marquee 30s linear infinite;
+}
+
+.animate-marquee-loop:hover {
+  animation-play-state: paused;
+}
+
+

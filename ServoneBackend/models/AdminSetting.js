@@ -204,8 +204,8 @@ const AdminSettingSchema = new mongoose.Schema(
 
     // In-App & Web Announcement Bar
     announcement: {
-      enabled: { type: Boolean, default: false },
-      text: { type: String, default: '🎉 Get Free Delivery on your first order with code TRICELYN100!' },
+      enabled: { type: Boolean, default: true },
+      text: { type: String, default: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!' },
       color: { type: String, default: '#0B3EDB' }
     }
   },

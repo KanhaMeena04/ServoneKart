@@ -84,7 +84,10 @@ const SiteSetting = () => {
     riderBasePay: 25,
     riderPerKmPay: 6,
     vendorDefaultCommission: 8,
-    b2bMinOrderQty: 10
+    b2bMinOrderQty: 10,
+    announcementEnabled: 'Yes',
+    announcementText: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!',
+    announcementColor: '#0B3EDB'
   });
 
   const getAuthHeaders = () => {
@@ -123,7 +126,10 @@ const SiteSetting = () => {
           riderBasePay: res.data.riderEarningConfig?.baseEarning ?? prev.riderBasePay,
           riderPerKmPay: res.data.riderEarningConfig?.perKmEarning ?? prev.riderPerKmPay,
           vendorDefaultCommission: res.data.vendorB2BConfig?.defaultCommissionPercent ?? prev.vendorDefaultCommission,
-          b2bMinOrderQty: res.data.vendorB2BConfig?.minOrderQty ?? prev.b2bMinOrderQty
+          b2bMinOrderQty: res.data.vendorB2BConfig?.minOrderQty ?? prev.b2bMinOrderQty,
+          announcementEnabled: res.data.announcement?.enabled !== false ? 'Yes' : 'No',
+          announcementText: res.data.announcement?.text || prev.announcementText,
+          announcementColor: res.data.announcement?.color || prev.announcementColor
         }));
       }
     } catch (err) {
@@ -179,7 +185,10 @@ const SiteSetting = () => {
         riderBasePay: Number(settings.riderBasePay) || 25,
         riderPerKmPay: Number(settings.riderPerKmPay) || 6,
         vendorDefaultCommission: Number(settings.vendorDefaultCommission) || 8,
-        b2bMinOrderQty: Number(settings.b2bMinOrderQty) || 10
+        b2bMinOrderQty: Number(settings.b2bMinOrderQty) || 10,
+        announcementEnabled: settings.announcementEnabled === 'Yes',
+        announcementText: settings.announcementText,
+        announcementColor: settings.announcementColor
       };
       const res = await axios.put(`${API_BASE_URL}/api/settings`, payload, {
         headers: getAuthHeaders(),
@@ -367,6 +376,32 @@ const SiteSetting = () => {
               onChange={handleChange}
             />
           </div>
+
+          {/* Top Marquee Continuous Ticker Line */}
+          <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+            <h3 className="text-base font-bold text-gray-800 mb-4">📢 Top Continuous Loop Ticker Line (Website & Apps)</h3>
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <InputField
+              label="Continuous Ticker Text (Loops across top navbar)"
+              name="announcementText"
+              value={settings.announcementText}
+              onChange={handleChange}
+              placeholder='Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket"'
+            />
+          </div>
+          <InputField
+            label="Ticker Background Color (e.g. #0B3EDB)"
+            name="announcementColor"
+            value={settings.announcementColor}
+            onChange={handleChange}
+          />
+          <RadioField
+            label="Enable Top Looping Ticker"
+            name="announcementEnabled"
+            value={settings.announcementEnabled}
+            onChange={handleChange}
+          />
 
           {/* Switches (Radio Groups) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 col-span-1 md:col-span-2 mt-4">

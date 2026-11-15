@@ -100,10 +100,10 @@ const toPublicPayload = (settings) => {
       b2bSettlementCycle: 'Daily',
       defaultCommissionPercent: 8,
     },
-    announcement: settings?.announcement || {
-      enabled: false,
-      text: '',
-      color: '#0B3EDB',
+    announcement: {
+      enabled: settings?.announcement?.enabled !== false,
+      text: settings?.announcement?.text || 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!',
+      color: settings?.announcement?.color || '#0B3EDB',
     },
     selfPickupConfig: settings?.selfPickupConfig || {
       enabled: true,
@@ -246,6 +246,17 @@ exports.updateAdminSettings = async (req, res) => {
       };
       delete body.vendorDefaultCommission;
       delete body.b2bMinOrderQty;
+    }
+
+    if (body.announcement !== undefined || body.announcementText !== undefined) {
+      settings.announcement = {
+        enabled: body.announcementEnabled !== undefined ? (body.announcementEnabled === 'Yes' || body.announcementEnabled === true) : (body.announcement?.enabled !== false),
+        text: body.announcementText || body.announcement?.text || settings.announcement?.text || 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!',
+        color: body.announcementColor || body.announcement?.color || settings.announcement?.color || '#0B3EDB'
+      };
+      delete body.announcementText;
+      delete body.announcementEnabled;
+      delete body.announcementColor;
     }
 
     if (body.adminCommission !== undefined) {

@@ -177,7 +177,7 @@ const CheckoutPage = () => {
       setActiveOrderId(orderId);
       clearCart();
       setIsPaymentModalOpen(false);
-      navigate(`/order-success/${orderId}`, {
+      navigate(`/track/${orderId}`, {
         state: {
           orders,
           splitCount: response.data?.splitCount || orders.length,

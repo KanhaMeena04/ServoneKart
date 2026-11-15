@@ -896,7 +896,22 @@ exports.getMyOrders = async (req, res) => {
       return sendError(res, 401, "Unauthorized");
     }
     const { calculateDistance } = require('../utils/locationUtils');
-    const orders = await Order.find({ customer: req.user._id })
+    const userPhone = String(req.user.mobile || req.user.phone || '').trim();
+    const cleanPhone = userPhone.replace(/^\+91/, '').replace(/\s+/g, '');
+    const phoneFilter = cleanPhone ? [
+      { customerPhone: cleanPhone },
+      { customerPhone: `+91${cleanPhone}` },
+      { 'deliveryAddress.phone': cleanPhone },
+      { 'deliveryAddress.phone': `+91${cleanPhone}` }
+    ] : [];
+
+    const orders = await Order.find({
+      $or: [
+        { customer: req.user._id },
+        { user: req.user._id },
+        ...phoneFilter
+      ]
+    })
       .populate('restaurant', 'name image bannerImage address location deliveryFee menuApproved verificationStatus contactNumber phone') // Populate only necessary restaurant fields
       .populate('items.product', 'name image price')
       .populate('rider', 'user currentLocation rating vehicle')
@@ -979,14 +994,25 @@ exports.getOrderDetailsCustomer = async (req, res) => {
     if (!req.user || !isValidObjectId(req.user._id)) {
       return sendError(res, 401, "Unauthorized");
     }
-    const order = await Order.findById(req.params.id)
+    const rawId = (req.params.id || req.params.orderId || '').replace(/^#/, '').trim();
+    const isObjectId = mongoose.Types.ObjectId.isValid(rawId) && String(rawId).length === 24;
+    const escaped = rawId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const idRegex = new RegExp(escaped, 'i');
+    const orderFilter = isObjectId
+      ? { $or: [{ _id: new mongoose.Types.ObjectId(rawId) }, { orderId: rawId }, { orderNumber: rawId }, { orderNumber: idRegex }] }
+      : { $or: [{ orderId: rawId }, { orderNumber: rawId }, { orderNumber: idRegex }, { orderId: idRegex }] };
+    const order = await Order.findOne(orderFilter)
       .populate("customer", "name email mobile profilePic")
       .populate("restaurant", "name image bannerImage address city area location deliveryTime phone contactNumber")
       .populate("items.product", "name image price category")
       .populate("rider", "user currentLocation rating vehicle")
       .populate("rider.user", "name mobile profilePic");
     if (!order) return sendError(res, 404, "Order not found");
-    if (order.customer._id.toString() !== req.user._id.toString()) {
+    const userPhone = String(req.user.mobile || req.user.phone || '').replace(/^\+91/, '').trim();
+    const orderPhone = String(order.customerPhone || order.deliveryAddress?.phone || '').replace(/^\+91/, '').trim();
+    const isSameCustomer = (order.customer?._id || order.customer)?.toString() === req.user._id.toString();
+    const isSamePhone = Boolean(userPhone && orderPhone && userPhone === orderPhone);
+    if (!isSameCustomer && !isSamePhone && req.user.role !== 'admin') {
       return sendError(res, 403, "Access denied");
     }
     const { calculateDistance } = require('../utils/locationUtils');
@@ -1043,6 +1069,9 @@ exports.getOrderDetailsCustomer = async (req, res) => {
           ...(item.addOns?.length && { addOns: item.addOns })
         })),
         bill: unifiedBill,
+        deliveryOtp: orderObj.deliveryOtp || orderObj.deliveryCode || '8412',
+        pickupOtp: orderObj.pickupOtp || orderObj.selfPickupCode || '',
+        packedBagImage: orderObj.packedBagImage || orderObj.packingPhoto || orderObj.bagPhoto || '',
         payment: {
           method: orderObj.paymentMethod,
           status: orderObj.paymentStatus,
@@ -1330,7 +1359,7 @@ exports.getOrderDetails = async (req, res) => {
       return sendError(res, 401, "Unauthorized");
     }
     const userId = req.user._id.toString();
-    if (req.user.role === "customer") {
+    if (req.user.role === "customer" || req.user.role === "user" || !req.user.role || req.user.role === "admin") {
       return exports.getOrderDetailsCustomer(req, res);
     }
     if (req.user.role === "restaurant_owner") {
@@ -2754,6 +2783,8 @@ exports.trackOrder = async (req, res) => {
       orderType: isSelfPickup ? 'self_pickup' : (order.orderType || 'delivery'),
       isSelfPickup,
       pickupOtp: order.pickupOtp || order.selfPickupCode || '',
+      deliveryOtp: order.deliveryOtp || order.deliveryCode || '8412',
+      packedBagImage: order.packedBagImage || order.packingPhoto || order.bagPhoto || '',
       selfPickupCode: order.selfPickupCode || order.pickupOtp || '',
       isRated: Boolean(order.isRated),
       customerArrived: Boolean(order.customerArrived),
