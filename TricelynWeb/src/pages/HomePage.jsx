@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Zap, 
@@ -92,15 +92,32 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState([]);
   const [areaQuery, setAreaQuery] = useState('');
+  const [hasSearchedStores, setHasSearchedStores] = useState(false);
+  const [searchedStoreQuery, setSearchedStoreQuery] = useState('');
 
   const handleFindStores = (e) => {
     e.preventDefault();
-    if (areaQuery.trim()) {
-      navigate(`/stores?search=${encodeURIComponent(areaQuery.trim())}`);
-    } else {
-      navigate('/stores');
-    }
+    const q = areaQuery.trim();
+    setSearchedStoreQuery(q);
+    setHasSearchedStores(true);
+    setTimeout(() => {
+      const el = document.getElementById('searched-shops-container');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
+
+  const filteredStores = useMemo(() => {
+    if (!hasSearchedStores) return [];
+    if (!searchedStoreQuery) return stores;
+    const s = searchedStoreQuery.toLowerCase();
+    return stores.filter((st) => {
+      const name = (typeof st.name === 'object' ? (st.name.en || Object.values(st.name)[0] || '') : (st.name || '')).toLowerCase();
+      const addr = (st.address || '').toLowerCase();
+      const city = (st.city || '').toLowerCase();
+      const tags = Array.isArray(st.tags) ? st.tags.join(' ').toLowerCase() : '';
+      return name.includes(s) || addr.includes(s) || city.includes(s) || tags.includes(s);
+    });
+  }, [hasSearchedStores, searchedStoreQuery, stores]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -295,10 +312,11 @@ const HomePage = () => {
               </Link>
             </div>
           )}
-          <HeroBannerSlider />
+          {/* Dynamic Hero Banner Slider (Controlled via Admin Panel: showHeroBanner) */}
+          {appSettings?.showHeroBanner && <HeroBannerSlider />}
 
           {/* ============================================================
-              STORE FINDER CARD (Matches Screenshot 1 Exactly)
+              STORE FINDER CARD (Placed at top when Hero is hidden)
               "Groceries in minutes, from your own supermarket."
              ============================================================ */}
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#061a3d] via-[#0A2B6B] to-[#07162E] text-white p-5 sm:p-7 md:p-9 border border-blue-900/60 shadow-lg">
@@ -316,7 +334,7 @@ const HomePage = () => {
                   type="text"
                   value={areaQuery}
                   onChange={(e) => setAreaQuery(e.target.value)}
-                  placeholder="Enter your area or society"
+                  placeholder="Enter your area, society, or shop name"
                   className="flex-1 px-4 sm:px-5 py-2.5 sm:py-3 bg-white text-gray-900 placeholder:text-gray-400 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition"
                 />
                 <button
@@ -328,6 +346,139 @@ const HomePage = () => {
               </form>
             </div>
           </div>
+
+          {/* ============================================================
+              SEARCHED NEARBY STORES (Revealed ONLY after clicking Find stores)
+             ============================================================ */}
+          {hasSearchedStores && (
+            <div id="searched-shops-container" className="pt-2 animate-in fade-in space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
+                      Nearby Partner Stores
+                    </h2>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
+                      ⚡ Delivery in minutes
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {searchedStoreQuery
+                      ? `Found ${filteredStores.length} partner store(s) matching "${searchedStoreQuery}" delivering to you`
+                      : `Showing all ${stores.length} partner stores delivering to your location`}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHasSearchedStores(false);
+                      setAreaQuery('');
+                      setSearchedStoreQuery('');
+                    }}
+                    className="text-xs font-bold text-gray-500 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-xl transition cursor-pointer"
+                  >
+                    Clear Search
+                  </button>
+                  <Link
+                    to={`/stores${searchedStoreQuery ? `?search=${encodeURIComponent(searchedStoreQuery)}` : ''}`}
+                    className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
+                  >
+                    <span>View All</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+              </div>
+
+              {filteredStores.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-2">
+                  <Store className="w-8 h-8 text-gray-400 mx-auto" />
+                  <p className="text-sm font-bold text-gray-800">
+                    No partner stores found for "{searchedStoreQuery}"
+                  </p>
+                  <p className="text-xs text-gray-500 max-w-md mx-auto">
+                    Try entering another area, society name (e.g. Vijay Nagar, Palasia, Saket Nagar) or grocery shop name.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchedStoreQuery('');
+                    }}
+                    className="mt-2 text-xs font-bold text-[#0B3EDB] hover:underline cursor-pointer"
+                  >
+                    Show all available partner stores
+                  </button>
+                </div>
+              ) : (
+                <div className="flex overflow-x-auto pb-2 scrollbar-none snap-x sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5 -mx-4 px-4 sm:mx-0 sm:px-0">
+                  {filteredStores.map((store) => (
+                    <Link
+                      key={store._id || store.id}
+                      to={`/store/${store._id || store.id}`}
+                      className="w-[84vw] flex-shrink-0 snap-start sm:w-auto bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition">
+                          <img
+                            src={store.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
+                            alt={store.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            loading="lazy"
+                          />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#0B3EDB] transition truncate">
+                              {store.name}
+                            </h3>
+                            <span className="flex items-center gap-0.5 text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                              <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                              <span>{store.rating || '4.8'}</span>
+                            </span>
+                          </div>
+
+                          <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                            {store.address || 'Scheme 54, Vijay Nagar, Indore'}
+                          </p>
+
+                          <div className="flex items-center gap-2 mt-1.5 text-[11px]">
+                            <span className="font-bold text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              <span>In minutes</span>
+                            </span>
+                            {store.distance && (
+                              <span className="text-gray-400 font-medium">
+                                • {store.distance}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-emerald-600 font-bold ml-auto">
+                              Free on ₹199+
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-gray-50 flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          {(store.tags || ['Groceries', 'Daily Needs']).slice(0, 2).map((t, idx) => (
+                            <span key={idx} className="text-[10px] text-gray-500 bg-gray-100/70 px-1.5 py-0.5 rounded truncate">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="font-bold text-[#0B3EDB] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 flex-shrink-0">
+                          <span>Shop Store</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <PromoOfferBanners />
         </section>
@@ -518,109 +669,7 @@ const HomePage = () => {
         </section>
 
         {/* ============================================================
-            SHOPS NEAR ME (Multi-Vendor Hyperlocal Partner Stores)
-           ============================================================ */}
-        {stores && stores.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-                    Shops Near Me
-                  </h2>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                    ⚡ {deliveryTime} Delivery
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 font-medium">
-                  Verified partner grocery stores & supermarkets near{' '}
-                  <span className="font-bold text-gray-700">
-                    {selectedLocation?.name || selectedLocation?.locality || 'your area'}
-                  </span>{' '}
-                  {loading ? '— refreshing hubs...' : 'delivering to you'}
-                </p>
-              </div>
-
-              <Link
-                to="/stores"
-                className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
-              >
-                <span>View All</span>
-                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            </div>
-
-            <div className="flex overflow-x-auto pb-2 scrollbar-none snap-x sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5 -mx-4 px-4 sm:mx-0 sm:px-0">
-              {stores.slice(0, 6).map((store) => (
-                <Link
-                  key={store._id || store.id}
-                  to={`/store/${store._id || store.id}`}
-                  className="w-[84vw] flex-shrink-0 snap-start sm:w-auto bg-white rounded-2xl border border-gray-100 hover:border-[#0B3EDB] shadow-xs hover:shadow-md transition-all duration-200 p-4 flex flex-col justify-between group relative overflow-hidden"
-                >
-                  <div className="flex items-start gap-3.5">
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition">
-                      <img
-                        src={store.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
-                        alt={store.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#0B3EDB] transition truncate">
-                          {store.name}
-                        </h3>
-                        <span className="flex items-center gap-0.5 text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
-                          <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
-                          <span>{store.rating || '4.8'}</span>
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-gray-500 truncate mt-0.5">
-                        {store.address || 'Scheme 54, Vijay Nagar, Indore'}
-                      </p>
-
-                      <div className="flex items-center gap-2 mt-1.5 text-[11px]">
-                        <span className="font-bold text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-blue-600" />
-                          <span>{store.deliveryTime || '10-15 mins'}</span>
-                        </span>
-                        {store.distance && (
-                          <span className="text-gray-400 font-medium">
-                            • {store.distance}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-emerald-600 font-bold ml-auto">
-                          Free on ₹199+
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-2.5 border-t border-gray-50 flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      {(store.tags || ['Groceries', 'Daily Needs']).slice(0, 2).map((t, idx) => (
-                        <span key={idx} className="text-[10px] text-gray-500 bg-gray-100/70 px-1.5 py-0.5 rounded truncate">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                    <span className="font-bold text-[#0B3EDB] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 flex-shrink-0">
-                      <span>Shop Store</span>
-                      <ChevronRight className="w-3 h-3" />
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-
-        {/* ============================================================
-            4. BEST SELLERS PRODUCT GRID
+            3. BEST SELLERS PRODUCT GRID
             (Matches Master Mockup: 6 Clean Product Cards + Blue Buttons)
            ============================================================ */}
         <section className="space-y-4">

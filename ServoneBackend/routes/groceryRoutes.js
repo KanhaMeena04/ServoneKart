@@ -183,7 +183,13 @@ const DEFAULT_OFFER_CARDS = [
 
 router.get('/banners', async (req, res) => {
   try {
-    let heroSlides = [...DEFAULT_HERO_SLIDES];
+    let adminSettings = null;
+    try {
+      adminSettings = await AdminSetting.getSettings();
+    } catch (_) {}
+    const showHeroBanner = adminSettings?.showHeroBanner === true;
+
+    let heroSlides = showHeroBanner ? [...DEFAULT_HERO_SLIDES] : [];
     let offerBanners = [...DEFAULT_OFFER_CARDS];
 
     if (mongoose.connection.readyState === 1) {
@@ -234,7 +240,8 @@ router.get('/banners', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      heroSlides,
+      showHeroBanner,
+      heroSlides: showHeroBanner ? heroSlides : [],
       offerBanners,
       hero: {
         ...HERO_BANNERS.hero,

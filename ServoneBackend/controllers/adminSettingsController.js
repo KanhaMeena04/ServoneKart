@@ -60,6 +60,7 @@ const toPublicPayload = (settings) => {
     primaryVertical: modeFlags.primaryVertical,
     enableFoodDelivery: modeFlags.enableFoodDelivery,
     enableGroceryDelivery: modeFlags.enableGroceryDelivery,
+    showHeroBanner: settings?.showHeroBanner === true,
     verticalPriority: modeFlags.verticalPriority,
     metaTitle: settings?.metaTitle || 'Tricelyn - Instant Grocery & Hyperlocal Delivery',
     metaDescription: settings?.metaDescription || '',
@@ -218,6 +219,10 @@ exports.updateAdminSettings = async (req, res) => {
       body.primaryVertical = modeFlags.primaryVertical;
       body.enableFoodDelivery = modeFlags.enableFoodDelivery;
       body.enableGroceryDelivery = modeFlags.enableGroceryDelivery;
+    }
+
+    if (body.showHeroBanner !== undefined) {
+      body.showHeroBanner = body.showHeroBanner === true || body.showHeroBanner === 'true' || body.showHeroBanner === 'Yes';
     }
 
     if (body.codEnable !== undefined && body.isCodEnabled === undefined) {

@@ -19,6 +19,7 @@ const AdminSettingSchema = new mongoose.Schema(
     primaryVertical: { type: String, trim: true, default: 'grocery' },
     enableFoodDelivery: { type: Boolean, default: false },
     enableGroceryDelivery: { type: Boolean, default: true },
+    showHeroBanner: { type: Boolean, default: false },
     isCodEnabled: { type: Boolean, default: true },
     metaTitle: { type: String, trim: true, default: 'Tricelyn - Instant Grocery & Hyperlocal Delivery' },
     metaDescription: { type: String, trim: true, default: 'Tricelyn | Multi-Vendor Quick Commerce Grocery Delivery' },

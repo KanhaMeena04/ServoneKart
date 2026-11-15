@@ -276,7 +276,7 @@ export default function InvoiceManagement() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen space-y-6">
-      
+
       {/* Header & Tabs Navigation */}
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -746,7 +746,7 @@ export default function InvoiceManagement() {
 
               {/* Printable-style Preview Content */}
               <div className="p-6 text-xs text-gray-800 space-y-4 bg-white max-h-[80vh] overflow-y-auto">
-                
+
                 {/* Header */}
                 <div className="flex justify-between items-start border-b pb-4">
                   <div>
@@ -1121,7 +1121,7 @@ export default function InvoiceManagement() {
             </div>
           ) : (
             <div className="space-y-6 text-gray-900 print:text-black" id="printable-invoice">
-              
+
               {/* Invoice Header */}
               <div className="flex items-start justify-between border-b pb-6">
                 <div>

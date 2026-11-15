@@ -5,11 +5,7 @@ import {
   Facebook, 
   Youtube, 
   Twitter, 
-  Linkedin, 
-  ShieldCheck, 
-  Truck, 
-  Clock, 
-  HeartHandshake
+  Linkedin
 } from 'lucide-react';
 import logoImg from '../assets/webslogo.png';
 
@@ -17,53 +13,6 @@ const Footer = () => {
   return (
     <footer className="bg-[#07162E] text-white pt-8 pb-12 sm:pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Top 4 Value Badges - Compact & Streamlined */}
-        <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 sm:py-3.5 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-gray-300">
-            
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-400 shrink-0">
-                <Clock className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white tracking-tight truncate">10-15 Min Delivery</p>
-                <p className="text-[11px] text-gray-400 truncate">Superfast doorstep fulfillment</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white tracking-tight truncate">100% Quality Fresh</p>
-                <p className="text-[11px] text-gray-400 truncate">Direct from trusted sources</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 shrink-0">
-                <Truck className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white tracking-tight truncate">Free Delivery</p>
-                <p className="text-[11px] text-gray-400 truncate">On all orders above ₹199</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0">
-                <HeartHandshake className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white tracking-tight truncate">Best Prices Everyday</p>
-                <p className="text-[11px] text-gray-400 truncate">Cheaper than local marts</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
 
         {/* Main Footer Links & Newsletter - Compact, Proportional Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-slate-800/80">
@@ -78,7 +27,7 @@ const Footer = () => {
               />
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
-              India's premier quick-commerce grocery delivery platform. Fresh fruits, vegetables, dairy, daily staples & snacks delivered to your doorstep in 10-15 minutes.
+              India's premier quick-commerce grocery delivery platform. Fresh fruits, vegetables, dairy, daily staples & snacks delivered to your doorstep in minutes.
             </p>
           </div>
 
