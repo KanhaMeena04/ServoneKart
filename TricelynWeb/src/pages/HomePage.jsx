@@ -261,10 +261,10 @@ const HomePage = () => {
   };
 
   return (
-    <div className="space-y-10 pb-16 bg-[#f4f7fb]">
+    <div className="pb-12 bg-[#f4f7fb]">
       
       {/* Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-10">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-4 sm:pt-5 space-y-6 sm:space-y-7">
         
         {/* ============================================================
             1. HERO & PROMO SHOWCASE
@@ -742,7 +742,7 @@ const HomePage = () => {
         {/* ============================================================
             6. CATEGORY PRODUCT ROWS (Dynamic browse across all categories)
            ============================================================ */}
-        <div className="space-y-8 pt-4">
+        <div className="space-y-5 pt-1">
           <div className="border-b border-gray-200 pb-2">
             <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
               Explore More Daily Essentials
