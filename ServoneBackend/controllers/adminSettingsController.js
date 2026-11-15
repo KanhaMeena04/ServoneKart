@@ -122,6 +122,29 @@ const toPublicPayload = (settings) => {
       selfPickupGracePeriodMins: settings?.selfPickupConfig?.gracePeriodMins || 15,
       preparationBufferMins: 10,
     },
+    invoiceConfig: settings?.invoiceConfig || {
+      brandName: 'TRICELYN',
+      tagline: 'Groceries in minutes, from your own supermarket',
+      legalEntityName: 'Tricelyn Hyperlocal Commerce Pvt. Ltd.',
+      companyAddress: 'Scheme 54, Vijay Nagar, Indore, MP - 452010',
+      gstin: '23AABCT1234F1Z8',
+      fssai: '11422850000123',
+      pan: 'AABCT1234F',
+      supportEmail: 'care@tricelyn.com',
+      supportPhone: '+91 731-4099880',
+      supportHours: '24/7 Live Customer Support',
+      invoicePrefix: 'TRC-INV',
+      accentColor: '#0055ff',
+      templateStyle: 'modern',
+      showLogo: true,
+      showTaxBreakup: true,
+      showStoreDetails: true,
+      showDeliveryPartner: true,
+      customFooterNote: 'This is a computer-generated invoice and requires no physical signature. Thank you for shopping with Tricelyn Quick Commerce!',
+      termsAndConditions: '1. All disputes subject to Indore jurisdiction.\n2. Fresh produce & essentials eligible for instant doorstep inspection & return.\n3. Goods sold under Tricelyn freshness & quality guarantee.',
+      authorizedSignatoryLabel: 'Authorized Signatory for Tricelyn Commerce',
+      signatureImageUrl: ''
+    },
   };
 };
 
@@ -428,6 +451,61 @@ exports.updateOrderTimingConfig = async (req, res) => {
       success: true,
       message: 'Order timing and cancellation parameters saved successfully',
       config: settings.orderTimingConfig
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getInvoiceSettings = async (req, res) => {
+  try {
+    const settings = await ensureSettings();
+    const invoiceConfig = settings.invoiceConfig || {
+      brandName: 'TRICELYN',
+      tagline: 'Groceries in minutes, from your own supermarket',
+      legalEntityName: 'Tricelyn Hyperlocal Commerce Pvt. Ltd.',
+      companyAddress: 'Scheme 54, Vijay Nagar, Indore, MP - 452010',
+      gstin: '23AABCT1234F1Z8',
+      fssai: '11422850000123',
+      pan: 'AABCT1234F',
+      supportEmail: 'care@tricelyn.com',
+      supportPhone: '+91 731-4099880',
+      supportHours: '24/7 Live Customer Support',
+      invoicePrefix: 'TRC-INV',
+      accentColor: '#0055ff',
+      templateStyle: 'modern',
+      showLogo: true,
+      showTaxBreakup: true,
+      showStoreDetails: true,
+      showDeliveryPartner: true,
+      customFooterNote: 'This is a computer-generated invoice and requires no physical signature. Thank you for shopping with Tricelyn Quick Commerce!',
+      termsAndConditions: '1. All disputes subject to Indore jurisdiction.\n2. Fresh produce & essentials eligible for instant doorstep inspection & return.\n3. Goods sold under Tricelyn freshness & quality guarantee.',
+      authorizedSignatoryLabel: 'Authorized Signatory for Tricelyn Commerce',
+      signatureImageUrl: ''
+    };
+    return res.status(200).json({ success: true, invoiceConfig });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateInvoiceSettings = async (req, res) => {
+  try {
+    const settings = await ensureSettings();
+    const configUpdate = req.body.invoiceConfig || req.body;
+    
+    settings.invoiceConfig = {
+      ...(settings.invoiceConfig?.toObject ? settings.invoiceConfig.toObject() : (settings.invoiceConfig || {})),
+      ...configUpdate
+    };
+
+    await settings.save();
+    broadcastSettingsChange(settings);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Dynamic GST invoice format and design saved successfully',
+      invoiceConfig: settings.invoiceConfig
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

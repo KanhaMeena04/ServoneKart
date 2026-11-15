@@ -9,7 +9,7 @@ const HERO_BANNERS = {
     id: "hero-main",
     title: "Groceries in Minutes.",
     subtitle: "Fresh produce · Daily essentials · Trusted brands",
-    subBrand: "TRICELYN — Everything You Actually Want",
+    subBrand: "TRICELYN — Groceries in minutes, from your own supermarket",
     buttonText: "Shop Now",
     buttonLink: "/categories",
     bagImage: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1000&q=80",

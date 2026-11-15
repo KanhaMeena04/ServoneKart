@@ -4351,5 +4351,85 @@ exports.getRestaurantStatusCheck = async (req, res) => {
   }
 };
 
+exports.getVendorInvoiceSettings = async (req, res) => {
+  try {
+    let restaurant = null;
+    const storeId = req.params.id || req.query.storeId;
+    if (storeId && (req.user?.role === 'admin' || req.user?.isAdmin)) {
+      restaurant = await Restaurant.findById(storeId);
+    } else if (req.user) {
+      restaurant = await Restaurant.findOne({ owner: req.user._id });
+    }
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Partner store not found' });
+    }
+    return res.status(200).json({
+      success: true,
+      storeId: restaurant._id,
+      storeName: restaurant.name,
+      invoiceDetails: restaurant.invoiceDetails || {}
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+exports.updateVendorInvoiceSettings = async (req, res) => {
+  try {
+    let restaurant = null;
+    const storeId = req.params.id || req.body.storeId;
+    if (storeId && (req.user?.role === 'admin' || req.user?.isAdmin)) {
+      restaurant = await Restaurant.findById(storeId);
+    } else if (req.user) {
+      restaurant = await Restaurant.findOne({ owner: req.user._id });
+    }
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Partner store not found' });
+    }
+    const update = req.body.invoiceDetails || req.body;
+    restaurant.invoiceDetails = {
+      ...(restaurant.invoiceDetails || {}),
+      customStoreName: update.customStoreName !== undefined ? update.customStoreName : restaurant.invoiceDetails?.customStoreName,
+      tradeName: update.tradeName !== undefined ? update.tradeName : restaurant.invoiceDetails?.tradeName,
+      billingAddress: update.billingAddress !== undefined ? update.billingAddress : restaurant.invoiceDetails?.billingAddress,
+      gstin: update.gstin !== undefined ? update.gstin : restaurant.invoiceDetails?.gstin,
+      fssai: update.fssai !== undefined ? update.fssai : restaurant.invoiceDetails?.fssai,
+      pan: update.pan !== undefined ? update.pan : restaurant.invoiceDetails?.pan,
+      contactPhone: update.contactPhone !== undefined ? update.contactPhone : restaurant.invoiceDetails?.contactPhone,
+      authorizedSignatory: update.authorizedSignatory !== undefined ? update.authorizedSignatory : restaurant.invoiceDetails?.authorizedSignatory,
+      customStoreNote: update.customStoreNote !== undefined ? update.customStoreNote : restaurant.invoiceDetails?.customStoreNote
+    };
+    await restaurant.save();
+    return res.status(200).json({
+      success: true,
+      message: 'Vendor custom invoice details updated successfully',
+      invoiceDetails: restaurant.invoiceDetails
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+exports.getAllStoresInvoiceSettings = async (req, res) => {
+  try {
+    const stores = await Restaurant.find({})
+      .select('name address city phone documents businessType invoiceDetails isOnline')
+      .lean();
+    return res.status(200).json({
+      success: true,
+      stores: stores.map(st => ({
+        _id: st._id,
+        name: typeof st.name === 'object' ? (st.name.en || Object.values(st.name)[0] || 'Store') : (st.name || 'Store'),
+        address: st.address || '',
+        city: st.city || '',
+        phone: st.phone || '',
+        gstin: st.invoiceDetails?.gstin || st.documents?.gst?.number || '',
+        fssai: st.invoiceDetails?.fssai || st.documents?.license?.number || '',
+        businessType: st.businessType || 'grocery_store',
+        invoiceDetails: st.invoiceDetails || {}
+      }))
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

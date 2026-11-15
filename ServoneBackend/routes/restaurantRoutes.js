@@ -48,7 +48,10 @@ const {
   vendorDeleteMenuItem,
   getOrderHistory,
   getDashboardStats,
-  deleteAccount
+  deleteAccount,
+  getVendorInvoiceSettings,
+  updateVendorInvoiceSettings,
+  getAllStoresInvoiceSettings
 } = require('../controllers/restaurantController');
 const {
   createOwnerPromocode,
@@ -125,6 +128,13 @@ router.get('/finance/wallet', protect, restaurantOwner, getRestaurantWalletEarni
 router.get('/finance/bestsellers', protect, restaurantOwner, bestSellers);
 router.get('/finance/settlement', protect, restaurantOwner, settlementReport);
 router.get('/finance/order/:orderId/invoice', protect, restaurantOwner, getOrderInvoice);
+// Vendor & Admin Store Invoice Configuration Routes
+router.get('/invoice-settings', protect, restaurantOwner, getVendorInvoiceSettings);
+router.put('/invoice-settings', protect, restaurantOwner, updateVendorInvoiceSettings);
+router.get('/admin/all-invoice-settings', protect, admin, getAllStoresInvoiceSettings);
+router.get('/admin/:id/invoice-settings', protect, admin, getVendorInvoiceSettings);
+router.put('/admin/:id/invoice-settings', protect, admin, updateVendorInvoiceSettings);
+
 router.post('/promocode', protect, restaurantOwner, upload.single('image'), createOwnerPromocode);
 router.get('/promocode', protect, restaurantOwner, getOwnerPromocodes);
 router.get('/promocode/:id', protect, restaurantOwner, getOwnerPromocodeById);

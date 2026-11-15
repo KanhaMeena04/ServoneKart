@@ -73,7 +73,7 @@ const Footer = () => {
             <Link to="/" className="inline-block group">
               <img 
                 src={logoImg} 
-                alt="Tricelyn - Everything You Actually Want" 
+                alt="Tricelyn - Groceries in minutes, from your own supermarket" 
                 className="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-105" 
               />
             </Link>

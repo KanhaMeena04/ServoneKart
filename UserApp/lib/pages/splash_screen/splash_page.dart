@@ -220,7 +220,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Everything you actually want.',
+                        'Groceries in minutes, from your own supermarket',
                         style: GoogleFonts.poppins(
                           color: const Color(0xFFDBEAFE),
                           fontSize: 14,

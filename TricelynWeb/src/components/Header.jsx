@@ -455,7 +455,7 @@ const Header = () => {
             <Link to="/" className="flex items-center flex-shrink-0 group">
               <img
                 src={logoImg}
-                alt="Tricelyn - Everything You Actually Want"
+                alt="Tricelyn - Groceries in minutes, from your own supermarket"
                 className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </Link>

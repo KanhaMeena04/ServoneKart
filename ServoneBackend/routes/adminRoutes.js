@@ -52,7 +52,7 @@ const {
 const adminController = require("../controllers/adminController");
 const dashboardController = require("../controllers/dashboardController");
 const orderController = require("../controllers/orderController");
-const { getAdminSettings, updateAdminSettings, updatePlatformMode } = require("../controllers/adminSettingsController");
+const { getAdminSettings, updateAdminSettings, updatePlatformMode, getInvoiceSettings, updateInvoiceSettings } = require("../controllers/adminSettingsController");
 const {
   addPromocode,
   getAllPromocodes,
@@ -206,6 +206,8 @@ router.get("/document-type/:id", protect, admin, getDocumentTypeById);
 router.put("/document-type/:id", protect, admin, updateDocumentType);
 router.delete("/document-type/:id", protect, admin, deleteDocumentType);
 router.get("/settings", protect, admin, getAdminSettings);
+router.get("/settings/invoice", protect, admin, getInvoiceSettings);
+router.put("/settings/invoice", protect, admin, updateInvoiceSettings);
 router.put("/settings", protect, admin, updateAdminSettings);
 router.put("/settings/platform-mode", protect, admin, updatePlatformMode);
 router.patch("/settings/platform-mode", protect, admin, updatePlatformMode);

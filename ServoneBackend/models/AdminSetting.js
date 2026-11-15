@@ -207,6 +207,31 @@ const AdminSettingSchema = new mongoose.Schema(
       enabled: { type: Boolean, default: true },
       text: { type: String, default: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!' },
       color: { type: String, default: '#0B3EDB' }
+    },
+
+    // Dynamic GST Tax Invoice Configuration
+    invoiceConfig: {
+      brandName: { type: String, default: 'TRICELYN' },
+      tagline: { type: String, default: 'Groceries in minutes, from your own supermarket' },
+      legalEntityName: { type: String, default: 'Tricelyn Hyperlocal Commerce Pvt. Ltd.' },
+      companyAddress: { type: String, default: 'Scheme 54, Vijay Nagar, Indore, MP - 452010' },
+      gstin: { type: String, default: '23AABCT1234F1Z8' },
+      fssai: { type: String, default: '11422850000123' },
+      pan: { type: String, default: 'AABCT1234F' },
+      supportEmail: { type: String, default: 'care@tricelyn.com' },
+      supportPhone: { type: String, default: '+91 731-4099880' },
+      supportHours: { type: String, default: '24/7 Live Customer Support' },
+      invoicePrefix: { type: String, default: 'TRC-INV' },
+      accentColor: { type: String, default: '#0055ff' },
+      templateStyle: { type: String, enum: ['modern', 'classic', 'minimal'], default: 'modern' },
+      showLogo: { type: Boolean, default: true },
+      showTaxBreakup: { type: Boolean, default: true },
+      showStoreDetails: { type: Boolean, default: true },
+      showDeliveryPartner: { type: Boolean, default: true },
+      customFooterNote: { type: String, default: 'This is a computer-generated invoice and requires no physical signature. Thank you for shopping with Tricelyn Quick Commerce!' },
+      termsAndConditions: { type: String, default: '1. All disputes subject to Indore jurisdiction.\n2. Fresh produce & essentials eligible for instant doorstep inspection & return.\n3. Goods sold under Tricelyn freshness & quality guarantee.' },
+      authorizedSignatoryLabel: { type: String, default: 'Authorized Signatory for Tricelyn Commerce' },
+      signatureImageUrl: { type: String, default: '' }
     }
   },
   { timestamps: true }

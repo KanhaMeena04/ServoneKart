@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Restaurant = require('../models/Restaurant');
+const AdminSetting = require('../models/AdminSetting');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Banner = require('../models/Banner');
@@ -1737,20 +1738,26 @@ router.get('/orders/:id/invoice', async (req, res) => {
     const { id } = req.params;
     let order = null;
 
+    let adminSettings = null;
+    try {
+      adminSettings = await AdminSetting.getSettings();
+    } catch (_) {}
+    const invoiceConfig = adminSettings?.invoiceConfig || {};
+
     if (mongoose.connection.readyState === 1) {
       if (mongoose.isValidObjectId(id)) {
         order = await Order.findById(id)
           .populate('user', 'name phone mobile email')
           .populate('customer', 'name phone mobile email')
-          .populate('restaurant', 'name address city state phone gstin fssai documents')
-          .populate('store', 'name address city state phone gstin fssai documents')
+          .populate('restaurant', 'name address city state phone gstin fssai documents invoiceDetails')
+          .populate('store', 'name address city state phone gstin fssai documents invoiceDetails')
           .lean();
       } else {
         order = await Order.findOne({ orderNumber: id })
           .populate('user', 'name phone mobile email')
           .populate('customer', 'name phone mobile email')
-          .populate('restaurant', 'name address city state phone gstin fssai documents')
-          .populate('store', 'name address city state phone gstin fssai documents')
+          .populate('restaurant', 'name address city state phone gstin fssai documents invoiceDetails')
+          .populate('store', 'name address city state phone gstin fssai documents invoiceDetails')
           .lean();
       }
       if (!order) {
@@ -1760,9 +1767,10 @@ router.get('/orders/:id/invoice', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable for invoice generation' });
     }
 
-    // Dynamic order date & generated invoice sequence
+    // Dynamic order date & generated invoice sequence with prefix from config
     const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
-    const invNumber = `TRC-INV-${orderDate.getFullYear()}-${(order.orderNumber || order._id.toString()).slice(-6).toUpperCase()}`;
+    const prefix = invoiceConfig.invoicePrefix || 'TRC-INV';
+    const invNumber = `${prefix}-${orderDate.getFullYear()}-${(order.orderNumber || order._id.toString()).slice(-6).toUpperCase()}`;
     
     const items = Array.isArray(order.items) ? order.items : [];
 
@@ -1803,13 +1811,17 @@ router.get('/orders/:id/invoice', async (req, res) => {
       : (itemsSubtotal + packagingFee + deliveryFee + platformFee - discount);
 
     const storeDoc = order.restaurant || order.store;
-    const resolvedStoreName = storeDoc
-      ? extractText(storeDoc.name, 'Partner Store')
-      : (order.storeName || order.restaurantName || 'Partner Store');
+    const invDetails = storeDoc?.invoiceDetails || {};
 
-    const resolvedStoreAddress = storeDoc?.address || order.restaurantAddress || 'Store Address Unavailable';
-    const resolvedGstin = storeDoc?.documents?.gst?.number || storeDoc?.gstin || 'Unregistered / Applied';
-    const resolvedFssai = storeDoc?.documents?.license?.number || storeDoc?.fssaiNumber || 'N/A';
+    const resolvedStoreName = invDetails.customStoreName || (storeDoc
+      ? extractText(storeDoc.name, 'Partner Store')
+      : (order.storeName || order.restaurantName || 'Partner Store'));
+
+    const resolvedStoreAddress = invDetails.billingAddress || storeDoc?.address || order.restaurantAddress || 'Store Address Unavailable';
+    const resolvedGstin = invDetails.gstin || storeDoc?.documents?.gst?.number || storeDoc?.gstin || invoiceConfig.gstin || 'Unregistered / Applied';
+    const resolvedFssai = invDetails.fssai || storeDoc?.documents?.license?.number || storeDoc?.fssaiNumber || invoiceConfig.fssai || 'N/A';
+    const resolvedPhone = invDetails.contactPhone || storeDoc?.phone || invoiceConfig.supportPhone || '+91 731-4099880';
+    const resolvedSignatory = invDetails.authorizedSignatory || invoiceConfig.authorizedSignatoryLabel || 'Authorized Signatory';
 
     const buyerDoc = order.customer || order.user;
     const resolvedCustName = order.customerName || buyerDoc?.name || order.deliveryAddress?.name || 'Customer';
@@ -1826,15 +1838,42 @@ router.get('/orders/:id/invoice', async (req, res) => {
       paymentMethod: (order.paymentMethod || 'cod').toUpperCase(),
       paymentStatus: (order.paymentStatus || (order.isPaid ? 'Paid' : 'Pending')).toUpperCase(),
 
+      // Dynamic Platform Branding & Format Config
+      invoiceConfig: {
+        brandName: invoiceConfig.brandName || 'TRICELYN',
+        tagline: invoiceConfig.tagline || 'Groceries in minutes, from your own supermarket',
+        legalEntityName: invoiceConfig.legalEntityName || 'Tricelyn Hyperlocal Commerce Pvt. Ltd.',
+        companyAddress: invoiceConfig.companyAddress || 'Scheme 54, Vijay Nagar, Indore, MP - 452010',
+        gstin: invoiceConfig.gstin || '23AABCT1234F1Z8',
+        fssai: invoiceConfig.fssai || '11422850000123',
+        pan: invoiceConfig.pan || 'AABCT1234F',
+        supportEmail: invoiceConfig.supportEmail || 'care@tricelyn.com',
+        supportPhone: invoiceConfig.supportPhone || '+91 731-4099880',
+        supportHours: invoiceConfig.supportHours || '24/7 Live Customer Support',
+        accentColor: invoiceConfig.accentColor || '#0055ff',
+        templateStyle: invoiceConfig.templateStyle || 'modern',
+        showLogo: invoiceConfig.showLogo !== false,
+        showTaxBreakup: invoiceConfig.showTaxBreakup !== false,
+        showStoreDetails: invoiceConfig.showStoreDetails !== false,
+        showDeliveryPartner: invoiceConfig.showDeliveryPartner !== false,
+        customFooterNote: invoiceConfig.customFooterNote || 'This is a computer-generated invoice and requires no physical signature. Thank you for shopping with Tricelyn Quick Commerce!',
+        termsAndConditions: invoiceConfig.termsAndConditions || '1. All disputes subject to Indore jurisdiction.\n2. Fresh produce & essentials eligible for instant doorstep inspection & return.\n3. Goods sold under Tricelyn freshness & quality guarantee.',
+        authorizedSignatoryLabel: invoiceConfig.authorizedSignatoryLabel || 'Authorized Signatory for Tricelyn Commerce',
+        signatureImageUrl: invoiceConfig.signatureImageUrl || ''
+      },
+
       // Dispatching Partner Store Entity (Dynamic)
       seller: {
-        legalName: 'Tricelyn Multi-Vendor Marketplace',
+        legalName: invDetails.tradeName || invoiceConfig.legalEntityName || 'Tricelyn Multi-Vendor Marketplace',
         storeName: resolvedStoreName,
+        tradeName: invDetails.tradeName || resolvedStoreName,
         address: resolvedStoreAddress,
         gstin: resolvedGstin,
         fssaiNumber: resolvedFssai,
-        supportEmail: 'care@tricelyn.com',
-        helpline: '+91 731-4099880'
+        supportEmail: invoiceConfig.supportEmail || 'care@tricelyn.com',
+        helpline: resolvedPhone,
+        authorizedSignatory: resolvedSignatory,
+        customStoreNote: invDetails.customStoreNote || ''
       },
 
       // Customer Details (Dynamic)

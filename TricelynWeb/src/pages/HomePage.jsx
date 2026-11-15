@@ -545,7 +545,7 @@ const HomePage = () => {
                 to="/stores"
                 className="text-xs font-bold text-[#0B3EDB] hover:text-blue-700 flex items-center gap-0.5 group"
               >
-                <span>View All ({stores.length}+ Shops)</span>
+                <span>View All</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>

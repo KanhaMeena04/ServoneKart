@@ -148,6 +148,18 @@ const restaurantSchema = new mongoose.Schema(
       gstNumber: { type: String },
       gstPercent: { type: Number, default: 0 }
     },
+    // Vendor Custom Invoice & Dispatch Details
+    invoiceDetails: {
+      customStoreName: { type: String, default: '' },
+      tradeName: { type: String, default: '' },
+      billingAddress: { type: String, default: '' },
+      gstin: { type: String, default: '' },
+      fssai: { type: String, default: '' },
+      pan: { type: String, default: '' },
+      contactPhone: { type: String, default: '' },
+      authorizedSignatory: { type: String, default: '' },
+      customStoreNote: { type: String, default: '' }
+    },
     estimatedPreparationTime: { type: Number, default: 15 }, // in minutes
     autoAcceptOrders: { type: Boolean, default: false },
     prepBufferTimeMinutes: { type: Number, default: 0 },
