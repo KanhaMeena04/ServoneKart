@@ -9,8 +9,7 @@ import {
   ShieldCheck, 
   Truck, 
   Clock, 
-  HeartHandshake,
-  Headphones
+  HeartHandshake
 } from 'lucide-react';
 import logoImg from '../assets/webslogo.png';
 
@@ -87,7 +86,7 @@ const Footer = () => {
           <div className="md:col-span-2 lg:col-span-2 space-y-2">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-1.5 text-xs text-gray-400">
-              <li><Link to="/membership" className="text-amber-300 font-bold hover:text-white transition-colors flex items-center gap-1"><span>✨ Tricelyn Premier</span></Link></li>
+              <li><Link to="/membership" className="hover:text-blue-400 transition-colors">Tricelyn Premier</Link></li>
               <li><Link to="/membership?tab=rider" className="hover:text-blue-400 transition-colors">Ride with Tricelyn (Rider)</Link></li>
               <li><Link to="/membership?tab=vendor" className="hover:text-blue-400 transition-colors">Sell with Tricelyn (Vendor)</Link></li>
               <li><Link to="/" className="hover:text-blue-400 transition-colors">Home</Link></li>
@@ -103,12 +102,11 @@ const Footer = () => {
             <ul className="space-y-1.5 text-xs text-gray-400">
               <li>
                 <button
+                  type="button"
                   onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
-                  className="flex items-center gap-1.5 text-blue-400 hover:text-white transition-colors text-xs font-bold group cursor-pointer text-left"
+                  className="hover:text-blue-400 transition-colors text-left cursor-pointer"
                 >
-                  <Headphones className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                  <span>24/7 Live Chat</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  24/7 Live Chat
                 </button>
               </li>
               <li><Link to="/policy/refund" className="hover:text-blue-400 transition-colors">Return & Refund</Link></li>
