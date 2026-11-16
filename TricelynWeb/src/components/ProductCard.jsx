@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Star, Clock, ShoppingCart, Store } from 'lucide-react';
+import { Plus, Minus, Star, ShoppingCart, Store } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const ProductCard = ({ product }) => {
@@ -51,13 +51,8 @@ const ProductCard = ({ product }) => {
         className="relative w-full h-32 sm:h-34 rounded-xl overflow-hidden bg-gradient-to-b from-blue-50/25 via-white to-gray-50/60 border border-blue-50/80 p-2 mb-2 flex items-center justify-center cursor-pointer group-hover:border-blue-200/80 transition-all"
         title="View product details"
       >
-        {/* Quick delivery badge or Out of stock badge */}
-        {isAvailable ? (
-          <span className="absolute top-1.5 left-1.5 text-[9px] font-bold text-blue-700 bg-white/95 backdrop-blur-xs px-1.5 py-0.5 rounded-md shadow-2xs border border-blue-100/70 flex items-center gap-0.5 z-10">
-            <Clock className="w-2.5 h-2.5 text-blue-600" />
-            <span>10 MINS</span>
-          </span>
-        ) : (
+        {/* Out of stock badge if unavailable */}
+        {!isAvailable && (
           <span className="absolute top-1.5 left-1.5 text-[9px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200/80 z-10">
             OUT OF STOCK
           </span>

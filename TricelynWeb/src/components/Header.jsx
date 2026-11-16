@@ -395,27 +395,6 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 shadow-md">
-      {/* Continuous Loop Marquee Ticker (Dynamic from Admin) */}
-      {appSettings?.announcement?.enabled !== false && (
-        <div
-          className="overflow-hidden whitespace-nowrap text-white text-[11px] sm:text-xs py-1.5 font-bold tracking-wide relative flex items-center border-b border-white/10 shadow-xs select-none"
-          style={{ backgroundColor: appSettings?.announcement?.color || '#07162E' }}
-        >
-          <div className="animate-marquee-loop items-center gap-12">
-            {[1, 2, 3, 4].map((i) => (
-              <span key={i} className="inline-flex items-center gap-3">
-                <Sparkles className="w-3 h-3 text-amber-300 flex-shrink-0 animate-pulse" />
-                <span>
-                  {appSettings?.announcement?.text ||
-                    'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!'}
-                </span>
-                <span className="opacity-40 font-normal">✦</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ============================================================
           MAIN NAVBAR: TRICELYN BRAND GRADIENT (Responsive Mobile + Desktop)
          ============================================================ */}
