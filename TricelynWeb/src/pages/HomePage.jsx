@@ -958,9 +958,9 @@ const CategoryProductRow = ({ section, deliveryTime }) => {
           <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
             {section.title || section.name}
           </h3>
-          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+          {/* <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
             DELIVERY IN MINUTES
-          </span>
+          </span> */}
         </div>
 
         <div className="flex items-center gap-3">

@@ -447,6 +447,315 @@
 
 
 
+// import React from 'react';
+// import { Link } from 'react-router-dom';
+// import {
+//   Instagram,
+//   Facebook,
+//   Youtube,
+//   Twitter,
+//   Linkedin,
+// } from 'lucide-react';
+
+// import logoImg from '../assets/webslogo.png';
+// import { categories } from '../data/categories';
+
+// const Footer = () => {
+//   const footerCategories = categories.slice(0, 7);
+
+//   const handleScrollTop = () => {
+//     window.scrollTo({
+//       top: 0,
+//       left: 0,
+//       behavior: 'instant',
+//     });
+//   };
+
+//   const headingClass =
+//     'text-sm font-bold text-white uppercase tracking-wider';
+
+//   const linkClass =
+//     'text-sm text-gray-400 hover:text-emerald-400 transition-colors duration-200 leading-6';
+
+//   const socialClass =
+//     'w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200';
+
+//   return (
+//     <footer className="bg-[#07162E] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-slate-800">
+
+//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+//         {/* Main Footer Grid */}
+//         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-9 lg:gap-x-8 lg:gap-y-10 pb-9 sm:pb-10 border-b border-slate-700/60">
+
+//           {/* Categories */}
+//           <div className="min-w-0 lg:col-span-4">
+
+//             <div className="flex items-center gap-3 mb-5">
+
+//               <h4 className={headingClass}>
+//                 Categories
+//               </h4>
+
+//               <Link
+//                 to="/categories"
+//                 onClick={handleScrollTop}
+//                 className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors whitespace-nowrap"
+//               >
+//                 See All →
+//               </Link>
+
+//             </div>
+
+//             <ul className="flex flex-col gap-3">
+
+//               {footerCategories.map((category) => (
+//                 <li key={category.name}>
+//                   <Link
+//                     to={`/categories?category=${encodeURIComponent(category.name)}`}
+//                     onClick={handleScrollTop}
+//                     className={linkClass}
+//                   >
+//                     {category.name}
+//                   </Link>
+//                 </li>
+//               ))}
+
+//             </ul>
+
+//           </div>
+
+//           {/* Quick Links */}
+//           <div className="min-w-0 lg:col-span-2">
+
+//             <h4 className={`${headingClass} mb-5`}>
+//               Quick Links
+//             </h4>
+
+//             <ul className="flex flex-col gap-3">
+
+//               <li>
+//                 <Link to="/" onClick={handleScrollTop} className={linkClass}>
+//                   Home
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/categories" onClick={handleScrollTop} className={linkClass}>
+//                   All Categories
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/stores" onClick={handleScrollTop} className={linkClass}>
+//                   Nearby Stores
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/account/orders" onClick={handleScrollTop} className={linkClass}>
+//                   My Orders
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/membership" onClick={handleScrollTop} className={linkClass}>
+//                   Tricelyn Premier
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/membership?tab=vendor" onClick={handleScrollTop} className={linkClass}>
+//                   Sell with Tricelyn
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/membership?tab=rider" onClick={handleScrollTop} className={linkClass}>
+//                   Ride with Tricelyn
+//                 </Link>
+//               </li>
+
+//             </ul>
+
+//           </div>
+
+//           {/* Legal & Policies */}
+//           <div className="min-w-0 lg:col-span-2">
+
+//             <h4 className={`${headingClass} mb-5`}>
+//               Legal & Policies
+//             </h4>
+
+//             <ul className="flex flex-col gap-3">
+
+//               <li>
+//                 <Link to="/policy/terms" onClick={handleScrollTop} className={linkClass}>
+//                   Terms of Service
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/policy/privacy" onClick={handleScrollTop} className={linkClass}>
+//                   Privacy Policy
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/policy/refund" onClick={handleScrollTop} className={linkClass}>
+//                   Return & Refund
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/policy/shipping" onClick={handleScrollTop} className={linkClass}>
+//                   Delivery Policy
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/policy/faq" onClick={handleScrollTop} className={linkClass}>
+//                   Help & FAQs
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link to="/policy/contact" onClick={handleScrollTop} className={linkClass}>
+//                   Contact Support
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <button
+//                   type="button"
+//                   onClick={() =>
+//                     window.dispatchEvent(new Event('open-support-chat'))
+//                   }
+//                   className={`${linkClass} text-left`}
+//                 >
+//                   24/7 Live Chat
+//                 </button>
+//               </li>
+
+//             </ul>
+
+//           </div>
+
+//           {/* Brand + Connect With Us */}
+//           <div className="min-w-0 sm:col-span-2 lg:col-span-4 space-y-5">
+
+//             {/* Logo */}
+//             <Link
+//               to="/"
+//               onClick={handleScrollTop}
+//               className="inline-block group"
+//             >
+//               <img
+//                 src={logoImg}
+//                 alt="Tricelyn"
+//                 className="h-10 sm:h-11 w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+//               />
+//             </Link>
+
+//             {/* Description */}
+//             <p className="text-sm text-gray-400 leading-7 max-w-sm">
+//               India's premier quick-commerce grocery delivery platform.
+//               Fresh fruits, vegetables, dairy, daily staples & snacks
+//               delivered to your doorstep in minutes.
+//             </p>
+
+//             {/* Connect With Us */}
+//             <div className="space-y-3">
+
+//               <h4 className={headingClass}>
+//                 Connect With Us
+//               </h4>
+
+//               <p className="text-sm text-gray-400 leading-6 max-w-sm">
+//                 Follow Tricelyn for fresh product updates, exclusive offers
+//                 and daily essentials.
+//               </p>
+
+//               {/* Social Icons */}
+//               <div className="flex flex-wrap items-center gap-3 pt-1">
+
+//                 <a
+//                   href="#"
+//                   aria-label="Instagram"
+//                   className={socialClass}
+//                 >
+//                   <Instagram size={17} />
+//                 </a>
+
+//                 <a
+//                   href="#"
+//                   aria-label="Facebook"
+//                   className={socialClass}
+//                 >
+//                   <Facebook size={17} />
+//                 </a>
+
+//                 <a
+//                   href="#"
+//                   aria-label="YouTube"
+//                   className={socialClass}
+//                 >
+//                   <Youtube size={17} />
+//                 </a>
+
+//                 <a
+//                   href="#"
+//                   aria-label="Twitter"
+//                   className={socialClass}
+//                 >
+//                   <Twitter size={17} />
+//                 </a>
+
+//                 <a
+//                   href="#"
+//                   aria-label="LinkedIn"
+//                   className={socialClass}
+//                 >
+//                   <Linkedin size={17} />
+//                 </a>
+
+//               </div>
+
+//             </div>
+
+//           </div>
+
+//         </div>
+
+//         {/* Bottom Copyright */}
+//         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs text-gray-400">
+
+//           <p className="text-center sm:text-left leading-5">
+//             © 2026 Tricelyn Technologies Pvt Ltd. All rights reserved.
+//           </p>
+
+//           <p className="font-medium whitespace-nowrap">
+//             Fast
+//             <span className="text-emerald-400 mx-1.5">·</span>
+//             Fresh
+//             <span className="text-emerald-400 mx-1.5">·</span>
+//             Everyday
+//           </p>
+
+//         </div>
+
+//       </div>
+
+//     </footer>
+//   );
+// };
+
+// export default Footer;
+
+
+
+
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -458,10 +767,12 @@ import {
 } from 'lucide-react';
 
 import logoImg from '../assets/webslogo.png';
-import { categories } from '../data/categories';
+import { CATEGORIES } from '../data/groceryCatalog';
 
 const Footer = () => {
-  const footerCategories = categories.slice(0, 7);
+  const footerCategories = [...CATEGORIES].sort(
+    (a, b) => (a.position || 0) - (b.position || 0)
+  );
 
   const handleScrollTop = () => {
     window.scrollTo({
@@ -472,7 +783,7 @@ const Footer = () => {
   };
 
   const headingClass =
-    'text-sm font-bold text-white uppercase tracking-wider';
+    'text-sm font-bold text-white';
 
   const linkClass =
     'text-sm text-gray-400 hover:text-emerald-400 transition-colors duration-200 leading-6';
@@ -485,48 +796,35 @@ const Footer = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-9 lg:gap-x-8 lg:gap-y-10 pb-9 sm:pb-10 border-b border-slate-700/60">
+        {/* CATEGORY SECTION */}
+        <div className="pb-9 sm:pb-10 border-b border-slate-700/60">
 
-          {/* Categories */}
-          <div className="min-w-0 lg:col-span-4">
+          <h4 className="text-base sm:text-lg font-bold text-white mb-6">
+            Categories
+          </h4>
 
-            <div className="flex items-center gap-3 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3">
 
-              <h4 className={headingClass}>
-                Categories
-              </h4>
-
+            {footerCategories.map((category) => (
               <Link
-                to="/categories"
+                key={category.id || category.slug}
+                to={`/categories?category=${encodeURIComponent(category.slug)}`}
                 onClick={handleScrollTop}
-                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors whitespace-nowrap"
+                className="text-sm text-gray-300 hover:text-emerald-400 transition-colors duration-200 leading-6"
               >
-                See All →
+                {category.name}
               </Link>
-
-            </div>
-
-            <ul className="flex flex-col gap-3">
-
-              {footerCategories.map((category) => (
-                <li key={category.name}>
-                  <Link
-                    to={`/categories?category=${encodeURIComponent(category.name)}`}
-                    onClick={handleScrollTop}
-                    className={linkClass}
-                  >
-                    {category.name}
-                  </Link>
-                </li>
-              ))}
-
-            </ul>
+            ))}
 
           </div>
 
-          {/* Quick Links */}
-          <div className="min-w-0 lg:col-span-2">
+        </div>
+
+        {/* MAIN FOOTER GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-9 lg:gap-y-10 py-9 sm:py-10 border-b border-slate-700/60">
+
+          {/* QUICK LINKS */}
+          <div className="min-w-0 lg:col-span-3">
 
             <h4 className={`${headingClass} mb-5`}>
               Quick Links
@@ -580,8 +878,8 @@ const Footer = () => {
 
           </div>
 
-          {/* Legal & Policies */}
-          <div className="min-w-0 lg:col-span-2">
+          {/* LEGAL & POLICIES */}
+          <div className="min-w-0 lg:col-span-3">
 
             <h4 className={`${headingClass} mb-5`}>
               Legal & Policies
@@ -641,10 +939,10 @@ const Footer = () => {
 
           </div>
 
-          {/* Brand + Connect With Us */}
-          <div className="min-w-0 sm:col-span-2 lg:col-span-4 space-y-5">
+          {/* BRAND + CONNECT WITH US */}
+          <div className="min-w-0 sm:col-span-2 lg:col-span-6 space-y-5">
 
-            {/* Logo */}
+            {/* LOGO */}
             <Link
               to="/"
               onClick={handleScrollTop}
@@ -657,14 +955,14 @@ const Footer = () => {
               />
             </Link>
 
-            {/* Description */}
+            {/* DESCRIPTION */}
             <p className="text-sm text-gray-400 leading-7 max-w-sm">
               India's premier quick-commerce grocery delivery platform.
               Fresh fruits, vegetables, dairy, daily staples & snacks
               delivered to your doorstep in minutes.
             </p>
 
-            {/* Connect With Us */}
+            {/* CONNECT WITH US */}
             <div className="space-y-3">
 
               <h4 className={headingClass}>
@@ -676,7 +974,7 @@ const Footer = () => {
                 and daily essentials.
               </p>
 
-              {/* Social Icons */}
+              {/* SOCIAL ICONS */}
               <div className="flex flex-wrap items-center gap-3 pt-1">
 
                 <a
@@ -727,7 +1025,7 @@ const Footer = () => {
 
         </div>
 
-        {/* Bottom Copyright */}
+        {/* BOTTOM COPYRIGHT */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs text-gray-400">
 
           <p className="text-center sm:text-left leading-5">
