@@ -23,9 +23,9 @@ const AdminSettingSchema = new mongoose.Schema(
     isCodEnabled: { type: Boolean, default: true },
     metaTitle: { type: String, trim: true, default: 'Tricelyn - Instant Grocery & Hyperlocal Delivery' },
     metaDescription: { type: String, trim: true, default: 'Tricelyn | Multi-Vendor Quick Commerce Grocery Delivery' },
-    estimatedDeliveryTime: { type: String, trim: true, default: '10-15 Mins' },
-    deliveryHeadline: { type: String, trim: true, default: 'HYPERLOCAL EXPRESS • 10-15 MINS' },
-    deliverySubtext: { type: String, trim: true, default: '10-15 min to your door' },
+    estimatedDeliveryTime: { type: String, trim: true, default: 'In minutes' },
+    deliveryHeadline: { type: String, trim: true, default: 'HYPERLOCAL EXPRESS • IN MINUTES' },
+    deliverySubtext: { type: String, trim: true, default: 'Delivery in minutes to your door' },
     firstOrderFreeDelivery: { type: Boolean, default: true },
     firstOrderMinAmount: { type: Number, default: 0 },
     freeDeliveryMinAmount: { type: Number, default: 199 },
@@ -206,7 +206,7 @@ const AdminSettingSchema = new mongoose.Schema(
     // In-App & Web Announcement Bar
     announcement: {
       enabled: { type: Boolean, default: true },
-      text: { type: String, default: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!' },
+      text: { type: String, default: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in minutes!' },
       color: { type: String, default: '#0B3EDB' }
     },
 

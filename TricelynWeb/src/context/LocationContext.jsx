@@ -37,7 +37,7 @@ export const LocationProvider = ({ children }) => {
             id: z._id || `zone-${idx}`,
             name: z.name || z.zoneName || 'Indore Zone',
             locality: z.description || z.city?.name || 'Indore, Madhya Pradesh',
-            eta: z.deliveryTime || '10-15 mins',
+            eta: z.deliveryTime || 'In minutes',
             serviceable: z.isActive !== false,
             lat: z.location?.coordinates ? z.location.coordinates[1] : 22.7533,
             lng: z.location?.coordinates ? z.location.coordinates[0] : 75.8937,

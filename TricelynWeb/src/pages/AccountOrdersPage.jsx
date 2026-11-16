@@ -195,7 +195,7 @@ const AccountOrdersPage = () => {
               </div>
               <h3 className="text-sm font-bold text-gray-800">No orders yet</h3>
               <p className="text-xs text-gray-500">
-                You haven't placed any orders yet. Try our superfast 10-15 min grocery delivery!
+                You haven't placed any orders yet. Try our superfast grocery delivery in minutes!
               </p>
               <Link
                 to="/"

@@ -528,7 +528,7 @@ class _ReviewPayPageState extends State<ReviewPayPage> {
                           child: Text(
                             (context.read<CartProvider>().hasGroceryItems ||
                                     context.read<PlatformConfigProvider>().isGroceryActive)
-                                ? 'Smart Prep Buffer: ~10-15 mins packing time + 15 mins grace period at store counter.'
+                                ? 'Smart Prep Buffer: Packing in minutes + 15 mins grace period at store counter.'
                                 : 'Smart Prep Buffer: ~15 mins prep time + 15 mins grace period at restaurant counter.',
                             style: const TextStyle(
                               fontSize: 12,

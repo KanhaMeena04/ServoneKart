@@ -95,7 +95,7 @@ const AuthModal = () => {
             TRICELYN QUICK GROCERY
           </span>
           <h3 className="text-xl font-extrabold text-white mt-1">
-            {step === 'phone' ? 'Groceries in 10-15 Minutes' : 'Verify Your Mobile'}
+            {step === 'phone' ? 'Groceries in minutes' : 'Verify Your Mobile'}
           </h3>
           <p className="text-xs text-blue-100 mt-1">
             {step === 'phone'

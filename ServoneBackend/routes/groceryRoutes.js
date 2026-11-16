@@ -93,7 +93,7 @@ function normalizeProduct(raw) {
     vendorName: storeName,
     deliveryTime: typeof restObj?.deliveryTime === 'number'
       ? `${restObj.deliveryTime} mins`
-      : (restObj?.deliveryTime || p.deliveryTime || '10-15 mins'),
+      : (restObj?.deliveryTime || p.deliveryTime || 'In minutes'),
     image: p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'
   };
 }
@@ -101,7 +101,7 @@ function normalizeProduct(raw) {
 const DEFAULT_HERO_SLIDES = [
   {
     id: 'slide-farm-fresh',
-    tag: 'TRICELYN FRESH · 10-15 MINS',
+    tag: 'TRICELYN FRESH · DELIVERY IN MINUTES',
     title: 'Farm Fresh Fruits & Vegetables',
     subtitle: 'Crisp seasonal greens, organic veggies & juicy fruits delivered straight from local Indore mandis',
     buttonText: 'Order Fresh',
@@ -206,7 +206,7 @@ router.get('/banners', async (req, res) => {
           if (dbHero.length > 0) {
             heroSlides = dbHero.map((b, idx) => ({
               id: b._id?.toString() || `db-hero-${idx}`,
-              tag: b.badge || 'TRICELYN FRESH · 10-15 MINS',
+              tag: b.badge || 'TRICELYN FRESH · DELIVERY IN MINUTES',
               title: b.title,
               subtitle: b.subtitle || 'Fresh groceries & daily staples delivered to your door in Indore',
               buttonText: b.buttonText || 'Shop Now',
@@ -970,7 +970,7 @@ router.get('/stores', async (req, res) => {
           : Number(s.ratingsCount ?? 120);
         const dtStr = typeof s.deliveryTime === 'number'
           ? `${s.deliveryTime} mins`
-          : (s.deliveryTime || '10-15 mins');
+          : (s.deliveryTime || 'In minutes');
 
         let distanceKm = null;
         if (hasCoords && Array.isArray(s.location?.coordinates) && s.location.coordinates.length >= 2) {
@@ -1015,7 +1015,7 @@ router.get('/stores', async (req, res) => {
           distance: "1.2 km",
           rating: 4.8,
           ratingsCount: 2450,
-          deliveryTime: "10-15 mins",
+          deliveryTime: "In minutes",
           minOrderAmount: 49,
           freeDeliveryThreshold: 199,
           isOpen: true,
@@ -1103,7 +1103,7 @@ router.get('/stores/:id/catalog', async (req, res) => {
         name: "Tricelyn Partner Supermarket",
         address: "Scheme 54, Vijay Nagar, Indore",
         rating: 4.8,
-        deliveryTime: "10-15 mins",
+        deliveryTime: "In minutes",
         image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
       };
       products = ALL_CATALOG_PRODUCTS;
@@ -1112,7 +1112,7 @@ router.get('/stores/:id/catalog', async (req, res) => {
     const storeIdStr = (store._id || store.id).toString();
     const storeNameStr = extractText(store.name, 'Tricelyn Partner Store');
     const storeRating = typeof store.rating === 'object' ? Number(store.rating?.average || 4.8) : (Number(store.rating) || 4.8);
-    const storeDeliveryTime = typeof store.deliveryTime === 'number' ? `${store.deliveryTime} mins` : (store.deliveryTime || '10-15 mins');
+    const storeDeliveryTime = typeof store.deliveryTime === 'number' ? `${store.deliveryTime} mins` : (store.deliveryTime || 'In minutes');
 
     const categoryMap = {};
     products.forEach(p => {

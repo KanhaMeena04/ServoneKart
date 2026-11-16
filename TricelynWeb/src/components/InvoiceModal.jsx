@@ -227,7 +227,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
               )}
 
               <div className="flex justify-between">
-                <span>Delivery Charge (10-15m):</span>
+                <span>Delivery Charge:</span>
                 <span className="font-semibold text-gray-900">
                   {deliveryFee === 0 ? <strong className="text-emerald-600">FREE</strong> : `₹${deliveryFee.toFixed(2)}`}
                 </span>

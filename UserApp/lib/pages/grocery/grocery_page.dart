@@ -50,7 +50,7 @@ class _GroceryPageState extends State<GroceryPage> {
   final ScrollController _categoryScrollCtrl = ScrollController();
   Timer? _categoryScrollTimer;
   final TextEditingController _searchCtrl = TextEditingController();
-  String _deliveryTime = '10-15 MINS';
+  String _deliveryTime = 'In minutes';
 
   Color get primaryGreen => AppColors.primary;
 
@@ -885,7 +885,7 @@ class _GroceryPageState extends State<GroceryPage> {
                                                   const SizedBox(width: 8),
                                                   Flexible(
                                                     child: Text(
-                                                      '${s['deliveryTime'] ?? '10-15 mins'} • Express',
+                                                      '${s['deliveryTime'] ?? 'In minutes'} • Express',
                                                       overflow: TextOverflow.ellipsis,
                                                       style: TextStyle(
                                                         fontSize: 11.5,
@@ -1059,7 +1059,7 @@ class _GroceryPageState extends State<GroceryPage> {
               final img = (slide['image'] ?? '').toString();
               final title = (slide['title'] ?? 'Fresh Groceries').toString();
               final subtitle = (slide['subtitle'] ?? '').toString();
-              final tag = (slide['tag'] ?? '10-15 MINS').toString();
+              final tag = (slide['tag'] ?? 'IN MINUTES').toString();
               return GestureDetector(
                 onTap: () => _openBannerTarget(slide['link']?.toString(), title),
                 child: Container(
@@ -1547,7 +1547,7 @@ class _StoreCatalogBottomSheetState extends State<_StoreCatalogBottomSheet> {
                             ),
                           ),
                           Text(
-                            '${_store['address'] ?? ''} • ${_store['deliveryTime'] ?? '10-15 mins'}',
+                            '${_store['address'] ?? ''} • ${_store['deliveryTime'] ?? 'In minutes'}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 11.5, color: Colors.grey),

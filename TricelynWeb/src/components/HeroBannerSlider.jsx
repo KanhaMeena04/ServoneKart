@@ -6,7 +6,7 @@ import { groceryService } from '../services/api';
 const DEFAULT_SLIDES = [
   {
     id: 'slide-farm-fresh',
-    tag: 'TRICELYN FRESH · 10-15 MINS',
+    tag: 'TRICELYN FRESH · DELIVERY IN MINUTES',
     title: 'Farm Fresh Fruits & Vegetables',
     subtitle: 'Crisp seasonal greens, organic veggies & juicy fruits delivered straight from local Indore mandis',
     buttonText: 'Order Fresh',
@@ -42,7 +42,7 @@ const DEFAULT_SLIDES = [
   },
   {
     id: 'slide-snacks-munchies',
-    tag: 'MIDNIGHT CRAVINGS · 10 MINS',
+    tag: 'MIDNIGHT CRAVINGS · IN MINUTES',
     title: 'Snacks, Munchies & Chocolates',
     subtitle: 'Crunchy Indore namkeen, imported chocolate bars, potato chips & cookies for instant cravings',
     buttonText: 'Grab Snacks',
@@ -70,7 +70,7 @@ const HeroBannerSlider = () => {
         if (isMounted && res?.data?.heroSlides && Array.isArray(res.data.heroSlides) && res.data.heroSlides.length > 0) {
           const mapped = res.data.heroSlides.map((s, idx) => ({
             id: s.id || `slide-${idx}`,
-            tag: s.tag || 'TRICELYN FRESH · 10-15 MINS',
+            tag: s.tag || 'TRICELYN FRESH · DELIVERY IN MINUTES',
             title: s.title || 'Fresh Groceries',
             subtitle: s.subtitle || 'Express doorstep grocery delivery in Indore',
             buttonText: s.buttonText || 'Shop Now',

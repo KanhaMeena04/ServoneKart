@@ -288,7 +288,7 @@ const BEST_SELLERS = [
     categorySlug: "fruits-vegetables",
     categoryName: "Fruits & Vegetables",
     inStock: true,
-    deliveryTime: "10-15m"
+    deliveryTime: "In minutes"
   },
   {
     _id: "prod_best_milk",
@@ -305,7 +305,7 @@ const BEST_SELLERS = [
     categorySlug: "dairy-bread-eggs",
     categoryName: "Dairy & Bakery",
     inStock: true,
-    deliveryTime: "10-15m"
+    deliveryTime: "In minutes"
   },
   {
     _id: "prod_best_tomato",
@@ -322,7 +322,7 @@ const BEST_SELLERS = [
     categorySlug: "fruits-vegetables",
     categoryName: "Fruits & Vegetables",
     inStock: true,
-    deliveryTime: "10-15m"
+    deliveryTime: "In minutes"
   },
   {
     _id: "prod_best_bread",
@@ -339,7 +339,7 @@ const BEST_SELLERS = [
     categorySlug: "dairy-bread-eggs",
     categoryName: "Dairy & Bakery",
     inStock: true,
-    deliveryTime: "10-15m"
+    deliveryTime: "In minutes"
   },
   {
     _id: "prod_best_lays",
@@ -356,7 +356,7 @@ const BEST_SELLERS = [
     categorySlug: "snacks-munchies",
     categoryName: "Snacks & Beverages",
     inStock: true,
-    deliveryTime: "10-15m"
+    deliveryTime: "In minutes"
   },
   {
     _id: "prod_best_eggs",
@@ -373,7 +373,7 @@ const BEST_SELLERS = [
     categorySlug: "dairy-bread-eggs",
     categoryName: "Dairy & Bakery",
     inStock: true,
-    deliveryTime: "10-15m"
+    deliveryTime: "In minutes"
   }
 ];
 
@@ -999,7 +999,7 @@ Object.entries(PRODUCTS_BY_CATEGORY).forEach(([catSlug, items]) => {
       inStock: true,
       stockQuantity: 100,
       vertical: 'grocery',
-      deliveryTime: item.deliveryTime || '10-15m',
+      deliveryTime: item.deliveryTime || 'In minutes',
       rating: item.rating || (4.4 + ((idx * 0.1) % 0.6)).toFixed(1),
       ratingsCount: item.ratingsCount || (120 + idx * 85),
       isApproved: true,

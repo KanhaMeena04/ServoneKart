@@ -1232,7 +1232,7 @@ export default function InvoiceManagement() {
                     <span>₹{selectedInvoice.billingSummary.packagingFee}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Delivery Charge (10-15m):</span>
+                    <span>Delivery Charge:</span>
                     <span>{selectedInvoice.billingSummary.deliveryFee === 0 ? <strong className="text-emerald-600">FREE</strong> : `₹${selectedInvoice.billingSummary.deliveryFee}`}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">

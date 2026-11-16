@@ -31,7 +31,7 @@ const ActiveOrderBanner = () => {
             </div>
             <p className="text-[11px] text-gray-400 truncate flex items-center gap-1">
               <Clock className="w-3 h-3 text-green-400" />
-              <span>Arriving in 10-15 mins · Indore</span>
+              <span>Arriving in minutes · Indore</span>
             </p>
           </div>
         </div>

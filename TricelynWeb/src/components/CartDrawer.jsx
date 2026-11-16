@@ -70,7 +70,7 @@ const CartDrawer = () => {
     if (navigator.share) {
       navigator.share({
         title: 'Tricelyn Cart',
-        text: `Check out my grocery cart on Tricelyn! ${itemCount} items ready for 10-15 min delivery.`,
+        text: `Check out my grocery cart on Tricelyn! ${itemCount} items ready for delivery in minutes.`,
         url: window.location.href,
       }).catch(() => {});
     } else {
@@ -153,7 +153,7 @@ const CartDrawer = () => {
                   </div>
                   <div>
                     <h4 className="text-sm font-black text-gray-900 leading-tight">
-                      Delivery in {selectedLocation?.eta || '10-15 minutes'}
+                      Delivery in minutes
                     </h4>
                     <p className="text-xs text-gray-500 font-medium mt-0.5">
                       {isMultiStore

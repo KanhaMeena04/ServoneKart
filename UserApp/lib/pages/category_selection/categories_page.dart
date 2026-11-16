@@ -97,7 +97,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Fresh groceries & daily essentials delivered in 10-15 mins',
+                        'Fresh groceries & daily essentials delivered in minutes',
                         style: TextStyle(
                           fontSize: 12.5,
                           color: isDark ? Colors.grey[400] : Colors.grey[600],

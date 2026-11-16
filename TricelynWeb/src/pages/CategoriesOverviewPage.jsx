@@ -46,14 +46,14 @@ const CategoriesOverviewPage = () => {
         slug: c.slug || c._id,
         img: c.image || fallbackPalettes[i % fallbackPalettes.length].img,
         bg: fallbackPalettes[i % fallbackPalettes.length].bg,
-        count: '10-15 Min Delivery',
+        count: 'Delivery in minutes',
       }))
     : fallbackPalettes.map((p, i) => ({
         name: `Category ${i + 1}`,
         slug: `category-${i + 1}`,
         img: p.img,
         bg: p.bg,
-        count: '10-15 Min Delivery',
+        count: 'Delivery in minutes',
       }));
 
   const filteredList = rawList.filter(c => 
@@ -79,7 +79,7 @@ const CategoriesOverviewPage = () => {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
-            Fresh groceries, dairy & daily staples delivered in 10-15 minutes from nearest partner dark stores.
+            Fresh groceries, dairy & daily staples delivered in minutes from nearest partner dark stores.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ const CategoriesOverviewPage = () => {
                 {cat.name}
               </h3>
               <span className="inline-block text-[9px] sm:text-[10px] text-emerald-600 font-bold mt-0.5">
-                ⚡ 10-15m
+                Delivery in minutes
               </span>
             </div>
           </Link>

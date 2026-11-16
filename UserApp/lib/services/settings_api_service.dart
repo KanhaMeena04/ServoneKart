@@ -51,7 +51,7 @@ class SettingsApiService {
     if (s != null && s['estimatedDeliveryTime'] != null) {
       return s['estimatedDeliveryTime'].toString();
     }
-    return '10-15 Mins';
+    return 'In minutes';
   }
 
   static Future<double> getFreeDeliveryMinAmount() async {

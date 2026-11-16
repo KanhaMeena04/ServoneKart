@@ -214,7 +214,7 @@ const CheckoutPage = () => {
         </Link>
         <h1 className="text-2xl font-black text-gray-900 mt-2">Checkout & Confirm Order</h1>
         <p className="text-xs text-gray-500">
-          Delivering in {selectedLocation?.eta || '10-15 minutes'} to {selectedLocation?.name || 'your selected hub'}
+          Delivering in minutes to {selectedLocation?.name || 'your selected hub'}
         </p>
       </div>
 
@@ -249,7 +249,7 @@ const CheckoutPage = () => {
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-gray-900">1. Delivery Address</h3>
+                  <h3 className="text-sm font-extrabold text-gray-900">Delivery Address</h3>
                   <p className="text-[11px] text-gray-500">
                     Selected Hub: {selectedLocation?.locality || selectedLocation?.name || 'Vijay Nagar, Indore'}
                   </p>
@@ -257,7 +257,7 @@ const CheckoutPage = () => {
               </div>
 
               <div className="flex items-center gap-1.5">
-                {['Home', 'Work', 'Other'].map((type) => (
+                {['Home', 'Office', 'Other'].map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -367,7 +367,7 @@ const CheckoutPage = () => {
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-extrabold text-gray-900">3. Select Payment Method</h3>
+                <h3 className="text-sm font-extrabold text-gray-900">Select Payment Method</h3>
                 <p className="text-[11px] text-gray-500">Secure payment powered by Tricelyn Pay</p>
               </div>
             </div>

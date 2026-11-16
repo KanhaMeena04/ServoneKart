@@ -4484,7 +4484,7 @@ class _SuperAppServicesSection extends StatelessWidget {
     final services = [
       _ServiceItem(
         title: 'Grocery & Marts',
-        subtitle: '10-15 Min Delivery',
+        subtitle: 'Delivery in minutes',
         badge: 'Core Focus',
         icon: Icons.shopping_basket_rounded,
         gradient: const [Color(0xFF10B981), Color(0xFF059669)],

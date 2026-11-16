@@ -22,7 +22,7 @@ const POLICY_TABS = [
   { id: 'refund', label: 'Return & Refund Policy', icon: RotateCcw, shortDesc: 'Instant refunds, returns & replacement policy' },
   { id: 'terms', label: 'Terms of Service', icon: FileText, shortDesc: 'Platform usage, orders & customer agreement' },
   { id: 'privacy', label: 'Privacy Policy', icon: Lock, shortDesc: 'Data protection, cookies & privacy assurance' },
-  { id: 'shipping', label: 'Instant Delivery Policy', icon: Truck, shortDesc: '10-15 minute delivery, zones & fee structure' },
+  { id: 'shipping', label: 'Instant Delivery Policy', icon: Truck, shortDesc: 'Instant delivery, zones & fee structure' },
   { id: 'faq', label: 'Frequently Asked Questions', icon: HelpCircle, shortDesc: 'Common questions, payments & delivery answers' },
   { id: 'contact', label: 'Customer Grievance & Contact', icon: Headphones, shortDesc: '24/7 Help desk & grievance officer details' },
 ];
@@ -72,7 +72,7 @@ const LegalPolicyCenterPage = () => {
               Tricelyn Legal & Policy Center
             </h1>
             <p className="text-xs sm:text-sm text-blue-100 leading-relaxed">
-              Transparent, fair, and reliable policies governing our 10-15 minute grocery fulfillment across all cities and partner dark stores.
+              Transparent, fair, and reliable policies governing our instant grocery fulfillment across all cities and partner dark stores.
             </p>
           </div>
           {/* Subtle Glow Circle */}
@@ -312,7 +312,7 @@ const PrivacyPolicyContent = () => (
     <section className="space-y-3">
       <h3 className="text-sm font-extrabold text-gray-900">1. Information We Collect</h3>
       <ul className="text-xs text-gray-600 space-y-2 list-disc pl-5">
-        <li><strong>Device Location (GPS):</strong> Used strictly to identify nearest partner dark stores and provide real-time 10-15 min doorstep delivery.</li>
+        <li><strong>Device Location (GPS):</strong> Used strictly to identify nearest partner dark stores and provide real-time doorstep delivery in minutes.</li>
         <li><strong>Contact Information:</strong> Phone number, recipient name, and delivery address to fulfill orders and send OTP verifications.</li>
         <li><strong>Order & Transaction Records:</strong> Items purchased, payment confirmation tokens, and delivery status logs for customer support.</li>
       </ul>
@@ -344,7 +344,7 @@ const ShippingPolicyContent = () => (
         Express Fulfillment SLA
       </span>
       <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2">
-        Hyperlocal 10-15 Min Delivery Policy
+        Hyperlocal Delivery in Minutes Policy
       </h2>
       <p className="text-xs text-gray-500 mt-1">
         How our instant grocery delivery network operates across serviced zones and dark store hubs.
@@ -352,7 +352,7 @@ const ShippingPolicyContent = () => (
     </div>
 
     <section className="space-y-3">
-      <h3 className="text-sm font-extrabold text-gray-900">1. Express Delivery Standard (10 - 15 Minutes)</h3>
+      <h3 className="text-sm font-extrabold text-gray-900">1. Express Delivery Standard (In Minutes)</h3>
       <p className="text-xs text-gray-600 leading-relaxed">
         Orders placed within our serviceable dark store radius (typically 2-4 km) are packed in under 3 minutes and dispatched immediately via dedicated delivery partners. Estimated time of arrival is calculated dynamically based on live traffic and weather.
       </p>
@@ -390,11 +390,11 @@ const ShippingPolicyContent = () => (
 ======================================================================= */
 const FaqContent = () => {
   const faqs = [
-    { q: "How does Tricelyn deliver so fast in 10-15 minutes?", a: "We operate a network of optimized partner dark stores located within 2-3 km of your residential neighborhood, allowing our team to pick, pack, and dispatch items in under 3 minutes." },
+    { q: "How does Tricelyn deliver so fast in minutes?", a: "We operate a network of optimized partner dark stores located within 2-3 km of your residential neighborhood, allowing our team to pick, pack, and dispatch items in under 3 minutes." },
     { q: "Is there a minimum order value?", a: "No! There is no mandatory minimum order. However, orders above ₹199 qualify for 100% Free Delivery." },
     { q: "What payment methods are supported?", a: "We support UPI (GPay, PhonePe, Paytm), Credit & Debit Cards, NetBanking, Tricelyn In-App Wallet, and Cash/UPI on Delivery (COD)." },
     { q: "What if an item is damaged or missing?", a: "Simply open your order in the app or website and click 'Report Issue' or start a Live Chat. You can get an instant replacement or 100% refund credited within minutes." },
-    { q: "Can I schedule a delivery for later?", a: "Yes! While our default is instant 10-15 minute delivery, you can also select scheduled delivery slots during checkout for your convenience." },
+    { q: "Can I schedule a delivery for later?", a: "Yes! While our default is instant delivery in minutes, you can also select scheduled delivery slots during checkout for your convenience." },
   ];
 
   return (

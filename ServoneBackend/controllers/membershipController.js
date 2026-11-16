@@ -222,7 +222,7 @@ const DEFAULT_PLANS = [
       'Zero upfront onboarding fee',
       'Standard 8% to 10% category commission',
       'Store profile & catalog listed on Tricelyn app',
-      'Tricelyn delivery fleet handles pickups in 10-15 mins',
+      'Tricelyn delivery fleet handles pickups in minutes',
       'Weekly bank settlement',
     ],
     perks: [
@@ -251,7 +251,7 @@ const DEFAULT_PLANS = [
       'Complete onboarding for under 3,000 live items',
       'Published rates by category (5% to 8% commission)',
       'Store brand & rating displayed to nearby customers',
-      'No fleet needed — Tricelyn riders pick & deliver in 10-15 mins',
+      'No fleet needed — Tricelyn riders pick & deliver in minutes',
       'Daily or weekly settlement to your bank account',
     ],
     perks: [

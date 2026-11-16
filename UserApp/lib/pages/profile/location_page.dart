@@ -128,8 +128,8 @@ class _LocationPageState extends State<LocationPage> {
                                         Icon(
                                           address.label.toLowerCase() == 'home'
                                               ? Icons.home_outlined
-                                              : address.label.toLowerCase() == 'work'
-                                                  ? Icons.work_outline
+                                              : (address.label.toLowerCase() == 'work' || address.label.toLowerCase() == 'office')
+                                                  ? Icons.business_outlined
                                                   : Icons.location_on_outlined,
                                           size: 20,
                                           color: const Color(0xFF0B3EDB),
@@ -271,7 +271,7 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
   void initState() {
     super.initState();
     final addrLabel = widget.address?.label ?? 'Home';
-    _selectedLabel = ['Home', 'Work', 'Other'].contains(addrLabel) ? addrLabel : 'Other';
+    _selectedLabel = ['Home', 'Office', 'Work', 'Other'].contains(addrLabel) ? (addrLabel == 'Work' ? 'Office' : addrLabel) : 'Other';
     _labelCtrl = TextEditingController(text: addrLabel);
     _addressCtrl = TextEditingController(text: widget.address?.fullAddress ?? '');
     _flatCtrl = TextEditingController(text: widget.address?.flatNo ?? '');
@@ -317,7 +317,7 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
                 children: [
                   _buildLabelChip('Home', Icons.home_rounded),
                   const SizedBox(width: 8),
-                  _buildLabelChip('Work', Icons.work_rounded),
+                  _buildLabelChip('Office', Icons.business_rounded),
                   const SizedBox(width: 8),
                   _buildLabelChip('Other', Icons.location_on_rounded),
                 ],

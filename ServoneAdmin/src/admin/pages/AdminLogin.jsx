@@ -87,7 +87,7 @@ const AdminLogin = () => {
             <div className="text-xs text-blue-200 mt-0.5">Role-Based Access Control</div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-white tracking-tight">10-15 Mins</div>
+            <div className="text-xl sm:text-2xl font-black text-white tracking-tight">In Minutes</div>
             <div className="text-xs text-blue-200 mt-0.5">Live Rider Routing</div>
           </div>
           <div className="col-span-2 sm:col-span-1">

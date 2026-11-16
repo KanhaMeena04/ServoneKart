@@ -74,9 +74,9 @@ const SiteSetting = () => {
     onlinePaymentEnable: 'Yes',
     freeDeliveryEnable: 'Yes',
     isTaxInclusive: 'Yes',
-    estimatedDeliveryTime: '10-15 Mins',
-    deliveryHeadline: 'HYPERLOCAL EXPRESS • 10-15 MINS',
-    deliverySubtext: '10-15 min to your door',
+    estimatedDeliveryTime: 'In minutes',
+    deliveryHeadline: 'HYPERLOCAL EXPRESS • IN MINUTES',
+    deliverySubtext: 'Delivery in minutes to your door',
     freeDeliveryMinAmount: 199,
     firstOrderFreeDelivery: 'Yes',
     cancellationWindowMinutes: 2,
@@ -86,7 +86,7 @@ const SiteSetting = () => {
     vendorDefaultCommission: 8,
     b2bMinOrderQty: 10,
     announcementEnabled: 'Yes',
-    announcementText: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!',
+    announcementText: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in minutes!',
     announcementColor: '#0B3EDB'
   });
 
@@ -297,7 +297,7 @@ const SiteSetting = () => {
             <h3 className="text-base font-bold text-gray-800 mb-4">🚀 Dynamic Delivery & Free Delivery Rules</h3>
           </div>
           <InputField
-            label="Estimated Delivery Time (e.g. 10-15 Mins / 15-20 Mins)"
+            label="Estimated Delivery Time (e.g. In minutes / 15-20 Mins)"
             name="estimatedDeliveryTime"
             value={settings.estimatedDeliveryTime}
             onChange={handleChange}
@@ -309,7 +309,7 @@ const SiteSetting = () => {
             onChange={handleChange}
           />
           <InputField
-            label="Delivery Subtext (e.g. 10-15 min to your door)"
+            label="Delivery Subtext (e.g. Delivery in minutes to your door)"
             name="deliverySubtext"
             value={settings.deliverySubtext}
             onChange={handleChange}

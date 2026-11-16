@@ -93,9 +93,9 @@ const HomePage = () => {
   const [isMobileCatPaused, setIsMobileCatPaused] = useState(false);
   const mobileCatTrackRef = useRef(null);
 
-  const deliveryTime = appSettings?.estimatedDeliveryTime || '10-15 Mins';
-  const deliveryHeadline = appSettings?.deliveryHeadline || 'Hyperlocal Express • 10-15 Mins';
-  const deliverySubtext = appSettings?.deliverySubtext || `Fast. Safe. Reliable doorstep delivery in ${deliveryTime}.`;
+  const deliveryTime = appSettings?.estimatedDeliveryTime || 'In minutes';
+  const deliveryHeadline = appSettings?.deliveryHeadline || 'Hyperlocal Express • In minutes';
+  const deliverySubtext = appSettings?.deliverySubtext || 'Fast. Safe. Reliable doorstep delivery in minutes.';
 
   const [bestSellers, setBestSellers] = useState(BEST_SELLERS);
   const [categorySections, setCategorySections] = useState([]);
@@ -320,7 +320,7 @@ const HomePage = () => {
               name: 'Tricelyn Express Mart (Central Hub)',
               address: 'Hub #1, Express Logistics Zone',
               rating: 4.8,
-              deliveryTime: '10-15 mins',
+              deliveryTime: 'In minutes',
               distance: '1.2 km',
               tags: ['Groceries', 'Dairy & Bakery', 'Instant Delivery'],
               image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'
@@ -959,7 +959,7 @@ const CategoryProductRow = ({ section, deliveryTime }) => {
             {section.title || section.name}
           </h3>
           <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
-            ⚡ {(deliveryTime || '10-15 Mins').toUpperCase()}
+            DELIVERY IN MINUTES
           </span>
         </div>
 

@@ -730,8 +730,8 @@ class _AddressStep extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                        addr.label.toLowerCase() == 'work'
-                            ? Icons.work_outline
+                        (addr.label.toLowerCase() == 'work' || addr.label.toLowerCase() == 'office')
+                            ? Icons.business_outlined
                             : addr.label.toLowerCase() == 'home'
                                 ? Icons.home_outlined
                                 : Icons.location_on_outlined,

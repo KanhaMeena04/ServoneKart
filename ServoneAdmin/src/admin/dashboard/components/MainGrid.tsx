@@ -221,7 +221,7 @@ const MainGrid = () => {
       labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
       orders: [280, 340, 315, 420, 390, 480, 520, 595],
       badge: '+14.2% Weekly Velocity',
-      subtitle: '8-Week rolling order progression & 10-15 min fulfillment trend'
+      subtitle: '8-Week rolling order progression & fulfillment trend in minutes'
     },
     Monthly: {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -415,7 +415,7 @@ const MainGrid = () => {
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
-                  Real-time dark store fulfillment, live 10-15 min rider routing &amp; inventory telemetry across Indore
+                  Real-time dark store fulfillment, live rider routing &amp; inventory telemetry across Indore
                 </p>
               </div>
             </div>
@@ -566,7 +566,7 @@ const MainGrid = () => {
         </div>
 
         {/* ============================================================
-            OPERATIONAL HEALTH & LIVE 10-15 MIN FULFILLMENT PROGRESS
+            OPERATIONAL HEALTH & LIVE FULFILLMENT IN MINUTES
            ============================================================ */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-blue-100 shadow-[0_8px_30px_rgb(0,85,255,0.05)] mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
@@ -612,11 +612,11 @@ const MainGrid = () => {
               );
             })()}
 
-            {/* 2. On-Time 10-15 Min SLA Adherence */}
+            {/* 2. On-Time Minutes SLA Adherence */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-                  <span>10-15 Min SLA Adherence</span>
+                  <span>Minutes SLA Adherence</span>
                   <span className="text-emerald-600 font-black">98.4%</span>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">

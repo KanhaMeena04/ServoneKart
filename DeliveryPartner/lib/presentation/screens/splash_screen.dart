@@ -233,7 +233,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                               ),
                               child: Text(
-                                'Ride · Earn · 10-15 Min Express Fleet',
+                                'Ride · Earn · Express Fleet in Minutes',
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,

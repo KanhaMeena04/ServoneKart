@@ -207,7 +207,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                             const Icon(Icons.flash_on_rounded, color: Colors.amber, size: 14),
                             const SizedBox(width: 4),
                             Text(
-                              '10-15 MIN EXPRESS DELIVERY',
+                              'EXPRESS DELIVERY IN MINUTES',
                               style: GoogleFonts.poppins(
                                 color: Colors.white,
                                 fontSize: 10.5,

@@ -55,7 +55,7 @@ const AddRestaurantBannerForm = () => {
     placement: 'hero', // 'hero' | 'offer_card'
     title: '',
     subtitle: '',
-    badge: 'TRICELYN FRESH · 10-15 MINS',
+    badge: 'TRICELYN FRESH · IN MINUTES',
     buttonText: 'Order Fresh',
     link: '/category/fruits-vegetables',
     bgGradient: 'from-[#064e3b] via-[#047857] to-[#10b981]',
@@ -104,7 +104,7 @@ const AddRestaurantBannerForm = () => {
       // Preset defaults based on placement
       if (name === 'placement') {
         if (value === 'hero') {
-          next.badge = 'TRICELYN FRESH · 10-15 MINS';
+          next.badge = 'TRICELYN FRESH · IN MINUTES';
           next.buttonText = 'Order Fresh';
         } else {
           next.badge = 'FLAT 30% OFF';
@@ -225,7 +225,7 @@ const AddRestaurantBannerForm = () => {
                 className="gap-4"
               >
                 <div
-                  onClick={() => setFormData(p => ({ ...p, placement: 'hero', badge: 'TRICELYN FRESH · 10-15 MINS', buttonText: 'Order Fresh' }))}
+                  onClick={() => setFormData(p => ({ ...p, placement: 'hero', badge: 'TRICELYN FRESH · IN MINUTES', buttonText: 'Order Fresh' }))}
                   className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     formData.placement === 'hero'
                       ? 'border-[#0B3EDB] bg-white shadow-xs'

@@ -28,7 +28,7 @@ const LocationModal = () => {
             id: 'current-gps',
             name: 'Current Location (GPS)',
             locality: `Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)} (Indore)`,
-            eta: '10-15 mins',
+            eta: 'In minutes',
             serviceable: true,
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
@@ -96,7 +96,7 @@ const LocationModal = () => {
           {/* Indore Hubs List */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Popular Indore Hubs (10-15 Min Delivery)
+              Popular Indore Hubs (Delivery in minutes)
             </p>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {filteredHubs.map((hub) => {

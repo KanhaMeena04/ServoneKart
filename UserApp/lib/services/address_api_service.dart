@@ -35,7 +35,7 @@ class AddressApiService {
         ),
         Address(
           id: 'addr_2',
-          label: 'Work',
+          label: 'Office',
           fullAddress: '4th Floor, IT Park, Ring Road, Indore',
           city: 'Indore',
           state: 'Madhya Pradesh',

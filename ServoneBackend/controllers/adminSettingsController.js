@@ -74,9 +74,9 @@ const toPublicPayload = (settings) => {
     menuColors: settings?.menuColors || '#0F62FE',
     highlightColors: settings?.highlightColors || '#248C70',
     orderPrefix: settings?.orderPrefix || 'TRC',
-    estimatedDeliveryTime: settings?.estimatedDeliveryTime || '10-15 Mins',
-    deliveryHeadline: settings?.deliveryHeadline || 'HYPERLOCAL EXPRESS • 10-15 MINS',
-    deliverySubtext: settings?.deliverySubtext || '10-15 min to your door',
+    estimatedDeliveryTime: settings?.estimatedDeliveryTime || 'In minutes',
+    deliveryHeadline: settings?.deliveryHeadline || 'HYPERLOCAL EXPRESS • IN MINUTES',
+    deliverySubtext: settings?.deliverySubtext || 'Delivery in minutes to your door',
     firstOrderFreeDelivery: settings?.firstOrderFreeDelivery !== false,
     firstOrderMinAmount: settings?.firstOrderMinAmount || 0,
     freeDeliveryMinAmount: settings?.freeDeliveryMinAmount || settings?.deliveryFeeConfig?.freeDeliveryThreshold || 199,
@@ -103,7 +103,7 @@ const toPublicPayload = (settings) => {
     },
     announcement: {
       enabled: settings?.announcement?.enabled !== false,
-      text: settings?.announcement?.text || 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!',
+      text: settings?.announcement?.text || 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in minutes!',
       color: settings?.announcement?.color || '#0B3EDB',
     },
     selfPickupConfig: settings?.selfPickupConfig || {
@@ -279,7 +279,7 @@ exports.updateAdminSettings = async (req, res) => {
     if (body.announcement !== undefined || body.announcementText !== undefined) {
       settings.announcement = {
         enabled: body.announcementEnabled !== undefined ? (body.announcementEnabled === 'Yes' || body.announcementEnabled === true) : (body.announcement?.enabled !== false),
-        text: body.announcementText || body.announcement?.text || settings.announcement?.text || 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in 10-15 Mins!',
+        text: body.announcementText || body.announcement?.text || settings.announcement?.text || 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in minutes!',
         color: body.announcementColor || body.announcement?.color || settings.announcement?.color || '#0B3EDB'
       };
       delete body.announcementText;

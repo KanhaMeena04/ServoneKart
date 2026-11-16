@@ -318,7 +318,7 @@ const ProductDetailPage = () => {
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                     </span>
                     <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                      ⚡ 10-15 Mins Delivery
+                      Delivery in minutes
                     </span>
                   </div>
 

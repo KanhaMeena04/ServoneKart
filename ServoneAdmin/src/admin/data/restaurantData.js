@@ -44,7 +44,7 @@ export const initialRestaurantFormState = {
   },
 
   deliveryType: ["Home Delivery", "Pickup", "Both"],
-  deliveryTime: "10-15 mins",
+  deliveryTime: "In minutes",
 
   packagingCharge: "",
   adminCommission: "",

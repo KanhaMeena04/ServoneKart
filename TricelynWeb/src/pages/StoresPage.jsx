@@ -26,7 +26,7 @@ const DEFAULT_STORES_DATA = [
     address: "Scheme 54, Vijay Nagar, Indore 452010",
     rating: 4.8,
     ratingsCount: 520,
-    deliveryTime: "10-15 mins",
+    deliveryTime: "In minutes",
     distance: "1.2 km",
     tags: ["Groceries", "Dairy & Bakery", "Instant Delivery"],
     image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80",
@@ -219,7 +219,7 @@ const StoresPage = () => {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/50">
-                      ⚡ Open & Delivering in {currentStore?.deliveryTime || '10-15 mins'}
+                      Open & Delivering in minutes
                     </span>
                     <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
                       Verified Multi-Vendor Partner
@@ -390,7 +390,7 @@ const StoresPage = () => {
                 </span>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Order groceries directly from local partner stores with their specific price lists and instant 10-15m delivery
+                Order groceries directly from local partner stores with their specific price lists and instant delivery in minutes
               </p>
             </div>
           </div>
@@ -509,7 +509,7 @@ const StoresPage = () => {
                     <div className="flex items-center gap-2 mt-2 text-xs">
                       <span className="font-bold text-gray-700 bg-gray-50 px-2 py-0.5 rounded border border-gray-100 flex items-center gap-1 text-[11px]">
                         <Clock className="w-3 h-3 text-blue-600" />
-                        <span>{st.deliveryTime || '10-15 mins'}</span>
+                        <span>{st.deliveryTime || 'In minutes'}</span>
                       </span>
                       {st.distance && (
                         <span className="text-gray-400 text-[11px] font-medium">

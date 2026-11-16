@@ -405,7 +405,7 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                     const SizedBox(height: 2),
                     Text(
                       isGrocery
-                          ? 'Add fresh essentials in 10-15 mins'
+                          ? 'Add fresh essentials in minutes'
                           : 'Order your favorite dish instantly',
                       style: TextStyle(
                         fontSize: 12,

@@ -671,7 +671,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             const SizedBox(height: 6),
             const Text(
-              'Fresh groceries & essentials delivered in 10-15 mins',
+              'Fresh groceries & essentials delivered in minutes',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF64748B),

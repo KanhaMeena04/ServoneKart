@@ -299,7 +299,7 @@ const OrderTrackingPage = () => {
                     <span>Live GPS Telemetry</span>
                   </div>
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    Express 10-15 Min Corridor
+                    Express Corridor (In minutes)
                   </span>
                 </div>
 

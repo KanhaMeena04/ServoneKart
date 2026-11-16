@@ -31,7 +31,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingItem(
       image: 'assets/Group 2072750484.jpg',
       tag: 'HYPERLOCAL EXPRESS',
-      title: 'Groceries Delivered in 10-15 Minutes',
+      title: 'Groceries Delivered in Minutes',
       subtitle:
           'Farm-fresh fruits, vegetables, dairy, snacks & household staples brought straight to your doorstep at lightning speed.',
       accentColor: const Color(0xFF0B3EDB),

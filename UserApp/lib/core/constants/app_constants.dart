@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 
 class AppConstants {
   static const String appName = 'Tricelyn';
-  static const String appTagline = 'Fresh Groceries in 10-15 Mins';
+  static const String appTagline = 'Fresh Groceries in minutes';
   
   // Pass --dart-define-from-file=.env or --dart-define=BACKEND_URL=https://...
   // Pass --dart-define=USE_LOCAL=true or --dart-define=LOCAL_IP=192.168.x.x for local backend

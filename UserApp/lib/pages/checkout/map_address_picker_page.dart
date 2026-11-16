@@ -1023,7 +1023,7 @@ class _MapAddressPickerPageState extends State<MapAddressPickerPage> {
                       children: [
                         _buildTagChip('Home', Icons.home_rounded),
                         const SizedBox(width: 8),
-                        _buildTagChip('Work', Icons.work_rounded),
+                        _buildTagChip('Office', Icons.business_rounded),
                         const SizedBox(width: 8),
                         _buildTagChip('Other', Icons.location_on_rounded),
                       ],
