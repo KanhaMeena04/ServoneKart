@@ -213,7 +213,7 @@ const CategoryPage = () => {
           <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent p-5 rounded-3xl border border-blue-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-brand-600">
-                Delivery in minutes in Indore
+                Delivery in minutes
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-gray-900 mt-0.5">
                 {selectedCategory?.name || 'All Groceries'}
