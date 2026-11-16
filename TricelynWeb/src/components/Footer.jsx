@@ -119,6 +119,8 @@
 
 
 
+
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -127,7 +129,6 @@ import {
   Youtube,
   Twitter,
   Linkedin,
-  ArrowRight,
 } from 'lucide-react';
 
 import logoImg from '../assets/webslogo.png';
@@ -136,6 +137,15 @@ import { categories } from '../data/categories';
 const Footer = () => {
   const footerCategories = categories.slice(0, 7);
 
+  // Scroll page to top immediately
+  const handleScrollTop = () => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant',
+    });
+  };
+
   return (
     <footer className="bg-[#07162E] text-white pt-10 pb-8 border-t border-slate-800">
 
@@ -143,11 +153,15 @@ const Footer = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 pb-8 border-b border-slate-700/60">
 
-          {/* Brand + Categories */}
+          {/* Brand + Connect With Us */}
           <div className="sm:col-span-2 lg:col-span-4 space-y-5">
 
             {/* Logo */}
-            <Link to="/" className="inline-block group">
+            <Link
+              to="/"
+              onClick={handleScrollTop}
+              className="inline-block group"
+            >
               <img
                 src={logoImg}
                 alt="Tricelyn"
@@ -162,65 +176,63 @@ const Footer = () => {
               delivered to your doorstep in minutes.
             </p>
 
+            {/* Connect With Us */}
+            <div className="space-y-4">
 
- <div className="lg:col-span-4 space-y-4">
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                Connect With Us
+              </h4>
 
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-              Connect With Us
-            </h4>
+              <p className="text-sm text-gray-400 leading-6 max-w-sm">
+                Follow Tricelyn for fresh product updates, exclusive offers
+                and daily essentials.
+              </p>
 
-            <p className="text-sm text-gray-400 leading-6 max-w-sm">
-              Follow Tricelyn for fresh product updates, exclusive offers
-              and daily essentials.
-            </p>
+              {/* Social Icons */}
+              <div className="flex items-center gap-3 pt-1">
 
-            {/* Social Icons */}
-            <div className="flex items-center gap-3 pt-1">
+                <a
+                  href="#"
+                  aria-label="Instagram"
+                  className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                >
+                  <Instagram className="w-4 h-4" />
+                </a>
 
-              <a
-                href="#"
-                aria-label="Instagram"
-                className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
+                <a
+                  href="#"
+                  aria-label="Facebook"
+                  className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                >
+                  <Facebook className="w-4 h-4" />
+                </a>
 
-              <a
-                href="#"
-                aria-label="Facebook"
-                className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
+                <a
+                  href="#"
+                  aria-label="YouTube"
+                  className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                >
+                  <Youtube className="w-4 h-4" />
+                </a>
 
-              <a
-                href="#"
-                aria-label="YouTube"
-                className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-              >
-                <Youtube className="w-4 h-4" />
-              </a>
+                <a
+                  href="#"
+                  aria-label="Twitter"
+                  className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                >
+                  <Twitter className="w-4 h-4" />
+                </a>
 
-              <a
-                href="#"
-                aria-label="Twitter"
-                className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
+                <a
+                  href="#"
+                  aria-label="LinkedIn"
+                  className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </a>
 
-              <a
-                href="#"
-                aria-label="LinkedIn"
-                className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-              >
-                <Linkedin className="w-4 h-4" />
-              </a>
-
+              </div>
             </div>
-
-          </div>
-           
 
           </div>
 
@@ -234,43 +246,71 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-gray-400">
 
               <li>
-                <Link to="/" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   Home
                 </Link>
               </li>
 
               <li>
-                <Link to="/categories" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/categories"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   All Categories
                 </Link>
               </li>
 
               <li>
-                <Link to="/stores" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/stores"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   Nearby Stores
                 </Link>
               </li>
 
               <li>
-                <Link to="/account/orders" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/account/orders"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   My Orders
                 </Link>
               </li>
 
               <li>
-                <Link to="/membership" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/membership"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   Tricelyn Premier
                 </Link>
               </li>
 
               <li>
-                <Link to="/membership?tab=vendor" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/membership?tab=vendor"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   Sell with Tricelyn
                 </Link>
               </li>
 
               <li>
-                <Link to="/membership?tab=rider" className="hover:text-blue-400 transition-colors">
+                <Link
+                  to="/membership?tab=rider"
+                  onClick={handleScrollTop}
+                  className="hover:text-blue-400 transition-colors"
+                >
                   Ride with Tricelyn
                 </Link>
               </li>
@@ -289,37 +329,37 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-gray-400">
 
               <li>
-                <Link to="/policy/terms" className="hover:text-blue-400 transition-colors">
+                <Link to="/policy/terms" onClick={handleScrollTop} className="hover:text-blue-400 transition-colors">
                   Terms of Service
                 </Link>
               </li>
 
               <li>
-                <Link to="/policy/privacy" className="hover:text-blue-400 transition-colors">
+                <Link to="/policy/privacy" onClick={handleScrollTop} className="hover:text-blue-400 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
 
               <li>
-                <Link to="/policy/refund" className="hover:text-blue-400 transition-colors">
+                <Link to="/policy/refund" onClick={handleScrollTop} className="hover:text-blue-400 transition-colors">
                   Return & Refund
                 </Link>
               </li>
 
               <li>
-                <Link to="/policy/shipping" className="hover:text-blue-400 transition-colors">
+                <Link to="/policy/shipping" onClick={handleScrollTop} className="hover:text-blue-400 transition-colors">
                   Delivery Policy
                 </Link>
               </li>
 
               <li>
-                <Link to="/policy/faq" className="hover:text-blue-400 transition-colors">
+                <Link to="/policy/faq" onClick={handleScrollTop} className="hover:text-blue-400 transition-colors">
                   Help & FAQs
                 </Link>
               </li>
 
               <li>
-                <Link to="/policy/contact" className="hover:text-blue-400 transition-colors">
+                <Link to="/policy/contact" onClick={handleScrollTop} className="hover:text-blue-400 transition-colors">
                   Contact Support
                 </Link>
               </li>
@@ -340,36 +380,42 @@ const Footer = () => {
 
           </div>
 
-{/* Categories */}
-<div className="lg:col-span-4 space-y-4">
+          {/* Categories */}
+          <div className="lg:col-span-4 space-y-4">
 
-  <div className="flex items-center gap-3">
-    <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-      Categories
-    </h4>
+            <div className="flex items-center gap-3">
 
-    <Link
-      to="/categories"
-      className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-    >
-      See All →
-    </Link>
-  </div>
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                Categories
+              </h4>
 
-  <ul className="space-y-3 text-sm text-gray-400">
-    {footerCategories.map((category) => (
-      <li key={category.name}>
-        <Link
-          to={`/categories?category=${encodeURIComponent(category.name)}`}
-          className="hover:text-emerald-400 transition-colors"
-        >
-          {category.name}
-        </Link>
-      </li>
-    ))}
-  </ul>
+              <Link
+                to="/categories"
+                onClick={handleScrollTop}
+                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                See All →
+              </Link>
 
-</div>
+            </div>
+
+            <ul className="space-y-3 text-sm text-gray-400">
+
+              {footerCategories.map((category) => (
+                <li key={category.name}>
+                  <Link
+                    to={`/categories?category=${encodeURIComponent(category.name)}`}
+                    onClick={handleScrollTop}
+                    className="hover:text-emerald-400 transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
+
+            </ul>
+
+          </div>
 
         </div>
 
@@ -395,3 +441,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
