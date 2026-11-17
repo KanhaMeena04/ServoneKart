@@ -1282,73 +1282,8 @@ const Footer = () => {
         {/* MAIN FOOTER GRID */}
 
        
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-9 lg:gap-y-10 py-9 sm:py-10 border-b border-slate-700/60">
 
-  {/* BRAND + CONNECT WITH US */}
-
-  <div className="min-w-0 sm:col-span-2 lg:col-span-6 order-3 lg:order-1 space-y-5">
-
-    <Link
-      to="/"
-      onClick={handleScrollTop}
-      className="inline-block group"
-    >
-      <img
-        src={logoImg}
-        alt="Tricelyn"
-        className="h-10 sm:h-11 w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-      />
-    </Link>
-
-    <p className="text-sm text-gray-400 leading-7 max-w-sm">
-      India's premier quick-commerce grocery delivery platform.
-      Fresh fruits, vegetables, dairy, daily staples & snacks
-      delivered to your doorstep in minutes.
-    </p>
-
-    {/* CONNECT WITH US */}
-
-    <div className="space-y-3">
-
-      <h4 className={headingClass}>
-        Connect With Us
-      </h4>
-
-      <p className="text-sm text-gray-400 leading-6 max-w-sm">
-        Follow Tricelyn for fresh product updates, exclusive offers
-        and daily essentials.
-      </p>
-
-      {/* SOCIAL ICONS */}
-
-      <div className="flex flex-wrap items-center gap-3 pt-1">
-
-        <a href="#" aria-label="Instagram" className={socialClass}>
-          <Instagram size={17} />
-        </a>
-
-        <a href="#" aria-label="Facebook" className={socialClass}>
-          <Facebook size={17} />
-        </a>
-
-        <a href="#" aria-label="YouTube" className={socialClass}>
-          <Youtube size={17} />
-        </a>
-
-        <a href="#" aria-label="Twitter" className={socialClass}>
-          <Twitter size={17} />
-        </a>
-
-        <a href="#" aria-label="LinkedIn" className={socialClass}>
-          <Linkedin size={17} />
-        </a>
-
-      </div>
-
-    </div>
-
-  </div>
-
+<div className="grid grid-cols-2 lg:grid-cols-12 gap-x-5 sm:gap-x-8 gap-y-9 lg:gap-y-10 py-9 sm:py-10 border-b border-slate-700/60">
 
   {/* QUICK LINKS */}
 
@@ -1469,7 +1404,101 @@ const Footer = () => {
 
   </div>
 
+
+  {/* BRAND + CONNECT WITH US - FULL WIDTH ON MOBILE/TABLET */}
+
+  <div className="min-w-0 col-span-2 lg:col-span-6 order-3 lg:order-1 space-y-5">
+
+    {/* LOGO */}
+
+    <Link
+      to="/"
+      onClick={handleScrollTop}
+      className="inline-block group"
+    >
+      <img
+        src={logoImg}
+        alt="Tricelyn"
+        className="h-10 sm:h-11 w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+      />
+    </Link>
+
+
+    {/* BRAND DESCRIPTION */}
+
+    <p className="text-sm text-gray-400 leading-7 max-w-sm">
+      India's premier quick-commerce grocery delivery platform.
+      Fresh fruits, vegetables, dairy, daily staples & snacks
+      delivered to your doorstep in minutes.
+    </p>
+
+
+    {/* CONNECT WITH US */}
+
+    <div className="space-y-3">
+
+      <h4 className={headingClass}>
+        Connect With Us
+      </h4>
+
+      <p className="text-sm text-gray-400 leading-6 max-w-sm">
+        Follow Tricelyn for fresh product updates, exclusive offers
+        and daily essentials.
+      </p>
+
+
+      {/* SOCIAL ICONS */}
+
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+
+        <a
+          href="#"
+          aria-label="Instagram"
+          className={socialClass}
+        >
+          <Instagram size={17} />
+        </a>
+
+        <a
+          href="#"
+          aria-label="Facebook"
+          className={socialClass}
+        >
+          <Facebook size={17} />
+        </a>
+
+        <a
+          href="#"
+          aria-label="YouTube"
+          className={socialClass}
+        >
+          <Youtube size={17} />
+        </a>
+
+        <a
+          href="#"
+          aria-label="Twitter"
+          className={socialClass}
+        >
+          <Twitter size={17} />
+        </a>
+
+        <a
+          href="#"
+          aria-label="LinkedIn"
+          className={socialClass}
+        >
+          <Linkedin size={17} />
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
+
 
 
 
