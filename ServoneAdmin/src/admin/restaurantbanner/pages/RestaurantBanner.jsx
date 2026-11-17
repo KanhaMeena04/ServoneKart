@@ -7,7 +7,7 @@ import { Switch, FormControlLabel, Paper, CircularProgress } from '@mui/material
 import { ViewCarousel } from '@mui/icons-material';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { API_BASE_URL } from '../../utils/utils';
+import { API_BASE_URL } from '../../../utils/utils';
 
 function RestaurantBanner() {
   const navigate = useNavigate();
