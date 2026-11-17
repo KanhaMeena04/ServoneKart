@@ -102,12 +102,12 @@ const ProductCard = ({ product }) => {
           {/* Weight / Unit Subtitle & Store Tag */}
           <div className="flex items-center justify-between text-[11px] font-medium text-gray-500 mb-1">
             <span>{product.weight || product.unit || '1 unit'}</span>
-            {(product.storeName || product.vendorName) && (
+            {/* {(product.storeName || product.vendorName) && (
               <span className="text-[10px] text-blue-600/90 font-bold truncate max-w-[90px] flex items-center gap-0.5">
                 <Store className="w-2.5 h-2.5 flex-shrink-0" />
                 <span className="truncate">{(product.storeName || product.vendorName).split('(')[0]}</span>
               </span>
-            )}
+            )} */}
           </div>
 
           {/* Pricing Row with Clean Alignment */}

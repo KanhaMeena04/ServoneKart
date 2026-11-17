@@ -780,7 +780,7 @@ const HomePage = () => {
             - Auto-scroll & shuffle every 6s (pauses on hover)
             - Matches Screenshot 5 layout
            ============================================================ */}
-        {isAuthenticated && recentOrders && recentOrders.length > 0 && (
+        {/* {isAuthenticated && recentOrders && recentOrders.length > 0 && (
           <section
             onMouseEnter={() => setIsRecentOrdersPaused(true)}
             onMouseLeave={() => setIsRecentOrdersPaused(false)}
@@ -841,7 +841,7 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Single horizontal line with scrolling & shuffle on mobile & desktop */}
+           
             <div
               ref={recentOrdersTrackRef}
               className="flex overflow-x-auto pb-2 gap-3.5 snap-x no-scrollbar scroll-smooth -mx-1 px-1"
@@ -875,7 +875,7 @@ const HomePage = () => {
                         </span>
                       </div>
 
-                      {/* Items thumbnails preview */}
+                      
                       <div className="flex items-center gap-1.5 overflow-hidden mb-3">
                         {(ord.items || []).slice(0, 3).map((it, idx) => (
                           <div
@@ -923,7 +923,7 @@ const HomePage = () => {
               })}
             </div>
           </section>
-        )}
+        )} */}
 
       </div>
     </div>
@@ -958,9 +958,9 @@ const CategoryProductRow = ({ section, deliveryTime }) => {
           <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
             {section.title || section.name}
           </h3>
-          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+          {/* <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
             DELIVERY IN MINUTES
-          </span>
+          </span> */}
         </div>
 
         <div className="flex items-center gap-3">
