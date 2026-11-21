@@ -29,7 +29,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   final List<OnboardingItem> _items = [
     OnboardingItem(
-      image: 'assets/grocery_header.jpg',
+      image: 'assets/onboarding_1.jpg',
       tag: 'HYPERLOCAL EXPRESS',
       title: 'Groceries Delivered in Minutes',
       subtitle:
@@ -83,99 +83,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
-  Widget _buildSemiCircleHeader(Size size, double arcHeight) {
-    return SizedBox(
-      key: const ValueKey<String>('semi_circle_header'),
-      width: size.width,
-      height: arcHeight + 10,
-      child: Stack(
-        children: [
-          // Clipped Image with White Blur / Soft Glow Blend
-          ClipPath(
-            clipper: FullWidthSemiCircleClipper(arcHeight: arcHeight),
-            child: SizedBox(
-              width: size.width,
-              height: arcHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(color: Colors.white),
-
-                  // Hero Image for Slide 1
-                  Image.asset(
-                    _items[0].image,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    alignment: Alignment.center,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFEBF3FE),
-                      child: const Center(
-                        child: Icon(
-                          Icons.shopping_basket_rounded,
-                          size: 64,
-                          color: Color(0xFF0055FF),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Soft white edge glow / vignette: keeps groceries crystal clear while adding smooth white blur/fade
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          center: const Alignment(0, 0.1),
-                          radius: 0.95,
-                          colors: [
-                            Colors.transparent,
-                            Colors.white.withValues(alpha: 0.05),
-                            Colors.white.withValues(alpha: 0.22),
-                          ],
-                          stops: const [0.60, 0.82, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Bottom curved edge soft white mist
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 38,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.white.withValues(alpha: 0.20),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Royal Blue Border Painted ONLY on the Curve (Ultra Thin)
-          CustomPaint(
-            size: Size(size.width, arcHeight),
-            painter: FullWidthSemiCirclePainter(
-              arcHeight: arcHeight,
-              strokeColor: const Color(0xFF0055FF),
-              strokeWidth: 1.0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStandardHeader(
       Size size, double arcHeight, String imagePath) {
     final double headerHeight = (size.height * 0.36).clamp(245.0, 295.0);
@@ -187,7 +94,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Pure white base
           Container(color: Colors.white),
 
           // Full-width edge-to-edge header image with smooth organic alpha dissolution
@@ -197,13 +103,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white, // 100% visible at top
-                  Colors.white, // 100% visible down to rider/scooter
-                  Color(0xE6FFFFFF), // 90% opacity
-                  Color(0x99FFFFFF), // 60% opacity
-                  Color(0x40FFFFFF), // 25% opacity
-                  Color(0x10FFFFFF), // 6% opacity
-                  Colors.transparent, // 0% opacity - completely dissolved at bottom
+                  Colors.white,
+                  Colors.white,
+                  Color(0xE6FFFFFF),
+                  Color(0x99FFFFFF),
+                  Color(0x40FFFFFF),
+                  Color(0x10FFFFFF),
+                  Colors.transparent,
                 ],
                 stops: [0.0, 0.42, 0.58, 0.72, 0.84, 0.94, 1.0],
               ).createShader(bounds);
@@ -212,14 +118,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: Image.asset(
               imagePath,
               fit: BoxFit.cover,
-              alignment: const Alignment(0, -0.25),
+              alignment: const Alignment(0, -0.20),
               width: size.width,
               height: headerHeight,
               errorBuilder: (_, __, ___) => Container(
                 color: const Color(0xFFEBF3FE),
                 child: const Center(
                   child: Icon(
-                    Icons.delivery_dining_rounded,
+                    Icons.shopping_basket_rounded,
                     size: 64,
                     color: Color(0xFF0055FF),
                   ),
@@ -228,7 +134,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
 
-          // ── Ultra-Smooth Continuous White Gradient Overlay (Zero Lines, Zero Edges) ──
+          // Ultra-Smooth Continuous White Gradient Overlay (Zero Lines)
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -236,14 +142,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0x00FFFFFF), // completely invisible at top (0%)
-                    Color(0x00FFFFFF), // 0% down to 35%
-                    Color(0x1AFFFFFF), // 10% soft white haze
-                    Color(0x4DFFFFFF), // 30% milky white
-                    Color(0x99FFFFFF), // 60% white mist
-                    Color(0xE6FFFFFF), // 90% white cloud
-                    Color(0xFFFFFFFF), // 100% pure solid white
-                    Color(0xFFFAF3EC), // seamlessly matches screen background
+                    Color(0x00FFFFFF),
+                    Color(0x00FFFFFF),
+                    Color(0x1AFFFFFF),
+                    Color(0x4DFFFFFF),
+                    Color(0x99FFFFFF),
+                    Color(0xE6FFFFFF),
+                    Color(0xFFFFFFFF),
+                    Color(0xFFFAF3EC),
                   ],
                   stops: [0.0, 0.35, 0.50, 0.65, 0.78, 0.88, 0.95, 1.0],
                 ),
@@ -275,6 +181,347 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  // ── Standard Layout for Slide 1 & Slide 2 ──
+  Widget _buildSlideStandard(BuildContext context, Size size, double arcHeight,
+      OnboardingItem item, int index) {
+    return Column(
+      children: [
+        _buildStandardHeader(size, arcHeight, item.image),
+
+        const SizedBox(height: 10),
+
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 26),
+              child: Column(
+                children: [
+                  const SizedBox(height: 6),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 15, vertical: 5.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0055FF).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF0055FF).withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: Text(
+                      item.tag,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF0055FF),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Text(
+                    item.title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF0A1931),
+                      height: 1.25,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      item.subtitle,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _items.length,
+                  (dotIndex) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4.5),
+                    height: 6.5,
+                    width: _currentPage == dotIndex ? 24 : 6.5,
+                    decoration: BoxDecoration(
+                      color: _currentPage == dotIndex
+                          ? const Color(0xFF0055FF)
+                          : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              Center(
+                child: Container(
+                  height: 52,
+                  width: (size.width * 0.74).clamp(250.0, 300.0),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0052FF), Color(0xFF0038D1)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0055FF).withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _onNextPressed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          index == 0 ? 'Continue' : 'Next',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 19,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Custom Layout for Slide 3 (Matching User's Reference Screenshot) ──
+  Widget _buildSlide3(BuildContext context, Size size, OnboardingItem item) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tag Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0055FF).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF0055FF).withValues(alpha: 0.22),
+              ),
+            ),
+            child: Text(
+              item.tag,
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF0055FF),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Main Title (Left-aligned, prominent, bold)
+          Text(
+            item.title,
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF0A1931),
+              height: 1.22,
+              letterSpacing: -0.3,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Subtitle (Left-aligned, clean slate grey)
+          Text(
+            item.subtitle,
+            style: GoogleFonts.poppins(
+              fontSize: 12.5,
+              color: const Color(0xFF64748B),
+              height: 1.45,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Pill "Get Started [ → ]" Button placed directly below text (Reference Style)
+          GestureDetector(
+            onTap: _onNextPressed,
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.fromLTRB(20, 6, 8, 6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0052FF), Color(0xFF0038D1)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0055FF).withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Get Started',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Color(0xFF0052FF),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Middle Hero Image
+          Expanded(
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0055FF).withValues(alpha: 0.12),
+                      blurRadius: 22,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    item.image,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFFEBF3FE),
+                      child: const Center(
+                        child: Icon(
+                          Icons.shopping_cart_rounded,
+                          size: 64,
+                          color: Color(0xFF0055FF),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Page Indicator Dots
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _items.length,
+              (dotIndex) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4.5),
+                height: 6.5,
+                width: _currentPage == dotIndex ? 24 : 6.5,
+                decoration: BoxDecoration(
+                  color: _currentPage == dotIndex
+                      ? const Color(0xFF0055FF)
+                      : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -282,7 +529,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     return Scaffold(
       body: Container(
-        // Warm cream touch background like splash screen
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -296,7 +542,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
         child: Stack(
           children: [
-            // ── Splash Screen Style Organic Cream Flowing Wave Texture ──
             Positioned.fill(
               child: CustomPaint(
                 painter: CreamTexturePainter(),
@@ -306,201 +551,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
             SafeArea(
               child: Stack(
                 children: [
-                  // ── Main Content Area ──
-                  Column(
-                    children: [
-                      // Header Area: Semi-Circle on Slide 1; Clean Rounded Header on Slide 2 & 3
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 350),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        child: _currentPage == 0
-                            ? _buildSemiCircleHeader(size, arcHeight)
-                            : _buildStandardHeader(
-                                size, arcHeight, _items[_currentPage].image),
-                      ),
-
-                      SizedBox(height: _currentPage == 0 ? 18 : 10),
-
-                      // Content PageView (Tag, Title, Subtitle)
-                      Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          onPageChanged: (page) =>
-                              setState(() => _currentPage = page),
-                          itemCount: _items.length,
-                          itemBuilder: (context, index) {
-                            final item = _items[index];
-                            return SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 26),
-                                child: Column(
-                                  children: [
-                                    const SizedBox(height: 6),
-
-                                    // Tag Badge
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 15, vertical: 5.5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0055FF)
-                                            .withValues(alpha: 0.08),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: const Color(0xFF0055FF)
-                                              .withValues(alpha: 0.22),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        item.tag,
-                                        style: GoogleFonts.poppins(
-                                          color: const Color(0xFF0055FF),
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.8,
-                                        ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 14),
-
-                                    // Main Title
-                                    Text(
-                                      item.title,
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w900,
-                                        color: const Color(0xFF0A1931),
-                                        height: 1.25,
-                                        letterSpacing: -0.3,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 12),
-
-                                    // Subtitle
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10),
-                                      child: Text(
-                                        item.subtitle,
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 13,
-                                          color: const Color(0xFF64748B),
-                                          height: 1.5,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      // ── Bottom Section (Dots + Lifted Prominent Get Started Button) ──
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                            20, 10, 20, 36), // Lifted up
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Dots Indicator
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                _items.length,
-                                (index) => AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 4.5),
-                                  height: 6.5,
-                                  width: _currentPage == index ? 24 : 6.5,
-                                  decoration: BoxDecoration(
-                                    color: _currentPage == index
-                                        ? const Color(0xFF0055FF)
-                                        : const Color(0xFFCBD5E1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 18),
-
-                            // Prominent, Nicely Sized Get Started Button
-                            Center(
-                              child: Container(
-                                height: 52,
-                                width: (size.width * 0.74).clamp(250.0, 300.0),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF0052FF),
-                                      Color(0xFF0038D1)
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                  borderRadius: BorderRadius.circular(28),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF0055FF)
-                                          .withValues(alpha: 0.35),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: _onNextPressed,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(28),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        _currentPage == 0
-                                            ? 'Continue'
-                                            : (_currentPage == 1
-                                                ? 'Next'
-                                                : 'Get Started'),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        color: Colors.white,
-                                        size: 19,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (page) =>
+                        setState(() => _currentPage = page),
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      if (index == 2) {
+                        return _buildSlide3(context, size, _items[2]);
+                      }
+                      return _buildSlideStandard(
+                          context, size, arcHeight, _items[index], index);
+                    },
                   ),
 
-                  // ── Top-Right Skip Button ──
+                  // Top-Right Skip Button
                   Positioned(
                     top: 14,
                     right: 18,
@@ -542,69 +607,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-class FullWidthSemiCircleClipper extends CustomClipper<Path> {
-  final double arcHeight;
-
-  FullWidthSemiCircleClipper({required this.arcHeight});
-
-  @override
-  Path getClip(Size size) {
-    final w = size.width;
-    final h = arcHeight;
-    final path = Path();
-    path.moveTo(0, 0);
-    // Smooth semi-circle curve spanning from left (0) to right (w)
-    path.cubicTo(0, h * 0.552, w * 0.224, h, w / 2, h);
-    path.cubicTo(w * 0.776, h, w, h * 0.552, w, 0);
-    path.lineTo(w, 0);
-    path.lineTo(0, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant FullWidthSemiCircleClipper oldClipper) =>
-      oldClipper.arcHeight != arcHeight;
-}
-
-class FullWidthSemiCirclePainter extends CustomPainter {
-  final double arcHeight;
-  final Color strokeColor;
-  final double strokeWidth;
-
-  FullWidthSemiCirclePainter({
-    required this.arcHeight,
-    required this.strokeColor,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = arcHeight;
-
-    // Build the curve path ONLY (no straight top line)
-    final curvePath = Path();
-    curvePath.moveTo(0, 0);
-    curvePath.cubicTo(0, h * 0.552, w * 0.224, h, w / 2, h);
-    curvePath.cubicTo(w * 0.776, h, w, h * 0.552, w, 0);
-
-    // Ek dum thin crisp blue line ONLY on curve
-    final strokePaint = Paint()
-      ..color = strokeColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawPath(curvePath, strokePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant FullWidthSemiCirclePainter oldDelegate) =>
-      oldDelegate.arcHeight != arcHeight ||
-      oldDelegate.strokeColor != strokeColor ||
-      oldDelegate.strokeWidth != strokeWidth;
-}
-
 class OnboardingItem {
   final String image;
   final String tag;
@@ -627,7 +629,6 @@ class CreamTexturePainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Organic wavy ribbon 1 - soft warm peach/cream flowing curve
     final paint1 = Paint()
       ..color = const Color(0xFFF7E8D8).withValues(alpha: 0.50)
       ..style = PaintingStyle.fill;
@@ -640,7 +641,6 @@ class CreamTexturePainter extends CustomPainter {
       ..close();
     canvas.drawPath(path1, paint1);
 
-    // Organic wavy ribbon 2 - warm cream curve flowing in lower half
     final paint2 = Paint()
       ..color = const Color(0xFFF2DEC9).withValues(alpha: 0.42)
       ..style = PaintingStyle.fill;
@@ -653,7 +653,6 @@ class CreamTexturePainter extends CustomPainter {
       ..close();
     canvas.drawPath(path2, paint2);
 
-    // Organic wavy ribbon 3 - soft base contour
     final paint3 = Paint()
       ..color = const Color(0xFFEBD4BE).withValues(alpha: 0.35)
       ..style = PaintingStyle.fill;

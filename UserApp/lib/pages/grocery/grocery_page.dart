@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/product.dart';
 import '../../core/theme/app_colors.dart';
@@ -222,6 +223,20 @@ class _GroceryPageState extends State<GroceryPage> {
       return true;
     }).toList();
 
+    final filteredStores = _stores.where((s) {
+      if (_searchCtrl.text.trim().isEmpty) return true;
+      final q = _searchCtrl.text.trim().toLowerCase();
+      final name = (s['name'] ?? '').toString().toLowerCase();
+      final addr = (s['address'] ?? '').toString().toLowerCase();
+      final city = (s['city'] ?? '').toString().toLowerCase();
+      final tags = (s['tags'] is List
+              ? (s['tags'] as List).join(' ')
+              : (s['tags'] ?? ''))
+          .toString()
+          .toLowerCase();
+      return name.contains(q) || addr.contains(q) || city.contains(q) || tags.contains(q);
+    }).toList();
+
     final primaryGreen = AppColors.primary;
     final firstChar = userProvider.name.isNotEmpty ? userProvider.name[0].toUpperCase() : 'U';
 
@@ -234,24 +249,31 @@ class _GroceryPageState extends State<GroceryPage> {
             color: primaryGreen,
             child: CustomScrollView(
               slivers: [
-                // Top Quick-Commerce Header & Search Bar
+                // Top Quick-Commerce Header Bar (Matches ss1 Reference)
                 SliverToBoxAdapter(
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: isDark ? null : AppColors.brandGradient,
+                      gradient: isDark
+                          ? null
+                          : const LinearGradient(
+                              colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
                       color: isDark ? AppColors.deepNavy : null,
                       borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(24),
-                        bottomRight: Radius.circular(24),
+                        bottomLeft: Radius.circular(22),
+                        bottomRight: Radius.circular(22),
                       ),
                     ),
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
                     child: SafeArea(
                       bottom: false,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               if (!widget.isEmbedded) ...[
                                 IconButton(
@@ -260,130 +282,181 @@ class _GroceryPageState extends State<GroceryPage> {
                                   constraints: const BoxConstraints(),
                                   onPressed: () => Navigator.of(context).maybePop(),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                               ],
+
+                              // Tricelyn Brand Logo (Clean White Logo as in ss1)
+                              GestureDetector(
+                                onTap: () {},
+                                child: Image.asset(
+                                  'assets/tricelyn_logo_white.png',
+                                  height: 26,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    'assets/logo.png',
+                                    height: 26,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              // Delivery in minutes & Location Dropdown (as in ss1)
                               Expanded(
                                 child: GestureDetector(
                                   onTap: () => context.push(AppRoutes.locationSetup),
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.location_on, color: Colors.white, size: 20),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  '${cfg.appName} Mart',
-                                                  style: const TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.amber[400],
-                                                    borderRadius: BorderRadius.circular(6),
-                                                  ),
-                                                  child: Text(
-                                                    _deliveryTime,
-                                                    style: const TextStyle(
-                                                      fontSize: 8.5,
-                                                      fontWeight: FontWeight.w900,
-                                                      color: Colors.black87,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            Row(
-                                              children: [
-                                                Flexible(
-                                                  child: Text(
-                                                    displayLocation,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.white70,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 16),
-                                              ],
-                                            ),
-                                          ],
+                                      Text(
+                                        'Delivery in minutes',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          letterSpacing: -0.2,
+                                          height: 1.15,
                                         ),
+                                      ),
+                                      const SizedBox(height: 1),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              displayLocation.isNotEmpty && displayLocation != 'Select Location'
+                                                  ? displayLocation
+                                                  : 'Indore, Madhya Pradesh',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 11,
+                                                color: const Color(0xFFDBEAFE),
+                                                fontWeight: FontWeight.w500,
+                                                height: 1.15,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          const Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            color: Color(0xFFDBEAFE),
+                                            size: 15,
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
+
                               if (widget.modeSwitcher != null) ...[
                                 widget.modeSwitcher!,
                                 const SizedBox(width: 6),
                               ],
-                              // Cart button
+
+                              // Profile Avatar (White circle with bold blue letter as in ss1)
+                              GestureDetector(
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileTab())),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.12),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      firstChar,
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF0B3EDB),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              // Cart Button (White circle with blue shopping cart as in ss1)
                               GestureDetector(
                                 onTap: () => context.push(AppRoutes.cart),
                                 child: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
                                     Container(
-                                      width: 36,
-                                      height: 36,
+                                      width: 32,
+                                      height: 32,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.18),
+                                        color: Colors.white,
                                         shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.12),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
                                       ),
-                                      child: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 18),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.shopping_cart_outlined,
+                                          color: Color(0xFF0B3EDB),
+                                          size: 17,
+                                        ),
+                                      ),
                                     ),
                                     if (cart.itemCount > 0)
                                       Positioned(
-                                        right: -2,
-                                        top: -2,
+                                        right: -3,
+                                        top: -3,
                                         child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                          child: Text(
-                                            '${cart.itemCount}',
-                                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                          padding: const EdgeInsets.all(3.5),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFDC2626),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                          child: Center(
+                                            child: Text(
+                                              '${cart.itemCount}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 8.5,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileTab())),
-                                child: CircleAvatar(
-                                  radius: 17,
-                                  backgroundColor: Colors.white.withValues(alpha: 0.22),
-                                  child: Text(
-                                    firstChar,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          // Live search input
+
+                          const SizedBox(height: 11),
+
+                          // Full-Width Working Search Bar (as in ss1)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            height: 42,
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1F2937) : Colors.white,
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -391,20 +464,40 @@ class _GroceryPageState extends State<GroceryPage> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.search_rounded, color: primaryGreen),
-                                const SizedBox(width: 10),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12),
+                                  child: Icon(
+                                    Icons.search_rounded,
+                                    color: Color(0xFF94A3B8),
+                                    size: 20,
+                                  ),
+                                ),
                                 Expanded(
                                   child: TextField(
                                     controller: _searchCtrl,
                                     onChanged: (_) => setState(() {}),
-                                    style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 13.5),
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                     decoration: InputDecoration(
-                                      hintText: 'Search milk, fruits, veggies, atta, snacks...',
+                                      hintText: 'Search "milk", "bread", "chips", "paneer"...',
                                       hintStyle: TextStyle(
-                                        fontSize: 13,
-                                        color: isDark ? Colors.grey[400] : Colors.grey[500],
+                                        fontSize: 12.5,
+                                        color: isDark ? Colors.grey[400] : const Color(0xFF94A3B8),
+                                        fontWeight: FontWeight.w400,
                                       ),
                                       border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      disabledBorder: InputBorder.none,
+                                      errorBorder: InputBorder.none,
+                                      focusedErrorBorder: InputBorder.none,
+                                      filled: false,
+                                      fillColor: Colors.transparent,
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 11),
                                     ),
                                   ),
                                 ),
@@ -414,7 +507,10 @@ class _GroceryPageState extends State<GroceryPage> {
                                       _searchCtrl.clear();
                                       setState(() {});
                                     },
-                                    child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 10),
+                                      child: Icon(Icons.clear, size: 18, color: Colors.grey),
+                                    ),
                                   ),
                               ],
                             ),
@@ -425,9 +521,9 @@ class _GroceryPageState extends State<GroceryPage> {
                   ),
                 ),
 
-                // Dynamic Hero Banner Carousel from Admin Panel
+                // Store Finder Search Section (Replaced Banner Carousel as requested)
                 SliverToBoxAdapter(
-                  child: _buildHeroSection(),
+                  child: _buildStoreFinderHeroSection(isDark),
                 ),
 
                 // Dynamic 3-Col / Horizontal Offer Cards from Admin Panel
@@ -768,27 +864,62 @@ class _GroceryPageState extends State<GroceryPage> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                    child: Text(
-                      'Partner Grocery Stores in $cityLabel',
-                      style: TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _searchCtrl.text.isNotEmpty
+                              ? 'Partner Stores (${filteredStores.length})'
+                              : 'Partner Grocery Stores in $cityLabel',
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (_searchCtrl.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => setState(() => _searchCtrl.clear()),
+                            child: const Text(
+                              'Clear',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0055FF),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
 
                 // Partner Grocery Stores List
-                _stores.isEmpty
+                filteredStores.isEmpty
                     ? SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(28, 16, 28, 100),
                           child: Center(
-                            child: Text(
-                              'Partner stores in $cityLabel appear here automatically.',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.store_mall_directory_outlined, size: 40, color: Colors.grey),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _searchCtrl.text.isNotEmpty
+                                      ? 'No partner stores found matching "${_searchCtrl.text}" in $cityLabel.'
+                                      : 'Partner stores in $cityLabel appear here automatically.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                                if (_searchCtrl.text.isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  TextButton(
+                                    onPressed: () => setState(() => _searchCtrl.clear()),
+                                    child: const Text('Show All Stores'),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),
@@ -798,7 +929,7 @@ class _GroceryPageState extends State<GroceryPage> {
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
-                              final s = _stores[index];
+                              final s = filteredStores[index];
                               final img = (s['image'] ?? '').toString();
                               return InkWell(
                                 onTap: () => _openStoreCatalogSheet(s),
@@ -917,7 +1048,7 @@ class _GroceryPageState extends State<GroceryPage> {
                                 ),
                               );
                             },
-                            childCount: _stores.length,
+                            childCount: filteredStores.length,
                           ),
                         ),
                       ),
@@ -1008,167 +1139,184 @@ class _GroceryPageState extends State<GroceryPage> {
     );
   }
 
-  Widget _buildHeroSection() {
-    if (_heroSlides.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF15803D), Color(0xFF16A34A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
+  Widget _buildStoreFinderHeroSection(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF061A3D), Color(0xFF0A2B6B), Color(0xFF07162E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Row(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFF1E3A8A).withValues(alpha: 0.65),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0B3EDB).withValues(alpha: 0.22),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
           children: [
-            Expanded(
+            // Ambient Radial Glow 1 (Top-Right)
+            Positioned(
+              top: -40,
+              right: -40,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.16),
+                ),
+              ),
+            ),
+
+            // Ambient Radial Glow 2 (Bottom-Left)
+            Positioned(
+              bottom: -40,
+              left: -30,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.12),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Slogan Title from reference ss2: "Groceries in minutes, from your own supermarket."
                   Text(
-                    '$_deliveryTime EXPRESS GROCERY',
-                    style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.w900),
+                    'Groceries in minutes,\nfrom your own supermarket.',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      height: 1.25,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Fresh Fruits, Dairy &\nDaily Kitchen Staples',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, height: 1.2),
+
+                  const SizedBox(height: 14),
+
+                  // Search Box with "Find stores" button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.10),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.search_rounded,
+                          color: Color(0xFF0B3EDB),
+                          size: 21,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: (_) => setState(() {}),
+                            style: const TextStyle(
+                              color: Color(0xFF0F172A),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'Enter your area, society, or shop name',
+                              hintStyle: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              filled: false,
+                              fillColor: Colors.transparent,
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        if (_searchCtrl.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              _searchCtrl.clear();
+                              setState(() {});
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6),
+                              child: Icon(Icons.clear, size: 18, color: Colors.grey),
+                            ),
+                          ),
+                        GestureDetector(
+                          onTap: () {
+                            FocusScope.of(context).unfocus();
+                            setState(() {});
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8.5),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF0B3EDB), Color(0xFF0052FF)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              'Find stores',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 42),
           ],
         ),
-      );
-    }
-
-    return Column(
-      children: [
-        Container(
-          height: 152,
-          margin: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-          child: PageView.builder(
-            controller: _heroPageCtrl,
-            itemCount: _heroSlides.length,
-            onPageChanged: (i) => setState(() => _heroPageIndex = i),
-            itemBuilder: (context, idx) {
-              final slide = _heroSlides[idx];
-              final img = (slide['image'] ?? '').toString();
-              final title = (slide['title'] ?? 'Fresh Groceries').toString();
-              final subtitle = (slide['subtitle'] ?? '').toString();
-              final tag = (slide['tag'] ?? 'IN MINUTES').toString();
-              return GestureDetector(
-                onTap: () => _openBannerTarget(slide['link']?.toString(), title),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: idx % 2 == 0
-                          ? [const Color(0xFF065F46), const Color(0xFF16A34A)]
-                          : [const Color(0xFF0F766E), const Color(0xFF059669)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber[300],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  tag,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.15,
-                                ),
-                              ),
-                              if (subtitle.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  subtitle,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 10.5),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (img.isNotEmpty)
-                        Expanded(
-                          flex: 2,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                            child: SafeImage(
-                              img,
-                              height: 152,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.shopping_bag_outlined,
-                                color: Colors.white54,
-                                size: 42,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        if (_heroSlides.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(_heroSlides.length, (i) {
-              final active = i == _heroPageIndex;
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-                width: active ? 16 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: active ? const Color(0xFF16A34A) : Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            }),
-          ),
-      ],
+      ),
     );
   }
 
