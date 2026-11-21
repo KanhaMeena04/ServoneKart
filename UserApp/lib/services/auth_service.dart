@@ -63,6 +63,29 @@ class AuthService {
     return prefs.getString(_tokenKey);
   }
 
+  static Future<Map<String, dynamic>?> getUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('saved_user_id');
+    final phone = prefs.getString('saved_user_phone');
+    final name = prefs.getString('saved_user_name');
+    final email = prefs.getString('saved_user_email');
+    final customerId = prefs.getString('saved_user_customer_id');
+
+    if (id == null && phone == null && name == null) {
+      return null;
+    }
+
+    return {
+      '_id': id,
+      'id': id,
+      'phone': phone,
+      'mobile': phone,
+      'name': (name != null && name.isNotEmpty && name != 'Guest User') ? name : 'Customer',
+      'email': email,
+      'customerId': customerId,
+    };
+  }
+
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);

@@ -47,8 +47,20 @@
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #ffffff;
+      background-color: #FEFAF9;
       background-size: 100% 100%;
+      overflow: hidden;
+    }
+
+    .splash-full {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      object-position: center;
+      display: block;
     }
 
     .center {
@@ -157,19 +169,9 @@
 <body>
 
   <picture id="splash">
-
-    <source srcset="splash/img/light-1x.png 1x,
-              splash/img/light-2x.png 2x,
-              splash/img/light-3x.png 3x,
-              splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
-
-    <source srcset="splash/img/dark-1x.png 1x,
-              splash/img/dark-2x.png 2x,
-              splash/img/dark-3x.png 3x,
-              splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-
-    <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
-
+    <source srcset="splash/splash_screen.jpg" media="(prefers-color-scheme: light)">
+    <source srcset="splash/splash_screen.jpg" media="(prefers-color-scheme: dark)">
+    <img class="splash-full" aria-hidden="true" src="splash/splash_screen.jpg" alt="Splash">
   </picture>
 
   <script src="flutter_bootstrap.js" async></script>
