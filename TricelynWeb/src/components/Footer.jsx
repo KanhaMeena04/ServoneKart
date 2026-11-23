@@ -12,7 +12,7 @@
 
 // const Footer = () => {
 //   return (
-//     <footer className="bg-[#07162E] text-white pt-8 pb-12 sm:pb-8 border-t border-slate-800">
+//     <footer className="bg-[#00297F] text-white pt-8 pb-12 sm:pb-8 border-t border-slate-800">
 //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 //         {/* Main Footer Links & Newsletter - Compact, Proportional Grid */}
@@ -90,7 +90,7 @@
 //             </h4>
 //             <Link
 //               to="/categories"
-//               className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+//               className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
 //             >
 //               See all
 //             </Link>
@@ -147,7 +147,7 @@
 //   };
 
 //   return (
-//     <footer className="bg-[#07162E] text-white pt-10 pb-8 border-t border-slate-800">
+//     <footer className="bg-[#00297F] text-white pt-10 pb-8 border-t border-slate-800">
 
 //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -166,7 +166,7 @@
 //               <Link
 //                 to="/categories"
 //                 onClick={handleScrollTop}
-//                 className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+//                 className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
 //               >
 //                 See All →
 //               </Link>
@@ -180,7 +180,7 @@
 //                   <Link
 //                     to={`/categories?category=${encodeURIComponent(category.name)}`}
 //                     onClick={handleScrollTop}
-//                     className="hover:text-emerald-400 transition-colors"
+//                     className="hover:text-blue-400 transition-colors"
 //                   >
 //                     {category.name}
 //                   </Link>
@@ -429,8 +429,8 @@
 //           </p>
 
 //           <p className="font-medium">
-//             Fast <span className="text-emerald-400">·</span> Fresh
-//             <span className="text-emerald-400"> · </span>
+//             Fast <span className="text-blue-400">·</span> Fresh
+//             <span className="text-blue-400"> · </span>
 //             Everyday
 //           </p>
 
@@ -475,13 +475,13 @@
 //     'text-sm font-bold text-white uppercase tracking-wider';
 
 //   const linkClass =
-//     'text-sm text-gray-400 hover:text-emerald-400 transition-colors duration-200 leading-6';
+//     'text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200 leading-6';
 
 //   const socialClass =
 //     'w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200';
 
 //   return (
-//     <footer className="bg-[#07162E] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-slate-800">
+//     <footer className="bg-[#00297F] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-slate-800">
 
 //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -500,7 +500,7 @@
 //               <Link
 //                 to="/categories"
 //                 onClick={handleScrollTop}
-//                 className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors whitespace-nowrap"
+//                 className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap"
 //               >
 //                 See All →
 //               </Link>
@@ -736,9 +736,9 @@
 
 //           <p className="font-medium whitespace-nowrap">
 //             Fast
-//             <span className="text-emerald-400 mx-1.5">·</span>
+//             <span className="text-blue-400 mx-1.5">·</span>
 //             Fresh
-//             <span className="text-emerald-400 mx-1.5">·</span>
+//             <span className="text-blue-400 mx-1.5">·</span>
 //             Everyday
 //           </p>
 
@@ -786,13 +786,13 @@
 //     'text-sm font-bold text-white';
 
 //   const linkClass =
-//     'text-sm text-gray-400 hover:text-emerald-400 transition-colors duration-200 leading-6';
+//     'text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200 leading-6';
 
 //   const socialClass =
 //     'w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200';
 
 //   return (
-//     <footer className="bg-[#07162E] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-slate-800">
+//     <footer className="bg-[#00297F] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-slate-800">
 
 //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -810,7 +810,7 @@
 //                 key={category.id || category.slug}
 //                 to={`/categories?category=${encodeURIComponent(category.slug)}`}
 //                 onClick={handleScrollTop}
-//                 className="text-sm text-gray-300 hover:text-emerald-400 transition-colors duration-200 leading-6"
+//                 className="text-sm text-gray-300 hover:text-blue-400 transition-colors duration-200 leading-6"
 //               >
 //                 {category.name}
 //               </Link>
@@ -1036,9 +1036,9 @@
 
 //           <p className="font-medium whitespace-nowrap">
 //             Fast
-//             <span className="text-emerald-400 mx-1.5">·</span>
+//             <span className="text-blue-400 mx-1.5">·</span>
 //             Fresh
-//             <span className="text-emerald-400 mx-1.5">·</span>
+//             <span className="text-blue-400 mx-1.5">·</span>
 //             Everyday
 //           </p>
 
@@ -1095,7 +1095,7 @@ const Footer = () => {
     'text-sm font-bold text-white';
 
   const linkClass =
-    'text-sm text-gray-400 hover:text-emerald-400 transition-colors duration-200 leading-6';
+    'text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200 leading-6';
 
   const socialClass =
     'w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200';
@@ -1121,7 +1121,7 @@ const Footer = () => {
               <Link
                 to={`${route}?q=${encodeURIComponent(item)}`}
                 onClick={handleScrollTop}
-                className="text-xs sm:text-[13px] text-gray-400 hover:text-emerald-400 transition-colors duration-200 leading-6"
+                className="text-xs sm:text-[13px] text-gray-400 hover:text-blue-400 transition-colors duration-200 leading-6"
               >
                 {item}
               </Link>
@@ -1156,7 +1156,7 @@ const Footer = () => {
           <Link
             to={`/stores?city=${encodeURIComponent(city)}`}
             onClick={handleScrollTop}
-            className="text-xs sm:text-[13px] text-gray-400 hover:text-emerald-400 transition-colors duration-200"
+            className="text-xs sm:text-[13px] text-gray-400 hover:text-blue-400 transition-colors duration-200"
           >
             {city}
           </Link>
@@ -1178,7 +1178,7 @@ const Footer = () => {
 
   return (
 
-    <footer className="bg-[#07162E] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-slate-800">
+    <footer className="bg-[#00297F] text-white pt-10 sm:pt-12 pb-6 sm:pb-8 border-t border-[#0145F2]/30">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -1267,7 +1267,7 @@ const Footer = () => {
                 key={category.id || category.slug}
                 to={`/categories?category=${encodeURIComponent(category.slug)}`}
                 onClick={handleScrollTop}
-                className="text-sm text-gray-300 hover:text-emerald-400 transition-colors duration-200 leading-6"
+                className="text-sm text-gray-300 hover:text-blue-400 transition-colors duration-200 leading-6"
               >
                 {category.name}
               </Link>
@@ -1517,13 +1517,13 @@ const Footer = () => {
 
             Fast
 
-            <span className="text-emerald-400 mx-1.5">
+            <span className="text-blue-400 mx-1.5">
               ·
             </span>
 
             Fresh
 
-            <span className="text-emerald-400 mx-1.5">
+            <span className="text-blue-400 mx-1.5">
               ·
             </span>
 

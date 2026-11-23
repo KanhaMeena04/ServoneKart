@@ -49,7 +49,7 @@ const CartPerksCard = ({ className = '' }) => {
                 <button
                   type="button"
                   onClick={() => setShowDonationInfo(!showDonationInfo)}
-                  className="text-gray-700 underline font-semibold hover:text-[#0B3EDB]"
+                  className="text-gray-700 underline font-semibold hover:text-[#0145F2]"
                 >
                   {showDonationInfo ? 'less' : 'read more'}
                 </button>
@@ -107,7 +107,7 @@ const CartPerksCard = ({ className = '' }) => {
                 onClick={() => setRiderTip(opt.value)}
                 className={`px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
                   isSelected
-                    ? 'bg-[#0B3EDB] text-white shadow-xs'
+                    ? 'bg-[#0145F2] text-white shadow-xs'
                     : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
                 }`}
               >

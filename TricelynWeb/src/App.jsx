@@ -37,7 +37,7 @@ function App() {
         <AuthProvider>
           <LocationProvider>
             <CartProvider>
-              <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased relative">
+              <div className="min-h-screen flex flex-col bg-brand-50/30 text-slate-800 antialiased relative">
                 {/* Sticky Header with Logo, Location, Search & Cart */}
                 <Header />
 

@@ -30,7 +30,7 @@
 //     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-20">
 //       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-100 pb-5 mb-6">
 //         <div>
-//           <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3EDB] hover:text-blue-700 transition mb-2">
+//           <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0145F2] hover:text-blue-700 transition mb-2">
 //             <ArrowLeft className="w-3.5 h-3.5" />
 //             <span>Back to Home</span>
 //           </Link>
@@ -38,7 +38,7 @@
 //             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
 //               Categories
 //             </h1>
-//             <span className="text-xs font-bold text-[#0B3EDB] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+//             <span className="text-xs font-bold text-[#0145F2] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
 //               {filteredCategories.length}
 //             </span>
 //           </div>
@@ -55,7 +55,7 @@
 //             onChange={(event) => setSearchFilter(event.target.value)}
 //             placeholder="Search categories..."
 //             aria-label="Search categories"
-//             className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0B3EDB] shadow-xs"
+//             className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0145F2] shadow-xs"
 //           />
 //         </div>
 //       </div>
@@ -358,14 +358,14 @@
 //           <div className="flex items-center gap-2 text-sm text-gray-500 mb-5">
 //             <Link
 //               to="/"
-//               className="hover:text-[#0B3EDB] transition-colors"
+//               className="hover:text-[#0145F2] transition-colors"
 //             >
 //               Home
 //             </Link>
 
 //             <ChevronRight size={15} />
 
-//             <span className="text-[#0B3EDB] font-semibold">
+//             <span className="text-[#0145F2] font-semibold">
 //               All Categories
 //             </span>
 //           </div>
@@ -373,12 +373,12 @@
 //           {/* Page Heading */}
 //           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8">
 //             <div>
-//               <span className="inline-flex items-center gap-2 bg-blue-50 text-[#0B3EDB] text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+//               <span className="inline-flex items-center gap-2 bg-blue-50 text-[#0145F2] text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
 //                 <LayoutGrid size={14} />
 //                 Explore Our Store
 //               </span>
 
-//               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#07162E]">
+//               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#00297F]">
 //                 Shop by Categories
 //               </h1>
 
@@ -405,7 +405,7 @@
 //               value={searchFilter}
 //               onChange={(e) => setSearchFilter(e.target.value)}
 //               placeholder="Search categories..."
-//               className="w-full h-12 pl-12 pr-12 rounded-xl bg-white border border-gray-200 outline-none focus:border-[#0B3EDB] focus:ring-4 focus:ring-blue-50 text-sm transition-all"
+//               className="w-full h-12 pl-12 pr-12 rounded-xl bg-white border border-gray-200 outline-none focus:border-[#0145F2] focus:ring-4 focus:ring-blue-50 text-sm transition-all"
 //             />
 
 //             {searchFilter && (
@@ -432,7 +432,7 @@
 //                     key={category.id || category.slug}
 //                     type="button"
 //                     onClick={() => handleCategorySelect(category)}
-//                     className="group text-left bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-[#0B3EDB]/40 transition-all duration-300 hover:-translate-y-1"
+//                     className="group text-left bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-[#0145F2]/40 transition-all duration-300 hover:-translate-y-1"
 //                   >
 //                     {/* Image */}
 //                     <div className="relative aspect-[4/3] bg-gray-50 overflow-hidden">
@@ -456,7 +456,7 @@
 
 //                     {/* Content */}
 //                     <div className="p-3 sm:p-4">
-//                       <h2 className="font-bold text-sm sm:text-base text-[#07162E] group-hover:text-[#0B3EDB] transition-colors line-clamp-2 min-h-10">
+//                       <h2 className="font-bold text-sm sm:text-base text-[#00297F] group-hover:text-[#0145F2] transition-colors line-clamp-2 min-h-10">
 //                         {category.name}
 //                       </h2>
 
@@ -469,7 +469,7 @@
 //                           {productCount} Products
 //                         </span>
 
-//                         <span className="w-7 h-7 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center group-hover:bg-[#0B3EDB] group-hover:text-white transition-all">
+//                         <span className="w-7 h-7 rounded-full bg-blue-50 text-[#0145F2] flex items-center justify-center group-hover:bg-[#0145F2] group-hover:text-white transition-all">
 //                           <ChevronRight size={16} />
 //                         </span>
 //                       </div>
@@ -485,7 +485,7 @@
 //                 className="mx-auto text-gray-300 mb-3"
 //               />
 
-//               <h3 className="font-bold text-lg text-[#07162E]">
+//               <h3 className="font-bold text-lg text-[#00297F]">
 //                 No categories found
 //               </h3>
 
@@ -495,7 +495,7 @@
 
 //               <button
 //                 onClick={() => setSearchFilter('')}
-//                 className="mt-4 text-sm font-bold text-[#0B3EDB]"
+//                 className="mt-4 text-sm font-bold text-[#0145F2]"
 //               >
 //                 Clear Search
 //               </button>
@@ -518,7 +518,7 @@
 //         <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-5">
 //           <Link
 //             to="/"
-//             className="hover:text-[#0B3EDB] transition-colors"
+//             className="hover:text-[#0145F2] transition-colors"
 //           >
 //             Home
 //           </Link>
@@ -527,14 +527,14 @@
 
 //           <button
 //             onClick={handleShowAllCategories}
-//             className="hover:text-[#0B3EDB] transition-colors"
+//             className="hover:text-[#0145F2] transition-colors"
 //           >
 //             Categories
 //           </button>
 
 //           <ChevronRight size={15} />
 
-//           <span className="font-semibold text-[#0B3EDB]">
+//           <span className="font-semibold text-[#0145F2]">
 //             {selectedCategory.name}
 //           </span>
 //         </div>
@@ -542,7 +542,7 @@
 //         {/* Back Button */}
 //         <button
 //           onClick={handleShowAllCategories}
-//           className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#0B3EDB] mb-5 transition-colors"
+//           className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#0145F2] mb-5 transition-colors"
 //         >
 //           <ArrowLeft size={17} />
 //           All Categories
@@ -557,12 +557,12 @@
 //                   {selectedCategory.icon || '🛒'}
 //                 </span>
 
-//                 <span className="text-xs font-bold text-[#0B3EDB] uppercase tracking-wider">
+//                 <span className="text-xs font-bold text-[#0145F2] uppercase tracking-wider">
 //                   Explore Category
 //                 </span>
 //               </div>
 
-//               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#07162E]">
+//               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#00297F]">
 //                 {selectedCategory.name}
 //               </h1>
 
@@ -571,7 +571,7 @@
 //               </p>
 
 //               <div className="flex items-center gap-2 mt-5 text-sm font-semibold text-gray-600">
-//                 <ShoppingBag size={17} className="text-[#0B3EDB]" />
+//                 <ShoppingBag size={17} className="text-[#0145F2]" />
 
 //                 {categoryProducts.length} Products Available
 //               </div>
@@ -594,7 +594,7 @@
 
 //           {/* Sidebar */}
 //           <aside className="bg-white rounded-2xl border border-gray-100 p-4 h-fit">
-//             <h2 className="font-extrabold text-[#07162E] text-base mb-4">
+//             <h2 className="font-extrabold text-[#00297F] text-base mb-4">
 //               All Categories
 //             </h2>
 
@@ -609,8 +609,8 @@
 //                     onClick={() => handleCategorySelect(category)}
 //                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
 //                       active
-//                         ? 'bg-blue-50 text-[#0B3EDB] font-bold'
-//                         : 'text-gray-600 hover:bg-gray-50 hover:text-[#0B3EDB]'
+//                         ? 'bg-blue-50 text-[#0145F2] font-bold'
+//                         : 'text-gray-600 hover:bg-gray-50 hover:text-[#0145F2]'
 //                     }`}
 //                   >
 //                     <span className="text-lg">
@@ -647,7 +647,7 @@
 //                     value={searchFilter}
 //                     onChange={(e) => setSearchFilter(e.target.value)}
 //                     placeholder={`Search in ${selectedCategory.name}...`}
-//                     className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 outline-none focus:border-[#0B3EDB] focus:ring-4 focus:ring-blue-50 text-sm"
+//                     className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 outline-none focus:border-[#0145F2] focus:ring-4 focus:ring-blue-50 text-sm"
 //                   />
 
 //                   {searchFilter && (
@@ -670,7 +670,7 @@
 //                   <select
 //                     value={sortBy}
 //                     onChange={(e) => setSortBy(e.target.value)}
-//                     className="w-full h-11 pl-9 pr-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-[#0B3EDB] text-sm font-medium text-gray-700 appearance-none cursor-pointer"
+//                     className="w-full h-11 pl-9 pr-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-[#0145F2] text-sm font-medium text-gray-700 appearance-none cursor-pointer"
 //                   >
 //                     <option value="featured">Featured</option>
 //                     <option value="price-low">Price: Low to High</option>
@@ -689,8 +689,8 @@
 //                     onClick={() => handleSubcategorySelect('')}
 //                     className={`px-3 py-2 rounded-full text-xs font-bold transition-all ${
 //                       !selectedSubcategoryParam
-//                         ? 'bg-[#0B3EDB] text-white'
-//                         : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-[#0B3EDB]'
+//                         ? 'bg-[#0145F2] text-white'
+//                         : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-[#0145F2]'
 //                     }`}
 //                   >
 //                     All
@@ -705,8 +705,8 @@
 //                       className={`px-3 py-2 rounded-full text-xs font-semibold transition-all ${
 //                         slugify(selectedSubcategoryParam) ===
 //                         slugify(subcategory)
-//                           ? 'bg-[#0B3EDB] text-white'
-//                           : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-[#0B3EDB]'
+//                           ? 'bg-[#0145F2] text-white'
+//                           : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-[#0145F2]'
 //                       }`}
 //                     >
 //                       {subcategory}
@@ -719,7 +719,7 @@
 //             {/* Product Count */}
 //             <div className="flex items-center justify-between gap-3 mb-4">
 //               <div>
-//                 <h2 className="text-lg sm:text-xl font-extrabold text-[#07162E]">
+//                 <h2 className="text-lg sm:text-xl font-extrabold text-[#00297F]">
 //                   {selectedSubcategoryParam
 //                     ? selectedSubcategoryParam.replace(/-/g, ' ')
 //                     : selectedCategory.name}
@@ -747,11 +747,11 @@
 //                 <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
 //                   <PackageSearch
 //                     size={30}
-//                     className="text-[#0B3EDB]"
+//                     className="text-[#0145F2]"
 //                   />
 //                 </div>
 
-//                 <h3 className="text-lg font-extrabold text-[#07162E]">
+//                 <h3 className="text-lg font-extrabold text-[#00297F]">
 //                   No Products Found
 //                 </h3>
 
@@ -767,7 +767,7 @@
 //                     setSortBy('featured');
 //                     handleSubcategorySelect('');
 //                   }}
-//                   className="mt-5 inline-flex items-center gap-2 bg-[#0B3EDB] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-800 transition-colors"
+//                   className="mt-5 inline-flex items-center gap-2 bg-[#0145F2] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-800 transition-colors"
 //                 >
 //                   <X size={16} />
 //                   Clear Filters

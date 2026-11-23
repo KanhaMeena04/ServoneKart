@@ -189,7 +189,7 @@ const PaymentModal = ({
         {/* ============================================================
             TOP HEADER (Matches Screenshot 3 & 4)
            ============================================================ */}
-        <div className="bg-[#07162E] text-white px-5 sm:px-6 py-4 flex items-center justify-between border-b border-blue-900/40 flex-shrink-0">
+        <div className="bg-[#00297F] text-white px-5 sm:px-6 py-4 flex items-center justify-between border-b border-blue-900/40 flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -232,7 +232,7 @@ const PaymentModal = ({
             {processingState === 'contacting' && (
               <>
                 <div className="relative w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Loader2 className="w-9 h-9 text-[#0B3EDB] animate-spin" />
+                  <Loader2 className="w-9 h-9 text-[#0145F2] animate-spin" />
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-base font-black text-gray-900">Connecting to {processingMethodName}...</h4>
@@ -409,7 +409,7 @@ const PaymentModal = ({
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs whitespace-nowrap cursor-pointer active:scale-95"
+                        className="px-4 py-2 bg-[#0145F2] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs whitespace-nowrap cursor-pointer active:scale-95"
                       >
                         Verify & Pay
                       </button>
@@ -520,7 +520,7 @@ const PaymentModal = ({
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="w-full py-3 bg-[#0145F2] hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Pay ₹{Number(amount).toFixed(0)}</span>
@@ -557,7 +557,7 @@ const PaymentModal = ({
                         onClick={() => setSelectedBank(b.id)}
                         className={`p-2.5 rounded-xl border transition flex flex-col items-center justify-center text-center cursor-pointer ${
                           selectedBank === b.id
-                            ? 'bg-blue-50/80 border-[#0B3EDB] shadow-2xs ring-1 ring-blue-500'
+                            ? 'bg-blue-50/80 border-[#0145F2] shadow-2xs ring-1 ring-blue-500'
                             : 'bg-white border-gray-200 hover:border-gray-300'
                         }`}
                       >
@@ -585,7 +585,7 @@ const PaymentModal = ({
                   <button
                     type="button"
                     onClick={() => triggerPaymentExecution(`Netbanking (${selectedBank.toUpperCase()})`)}
-                    className="w-full py-3 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="w-full py-3 bg-[#0145F2] hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <span>Pay ₹{Number(amount).toFixed(0)} via Netbanking</span>
                   </button>
@@ -626,7 +626,7 @@ const PaymentModal = ({
                         onClick={() => setSelectedWallet(w.id)}
                         className={`p-3 rounded-xl border transition flex items-center justify-between text-left cursor-pointer ${
                           selectedWallet === w.id
-                            ? 'bg-blue-50/80 border-[#0B3EDB] shadow-2xs ring-1 ring-blue-500'
+                            ? 'bg-blue-50/80 border-[#0145F2] shadow-2xs ring-1 ring-blue-500'
                             : 'bg-white border-gray-200 hover:border-gray-300'
                         }`}
                       >
@@ -651,7 +651,7 @@ const PaymentModal = ({
                   <button
                     type="button"
                     onClick={() => triggerPaymentExecution(`Wallet (${selectedWallet})`)}
-                    className="w-full py-3 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="w-full py-3 bg-[#0145F2] hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <span>Pay ₹{Number(amount).toFixed(0)} with Wallet</span>
                   </button>

@@ -227,9 +227,9 @@ const CheckoutPage = () => {
 
       {isMultiStore && (
         <div className="mb-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-900 flex items-start gap-2.5">
-          <Layers className="w-4 h-4 text-[#0B3EDB] flex-shrink-0 mt-0.5" />
+          <Layers className="w-4 h-4 text-[#0145F2] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-black text-[#0B3EDB]">
+            <p className="font-black text-[#0145F2]">
               Multi-Vendor Smart Split ({storeCount} Partner Stores)
             </p>
             <p className="text-[11px] text-blue-800/80 mt-0.5">
@@ -435,7 +435,7 @@ const CheckoutPage = () => {
             <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
               {storeGroups.map((grp) => (
                 <div key={grp.storeId} className="space-y-1.5">
-                  <div className="flex items-center gap-1 text-[10px] font-black uppercase text-[#0B3EDB]">
+                  <div className="flex items-center gap-1 text-[10px] font-black uppercase text-[#0145F2]">
                     <Store className="w-3 h-3" />
                     <span className="truncate">{grp.storeName}</span>
                   </div>
@@ -494,7 +494,7 @@ const CheckoutPage = () => {
               )}
 
               {riderTip > 0 && (
-                <div className="flex justify-between text-[#0B3EDB] font-semibold">
+                <div className="flex justify-between text-[#0145F2] font-semibold">
                   <span>Delivery Partner Tip</span>
                   <span>₹{riderTip}</span>
                 </div>
