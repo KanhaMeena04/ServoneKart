@@ -474,7 +474,7 @@ const Header = () => {
                     value={searchQuery}
                     onFocus={() => setIsSearchFocused(true)}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder='Search "milk", "bread", "chips", "paneer"...'
+                    placeholder='Search for city, area, store, groceries, fresh produce, daily essentials...'
                     className="w-full pl-9 pr-8 py-2 text-xs bg-white text-gray-900 placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-xs"
                   />
                   <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 pointer-events-none" />
