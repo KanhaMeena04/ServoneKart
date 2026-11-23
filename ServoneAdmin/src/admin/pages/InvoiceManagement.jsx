@@ -73,7 +73,7 @@ export default function InvoiceManagement() {
     supportPhone: '+91 731-4099880',
     supportHours: '24/7 Live Customer Support',
     invoicePrefix: 'TRC-INV',
-    accentColor: '#0055ff',
+    accentColor: '#0145F2',
     templateStyle: 'modern',
     showLogo: true,
     showTaxBreakup: true,
@@ -282,7 +282,7 @@ export default function InvoiceManagement() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0055ff] px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0145F2] px-2.5 py-0.5 rounded-full">
                 👑 Super Admin Central Invoicing
               </span>
               <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
@@ -290,7 +290,7 @@ export default function InvoiceManagement() {
               </span>
             </div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-              <ReceiptLong className="text-[#0055ff]" />
+              <ReceiptLong className="text-[#0145F2]" />
               GST Tax Invoicing & Format Customizer
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -372,7 +372,7 @@ export default function InvoiceManagement() {
           <TableContainer component={Paper} className="shadow-xs rounded-2xl overflow-hidden border border-gray-100 bg-white">
             {loadingOrders ? (
               <div className="p-12 text-center text-gray-500">
-                <CircularProgress size={32} sx={{ color: '#0055ff' }} />
+                <CircularProgress size={32} sx={{ color: '#0145F2' }} />
                 <p className="text-xs font-bold mt-2">Loading customer orders...</p>
               </div>
             ) : (
@@ -456,7 +456,7 @@ export default function InvoiceManagement() {
                             variant="contained"
                             onClick={() => openInvoice(id)}
                             startIcon={<Print />}
-                            sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                            sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
                             className="capitalize rounded-xl text-xs py-1 px-3 shadow-2xs font-bold"
                           >
                             Print Tax Invoice
@@ -480,7 +480,7 @@ export default function InvoiceManagement() {
             <div className="flex items-center justify-between border-b pb-4">
               <div>
                 <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                  <Palette className="text-[#0055ff]" />
+                  <Palette className="text-[#0145F2]" />
                   Dynamic Invoice Template & Legal Details
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -493,7 +493,7 @@ export default function InvoiceManagement() {
                 onClick={handleSaveInvoiceConfig}
                 disabled={savingConfig}
                 startIcon={savingConfig ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
                 className="capitalize rounded-xl text-xs font-bold py-1.5 px-4 shadow-sm"
               >
                 {savingConfig ? 'Saving...' : 'Save Design & Settings'}
@@ -629,12 +629,12 @@ export default function InvoiceManagement() {
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      value={invoiceConfig.accentColor || '#0055ff'}
+                      value={invoiceConfig.accentColor || '#0145F2'}
                       onChange={(e) => setInvoiceConfig({ ...invoiceConfig, accentColor: e.target.value })}
                       className="w-10 h-9 p-0.5 rounded-lg border border-gray-300 cursor-pointer"
                     />
                     <div className="flex items-center gap-1.5">
-                      {['#0055ff', '#059669', '#dc2626', '#7c3aed', '#111827'].map((c) => (
+                      {['#0145F2', '#059669', '#dc2626', '#7c3aed', '#111827'].map((c) => (
                         <button
                           key={c}
                           type="button"
@@ -723,7 +723,7 @@ export default function InvoiceManagement() {
                 onClick={handleSaveInvoiceConfig}
                 disabled={savingConfig}
                 startIcon={savingConfig ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
                 className="capitalize rounded-xl text-xs font-bold py-2 px-6 shadow-sm"
               >
                 {savingConfig ? 'Saving Settings...' : 'Save Invoice Design & Settings'}
@@ -879,7 +879,7 @@ export default function InvoiceManagement() {
             <div className="flex items-center justify-between border-b pb-4">
               <div>
                 <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                  <Storefront className="text-[#0055ff]" />
+                  <Storefront className="text-[#0145F2]" />
                   Partner Store / Vendor Custom Invoicing
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -892,7 +892,7 @@ export default function InvoiceManagement() {
                 onClick={handleSaveVendorInvoice}
                 disabled={savingVendor || !selectedStoreId}
                 startIcon={savingVendor ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
                 className="capitalize rounded-xl text-xs font-bold py-1.5 px-4 shadow-sm"
               >
                 {savingVendor ? 'Saving...' : 'Save Store Details'}
@@ -905,7 +905,7 @@ export default function InvoiceManagement() {
                 Select Partner Store to Customize
               </label>
               {loadingStores ? (
-                <CircularProgress size={24} sx={{ color: '#0055ff' }} />
+                <CircularProgress size={24} sx={{ color: '#0145F2' }} />
               ) : (
                 <FormControl fullWidth size="small">
                   <InputLabel>Partner Store</InputLabel>
@@ -1026,7 +1026,7 @@ export default function InvoiceManagement() {
                 onClick={handleSaveVendorInvoice}
                 disabled={savingVendor || !selectedStoreId}
                 startIcon={savingVendor ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
                 className="capitalize rounded-xl text-xs font-bold py-2 px-6 shadow-sm"
               >
                 {savingVendor ? 'Saving Store Details...' : 'Save Store Custom Invoicing Details'}
@@ -1102,7 +1102,7 @@ export default function InvoiceManagement() {
               variant="contained"
               onClick={handlePrint}
               startIcon={<Print />}
-              sx={{ backgroundColor: '#0055ff' }}
+              sx={{ backgroundColor: '#0145F2' }}
               className="capitalize text-xs rounded-xl font-bold"
             >
               Print / Save PDF
@@ -1116,7 +1116,7 @@ export default function InvoiceManagement() {
         <DialogContent className="p-6 sm:p-8 bg-white print:p-0">
           {invoiceLoading || !selectedInvoice ? (
             <div className="p-12 text-center text-gray-500">
-              <CircularProgress size={32} sx={{ color: '#0055ff' }} />
+              <CircularProgress size={32} sx={{ color: '#0145F2' }} />
               <p className="text-xs font-bold mt-2">Generating Tax Invoice...</p>
             </div>
           ) : (
@@ -1128,7 +1128,7 @@ export default function InvoiceManagement() {
                   <div className="flex items-center gap-2">
                     <span
                       className="text-2xl font-black italic tracking-tighter"
-                      style={{ color: selectedInvoice.invoiceConfig?.accentColor || '#0055ff' }}
+                      style={{ color: selectedInvoice.invoiceConfig?.accentColor || '#0145F2' }}
                     >
                       {selectedInvoice.invoiceConfig?.brandName || 'TRICELYN'}
                     </span>
@@ -1247,7 +1247,7 @@ export default function InvoiceManagement() {
                   )}
                   <div className="flex justify-between border-t pt-2 text-sm font-black text-gray-900">
                     <span>Grand Total:</span>
-                    <span style={{ color: selectedInvoice.invoiceConfig?.accentColor || '#0055ff' }}>
+                    <span style={{ color: selectedInvoice.invoiceConfig?.accentColor || '#0145F2' }}>
                       ₹{selectedInvoice.billingSummary.grandTotal}
                     </span>
                   </div>

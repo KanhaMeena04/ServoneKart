@@ -125,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       final size = 3.0 + random.nextDouble() * 3.0; 
       
       // Brand colors: vivid blue & light blue glow
-      final color = i % 2 == 0 ? const Color(0xFF0B3EDB) : const Color(0xFF60A5FA);
+      final color = i % 2 == 0 ? const Color(0xFF0145F2) : const Color(0xFF60A5FA);
       
       _particles.add(Particle(
         angle: angle,
@@ -155,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             colors: [
               Color(0xFF07162E), // Deep Navy
               Color(0xFF0A2B6B), // Royal Blue
-              Color(0xFF0B3EDB), // Vivid Blue
+              Color(0xFF0145F2), // Vivid Blue
             ],
           ),
         ),
@@ -237,7 +237,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.45),
+                                  color: const Color(0xFF0145F2).withValues(alpha: 0.45),
                                   blurRadius: 36,
                                   spreadRadius: 6,
                                   offset: const Offset(0, 10),
@@ -254,7 +254,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) => Container(
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF0B3EDB),
+                                  color: Color(0xFF0145F2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(

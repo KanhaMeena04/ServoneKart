@@ -189,7 +189,7 @@ const OrderTrackingPage = () => {
   if (loading && !order) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-28 text-center space-y-4">
-        <div className="w-12 h-12 border-4 border-[#0B3EDB]/20 border-t-[#0B3EDB] rounded-full animate-spin mx-auto" />
+        <div className="w-12 h-12 border-4 border-[#0145F2]/20 border-t-[#0145F2] rounded-full animate-spin mx-auto" />
         <h2 className="text-base font-black text-gray-800">Connecting to Live Store & Rider Telemetry...</h2>
         <p className="text-xs text-gray-500 font-medium">Tracking order #{orderId.slice(-6)}</p>
       </div>
@@ -209,7 +209,7 @@ const OrderTrackingPage = () => {
                 setLoading(true);
                 fetchOrderDetails();
               }}
-              className="px-5 py-2.5 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-[#0145F2] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Retry</span>
@@ -234,7 +234,7 @@ const OrderTrackingPage = () => {
         <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3EDB] hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0145F2] hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Groceries</span>
@@ -245,7 +245,7 @@ const OrderTrackingPage = () => {
               onClick={() => setIsInvoiceOpen(true)}
               className="px-3 py-1.5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-xs font-bold text-gray-700 transition flex items-center gap-1 shadow-2xs"
             >
-              <FileText className="w-3.5 h-3.5 text-[#0B3EDB]" />
+              <FileText className="w-3.5 h-3.5 text-[#0145F2]" />
               <span>Invoice</span>
             </button>
             {!isCancelled && !isDelivered && currentStep <= 1 && (
@@ -274,7 +274,7 @@ const OrderTrackingPage = () => {
           </div>
 
           <div className="self-start sm:self-auto">
-            <span className="inline-flex items-center px-4 py-2 rounded-full bg-[#0B3EDB] text-white text-xs sm:text-sm font-black shadow-sm">
+            <span className="inline-flex items-center px-4 py-2 rounded-full bg-[#0145F2] text-white text-xs sm:text-sm font-black shadow-sm">
               {etaMinutes}
             </span>
           </div>
@@ -306,11 +306,11 @@ const OrderTrackingPage = () => {
                 {/* Visual Route Canvas */}
                 <div className="my-auto py-8 relative flex items-center justify-between px-6 sm:px-12">
                   {/* Dashed Route Track */}
-                  <div className="absolute left-12 right-12 top-1/2 -translate-y-1/2 h-1 border-t-2 border-dashed border-[#0B3EDB]/40 z-0" />
+                  <div className="absolute left-12 right-12 top-1/2 -translate-y-1/2 h-1 border-t-2 border-dashed border-[#0145F2]/40 z-0" />
 
                   {/* Origin: Partner Supermarket */}
                   <div className="flex flex-col items-center gap-1.5 z-10 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-white border-2 border-[#0B3EDB] text-[#0B3EDB] flex items-center justify-center shadow-md">
+                    <div className="w-12 h-12 rounded-2xl bg-white border-2 border-[#0145F2] text-[#0145F2] flex items-center justify-center shadow-md">
                       <Store className="w-6 h-6" />
                     </div>
                     <span className="text-[11px] font-black text-gray-900 truncate max-w-[100px]">
@@ -325,10 +325,10 @@ const OrderTrackingPage = () => {
                   <div className={`flex flex-col items-center gap-1 z-10 transition-all duration-700 ${
                     currentStep >= 3 ? 'scale-110' : 'opacity-85'
                   }`}>
-                    <div className="w-12 h-12 rounded-2xl bg-[#0B3EDB] text-white flex items-center justify-center shadow-lg shadow-[#0B3EDB]/30 animate-bounce">
+                    <div className="w-12 h-12 rounded-2xl bg-[#0145F2] text-white flex items-center justify-center shadow-lg shadow-[#0145F2]/30 animate-bounce">
                       <Truck className="w-6 h-6" />
                     </div>
-                    <span className="text-[11px] font-black text-[#0B3EDB]">
+                    <span className="text-[11px] font-black text-[#0145F2]">
                       {riderName ? riderName.split(' ')[0] : 'Rider'}
                     </span>
                     <span className="text-[9px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
@@ -353,12 +353,12 @@ const OrderTrackingPage = () => {
                 {/* Map Bottom Status Bar */}
                 <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-3 border border-white flex items-center justify-between text-xs z-10 shadow-2xs">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#0B3EDB] flex-shrink-0" />
+                    <MapPin className="w-4 h-4 text-[#0145F2] flex-shrink-0" />
                     <span className="font-semibold text-gray-700 truncate max-w-[280px] sm:max-w-md">
                       {order?.deliveryAddress?.addressLine || order?.deliveryAddress?.fullAddress || 'Vijay Nagar, Indore'}
                     </span>
                   </div>
-                  <span className="font-black text-[#0B3EDB] flex-shrink-0">
+                  <span className="font-black text-[#0145F2] flex-shrink-0">
                     {order?.deliveryFee === 0 ? 'FREE EXPRESS' : 'EXPRESS'}
                   </span>
                 </div>
@@ -378,12 +378,12 @@ const OrderTrackingPage = () => {
                 <div className="flex items-start gap-4 relative">
                   {/* Connecting Line */}
                   <div className={`absolute left-3 top-6 bottom-0 w-0.5 -mb-6 ${
-                    currentStep >= 2 ? 'bg-[#0B3EDB]' : 'bg-gray-200'
+                    currentStep >= 2 ? 'bg-[#0145F2]' : 'bg-gray-200'
                   }`} />
                   
                   {/* Step Dot */}
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                    currentStep >= 1 ? 'bg-[#0B3EDB] text-white' : 'bg-gray-200 text-gray-400'
+                    currentStep >= 1 ? 'bg-[#0145F2] text-white' : 'bg-gray-200 text-gray-400'
                   }`}>
                     {currentStep >= 1 ? (
                       <span className="w-2.5 h-2.5 rounded-full bg-white" />
@@ -406,12 +406,12 @@ const OrderTrackingPage = () => {
                 <div className="flex items-start gap-4 relative">
                   {/* Connecting Line */}
                   <div className={`absolute left-3 top-6 bottom-0 w-0.5 -mb-6 ${
-                    currentStep >= 3 ? 'bg-[#0B3EDB]' : 'bg-gray-200'
+                    currentStep >= 3 ? 'bg-[#0145F2]' : 'bg-gray-200'
                   }`} />
 
                   {/* Step Dot */}
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                    currentStep >= 2 ? 'bg-[#0B3EDB] text-white' : 'bg-gray-200 text-gray-400'
+                    currentStep >= 2 ? 'bg-[#0145F2] text-white' : 'bg-gray-200 text-gray-400'
                   }`}>
                     {currentStep >= 2 ? (
                       <span className="w-2.5 h-2.5 rounded-full bg-white" />
@@ -434,12 +434,12 @@ const OrderTrackingPage = () => {
                 <div className="flex items-start gap-4 relative">
                   {/* Connecting Line */}
                   <div className={`absolute left-3 top-6 bottom-0 w-0.5 -mb-6 ${
-                    currentStep >= 4 ? 'bg-[#0B3EDB]' : 'bg-gray-200'
+                    currentStep >= 4 ? 'bg-[#0145F2]' : 'bg-gray-200'
                   }`} />
 
                   {/* Step Dot */}
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                    currentStep >= 3 ? 'bg-[#0B3EDB] text-white' : 'bg-gray-200 text-gray-400'
+                    currentStep >= 3 ? 'bg-[#0145F2] text-white' : 'bg-gray-200 text-gray-400'
                   }`}>
                     {currentStep >= 3 ? (
                       <span className="w-2.5 h-2.5 rounded-full bg-white" />
@@ -506,7 +506,7 @@ const OrderTrackingPage = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="w-12 h-12 rounded-2xl bg-white text-[#0B3EDB] mx-auto flex items-center justify-center shadow-xs">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-[#0145F2] mx-auto flex items-center justify-center shadow-xs">
                     <Package className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-bold text-gray-700 block">Photo of your packed bag</span>
@@ -524,7 +524,7 @@ const OrderTrackingPage = () => {
               <h4 className="text-xs font-bold text-gray-500">Your delivery partner</h4>
               <div className="flex items-center justify-between gap-3 pt-1">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0B3EDB] flex items-center justify-center font-black flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0145F2] flex items-center justify-center font-black flex-shrink-0">
                     <Truck className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
@@ -540,7 +540,7 @@ const OrderTrackingPage = () => {
                 {riderPhone ? (
                   <a
                     href={`tel:${riderPhone}`}
-                    className="px-5 py-2 border-2 border-[#0B3EDB] text-[#0B3EDB] hover:bg-[#0B3EDB] hover:text-white rounded-xl text-xs font-black transition flex-shrink-0"
+                    className="px-5 py-2 border-2 border-[#0145F2] text-[#0145F2] hover:bg-[#0145F2] hover:text-white rounded-xl text-xs font-black transition flex-shrink-0"
                   >
                     Call
                   </a>
@@ -570,7 +570,7 @@ const OrderTrackingPage = () => {
             <div className="pt-2 text-left">
               <button
                 onClick={() => setIsHelpOpen(true)}
-                className="text-xs font-bold text-[#0B3EDB] hover:underline cursor-pointer"
+                className="text-xs font-bold text-[#0145F2] hover:underline cursor-pointer"
               >
                 Need help with this order?
               </button>
@@ -617,7 +617,7 @@ const OrderTrackingPage = () => {
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5">
-                <HelpCircle className="w-4 h-4 text-[#0B3EDB]" />
+                <HelpCircle className="w-4 h-4 text-[#0145F2]" />
                 <span>Need Help with Order?</span>
               </h3>
               <button

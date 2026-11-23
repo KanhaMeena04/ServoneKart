@@ -96,7 +96,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
-                        color: const Color(0xFF0B3EDB),
+                        color: const Color(0xFF0145F2),
                       ),
                     ),
                   ),

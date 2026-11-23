@@ -22,7 +22,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
   static const Color lightGreen = Color(0xFFE8F5E9);
   static const Color darkBlack = Color(0xFF1E2022);
 
@@ -503,14 +503,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                              colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0145F2)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF0B3EDB).withValues(alpha: 0.25),
+                                color: const Color(0xFF0145F2).withValues(alpha: 0.25),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),

@@ -27,7 +27,7 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
   static const Color lightGreen = Color(0xFFE8F5E9);
 
   GoogleMapController? _mapController;

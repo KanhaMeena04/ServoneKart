@@ -369,7 +369,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
               child: _isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0B3EDB)),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0145F2)),
                       ),
                     )
                   : SingleChildScrollView(
@@ -582,7 +582,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                       Icon(
                         isSystem ? Icons.info_outline_rounded : Icons.support_agent_rounded,
                         size: 13,
-                        color: const Color(0xFF0B3EDB),
+                        color: const Color(0xFF0145F2),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -590,7 +590,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF0B3EDB),
+                          color: Color(0xFF0145F2),
                         ),
                       ),
                     ],

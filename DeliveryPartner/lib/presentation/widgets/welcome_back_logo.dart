@@ -23,7 +23,7 @@ class WelcomeBackLogo extends StatelessWidget {
         errorBuilder: (ctx, err, stack) => Icon(
           Icons.delivery_dining_rounded,
           size: height,
-          color: const Color(0xFF0B3EDB),
+          color: const Color(0xFF0145F2),
         ),
       ),
     );

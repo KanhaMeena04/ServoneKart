@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,7 +35,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: 'Groceries Delivered in Minutes',
       subtitle:
           'Farm-fresh fruits, vegetables, dairy, snacks & household staples brought straight to your doorstep at lightning speed.',
-      accentColor: const Color(0xFF0055FF),
+      accentColor: const Color(0xFF0145F2),
     ),
     OnboardingItem(
       image: 'assets/onboarding_2.jpg',
@@ -42,7 +43,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: 'Live 3D GPS Rider Tracking',
       subtitle:
           'Watch your order from dark store packing to rider dispatch with second-by-second live map tracking and accurate arrival countdown.',
-      accentColor: const Color(0xFF0055FF),
+      accentColor: const Color(0xFF0145F2),
     ),
     OnboardingItem(
       image: 'assets/onboarding_3.jpg',
@@ -50,7 +51,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: 'VIP Savings & Zero Surge Guarantee',
       subtitle:
           'Save big every day with member-only deals, scheduled early morning delivery slots, and zero surge fees even during peak hours.',
-      accentColor: const Color(0xFF0055FF),
+      accentColor: const Color(0xFF0145F2),
     ),
   ];
 
@@ -127,7 +128,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   child: Icon(
                     Icons.shopping_basket_rounded,
                     size: 64,
-                    color: Color(0xFF0055FF),
+                    color: Color(0xFF0145F2),
                   ),
                 ),
               ),
@@ -203,16 +204,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 15, vertical: 5.5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0055FF).withValues(alpha: 0.08),
+                      color: const Color(0xFF0145F2).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: const Color(0xFF0055FF).withValues(alpha: 0.22),
+                        color: const Color(0xFF0145F2).withValues(alpha: 0.22),
                       ),
                     ),
                     child: Text(
                       item.tag,
                       style: GoogleFonts.poppins(
-                        color: const Color(0xFF0055FF),
+                        color: const Color(0xFF0145F2),
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
@@ -271,7 +272,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     width: _currentPage == dotIndex ? 24 : 6.5,
                     decoration: BoxDecoration(
                       color: _currentPage == dotIndex
-                          ? const Color(0xFF0055FF)
+                          ? const Color(0xFF0145F2)
                           : const Color(0xFFCBD5E1),
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -287,14 +288,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   width: (size.width * 0.74).clamp(250.0, 300.0),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF0052FF), Color(0xFF0038D1)],
+                      colors: [Color(0xFF0145F2), Color(0xFF0038D1)],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0055FF).withValues(alpha: 0.35),
+                        color: const Color(0xFF0145F2).withValues(alpha: 0.35),
                         blurRadius: 18,
                         offset: const Offset(0, 6),
                       ),
@@ -339,185 +340,152 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  // ── Custom Layout for Slide 3 (Matching User's Reference Screenshot) ──
+  // ── Custom Layout for Slide 3 (Matching Reference Screenshot ss2 & ss3) ──
   Widget _buildSlide3(BuildContext context, Size size, OnboardingItem item) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tag Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0055FF).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFF0055FF).withValues(alpha: 0.22),
-              ),
-            ),
-            child: Text(
-              item.tag,
-              style: GoogleFonts.poppins(
-                color: const Color(0xFF0055FF),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
+    return Container(
+      width: size.width,
+      height: size.height,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF0D55FF),
+            Color(0xFF0145F2),
+            Color(0xFF0038D1),
+          ],
+          stops: [0.0, 0.45, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
 
-          const SizedBox(height: 10),
-
-          // Main Title (Left-aligned, prominent, bold)
-          Text(
-            item.title,
-            style: GoogleFonts.poppins(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF0A1931),
-              height: 1.22,
-              letterSpacing: -0.3,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Subtitle (Left-aligned, clean slate grey)
-          Text(
-            item.subtitle,
-            style: GoogleFonts.poppins(
-              fontSize: 12.5,
-              color: const Color(0xFF64748B),
-              height: 1.45,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Pill "Get Started [ → ]" Button placed directly below text (Reference Style)
-          GestureDetector(
-            onTap: _onNextPressed,
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.fromLTRB(20, 6, 8, 6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0052FF), Color(0xFF0038D1)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0055FF).withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 5),
+              // 1. Official Tricelyn Brand Logo in Pure White (No White Box, Transparent Background)
+              Image.asset(
+                'assets/tricelyn_logo_white.png',
+                height: (size.height * 0.065).clamp(48.0, 62.0),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => ColorFiltered(
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Get Started',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Color(0xFF0052FF),
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Middle Hero Image
-          Expanded(
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0055FF).withValues(alpha: 0.12),
-                      blurRadius: 22,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
                   child: Image.asset(
-                    item.image,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    alignment: Alignment.center,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFEBF3FE),
-                      child: const Center(
-                        child: Icon(
-                          Icons.shopping_cart_rounded,
-                          size: 64,
-                          color: Color(0xFF0055FF),
+                    'assets/logo.png',
+                    height: 50,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 2. Tagline (matching ss1)
+              Text(
+                'Everything You Actually Want',
+                style: GoogleFonts.poppins(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.95),
+                  letterSpacing: 0.3,
+                ),
+              ),
+
+              // 3. Center Hero Graphic: 3D generated grocery bag from ss3
+              Expanded(
+                child: Center(
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: (size.height * 0.44).clamp(260.0, 390.0),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(32),
+                      child: ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return const RadialGradient(
+                            radius: 0.92,
+                            colors: [
+                              Colors.white,
+                              Colors.white,
+                              Color(0xD9FFFFFF),
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.68, 0.88, 1.0],
+                          ).createShader(bounds);
+                        },
+                        blendMode: BlendMode.dstIn,
+                        child: Image.asset(
+                          'assets/onboarding_grocery_bag.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            'assets/grocery_bottom.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-          const SizedBox(height: 20),
-
-          // Page Indicator Dots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _items.length,
-              (dotIndex) => AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4.5),
-                height: 6.5,
-                width: _currentPage == dotIndex ? 24 : 6.5,
-                decoration: BoxDecoration(
-                  color: _currentPage == dotIndex
-                      ? const Color(0xFF0055FF)
-                      : const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(4),
+              // 4. Bottom White Pill Button: "Get Started  →"
+              Padding(
+                padding: const EdgeInsets.only(bottom: 36),
+                child: Container(
+                  height: 56,
+                  width: (size.width * 0.86).clamp(280.0, 360.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.16),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF0038D1).withValues(alpha: 0.30),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _onNextPressed,
+                      borderRadius: BorderRadius.circular(32),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Get Started',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0145F2),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Color(0xFF0145F2),
+                            size: 21,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 16),
-        ],
+        ),
       ),
     );
   }
@@ -528,47 +496,64 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final double arcHeight = (size.height * 0.32).clamp(210.0, 260.0);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFFDF9),
-              Color(0xFFFAF3EC),
-              Color(0xFFF6EDE2),
-            ],
-          ),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness:
+              _currentPage == 2 ? Brightness.light : Brightness.dark,
+          statusBarBrightness:
+              _currentPage == 2 ? Brightness.dark : Brightness.light,
         ),
         child: Stack(
           children: [
+            // Background for Slide 1 & 2 (Cream Texture)
             Positioned.fill(
-              child: CustomPaint(
-                painter: CreamTexturePainter(),
+              child: AnimatedOpacity(
+                opacity: _currentPage == 2 ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 250),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFFFFFDF9),
+                        Color(0xFFFAF3EC),
+                        Color(0xFFF6EDE2),
+                      ],
+                    ),
+                  ),
+                  child: CustomPaint(
+                    painter: CreamTexturePainter(),
+                  ),
+                ),
               ),
             ),
 
-            SafeArea(
-              child: Stack(
-                children: [
-                  PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (page) =>
-                        setState(() => _currentPage = page),
-                    itemCount: _items.length,
-                    itemBuilder: (context, index) {
-                      if (index == 2) {
-                        return _buildSlide3(context, size, _items[2]);
-                      }
-                      return _buildSlideStandard(
-                          context, size, arcHeight, _items[index], index);
-                    },
-                  ),
+            // PageView across all slides
+            PageView.builder(
+              controller: _pageController,
+              onPageChanged: (page) =>
+                  setState(() => _currentPage = page),
+              itemCount: _items.length,
+              itemBuilder: (context, index) {
+                if (index == 2) {
+                  return _buildSlide3(context, size, _items[2]);
+                }
+                return SafeArea(
+                  child: _buildSlideStandard(
+                      context, size, arcHeight, _items[index], index),
+                );
+              },
+            ),
 
-                  // Top-Right Skip Button
-                  Positioned(
-                    top: 14,
-                    right: 18,
+            // Top-Right Skip Button (hidden on final screen)
+            if (_currentPage < 2)
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 14, right: 18),
                     child: GestureDetector(
                       onTap: _skip,
                       child: Container(
@@ -597,9 +582,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
           ],
         ),
       ),

@@ -72,7 +72,7 @@ export default function MembershipManagement() {
     billingCycle: 'month',
     tag: 'POPULAR',
     badge: 'PREMIER',
-    badgeColor: '#0B3EDB',
+    badgeColor: '#0145F2',
     subtitle: '',
     description: '',
     featuresText: '',
@@ -167,7 +167,7 @@ export default function MembershipManagement() {
       billingCycle: plan.billingCycle || 'month',
       tag: plan.tag || '',
       badge: plan.badge || 'PREMIER',
-      badgeColor: plan.badgeColor || '#0B3EDB',
+      badgeColor: plan.badgeColor || '#0145F2',
       subtitle: plan.subtitle || '',
       description: plan.description || '',
       featuresText: (plan.features || []).join('\n'),
@@ -268,12 +268,12 @@ export default function MembershipManagement() {
       {/* Top Banner */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%)',
+          background: 'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0145F2 100%)',
           borderRadius: 3,
           p: { xs: 2.5, md: 3.5 },
           color: '#fff',
           mb: 3,
-          boxShadow: '0 10px 25px -5px rgba(11, 62, 219, 0.25)',
+          boxShadow: '0 10px 25px -5px rgba(1, 69, 242, 0.25)',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
@@ -308,7 +308,7 @@ export default function MembershipManagement() {
                 startIcon={<AddIcon />}
                 sx={{
                   bgcolor: '#fff',
-                  color: '#0B3EDB',
+                  color: '#0145F2',
                   fontWeight: 700,
                   borderRadius: 2,
                   textTransform: 'none',
@@ -348,7 +348,7 @@ export default function MembershipManagement() {
       {/* Loading Indicator */}
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
-          <CircularProgress sx={{ color: '#0B3EDB' }} />
+          <CircularProgress sx={{ color: '#0145F2' }} />
         </Box>
       )}
 
@@ -365,7 +365,7 @@ export default function MembershipManagement() {
               label={`${filteredPlans.length} Active Plans Configured`}
               color="primary"
               size="small"
-              sx={{ fontWeight: 700, bgcolor: '#0B3EDB' }}
+              sx={{ fontWeight: 700, bgcolor: '#0145F2' }}
             />
           </Box>
 
@@ -380,8 +380,8 @@ export default function MembershipManagement() {
                     position: 'relative',
                     overflow: 'visible',
                     '&:hover': {
-                      boxShadow: '0 12px 28px -6px rgba(11,62,219,0.15)',
-                      borderColor: '#0B3EDB',
+                      boxShadow: '0 12px 28px -6px rgba(1,69,242,0.15)',
+                      borderColor: '#0145F2',
                     },
                   }}
                 >
@@ -392,7 +392,7 @@ export default function MembershipManagement() {
                         position: 'absolute',
                         top: -12,
                         right: 20,
-                        bgcolor: '#0B3EDB',
+                        bgcolor: '#0145F2',
                         color: '#fff',
                         fontSize: 11,
                         fontWeight: 800,
@@ -401,7 +401,7 @@ export default function MembershipManagement() {
                         borderRadius: 5,
                         textTransform: 'uppercase',
                         letterSpacing: 0.5,
-                        boxShadow: '0 4px 10px rgba(11,62,219,0.3)',
+                        boxShadow: '0 4px 10px rgba(1,69,242,0.3)',
                       }}
                     >
                       {plan.tag}
@@ -431,7 +431,7 @@ export default function MembershipManagement() {
                           label={plan.badge || 'PREMIER'}
                           size="small"
                           sx={{
-                            bgcolor: plan.badgeColor || '#0B3EDB',
+                            bgcolor: plan.badgeColor || '#0145F2',
                             color: '#fff',
                             fontWeight: 800,
                             fontSize: 10,
@@ -448,7 +448,7 @@ export default function MembershipManagement() {
 
                     {/* Price Block */}
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, my: 2 }}>
-                      <Typography variant="h4" sx={{ fontWeight: 900, color: '#0B3EDB' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 900, color: '#0145F2' }}>
                         ₹{plan.price}
                       </Typography>
                       {plan.originalPrice > plan.price && (
@@ -463,7 +463,7 @@ export default function MembershipManagement() {
 
                     {plan.commissionRate && (
                       <Box sx={{ bgcolor: '#eff6ff', p: 1, borderRadius: 1.5, mb: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#0B3EDB', fontWeight: 700 }}>
+                        <Typography variant="caption" sx={{ color: '#0145F2', fontWeight: 700 }}>
                           Rate / Payout: {plan.commissionRate}
                         </Typography>
                       </Box>
@@ -502,7 +502,7 @@ export default function MembershipManagement() {
                         label={<Typography variant="caption" sx={{ fontWeight: 700 }}>{plan.isActive ? 'Active' : 'Inactive'}</Typography>}
                       />
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <IconButton size="small" onClick={() => handleOpenEdit(plan)} sx={{ color: '#0B3EDB' }}>
+                        <IconButton size="small" onClick={() => handleOpenEdit(plan)} sx={{ color: '#0145F2' }}>
                           <EditIcon fontSize="small" />
                         </IconButton>
                         <IconButton size="small" onClick={() => handleDeletePlan(plan._id)} sx={{ color: '#ef4444' }}>
@@ -578,17 +578,17 @@ export default function MembershipManagement() {
                             fontSize: 10,
                             fontWeight: 800,
                             bgcolor: sub.targetAudience === 'rider' ? '#e0f2fe' : sub.targetAudience === 'vendor' ? '#fef3c7' : '#eff6ff',
-                            color: sub.targetAudience === 'rider' ? '#0369a1' : sub.targetAudience === 'vendor' ? '#b45309' : '#0B3EDB',
+                            color: sub.targetAudience === 'rider' ? '#0369a1' : sub.targetAudience === 'vendor' ? '#b45309' : '#0145F2',
                           }}
                         />
                       </TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>{sub.planName}</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: '#0B3EDB' }}>₹{sub.pricePaid}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#0145F2' }}>₹{sub.pricePaid}</TableCell>
                       <TableCell>
                         <Chip
                           label={sub.badgeText || 'PREMIER'}
                           size="small"
-                          sx={{ bgcolor: '#0B3EDB', color: '#fff', fontWeight: 800, fontSize: 10 }}
+                          sx={{ bgcolor: '#0145F2', color: '#fff', fontWeight: 800, fontSize: 10 }}
                         />
                       </TableCell>
                       <TableCell sx={{ fontSize: 12 }}>
@@ -655,7 +655,7 @@ export default function MembershipManagement() {
                           fontSize: 10,
                           fontWeight: 800,
                           bgcolor: enq.type === 'rider' ? '#eff6ff' : '#fef3c7',
-                          color: enq.type === 'rider' ? '#0B3EDB' : '#b45309',
+                          color: enq.type === 'rider' ? '#0145F2' : '#b45309',
                         }}
                       />
                     </TableCell>
@@ -835,7 +835,7 @@ export default function MembershipManagement() {
                   fullWidth
                   value={formData.badgeColor}
                   onChange={(e) => setFormData({ ...formData, badgeColor: e.target.value })}
-                  placeholder="#0B3EDB"
+                  placeholder="#0145F2"
                 />
               </Grid>
 
@@ -903,7 +903,7 @@ export default function MembershipManagement() {
               type="submit"
               variant="contained"
               disabled={isSubmitting}
-              sx={{ bgcolor: '#0B3EDB', fontWeight: 700, px: 3 }}
+              sx={{ bgcolor: '#0145F2', fontWeight: 700, px: 3 }}
             >
               {isSubmitting ? 'Saving...' : editingPlan ? 'Update Plan' : 'Create Plan'}
             </Button>

@@ -298,14 +298,14 @@ export default function MembershipPlansPage() {
               onClick={() => handleTabChange('premier')}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex-shrink-0 ${
                 activeTab === 'premier'
-                  ? 'bg-[#0B3EDB] text-white shadow-md shadow-blue-500/20'
+                  ? 'bg-[#0145F2] text-white shadow-md shadow-blue-500/20'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               <Crown className="w-4 h-4" />
               <span>Tricelyn Premier</span>
               {mySubscription && activeTab === 'premier' && (
-                <span className="bg-white text-[#0B3EDB] text-[10px] font-black px-1.5 py-0.5 rounded-full uppercase">
+                <span className="bg-white text-[#0145F2] text-[10px] font-black px-1.5 py-0.5 rounded-full uppercase">
                   Active
                 </span>
               )}
@@ -315,7 +315,7 @@ export default function MembershipPlansPage() {
               onClick={() => handleTabChange('rider')}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex-shrink-0 ${
                 activeTab === 'rider'
-                  ? 'bg-[#0B3EDB] text-white shadow-md shadow-blue-500/20'
+                  ? 'bg-[#0145F2] text-white shadow-md shadow-blue-500/20'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -327,7 +327,7 @@ export default function MembershipPlansPage() {
               onClick={() => handleTabChange('vendor')}
               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex-shrink-0 ${
                 activeTab === 'vendor'
-                  ? 'bg-[#0B3EDB] text-white shadow-md shadow-blue-500/20'
+                  ? 'bg-[#0145F2] text-white shadow-md shadow-blue-500/20'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -364,7 +364,7 @@ export default function MembershipPlansPage() {
                     onClick={() => setSelectedPlan(p)}
                     className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
                       selectedPlan?._id === p._id
-                        ? 'bg-[#0B3EDB] text-white border-[#0B3EDB] shadow-sm'
+                        ? 'bg-[#0145F2] text-white border-[#0145F2] shadow-sm'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -381,7 +381,7 @@ export default function MembershipPlansPage() {
               {selectedPlan && (
                 <div className="lg:col-span-6 bg-white rounded-3xl p-6 sm:p-8 border-2 border-blue-500/30 shadow-xl shadow-blue-500/5 relative overflow-hidden">
                   {/* Premier Tag Chip */}
-                  <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#0B3EDB] text-white mb-4">
+                  <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#0145F2] text-white mb-4">
                     {selectedPlan.tag || 'PREMIER'}
                   </div>
 
@@ -406,7 +406,7 @@ export default function MembershipPlansPage() {
                   <div className="space-y-3.5 mb-8">
                     {(selectedPlan.features || []).map((feat, idx) => (
                       <div key={idx} className="flex items-start gap-3">
-                        <span className="w-2 h-2 rounded-full bg-[#0B3EDB] mt-1.5 flex-shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-[#0145F2] mt-1.5 flex-shrink-0" />
                         <span className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
                           {feat}
                         </span>
@@ -418,7 +418,7 @@ export default function MembershipPlansPage() {
                   {mySubscription ? (
                     <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-[#0B3EDB]" />
+                        <CheckCircle2 className="w-5 h-5 text-[#0145F2]" />
                         <div>
                           <p className="text-xs font-black text-slate-900">Premier Membership Active</p>
                           <p className="text-[11px] text-slate-500">
@@ -426,7 +426,7 @@ export default function MembershipPlansPage() {
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-black text-[#0B3EDB] bg-white px-2.5 py-1 rounded-full border border-blue-200">
+                      <span className="text-xs font-black text-[#0145F2] bg-white px-2.5 py-1 rounded-full border border-blue-200">
                         VIP Active
                       </span>
                     </div>
@@ -441,7 +441,7 @@ export default function MembershipPlansPage() {
                           const paidPlan = plans.find((p) => p.price > 0) || plans[1];
                           if (paidPlan) setSelectedPlan(paidPlan);
                         }}
-                        className="w-full py-3 rounded-2xl bg-white border border-[#0B3EDB] text-[#0B3EDB] hover:bg-blue-50 font-black text-xs transition"
+                        className="w-full py-3 rounded-2xl bg-white border border-[#0145F2] text-[#0145F2] hover:bg-blue-50 font-black text-xs transition"
                       >
                         Upgrade to Premier (₹99/mo)
                       </button>
@@ -449,7 +449,7 @@ export default function MembershipPlansPage() {
                   ) : (
                     <button
                       onClick={() => handleChoosePlan(selectedPlan)}
-                      className="w-full py-3.5 px-6 rounded-2xl bg-[#0B3EDB] hover:bg-[#0A2B6B] active:scale-[0.99] text-white font-black text-sm transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
+                      className="w-full py-3.5 px-6 rounded-2xl bg-[#0145F2] hover:bg-[#0A2B6B] active:scale-[0.99] text-white font-black text-sm transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
                     >
                       <span>Choose Premier (Pay ₹{selectedPlan.price} & Activate)</span>
                       <ArrowRight className="w-4 h-4" />
@@ -469,7 +469,7 @@ export default function MembershipPlansPage() {
                 {/* Card 1: Cash on delivery */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs hover:border-blue-300 transition">
                   <div className="flex items-center gap-2.5 mb-2">
-                    <Banknote className="w-5 h-5 text-[#0B3EDB]" />
+                    <Banknote className="w-5 h-5 text-[#0145F2]" />
                     <h3 className="text-base sm:text-lg font-black text-slate-900">
                       Cash on delivery
                     </h3>
@@ -482,7 +482,7 @@ export default function MembershipPlansPage() {
                 {/* Card 2: Priority is fair */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs hover:border-blue-300 transition">
                   <div className="flex items-center gap-2.5 mb-2">
-                    <ShieldCheck className="w-5 h-5 text-[#0B3EDB]" />
+                    <ShieldCheck className="w-5 h-5 text-[#0145F2]" />
                     <h3 className="text-base sm:text-lg font-black text-slate-900">
                       Priority is fair
                     </h3>
@@ -535,7 +535,7 @@ export default function MembershipPlansPage() {
               </div>
 
               {/* Decorative Glow */}
-              <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-[#0B3EDB]/20 blur-3xl pointer-events-none" />
+              <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-[#0145F2]/20 blur-3xl pointer-events-none" />
             </div>
 
             {/* 2 Plan Cards: BASE and PRO DAY PASS */}
@@ -555,13 +555,13 @@ export default function MembershipPlansPage() {
                   </p>
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-slate-700 font-medium">
                         Weekly milestone bonuses
                       </span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-slate-700 font-medium">
                         Station with water and charging
                       </span>
@@ -580,10 +580,10 @@ export default function MembershipPlansPage() {
               <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-blue-500 shadow-lg shadow-blue-500/5 flex flex-col justify-between relative overflow-hidden">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-black text-[#0B3EDB] uppercase tracking-wider">
+                    <span className="text-xs font-black text-[#0145F2] uppercase tracking-wider">
                       PRO, DAY PASS
                     </span>
-                    <span className="bg-[#0B3EDB] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                    <span className="bg-[#0145F2] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                       High Earner
                     </span>
                   </div>
@@ -595,19 +595,19 @@ export default function MembershipPlansPage() {
                   </p>
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-slate-700 font-medium">
                         See your payout before you accept
                       </span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-slate-700 font-medium">
                         Priority on new orders
                       </span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-slate-700 font-medium">
                         Higher weekly bonus slabs
                       </span>
@@ -620,7 +620,7 @@ export default function MembershipPlansPage() {
                     if (proPlan) handleChoosePlan(proPlan);
                     else scrollToApply();
                   }}
-                  className="w-full py-3 rounded-xl bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white text-xs font-black transition shadow-md shadow-blue-500/20"
+                  className="w-full py-3 rounded-xl bg-[#0145F2] hover:bg-[#0A2B6B] text-white text-xs font-black transition shadow-md shadow-blue-500/20"
                 >
                   Activate Pro Day Pass
                 </button>
@@ -638,25 +638,25 @@ export default function MembershipPlansPage() {
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       ID proof and driving licence
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       Vehicle registration and a helmet
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       Bank account for payouts
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       Wallet balance for cash orders, if you take them
                     </span>
@@ -745,7 +745,7 @@ export default function MembershipPlansPage() {
                           onClick={() => setRiderPlanChoice('free')}
                           className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
                             riderPlanChoice === 'free'
-                              ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                              ? 'border-[#0145F2] bg-blue-50/70 text-[#0145F2] shadow-xs'
                               : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                           }`}
                         >
@@ -761,13 +761,13 @@ export default function MembershipPlansPage() {
                           onClick={() => setRiderPlanChoice('pro')}
                           className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
                             riderPlanChoice === 'pro'
-                              ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                              ? 'border-[#0145F2] bg-blue-50/70 text-[#0145F2] shadow-xs'
                               : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <span>Pro Day Pass</span>
-                            <span className="text-[10px] bg-[#0B3EDB] text-white px-1.5 py-0.2 rounded-full">₹99</span>
+                            <span className="text-[10px] bg-[#0145F2] text-white px-1.5 py-0.2 rounded-full">₹99</span>
                           </div>
                           <p className="text-[10px] text-slate-500 font-normal mt-0.5">+₹4 to ₹9 bonus on all orders</p>
                         </button>
@@ -777,7 +777,7 @@ export default function MembershipPlansPage() {
                     <button
                       type="submit"
                       disabled={riderSubmitting}
-                      className="w-full py-3 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-xs transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
+                      className="w-full py-3 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-black text-xs transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
                     >
                       {riderSubmitting
                         ? 'Processing...'
@@ -821,7 +821,7 @@ export default function MembershipPlansPage() {
               </div>
 
               {/* Decorative Glow */}
-              <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-[#0B3EDB]/20 blur-3xl pointer-events-none" />
+              <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-[#0145F2]/20 blur-3xl pointer-events-none" />
             </div>
 
             {/* 3 Value Cards matching Screenshot 3 */}
@@ -885,7 +885,7 @@ export default function MembershipPlansPage() {
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       Commission, supermarkets
                     </span>
-                    <span className="text-sm font-black text-[#0B3EDB]">
+                    <span className="text-sm font-black text-[#0145F2]">
                       5 to 8%
                     </span>
                   </div>
@@ -907,25 +907,25 @@ export default function MembershipPlansPage() {
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] mt-1.5 flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] mt-1.5 flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       GST, shop licence, FSSAI and a bank account
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] mt-1.5 flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] mt-1.5 flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       A catalogue with barcodes, prices and shelf codes
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] mt-1.5 flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] mt-1.5 flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       A person to accept in 30 seconds and pack in about 2:30
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-[#0B3EDB] mt-1.5 flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#0145F2] mt-1.5 flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-slate-700 font-medium">
                       Stock marked in or out so customers never get surprises
                     </span>
@@ -1025,7 +1025,7 @@ export default function MembershipPlansPage() {
                         onClick={() => setVendorPlanChoice('free')}
                         className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
                           vendorPlanChoice === 'free'
-                            ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                            ? 'border-[#0145F2] bg-blue-50/70 text-[#0145F2] shadow-xs'
                             : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
@@ -1041,7 +1041,7 @@ export default function MembershipPlansPage() {
                         onClick={() => setVendorPlanChoice('starter')}
                         className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
                           vendorPlanChoice === 'starter'
-                            ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                            ? 'border-[#0145F2] bg-blue-50/70 text-[#0145F2] shadow-xs'
                             : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
@@ -1057,13 +1057,13 @@ export default function MembershipPlansPage() {
                         onClick={() => setVendorPlanChoice('pro')}
                         className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
                           vendorPlanChoice === 'pro'
-                            ? 'border-[#0B3EDB] bg-blue-50/70 text-[#0B3EDB] shadow-xs'
+                            ? 'border-[#0145F2] bg-blue-50/70 text-[#0145F2] shadow-xs'
                             : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <span>Supermarket Pro</span>
-                          <span className="text-[10px] bg-[#0B3EDB] text-white px-1.5 py-0.2 rounded-full">₹25K</span>
+                          <span className="text-[10px] bg-[#0145F2] text-white px-1.5 py-0.2 rounded-full">₹25K</span>
                         </div>
                         <p className="text-[10px] text-slate-500 font-normal mt-0.5">3,000+ items & 5% cut</p>
                       </button>
@@ -1073,7 +1073,7 @@ export default function MembershipPlansPage() {
                   <button
                     type="submit"
                     disabled={vendorSubmitting}
-                    className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-xs sm:text-sm transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
+                    className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-black text-xs sm:text-sm transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
                   >
                     {vendorSubmitting
                       ? 'Processing...'
@@ -1138,7 +1138,7 @@ export default function MembershipPlansPage() {
                   )}
                   <div className="flex justify-between pt-1 border-t border-slate-200">
                     <span className="text-slate-500">Membership Badge:</span>
-                    <span className="font-black text-[#0B3EDB] bg-blue-50 px-2 py-0.5 rounded-full">
+                    <span className="font-black text-[#0145F2] bg-blue-50 px-2 py-0.5 rounded-full">
                       {planToSubscribe.badge || 'PREMIER'} ✦
                     </span>
                   </div>
@@ -1146,7 +1146,7 @@ export default function MembershipPlansPage() {
 
                 <button
                   onClick={() => setIsCheckoutModalOpen(false)}
-                  className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-bold text-xs sm:text-sm shadow-md transition"
+                  className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-bold text-xs sm:text-sm shadow-md transition"
                 >
                   Continue & Explore
                 </button>
@@ -1154,7 +1154,7 @@ export default function MembershipPlansPage() {
             ) : (
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Crown className="w-5 h-5 text-[#0B3EDB]" />
+                  <Crown className="w-5 h-5 text-[#0145F2]" />
                   <h3 className="text-lg font-black text-slate-900">
                     Complete Payment & Activate
                   </h3>
@@ -1170,11 +1170,11 @@ export default function MembershipPlansPage() {
                       <span className="text-sm font-black text-slate-900">
                         {planToSubscribe.name}
                       </span>
-                      <span className="text-[10px] bg-[#0B3EDB] text-white font-black px-2 py-0.5 rounded-full uppercase">
+                      <span className="text-[10px] bg-[#0145F2] text-white font-black px-2 py-0.5 rounded-full uppercase">
                         {planToSubscribe.badge || 'VIP'}
                       </span>
                     </div>
-                    <span className="text-lg font-black text-[#0B3EDB]">
+                    <span className="text-lg font-black text-[#0145F2]">
                       ₹{planToSubscribe.price}
                     </span>
                   </div>
@@ -1195,7 +1195,7 @@ export default function MembershipPlansPage() {
                       onClick={() => setPaymentMethod('UPI')}
                       className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
                         paymentMethod === 'UPI'
-                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
+                          ? 'border-[#0145F2] bg-blue-50 text-[#0145F2] shadow-xs'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -1208,7 +1208,7 @@ export default function MembershipPlansPage() {
                       onClick={() => setPaymentMethod('Card')}
                       className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
                         paymentMethod === 'Card'
-                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
+                          ? 'border-[#0145F2] bg-blue-50 text-[#0145F2] shadow-xs'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -1221,7 +1221,7 @@ export default function MembershipPlansPage() {
                       onClick={() => setPaymentMethod('NetBanking')}
                       className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
                         paymentMethod === 'NetBanking'
-                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
+                          ? 'border-[#0145F2] bg-blue-50 text-[#0145F2] shadow-xs'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -1234,7 +1234,7 @@ export default function MembershipPlansPage() {
                       onClick={() => setPaymentMethod('TestPay')}
                       className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
                         paymentMethod === 'TestPay'
-                          ? 'border-[#0B3EDB] bg-blue-50 text-[#0B3EDB] shadow-xs'
+                          ? 'border-[#0145F2] bg-blue-50 text-[#0145F2] shadow-xs'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -1337,7 +1337,7 @@ export default function MembershipPlansPage() {
                   </div>
                   <div className="flex justify-between font-black text-slate-900 text-sm pt-1 border-t border-slate-100">
                     <span>Total Amount:</span>
-                    <span className="text-[#0B3EDB]">₹{planToSubscribe.price}</span>
+                    <span className="text-[#0145F2]">₹{planToSubscribe.price}</span>
                   </div>
                 </div>
 
@@ -1345,7 +1345,7 @@ export default function MembershipPlansPage() {
                 <button
                   onClick={handleConfirmSubscribe}
                   disabled={subscribing}
-                  className="w-full py-3.5 rounded-full bg-[#0B3EDB] hover:bg-[#0A2B6B] text-white font-black text-sm transition shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-black text-sm transition shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
                 >
                   {subscribing ? (
                     <span>Processing Payment...</span>

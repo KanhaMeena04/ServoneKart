@@ -32,8 +32,8 @@ class PaymentPolicyScreen extends StatelessWidget {
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: const Color(0xFF0B3EDB).withValues(alpha: 0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.payment_rounded, size: 48, color: Color(0xFF0B3EDB)),
+                  decoration: BoxDecoration(color: const Color(0xFF0145F2).withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.payment_rounded, size: 48, color: Color(0xFF0145F2)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -58,7 +58,7 @@ class PaymentPolicyScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0B3EDB))),
+          Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0145F2))),
           const SizedBox(height: 8),
           Text(content, style: GoogleFonts.poppins(fontSize: 15, color: Colors.grey[700], height: 1.5)),
         ],

@@ -4,11 +4,12 @@ class AppColors {
   // Tricelyn Master Brand Color Palette
   static const Color deepNavy = Color(0xFF07162E);       // #07162E Dark background / Primary Dark
   static const Color royalBlue = Color(0xFF0A2B6B);      // #0A2B6B Primary gradient / Primary
-  static const Color vividBlue = Color(0xFF0B3EDB);      // #0B3EDB Gradient highlight / Accent
+  static const Color vividBlue = Color(0xFF0145F2);      // #0145F2 Electric Blue / Vivid Blue
+  static const Color electricBlue = Color(0xFF0145F2);   // #0145F2 Electric Blue Primary Accent
   static const Color highlightBlue = Color(0xFF0D5AA6);  // #0D5AA6 Glow / accent
 
   // Brand Palette Semantic Tokens
-  static const Color primaryBlue = vividBlue;            // Primary CTA & Brand Blue (#0B3EDB)
+  static const Color primaryBlue = vividBlue;            // Primary CTA & Brand Blue (#0145F2)
   static const Color accentCyan = highlightBlue;         // Accent & Glow (#0D5AA6)
   static const Color darkBlack = deepNavy;               // Dark Background & Text (#07162E)
   static const Color lightBlue = Color(0xFF94BEFF);      // Soft tint for borders
@@ -44,7 +45,7 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = vividBlue;
 
-  // Master Brand Linear Gradient: 135deg, #07162E 0%, #0A2B6B 50%, #0B3EDB 100%
+  // Master Brand Linear Gradient: 135deg, #07162E 0%, #0A2B6B 50%, #0145F2 100%
   static const LinearGradient brandGradient = LinearGradient(
     colors: [deepNavy, royalBlue, vividBlue],
     stops: [0.0, 0.5, 1.0],

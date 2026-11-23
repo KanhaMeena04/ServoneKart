@@ -106,12 +106,16 @@ class GroceryApiService {
     return [];
   }
 
-  static Future<List<Map<String, dynamic>>> getStores({String? search}) async {
+  static Future<List<Map<String, dynamic>>> getStores({String? search, double? lat, double? lng}) async {
     if (kFrontendPreviewMode) return [];
     try {
       final params = <String, String>{};
       if (search != null && search.trim().isNotEmpty) {
         params['search'] = search.trim();
+      }
+      if (lat != null && lng != null) {
+        params['lat'] = lat.toString();
+        params['lng'] = lng.toString();
       }
       final uri = Uri.parse('$baseUrl/stores').replace(queryParameters: params.isEmpty ? null : params);
       final res = await http.get(uri).timeout(const Duration(seconds: 10));

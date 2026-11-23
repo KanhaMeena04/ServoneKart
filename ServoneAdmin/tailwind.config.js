@@ -8,14 +8,14 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0055ff',
-          dark: '#0043c7',
-          light: '#3b82f6',
+          DEFAULT: '#0145F2',
+          dark: '#0138c7',
+          light: '#336cff',
           50: '#eef4ff',
           100: '#d9e6ff',
-          500: '#0055ff',
-          600: '#0047d6',
-          700: '#0036ad',
+          500: '#0145F2',
+          600: '#013bd4',
+          700: '#012eb0',
         },
         accent: {
           DEFAULT: '#00b4d8',
@@ -23,7 +23,7 @@ module.exports = {
           light: '#48cae4',
         },
         brand: {
-          blue: '#0055ff',
+          blue: '#0145F2',
           dark: '#03132e',
           cyan: '#00b4d8',
         },

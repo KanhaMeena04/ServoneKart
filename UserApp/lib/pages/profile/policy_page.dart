@@ -144,7 +144,7 @@ class _PolicyPageState extends State<PolicyPage> {
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.restaurant_menu_rounded,
                       size: 48,
-                      color: Color(0xFF0B3EDB),
+                      color: Color(0xFF0145F2),
                     ),
                   ),
                 ),
@@ -371,7 +371,7 @@ class SupportPage extends StatelessWidget {
               child: _buildActionButton(
                 title: 'Chat Support',
                 icon: Icons.chat_bubble_rounded,
-                color: const Color(0xFF0B3EDB),
+                color: const Color(0xFF0145F2),
                 onTap: () {
                   Navigator.push(
                     context,

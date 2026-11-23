@@ -401,8 +401,6 @@ class _SearchPageState extends State<SearchPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
-                          if (p.storeName != null && p.storeName!.isNotEmpty)
-                            Text(p.storeName!, style: const TextStyle(fontSize: 11.5, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
                           Text('₹${p.price.toInt()} • ${p.weight ?? p.unit ?? '1 unit'}', style: TextStyle(fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black87)),
                         ],
                       ),
@@ -840,7 +838,7 @@ class _SearchPageState extends State<SearchPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF0B3EDB),
+                      color: const Color(0xFF0145F2),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -907,13 +905,13 @@ class _SearchPageState extends State<SearchPage> {
                                   SnackBar(
                                     content: Text('${item.name} added to cart!'),
                                     duration: const Duration(seconds: 1),
-                                    backgroundColor: const Color(0xFF0B3EDB),
+                                    backgroundColor: const Color(0xFF0145F2),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: restaurant.isActive ? const Color(0xFF0B3EDB) : Colors.grey[400],
+                          backgroundColor: restaurant.isActive ? const Color(0xFF0145F2) : Colors.grey[400],
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

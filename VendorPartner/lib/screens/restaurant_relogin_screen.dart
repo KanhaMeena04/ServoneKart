@@ -616,7 +616,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
                   decoration: isGrocery
                       ? const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(0xFF0055FF), Color(0xFF00B4D8), Color(0xFFECFDF5)],
+                            colors: [Color(0xFF0145F2), Color(0xFF00B4D8), Color(0xFFECFDF5)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -1246,7 +1246,7 @@ class _RestaurantReloginScreenState extends State<RestaurantReloginScreen> {
         // 3 Key Benefit Feature Cards
         _buildPartnerFeatureRow(
           icon: Icons.delivery_dining_rounded,
-          iconColor: const Color(0xFF0B3EDB),
+          iconColor: const Color(0xFF0145F2),
           title: 'Hyperlocal Delivery Fleet',
           subtitle: isGrocery
               ? 'Dedicated rider network ensuring rapid 10-20 min doorstep grocery delivery.'

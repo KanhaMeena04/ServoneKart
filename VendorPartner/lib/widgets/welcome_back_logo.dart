@@ -24,7 +24,7 @@ class WelcomeBackLogo extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+              color: const Color(0xFF0145F2).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -32,7 +32,7 @@ class WelcomeBackLogo extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: subSize,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF0B3EDB),
+                color: const Color(0xFF0145F2),
                 letterSpacing: 1.6,
               ),
             ),

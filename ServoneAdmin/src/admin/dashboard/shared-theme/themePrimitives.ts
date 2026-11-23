@@ -36,7 +36,7 @@ export const brand = {
   200: '#bcd4ff',
   300: '#8eb9ff',
   400: '#0D5AA6', // Highlight Blue - Glow / accent
-  500: '#0B3EDB', // Vivid Blue - Gradient highlight / Accent
+  500: '#0145F2', // Vivid Blue - Gradient highlight / Accent
   600: '#0A2B6B', // Royal Blue - Primary gradient / Primary
   700: '#082358',
   800: '#071c42',

@@ -227,12 +227,12 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0055ff] px-2.5 py-0.5 rounded-full">
+            <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0145F2] px-2.5 py-0.5 rounded-full">
               👑 Super Admin Platform Console
             </span>
           </div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2 mt-1">
-            <Security className="text-[#0055ff]" />
+            <Security className="text-[#0145F2]" />
             Vendor Credentials & Role-Based Access Control (RBAC)
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
@@ -252,7 +252,7 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
           <Button
             variant="contained"
             onClick={() => navigate('/add-restaurant')}
-            sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+            sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
             className="capitalize rounded-xl text-xs py-2 px-4 shadow-sm font-bold text-white"
           >
             + Register New Store Partner
@@ -290,7 +290,7 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
       <TableContainer component={Paper} className="shadow-xs rounded-2xl overflow-hidden border border-gray-100 bg-white">
         {loading ? (
           <div className="p-12 text-center text-gray-500">
-            <CircularProgress size={32} sx={{ color: '#0055ff' }} />
+            <CircularProgress size={32} sx={{ color: '#0145F2' }} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
@@ -403,8 +403,8 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
                           checked={v.isActive}
                           onChange={() => handleToggleActive(v)}
                           sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': { color: '#0055ff' },
-                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#0055ff' }
+                            '& .MuiSwitch-switchBase.Mui-checked': { color: '#0145F2' },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#0145F2' }
                           }}
                         />
                         <span className={`text-[10px] font-bold ${v.isActive ? 'text-emerald-700' : 'text-rose-600'}`}>
@@ -530,7 +530,7 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
             variant="contained"
             disabled={saving}
             onClick={handleSaveCredentials}
-            sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+            sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
             className="capitalize rounded-xl font-bold"
           >
             {saving ? 'Saving...' : 'Save Credentials'}
@@ -591,7 +591,7 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
                           return { ...p, permissions: next };
                         });
                       }}
-                      sx={{ p: 0.5, color: '#0055ff', '&.Mui-checked': { color: '#0055ff' } }}
+                      sx={{ p: 0.5, color: '#0145F2', '&.Mui-checked': { color: '#0145F2' } }}
                     />
                     <div>
                       <div className="text-xs font-bold text-gray-900">{opt.label}</div>
@@ -611,7 +611,7 @@ _Please keep your credentials confidential. Issued by Tricelyn Super Admin._`;
             variant="contained"
             disabled={saving}
             onClick={handleSaveCredentials}
-            sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+            sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
             className="capitalize rounded-xl font-bold"
           >
             {saving ? 'Updating...' : 'Save RBAC Permissions'}

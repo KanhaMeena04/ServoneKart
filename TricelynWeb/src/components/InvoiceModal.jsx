@@ -17,7 +17,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
   const fssai = invoiceCfg.fssai || '11422850000123';
   const supportEmail = invoiceCfg.supportEmail || appSettings?.siteEmail || 'care@tricelyn.com';
   const supportPhone = invoiceCfg.supportPhone || appSettings?.siteContact || '+91 731-4099880';
-  const accentColor = invoiceCfg.accentColor || '#0055ff';
+  const accentColor = invoiceCfg.accentColor || '#0145F2';
   const customFooterNote = invoiceCfg.customFooterNote || 'This is a computer-generated invoice and requires no physical signature.';
   const termsAndConditions = invoiceCfg.termsAndConditions || '1. All disputes subject to Indore jurisdiction.\n2. Fresh produce & essentials eligible for instant doorstep inspection & return.\n3. Goods sold under Tricelyn freshness & quality guarantee.';
 

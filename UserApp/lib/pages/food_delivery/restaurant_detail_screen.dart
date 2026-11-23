@@ -2637,7 +2637,7 @@ class _CartSheet extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0B3EDB),
+                  color: Color(0xFF0145F2),
                 ),
               ),
             ],
@@ -2756,7 +2756,7 @@ class _MenuSheetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color green = Color(0xFF0B3EDB);
+    const Color green = Color(0xFF0145F2);
     final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return InkWell(

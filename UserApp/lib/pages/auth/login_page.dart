@@ -124,7 +124,7 @@ class _LoginPageState extends State<LoginPage>
                             width: 24,
                             child: Checkbox(
                               value: isChecked,
-                              activeColor: const Color(0xFF0B3EDB),
+                              activeColor: const Color(0xFF0145F2),
                               onChanged: (value) {
                                 setState(() {
                                   isChecked = value ?? false;
@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isChecked ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
+                      backgroundColor: isChecked ? const Color(0xFF0145F2) : Colors.grey.shade400,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -302,7 +302,7 @@ class _LoginPageState extends State<LoginPage>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Mobile verified! Please enter your details to complete registration.'),
-            backgroundColor: Color(0xFF0B3EDB),
+            backgroundColor: Color(0xFF0145F2),
             duration: Duration(seconds: 3),
           ),
         );
@@ -549,7 +549,7 @@ class _LoginPageState extends State<LoginPage>
       child: TextFormField(
         controller: _otpControllers[index],
         focusNode: _otpFocusNodes[index],
-        cursorColor: const Color(0xFF0B3EDB),
+        cursorColor: const Color(0xFF0145F2),
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         maxLength: 1,
@@ -568,7 +568,7 @@ class _LoginPageState extends State<LoginPage>
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 2),
+            borderSide: const BorderSide(color: Color(0xFF0145F2), width: 2),
           ),
           filled: true,
           fillColor: Colors.white,
@@ -639,7 +639,7 @@ class _LoginPageState extends State<LoginPage>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.12),
+                            color: const Color(0xFF0145F2).withValues(alpha: 0.12),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
@@ -712,7 +712,7 @@ class _LoginPageState extends State<LoginPage>
                         TextSpan(
                           text: 'Register Now',
                           style: TextStyle(
-                            color: Color(0xFF0B3EDB), // Changed to Green
+                            color: Color(0xFF0145F2), // Changed to Green
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -783,7 +783,7 @@ class _LoginPageState extends State<LoginPage>
           // Phone field with flag + country code prefix
           TextFormField(
             controller: _phoneController,
-            cursorColor: const Color(0xFF0B3EDB),
+            cursorColor: const Color(0xFF0145F2),
             keyboardType: TextInputType.phone,
             maxLength: 10,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -828,7 +828,7 @@ class _LoginPageState extends State<LoginPage>
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide:
-                    const BorderSide(color: Color(0xFF0B3EDB), width: 2),
+                    const BorderSide(color: Color(0xFF0145F2), width: 2),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -861,10 +861,10 @@ class _LoginPageState extends State<LoginPage>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _onContinue,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0B3EDB), // Changed to Green
+                backgroundColor: const Color(0xFF0145F2), // Changed to Green
                 foregroundColor: Colors.white,
                 disabledBackgroundColor:
-                    const Color(0xFF0B3EDB).withValues(alpha: 0.6),
+                    const Color(0xFF0145F2).withValues(alpha: 0.6),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -914,7 +914,7 @@ class _LoginPageState extends State<LoginPage>
         // User Name / Identifier field
         TextFormField(
           controller: _usernameController,
-          cursorColor: const Color(0xFF0B3EDB),
+          cursorColor: const Color(0xFF0145F2),
           keyboardType: TextInputType.text,
           style: const TextStyle(
             fontSize: 15,
@@ -924,7 +924,7 @@ class _LoginPageState extends State<LoginPage>
           decoration: InputDecoration(
             hintText: 'Enter User Name, Mobile or Email',
             hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
-            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF0B3EDB)),
+            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF0145F2)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -932,7 +932,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF0145F2), width: 2),
             ),
             filled: true,
             fillColor: Colors.white,
@@ -945,7 +945,7 @@ class _LoginPageState extends State<LoginPage>
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          cursorColor: const Color(0xFF0B3EDB),
+          cursorColor: const Color(0xFF0145F2),
           style: const TextStyle(
             fontSize: 15,
             color: AppColors.textPrimary,
@@ -954,7 +954,7 @@ class _LoginPageState extends State<LoginPage>
           decoration: InputDecoration(
             hintText: 'Enter Password',
             hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
-            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF0B3EDB)),
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF0145F2)),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -971,7 +971,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF0145F2), width: 2),
             ),
             filled: true,
             fillColor: Colors.white,
@@ -986,9 +986,9 @@ class _LoginPageState extends State<LoginPage>
           child: ElevatedButton(
             onPressed: _isLoading ? null : _loginWithUsernamePassword,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0B3EDB),
+              backgroundColor: const Color(0xFF0145F2),
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFF0B3EDB).withValues(alpha: 0.6),
+              disabledBackgroundColor: const Color(0xFF0145F2).withValues(alpha: 0.6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1055,7 +1055,7 @@ class _LoginPageState extends State<LoginPage>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: const Color(0xFF0B3EDB),
+              color: const Color(0xFF0145F2),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1071,9 +1071,9 @@ class _LoginPageState extends State<LoginPage>
           child: ElevatedButton(
             onPressed: _isLoading ? null : _verifyOtp,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0B3EDB), // Changed to Green
+              backgroundColor: const Color(0xFF0145F2), // Changed to Green
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFF0B3EDB).withValues(alpha: 0.6),
+              disabledBackgroundColor: const Color(0xFF0145F2).withValues(alpha: 0.6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1106,7 +1106,7 @@ class _LoginPageState extends State<LoginPage>
                   child: const Text(
                     'Resend OTP',
                     style: TextStyle(
-                      color: const Color(0xFF0B3EDB),
+                      color: const Color(0xFF0145F2),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -1283,7 +1283,7 @@ class _FooterItem extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color _green = Color(0xFF0B3EDB);
+  static const Color _green = Color(0xFF0145F2);
   static const Color _gray = Color(0xFF9CA3AF);
 
   @override

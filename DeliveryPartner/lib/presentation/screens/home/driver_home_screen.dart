@@ -50,7 +50,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
   bool _isRingtonePlaying = false;
 
   // Tricelyn brand colors
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
   static const Color lightGreen = Color(0xFFEFF6FF);
   static const Color darkBlack = Color(0xFF07162E);
 
@@ -889,13 +889,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> with SingleTickerPr
                       Container(
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                            colors: [Color(0xFF0A2B6B), Color(0xFF0145F2)],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.white.withOpacity(0.3)),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0B3EDB).withOpacity(0.3),
+                              color: const Color(0xFF0145F2).withOpacity(0.3),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -2619,7 +2619,7 @@ class InlineDeliveryOtpForm extends StatefulWidget {
 }
 
 class _InlineDeliveryOtpFormState extends State<InlineDeliveryOtpForm> {
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
   
   final TextEditingController _otpController = TextEditingController();
   bool _isSendingOtp = false;

@@ -244,7 +244,7 @@ const MainGrid = () => {
   if (loading) {
     return (
       <Box className="min-h-screen bg-[#f8faff] flex flex-col items-center justify-center p-8">
-        <div className="w-12 h-12 border-4 border-[#0B3EDB] border-t-transparent rounded-full animate-spin mb-4" />
+        <div className="w-12 h-12 border-4 border-[#0145F2] border-t-transparent rounded-full animate-spin mb-4" />
         <Typography className="font-bold text-slate-700 text-sm">
           Loading Tricelyn Command Center...
         </Typography>
@@ -268,10 +268,10 @@ const MainGrid = () => {
       label: "Today's Live Sales", 
       value: `₹${dashboard.todayEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: TrendingUp, 
-      accentColor: '#0B3EDB',
+      accentColor: '#0145F2',
       bg: 'bg-blue-50', 
       border: 'border-blue-200/60', 
-      iconColor: 'text-[#0B3EDB]', 
+      iconColor: 'text-[#0145F2]', 
       trend: 'Today Live Sales',
       badgeBg: 'bg-blue-100/70 text-blue-800'
     },
@@ -351,7 +351,7 @@ const MainGrid = () => {
         dashboard.ordersCancelled || 1, 
         dashboard.ordersFailed || 0
       ],
-      backgroundColor: ['#0B3EDB', '#ef4444', '#00b4d8'],
+      backgroundColor: ['#0145F2', '#ef4444', '#00b4d8'],
       borderWidth: 3,
       borderColor: '#FFFFFF',
       hoverOffset: 4
@@ -367,13 +367,13 @@ const MainGrid = () => {
       backgroundColor: (context: any) => {
         const ctx = context.chart.ctx;
         const gradient = ctx.createLinearGradient(0, 0, 0, 320);
-        gradient.addColorStop(0, 'rgba(0, 85, 255, 0.22)');
-        gradient.addColorStop(1, 'rgba(0, 85, 255, 0.00)');
+        gradient.addColorStop(0, 'rgba(1, 69, 242, 0.22)');
+        gradient.addColorStop(1, 'rgba(1, 69, 242, 0.00)');
         return gradient;
       },
-      borderColor: '#0B3EDB',
+      borderColor: '#0145F2',
       borderWidth: 3,
-      pointBackgroundColor: '#0B3EDB',
+      pointBackgroundColor: '#0145F2',
       pointBorderColor: '#FFFFFF',
       pointBorderWidth: 3,
       pointRadius: 5,
@@ -391,7 +391,7 @@ const MainGrid = () => {
            ============================================================ */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-blue-100 shadow-[0_8px_30px_rgb(0,85,255,0.06)] mb-6 relative overflow-hidden">
           {/* Subtle top brand gradient strip */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#021b44] via-[#0B3EDB] to-[#00d2ff]" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#021b44] via-[#0145F2] to-[#00d2ff]" />
           
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
@@ -425,7 +425,7 @@ const MainGrid = () => {
               <button
                 onClick={handleManualRefresh}
                 disabled={isRefreshing}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-blue-50 text-[#0B3EDB] hover:bg-blue-100 border border-blue-200 transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-blue-50 text-[#0145F2] hover:bg-blue-100 border border-blue-200 transition-all shadow-xs cursor-pointer active:scale-95"
                 title="Synchronize live orders & GMV metrics"
               >
                 <Refresh fontSize="small" className={isRefreshing ? 'animate-spin' : ''} />
@@ -482,7 +482,7 @@ const MainGrid = () => {
                   onClick={() => handleSwitchPlatformMode(opt.id)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     platformMode === opt.id
-                      ? 'bg-[#0B3EDB] text-white shadow-xs'
+                      ? 'bg-[#0145F2] text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -492,7 +492,7 @@ const MainGrid = () => {
               <button
                 type="button"
                 onClick={() => navigate('/setting')}
-                className="ml-1 text-[11px] font-bold text-[#0B3EDB] hover:underline cursor-pointer"
+                className="ml-1 text-[11px] font-bold text-[#0145F2] hover:underline cursor-pointer"
               >
                 Full Settings →
               </button>
@@ -530,7 +530,7 @@ const MainGrid = () => {
             return (
               <div 
                 key={item.label} 
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(0,85,255,0.08)] hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between relative overflow-hidden group"
+                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_28px_rgba(1,69,242,0.08)] hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between relative overflow-hidden group"
               >
                 {/* Micro accent top bar */}
                 <div 
@@ -572,14 +572,14 @@ const MainGrid = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
             <div>
               <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2 font-heading">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0B3EDB] animate-ping"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0145F2] animate-ping"></span>
                 Operational Health &amp; Quick-Commerce SLA Metrics
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Real-time Indore hyperlocal fulfillment pipeline, partner dark stores &amp; delivery speed
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-50 text-[#0B3EDB] border border-blue-200 self-start sm:self-auto">
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-50 text-[#0145F2] border border-blue-200 self-start sm:self-auto">
               ⚡ 99.4% Platform Uptime
             </span>
           </div>
@@ -595,11 +595,11 @@ const MainGrid = () => {
                   <div>
                     <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
                       <span>Order Fulfillment Rate</span>
-                      <span className="text-[#0B3EDB] font-black">{rate}%</span>
+                      <span className="text-[#0145F2] font-black">{rate}%</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                       <div 
-                        className="bg-gradient-to-r from-blue-500 to-[#0B3EDB] h-2.5 rounded-full transition-all duration-500" 
+                        className="bg-gradient-to-r from-blue-500 to-[#0145F2] h-2.5 rounded-full transition-all duration-500" 
                         style={{ width: `${rate}%` }}
                       />
                     </div>
@@ -678,7 +678,7 @@ const MainGrid = () => {
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 mt-3.5 pt-2.5 border-t border-slate-200">
                     <span>Target: <strong className="text-slate-800 font-bold">₹5,00,000</strong></span>
-                    <span>Pacing: <strong className="text-[#0B3EDB] font-bold">On Track</strong></span>
+                    <span>Pacing: <strong className="text-[#0145F2] font-bold">On Track</strong></span>
                   </div>
                 </div>
               );
@@ -708,21 +708,21 @@ const MainGrid = () => {
                   <select
                     value={timeframe}
                     onChange={(e) => setTimeframe(e.target.value as any)}
-                    className="appearance-none bg-white border-2 border-[#0B3EDB] text-[#0B3EDB] font-black text-xs rounded-xl px-3.5 py-2 pr-8 shadow-xs hover:bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-[#0B3EDB]/30 cursor-pointer transition-all"
+                    className="appearance-none bg-white border-2 border-[#0145F2] text-[#0145F2] font-black text-xs rounded-xl px-3.5 py-2 pr-8 shadow-xs hover:bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-[#0145F2]/30 cursor-pointer transition-all"
                   >
                     <option value="Daily">📅 Daily Orders</option>
                     <option value="Weekly">📊 Weekly Orders</option>
                     <option value="Monthly">📈 Monthly Orders</option>
                     <option value="Yearly">🏆 Yearly Orders</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#0B3EDB]">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#0145F2]">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
 
-                <span className="px-3 py-1.5 text-xs font-black rounded-xl bg-blue-50 text-[#0B3EDB] border border-blue-200">
+                <span className="px-3 py-1.5 text-xs font-black rounded-xl bg-blue-50 text-[#0145F2] border border-blue-200">
                   ● {timeframe} View
                 </span>
                 <span className="px-3 py-1.5 text-xs font-black rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-200">
@@ -744,7 +744,7 @@ const MainGrid = () => {
                       backgroundColor: '#021b44',
                       titleColor: '#FFFFFF',
                       bodyColor: '#93c5fd',
-                      borderColor: '#0B3EDB',
+                      borderColor: '#0145F2',
                       borderWidth: 1,
                       padding: 12,
                       cornerRadius: 12,
@@ -761,7 +761,7 @@ const MainGrid = () => {
                     },
                     y: {
                       beginAtZero: true,
-                      grid: { color: 'rgba(0, 85, 255, 0.06)' },
+                      grid: { color: 'rgba(1, 69, 242, 0.06)' },
                       ticks: { color: '#64748b', font: { weight: 600, size: 11 } }
                     }
                   }
@@ -783,7 +783,7 @@ const MainGrid = () => {
                 <h4 className="font-heading font-black text-slate-900 text-sm">
                   Fulfillment Ratio
                 </h4>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0B3EDB]">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0145F2]">
                   SLA Status
                 </span>
               </div>
@@ -799,7 +799,7 @@ const MainGrid = () => {
             <div className="pt-3 border-t border-slate-100 grid grid-cols-3 gap-1 text-center text-xs">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 block uppercase">Delivered</span>
-                <span className="font-black text-[#0B3EDB]">{dashboard.ordersDelivered}</span>
+                <span className="font-black text-[#0145F2]">{dashboard.ordersDelivered}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 block uppercase">Cancelled</span>
@@ -837,7 +837,7 @@ const MainGrid = () => {
                       title="Click to view live order details"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0B3EDB] flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-[#0B3EDB] group-hover:text-white transition-colors">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0145F2] flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-[#0145F2] group-hover:text-white transition-colors">
                           ⏱
                         </div>
                         <div className="min-w-0 flex-1">
@@ -846,7 +846,7 @@ const MainGrid = () => {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-xs font-black text-[#0B3EDB]">{order.amount}</p>
+                        <p className="text-xs font-black text-[#0145F2]">{order.amount}</p>
                         <span className="text-[9px] font-bold uppercase text-slate-400">{order.status}</span>
                       </div>
                     </div>
@@ -858,7 +858,7 @@ const MainGrid = () => {
             <div className="pt-3 border-t border-slate-100 text-center">
               <button
                 onClick={() => navigate('/order-dashboard')}
-                className="text-xs font-black text-[#0B3EDB] hover:underline cursor-pointer"
+                className="text-xs font-black text-[#0145F2] hover:underline cursor-pointer"
               >
                 View Live Orders Console →
               </button>
@@ -892,7 +892,7 @@ const MainGrid = () => {
                           <p className="text-[10px] text-slate-400">{res.orders} fulfilled</p>
                         </div>
                       </div>
-                      <p className="text-xs font-black text-[#0B3EDB] shrink-0">{res.amount}</p>
+                      <p className="text-xs font-black text-[#0145F2] shrink-0">{res.amount}</p>
                     </div>
                   ))
                 )}
@@ -902,7 +902,7 @@ const MainGrid = () => {
             <div className="pt-3 border-t border-slate-100 text-center">
               <button
                 onClick={() => navigate('/restaurants')}
-                className="text-xs font-black text-[#0B3EDB] hover:underline cursor-pointer"
+                className="text-xs font-black text-[#0145F2] hover:underline cursor-pointer"
               >
                 Manage All Dark Stores →
               </button>
@@ -926,7 +926,7 @@ const MainGrid = () => {
                   dashboard.topUsers.slice(0, 5).map((u, i) => (
                     <div key={i} className="flex justify-between items-center gap-2 p-2 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className="w-7 h-7 rounded-xl bg-blue-50 text-[#0B3EDB] flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-7 h-7 rounded-xl bg-blue-50 text-[#0145F2] flex items-center justify-center font-bold text-xs shrink-0">
                           👤
                         </div>
                         <div className="min-w-0 flex-1">
@@ -934,7 +934,7 @@ const MainGrid = () => {
                           <p className="text-[10px] text-slate-400">{u.orders} orders</p>
                         </div>
                       </div>
-                      <span className="text-[11px] font-black text-[#0B3EDB] bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+                      <span className="text-[11px] font-black text-[#0145F2] bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
                         {u.amount}
                       </span>
                     </div>
@@ -946,7 +946,7 @@ const MainGrid = () => {
             <div className="pt-3 border-t border-slate-100 text-center">
               <button
                 onClick={() => navigate('/user-management')}
-                className="text-xs font-black text-[#0B3EDB] hover:underline cursor-pointer"
+                className="text-xs font-black text-[#0145F2] hover:underline cursor-pointer"
               >
                 Customer Directory →
               </button>
@@ -967,14 +967,14 @@ const MainGrid = () => {
             sx: {
               borderRadius: '24px',
               overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0, 85, 255, 0.25)',
-              border: '1px solid rgba(0, 85, 255, 0.15)'
+              boxShadow: '0 25px 50px -12px rgba(1, 69, 242, 0.25)',
+              border: '1px solid rgba(1, 69, 242, 0.15)'
             }
           }}
         >
           <DialogTitle sx={{ px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', bgcolor: '#ffffff' }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0B3EDB] flex items-center justify-center border border-blue-200">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0145F2] flex items-center justify-center border border-blue-200">
                 <History fontSize="small" />
               </div>
               <div>
@@ -994,7 +994,7 @@ const MainGrid = () => {
           <DialogContent dividers sx={{ p: 3, backgroundColor: '#f8fafc', maxHeight: '65vh' }}>
             {historyLoading ? (
               <div className="py-20 text-center">
-                <CircularProgress size={32} sx={{ color: '#0B3EDB', mb: 2 }} />
+                <CircularProgress size={32} sx={{ color: '#0145F2', mb: 2 }} />
                 <p className="text-xs text-slate-500 font-medium">Fetching archived reset records from database...</p>
               </div>
             ) : resetHistory.length === 0 ? (
@@ -1025,7 +1025,7 @@ const MainGrid = () => {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 border border-blue-200 text-[#0B3EDB] flex items-center gap-1.5 shadow-2xs">
+                          <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 border border-blue-200 text-[#0145F2] flex items-center gap-1.5 shadow-2xs">
                             <CalendarMonth style={{ fontSize: 13 }} />
                             {dateStr}
                           </span>

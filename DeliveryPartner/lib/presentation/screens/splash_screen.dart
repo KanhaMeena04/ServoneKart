@@ -129,7 +129,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               colors: [
                 Color(0xFF07162E), // Deep Navy
                 Color(0xFF0A2B6B), // Royal Blue
-                Color(0xFF0B3EDB), // Vivid Blue
+                Color(0xFF0145F2), // Vivid Blue
               ],
             ),
           ),
@@ -156,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   height: 170,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: const Color(0xFF0B3EDB).withValues(alpha: 0.2),
+                                    color: const Color(0xFF0145F2).withValues(alpha: 0.2),
                                   ),
                                 ),
                               ),
@@ -182,7 +182,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF0B3EDB).withValues(alpha: 0.4),
+                                      color: const Color(0xFF0145F2).withValues(alpha: 0.4),
                                       blurRadius: 36,
                                       spreadRadius: 6,
                                     ),
@@ -199,7 +199,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   errorBuilder: (context, error, stackTrace) => const Icon(
                                     Icons.two_wheeler_rounded,
                                     size: 72,
-                                    color: Color(0xFF0B3EDB),
+                                    color: Color(0xFF0145F2),
                                   ),
                                 ),
                               ),
@@ -323,7 +323,7 @@ class _DotLoadingIndicatorState extends State<_DotLoadingIndicator> with SingleT
         children: [
           _buildDot(0, Colors.white),
           _buildDot(1, const Color(0xFF60A5FA)), // Light Blue
-          _buildDot(2, const Color(0xFF0B3EDB)), // Vivid Blue
+          _buildDot(2, const Color(0xFF0145F2)), // Vivid Blue
         ],
       ),
     );

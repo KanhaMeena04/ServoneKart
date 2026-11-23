@@ -57,7 +57,7 @@ const AdminLogin = () => {
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8faff]">
       
       {/* LEFT COLUMN: Deep Royal Electric Blue Banner (Tricelyn Theme) */}
-      <div className="w-full lg:w-1/2 bg-gradient-to-br from-[#021b44] via-[#0047cc] to-[#0055ff] text-white p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <div className="w-full lg:w-1/2 bg-gradient-to-br from-[#021b44] via-[#0047cc] to-[#0145F2] text-white p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
         {/* Subtle decorative background circles */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-300/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -99,7 +99,7 @@ const AdminLogin = () => {
 
       {/* RIGHT COLUMN: Clean White Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-16 bg-[#f8faff]">
-        <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl shadow-[0_20px_50px_rgba(0,85,255,0.08)] border border-blue-100">
+        <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl shadow-[0_20px_50px_rgba(1,69,242,0.08)] border border-blue-100">
           
           {/* Logo Header */}
           <div className="text-left mb-6">
@@ -132,7 +132,7 @@ const AdminLogin = () => {
             <button
               type="button"
               onClick={() => { setLoginId("admin@gmail.com"); setPassword("admin123"); }}
-              className="text-[11px] font-black text-[#0055ff] hover:underline cursor-pointer"
+              className="text-[11px] font-black text-[#0145F2] hover:underline cursor-pointer"
             >
               Auto-fill
             </button>
@@ -146,7 +146,7 @@ const AdminLogin = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <User className="w-4 h-4 text-[#0055ff]" />
+                  <User className="w-4 h-4 text-[#0145F2]" />
                 </div>
                 <input
                   id="loginId"
@@ -157,7 +157,7 @@ const AdminLogin = () => {
                   required
                   disabled={loading}
                   style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a', backgroundColor: '#FFFFFF' }}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 font-semibold focus:ring-2 focus:ring-blue-100 focus:border-[#0055ff] focus:outline-none transition duration-200 shadow-xs"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 font-semibold focus:ring-2 focus:ring-blue-100 focus:border-[#0145F2] focus:outline-none transition duration-200 shadow-xs"
                 />
               </div>
             </div>
@@ -169,7 +169,7 @@ const AdminLogin = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <Lock className="w-4 h-4 text-[#0055ff]" />
+                  <Lock className="w-4 h-4 text-[#0145F2]" />
                 </div>
                 <input
                   id="password"
@@ -180,12 +180,12 @@ const AdminLogin = () => {
                   required
                   disabled={loading}
                   style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a', backgroundColor: '#FFFFFF' }}
-                  className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 font-semibold focus:ring-2 focus:ring-blue-100 focus:border-[#0055ff] focus:outline-none transition duration-200 shadow-xs"
+                  className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 font-semibold focus:ring-2 focus:ring-blue-100 focus:border-[#0145F2] focus:outline-none transition duration-200 shadow-xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-[#0055ff] focus:outline-none transition cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-[#0145F2] focus:outline-none transition cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -214,8 +214,8 @@ const AdminLogin = () => {
               disabled={loading}
               className={`w-full py-3.5 px-6 rounded-xl font-black text-sm text-white shadow-md transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer ${
                 loading
-                  ? 'bg-[#0055ff]/70 cursor-not-allowed shadow-none'
-                  : 'bg-[#0055ff] hover:bg-[#0043c7] shadow-blue-500/25'
+                  ? 'bg-[#0145F2]/70 cursor-not-allowed shadow-none'
+                  : 'bg-[#0145F2] hover:bg-[#0043c7] shadow-blue-500/25'
               }`}
             >
               {loading ? (
@@ -236,9 +236,9 @@ const AdminLogin = () => {
               type="button"
               onClick={handleDemoLogin}
               disabled={loading}
-              className="w-full py-3 px-5 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-[#0055ff] border border-blue-200 transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-xs cursor-pointer"
+              className="w-full py-3 px-5 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-[#0145F2] border border-blue-200 transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-xs cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-[#0055ff]" />
+              <Sparkles className="w-4 h-4 text-[#0145F2]" />
               <span>One-Click Demo Super Admin Sign In</span>
             </button>
           </form>

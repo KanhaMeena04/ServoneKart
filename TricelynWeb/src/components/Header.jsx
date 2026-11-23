@@ -193,7 +193,7 @@ const Header = () => {
         {!searchQuery.trim() ? (
           <div className="p-3 sm:p-4 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-              <TrendingUp className="w-3.5 h-3.5 text-[#0B3EDB]" />
+              <TrendingUp className="w-3.5 h-3.5 text-[#0145F2]" />
               <span>Popular Searches</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -202,7 +202,7 @@ const Header = () => {
                   key={idx}
                   type="button"
                   onClick={() => handleSelectChip(chip)}
-                  className="px-2.5 py-1 bg-gray-50 hover:bg-blue-50 hover:text-[#0B3EDB] border border-gray-200 rounded-full text-xs font-semibold text-gray-700 transition"
+                  className="px-2.5 py-1 bg-gray-50 hover:bg-blue-50 hover:text-[#0145F2] border border-gray-200 rounded-full text-xs font-semibold text-gray-700 transition"
                 >
                   {chip}
                 </button>
@@ -221,7 +221,7 @@ const Header = () => {
                     onClick={() => handleSelectCategory(cat.slug || cat._id)}
                     className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 text-left transition border border-gray-50"
                   >
-                    <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#0B3EDB] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#0145F2] flex items-center justify-center text-xs font-bold flex-shrink-0">
                       🛒
                     </span>
                     <span className="text-xs font-bold text-gray-800 truncate">{cat.name}</span>
@@ -244,7 +244,7 @@ const Header = () => {
                     key={cat.slug || cat._id}
                     type="button"
                     onClick={() => handleSelectCategory(cat.slug || cat._id)}
-                    className="px-2 py-0.5 bg-white border border-blue-200 rounded-lg text-xs font-bold text-[#0B3EDB] hover:bg-[#0B3EDB] hover:text-white transition whitespace-nowrap flex-shrink-0"
+                    className="px-2 py-0.5 bg-white border border-blue-200 rounded-lg text-xs font-bold text-[#0145F2] hover:bg-[#0145F2] hover:text-white transition whitespace-nowrap flex-shrink-0"
                   >
                     {cat.name}
                   </button>
@@ -275,7 +275,7 @@ const Header = () => {
                           🏪
                         </div>
                         <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[#0B3EDB]">
+                          <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[#0145F2]">
                             {storeName}
                           </h4>
                           <p className="text-[10px] text-gray-500 truncate">
@@ -283,7 +283,7 @@ const Header = () => {
                           </p>
                         </div>
                       </div>
-                      <span className="text-[11px] font-bold text-[#0B3EDB] whitespace-nowrap flex items-center gap-0.5">
+                      <span className="text-[11px] font-bold text-[#0145F2] whitespace-nowrap flex items-center gap-0.5">
                         <span>Visit</span>
                         <ArrowRight className="w-3 h-3" />
                       </span>
@@ -322,7 +322,7 @@ const Header = () => {
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[#0B3EDB]">
+                          <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[#0145F2]">
                             {prod.name}
                           </h4>
                           <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
@@ -341,12 +341,12 @@ const Header = () => {
                           <button
                             type="button"
                             onClick={() => addToCart(prod, 1)}
-                            className="px-3 py-1 bg-blue-50 text-[#0B3EDB] hover:bg-[#0B3EDB] hover:text-white rounded-lg text-xs font-bold transition border border-blue-200 active:scale-95"
+                            className="px-3 py-1 bg-blue-50 text-[#0145F2] hover:bg-[#0145F2] hover:text-white rounded-lg text-xs font-bold transition border border-blue-200 active:scale-95"
                           >
                             ADD
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1 bg-[#0B3EDB] text-white rounded-lg px-1.5 py-0.5">
+                          <div className="flex items-center gap-1 bg-[#0145F2] text-white rounded-lg px-1.5 py-0.5">
                             <button
                               type="button"
                               onClick={() => updateQuantity(pid, qty - 1)}
@@ -382,7 +382,7 @@ const Header = () => {
             {/* Bottom Footer: Press Enter for Full Search */}
             <div
               onClick={handleSearchSubmit}
-              className="p-2.5 bg-gray-50 hover:bg-blue-50 text-center cursor-pointer transition flex items-center justify-center gap-1.5 text-xs font-bold text-[#0B3EDB]"
+              className="p-2.5 bg-gray-50 hover:bg-blue-50 text-center cursor-pointer transition flex items-center justify-center gap-1.5 text-xs font-bold text-[#0145F2]"
             >
               <span>See all results for "{searchQuery}"</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -398,7 +398,7 @@ const Header = () => {
       {/* ============================================================
           MAIN NAVBAR: TRICELYN BRAND GRADIENT (Responsive Mobile + Desktop)
          ============================================================ */}
-      <div className="bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0B3EDB] text-white shadow-md">
+      <div className="bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0145F2] text-white shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
 
           {/* ==================== MOBILE NAVBAR (< 768px) ==================== */}
@@ -434,7 +434,7 @@ const Header = () => {
                 {isAuthenticated ? (
                   <button
                     onClick={() => navigate('/account')}
-                    className="w-8 h-8 rounded-full bg-white text-[#0B3EDB] font-black text-xs flex items-center justify-center border border-white/40 shadow-xs active:scale-95 transition"
+                    className="w-8 h-8 rounded-full bg-white text-[#0145F2] font-black text-xs flex items-center justify-center border border-white/40 shadow-xs active:scale-95 transition"
                     title="Account"
                   >
                     {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
@@ -452,7 +452,7 @@ const Header = () => {
                 {/* Header Cart Icon */}
                 <button
                   onClick={() => setIsCartDrawerOpen(true)}
-                  className="w-8 h-8 rounded-full bg-white text-[#0B3EDB] flex items-center justify-center relative shadow-xs active:scale-95 transition"
+                  className="w-8 h-8 rounded-full bg-white text-[#0145F2] flex items-center justify-center relative shadow-xs active:scale-95 transition"
                   title="Cart"
                 >
                   <ShoppingCart className="w-4 h-4" />
@@ -542,7 +542,7 @@ const Header = () => {
                   />
                   <button
                     type="submit"
-                    className="absolute right-3 p-1.5 text-gray-500 hover:text-[#0B3EDB] transition"
+                    className="absolute right-3 p-1.5 text-gray-500 hover:text-[#0145F2] transition"
                     aria-label="Search"
                   >
                     <Search className="w-4 h-4" />
@@ -561,7 +561,7 @@ const Header = () => {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white hover:bg-white/10 transition border border-white/20"
                   >
-                    <div className="w-7 h-7 rounded-full bg-white text-[#0B3EDB] font-bold text-xs flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-full bg-white text-[#0145F2] font-bold text-xs flex items-center justify-center">
                       {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <span className="text-xs font-bold hidden lg:inline-block max-w-[90px] truncate">
@@ -582,7 +582,7 @@ const Header = () => {
                         onClick={() => setIsUserMenuOpen(false)}
                         className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium hover:bg-gray-50"
                       >
-                        <Package className="w-4 h-4 text-[#0B3EDB]" />
+                        <Package className="w-4 h-4 text-[#0145F2]" />
                         My Orders
                       </Link>
                       <button
@@ -611,7 +611,7 @@ const Header = () => {
               {/* Cart Button Pill (White / Accent Pill) */}
               <button
                 onClick={() => setIsCartDrawerOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-[#0B3EDB] hover:bg-blue-50 rounded-full shadow-sm transition font-black text-xs"
+                className="flex items-center gap-2 px-4 py-2 bg-white text-[#0145F2] hover:bg-blue-50 rounded-full shadow-sm transition font-black text-xs"
                 title="View Cart"
               >
                 <div className="relative">
@@ -640,7 +640,7 @@ const Header = () => {
             {/* All Categories Button */}
             <Link
               to="/categories"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-900 font-black hover:text-[#0B3EDB] whitespace-nowrap flex-shrink-0 transition border-r border-gray-200 pr-3 mr-1"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-900 font-black hover:text-[#0145F2] whitespace-nowrap flex-shrink-0 transition border-r border-gray-200 pr-3 mr-1"
             >
               <Menu className="w-4 h-4 text-gray-800" />
               <span>All Categories</span>
@@ -651,7 +651,7 @@ const Header = () => {
               <Link
                 key={cat._id || cat.slug}
                 to={`/category/${cat.slug || cat._id}`}
-                className="px-3 py-1.5 rounded-full hover:bg-blue-50 hover:text-[#0B3EDB] transition whitespace-nowrap flex-shrink-0 text-gray-700 font-semibold"
+                className="px-3 py-1.5 rounded-full hover:bg-blue-50 hover:text-[#0145F2] transition whitespace-nowrap flex-shrink-0 text-gray-700 font-semibold"
               >
                 {cat.shortName || cat.name}
               </Link>
@@ -659,7 +659,7 @@ const Header = () => {
 
             <Link
               to="/categories"
-              className="px-3 py-1.5 text-gray-400 hover:text-[#0B3EDB] transition whitespace-nowrap flex-shrink-0 font-bold"
+              className="px-3 py-1.5 text-gray-400 hover:text-[#0145F2] transition whitespace-nowrap flex-shrink-0 font-bold"
             >
               ••• More
             </Link>

@@ -31,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Uint8List? _profileImageBytes;
   final ImagePicker _picker = ImagePicker();
 
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
 
   @override
   void initState() {

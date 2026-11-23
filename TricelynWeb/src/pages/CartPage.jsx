@@ -82,7 +82,7 @@ const CartPage = () => {
   if (items.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
-        <div className="w-24 h-24 rounded-full bg-blue-50 text-[#0B3EDB] mx-auto flex items-center justify-center font-bold text-2xl shadow-sm">
+        <div className="w-24 h-24 rounded-full bg-blue-50 text-[#0145F2] mx-auto flex items-center justify-center font-bold text-2xl shadow-sm">
           <ShoppingBag className="w-12 h-12" />
         </div>
         <h2 className="text-2xl font-black text-gray-900">Your Cart is Empty</h2>
@@ -91,7 +91,7 @@ const CartPage = () => {
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-[#0145F2] hover:bg-blue-700 text-white rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition"
         >
           <span>Start Shopping Groceries</span>
           <ArrowRight className="w-4 h-4" />
@@ -169,7 +169,7 @@ const CartPage = () => {
         {storeGroups.map((group) => (
           <div key={group.storeId} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs space-y-2">
             <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
-              <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#0B3EDB]">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#0145F2]">
                 <Store className="w-4 h-4" />
                 <span>{group.storeName}</span>
               </span>
@@ -241,7 +241,7 @@ const CartPage = () => {
         {/* Promo Code Section */}
         <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-2xs space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
-            <Tag className="w-4 h-4 text-[#0B3EDB]" />
+            <Tag className="w-4 h-4 text-[#0145F2]" />
             <span>Apply Promocode / Coupon</span>
           </div>
 
@@ -268,11 +268,11 @@ const CartPage = () => {
                 value={promoInput}
                 onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                 placeholder="e.g. SAVE25, WELCOME50"
-                className="flex-1 px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl uppercase font-bold focus:outline-none focus:border-[#0B3EDB]"
+                className="flex-1 px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl uppercase font-bold focus:outline-none focus:border-[#0145F2]"
               />
               <button
                 onClick={() => handleApplyPromo()}
-                className="px-5 py-2 bg-[#0B3EDB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+                className="px-5 py-2 bg-[#0145F2] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
               >
                 Apply
               </button>
@@ -297,7 +297,7 @@ const CartPage = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-amber-900">WELCOME50</span>
-                    <span className="text-[10px] font-bold text-[#0B3EDB]">APPLY</span>
+                    <span className="text-[10px] font-bold text-[#0145F2]">APPLY</span>
                   </div>
                   <p className="text-[10px] text-amber-700 mt-0.5">Flat ₹50 OFF</p>
                 </div>
@@ -307,7 +307,7 @@ const CartPage = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-blue-900">TRICELYN20</span>
-                    <span className="text-[10px] font-bold text-[#0B3EDB]">APPLY</span>
+                    <span className="text-[10px] font-bold text-[#0145F2]">APPLY</span>
                   </div>
                   <p className="text-[10px] text-blue-700 mt-0.5">20% OFF up to ₹100</p>
                 </div>
@@ -381,7 +381,7 @@ const CartPage = () => {
           )}
 
           {riderTip > 0 && (
-            <div className="flex items-center justify-between text-[#0B3EDB] font-semibold">
+            <div className="flex items-center justify-between text-[#0145F2] font-semibold">
               <span>Delivery partner tip</span>
               <span>₹{riderTip.toFixed(0)}</span>
             </div>

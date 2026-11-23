@@ -35,7 +35,7 @@ class EcdkartLogo extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.2),
+                  color: const Color(0xFF0145F2).withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -47,7 +47,7 @@ class EcdkartLogo extends StatelessWidget {
                 'assets/images/logo.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFF0B3EDB),
+                  color: const Color(0xFF0145F2),
                   child: const Icon(
                     Icons.storefront_rounded,
                     color: Colors.white,
@@ -78,7 +78,7 @@ class EcdkartLogo extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: badgeSize,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0B3EDB),
+                  color: const Color(0xFF0145F2),
                   letterSpacing: 2.2,
                   height: 1.15,
                 ),
