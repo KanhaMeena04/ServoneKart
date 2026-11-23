@@ -378,7 +378,7 @@ const HomePage = () => {
            ============================================================ */}
         <section className="space-y-3.5 sm:space-y-4">
           {platformMode !== 'grocery' && enableFoodDelivery && (
-            <div className="bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0145F2] text-white rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs shadow-xs">
+            <div className="bg-gradient-to-r from-[#00297F] via-[#0145F2] to-[#0145F2] text-white rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs shadow-xs">
               <div className="flex items-center gap-2 font-bold">
                 <Sparkles className="w-4 h-4 text-amber-300" />
                 <span>
@@ -399,8 +399,8 @@ const HomePage = () => {
               STORE FINDER CARD (Placed at top when Hero is hidden)
               "Groceries in minutes, from your own supermarket."
              ============================================================ */}
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#061a3d] via-[#0A2B6B] to-[#07162E] text-white p-5 sm:p-7 md:p-9 border border-blue-900/60 shadow-lg">
-            {/* Subtle Ambient Radial Lighting */}
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#061a3d] via-[#0145F2] to-[#00297F] text-white p-5 sm:p-7 md:p-9 border border-blue-900/60 shadow-lg">
+           
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-60 h-60 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -410,7 +410,7 @@ const HomePage = () => {
               </h2>
 
               <form onSubmit={handleFindStores} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 relative">
-                <div ref={areaInputRef} className="flex-1 relative">
+                {/* <div ref={areaInputRef} className="flex-1 relative">
                   <input
                     type="text"
                     value={areaQuery}
@@ -422,13 +422,12 @@ const HomePage = () => {
                     placeholder="Enter your area, society, or shop name"
                     className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-white text-gray-900 placeholder:text-gray-400 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition"
                   />
-                  {/* Interactive Auto-complete Suggestion Dropdown */}
                   {isAreaInputFocused && (
                     <div
                       ref={areaSuggestionsRef}
                       className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 text-gray-800 animate-in fade-in max-h-72 overflow-y-auto no-scrollbar divide-y divide-gray-100"
                     >
-                      {/* Area Suggestions */}
+                      
                       {areaSuggestions.areas.length > 0 && (
                         <div className="p-2 space-y-1">
                           <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
@@ -454,7 +453,7 @@ const HomePage = () => {
                         </div>
                       )}
 
-                      {/* Store Name Suggestions */}
+                      
                       {areaSuggestions.stores.length > 0 && (
                         <div className="p-2 space-y-1 bg-amber-50/40">
                           <div className="px-2.5 py-1 text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
@@ -484,13 +483,13 @@ const HomePage = () => {
                       )}
                     </div>
                   )}
-                </div>
-                <button
+                </div> */}
+                {/* <button
                   type="submit"
                   className="px-6 sm:px-7 py-2.5 sm:py-3 bg-[#0145F2] hover:bg-blue-600 active:bg-blue-700 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                 >
                   <span>Find stores</span>
-                </button>
+                </button> */}
               </form>
             </div>
           </div>
@@ -711,7 +710,7 @@ const HomePage = () => {
                   to={`/category/${cat.slug}`}
                   className="flex-shrink-0 flex flex-col items-center text-center group cursor-pointer w-[68px]"
                 >
-                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#07162E] via-[#0A2B6B] to-[#0145F2] shadow-xs group-active:scale-95 transition-transform duration-200">
+                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#00297F] via-[#0145F2] to-[#0145F2] shadow-xs group-active:scale-95 transition-transform duration-200">
                     <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden flex items-center justify-center">
                       <img
                         src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80"}
@@ -905,7 +904,7 @@ const HomePage = () => {
                       <button
                         type="button"
                         onClick={() => handleReorderAll(ord)}
-                        className="flex-1 py-1.5 px-3 bg-[#0145F2] hover:bg-[#07162E] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                        className="flex-1 py-1.5 px-3 bg-[#0145F2] hover:bg-[#00297F] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />
                         <span>Reorder</span>

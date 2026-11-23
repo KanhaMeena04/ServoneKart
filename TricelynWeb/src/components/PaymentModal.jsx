@@ -189,7 +189,7 @@ const PaymentModal = ({
         {/* ============================================================
             TOP HEADER (Matches Screenshot 3 & 4)
            ============================================================ */}
-        <div className="bg-[#07162E] text-white px-5 sm:px-6 py-4 flex items-center justify-between border-b border-blue-900/40 flex-shrink-0">
+        <div className="bg-[#00297F] text-white px-5 sm:px-6 py-4 flex items-center justify-between border-b border-blue-900/40 flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
               type="button"

@@ -449,7 +449,7 @@ export default function MembershipPlansPage() {
                   ) : (
                     <button
                       onClick={() => handleChoosePlan(selectedPlan)}
-                      className="w-full py-3.5 px-6 rounded-2xl bg-[#0145F2] hover:bg-[#0A2B6B] active:scale-[0.99] text-white font-black text-sm transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
+                      className="w-full py-3.5 px-6 rounded-2xl bg-[#0145F2] hover:bg-[#0145F2] active:scale-[0.99] text-white font-black text-sm transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
                     >
                       <span>Choose Premier (Pay ₹{selectedPlan.price} & Activate)</span>
                       <ArrowRight className="w-4 h-4" />
@@ -493,7 +493,7 @@ export default function MembershipPlansPage() {
                 </div>
 
                 {/* Card 3: Quality Guarantee */}
-                <div className="bg-gradient-to-br from-[#07162E] to-[#0A2B6B] rounded-3xl p-6 sm:p-7 text-white shadow-md">
+                <div className="bg-gradient-to-br from-[#00297F] to-[#0145F2] rounded-3xl p-6 sm:p-7 text-white shadow-md">
                   <div className="flex items-center gap-2.5 mb-2">
                     <Sparkles className="w-5 h-5 text-amber-400" />
                     <h3 className="text-base sm:text-lg font-black text-white">
@@ -518,7 +518,7 @@ export default function MembershipPlansPage() {
           <div className="animate-in fade-in duration-300 space-y-6 sm:space-y-8">
 
             {/* Dark Navy Hero Banner matching Screenshot 2 */}
-            <div className="bg-[#07162E] rounded-3xl p-7 sm:p-10 text-white shadow-xl relative overflow-hidden">
+            <div className="bg-[#00297F] rounded-3xl p-7 sm:p-10 text-white shadow-xl relative overflow-hidden">
               <div className="max-w-2xl relative z-10">
                 <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-3">
                   Ride with Tricelyn.
@@ -528,7 +528,7 @@ export default function MembershipPlansPage() {
                 </p>
                 <button
                   onClick={scrollToApply}
-                  className="px-6 py-3 rounded-full bg-white text-[#07162E] hover:bg-blue-50 font-black text-xs sm:text-sm transition shadow-md active:scale-95"
+                  className="px-6 py-3 rounded-full bg-white text-[#00297F] hover:bg-blue-50 font-black text-xs sm:text-sm transition shadow-md active:scale-95"
                 >
                   Apply to ride
                 </button>
@@ -620,7 +620,7 @@ export default function MembershipPlansPage() {
                     if (proPlan) handleChoosePlan(proPlan);
                     else scrollToApply();
                   }}
-                  className="w-full py-3 rounded-xl bg-[#0145F2] hover:bg-[#0A2B6B] text-white text-xs font-black transition shadow-md shadow-blue-500/20"
+                  className="w-full py-3 rounded-xl bg-[#0145F2] hover:bg-[#0145F2] text-white text-xs font-black transition shadow-md shadow-blue-500/20"
                 >
                   Activate Pro Day Pass
                 </button>
@@ -777,7 +777,7 @@ export default function MembershipPlansPage() {
                     <button
                       type="submit"
                       disabled={riderSubmitting}
-                      className="w-full py-3 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-black text-xs transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
+                      className="w-full py-3 rounded-full bg-[#0145F2] hover:bg-[#0145F2] text-white font-black text-xs transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
                     >
                       {riderSubmitting
                         ? 'Processing...'
@@ -804,7 +804,7 @@ export default function MembershipPlansPage() {
           <div className="animate-in fade-in duration-300 space-y-6 sm:space-y-8">
 
             {/* Dark Navy Hero Banner matching Screenshot 3 */}
-            <div className="bg-[#07162E] rounded-3xl p-7 sm:p-10 text-white shadow-xl relative overflow-hidden">
+            <div className="bg-[#00297F] rounded-3xl p-7 sm:p-10 text-white shadow-xl relative overflow-hidden">
               <div className="max-w-2xl relative z-10">
                 <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-3">
                   Sell from your own supermarket on Tricelyn.
@@ -814,7 +814,7 @@ export default function MembershipPlansPage() {
                 </p>
                 <button
                   onClick={scrollToApply}
-                  className="px-6 py-3 rounded-full bg-white text-[#07162E] hover:bg-blue-50 font-black text-xs sm:text-sm transition shadow-md active:scale-95"
+                  className="px-6 py-3 rounded-full bg-white text-[#00297F] hover:bg-blue-50 font-black text-xs sm:text-sm transition shadow-md active:scale-95"
                 >
                   Apply to join
                 </button>
@@ -1047,7 +1047,7 @@ export default function MembershipPlansPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span>Starter</span>
-                          <span className="text-[10px] bg-[#0A2B6B] text-white px-1.5 py-0.2 rounded-full">₹10K</span>
+                          <span className="text-[10px] bg-[#0145F2] text-white px-1.5 py-0.2 rounded-full">₹10K</span>
                         </div>
                         <p className="text-[10px] text-slate-500 font-normal mt-0.5">&lt; 3,000 live items</p>
                       </button>
@@ -1073,7 +1073,7 @@ export default function MembershipPlansPage() {
                   <button
                     type="submit"
                     disabled={vendorSubmitting}
-                    className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-black text-xs sm:text-sm transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
+                    className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0145F2] text-white font-black text-xs sm:text-sm transition shadow-md shadow-blue-500/20 active:scale-95 mt-2"
                   >
                     {vendorSubmitting
                       ? 'Processing...'
@@ -1146,7 +1146,7 @@ export default function MembershipPlansPage() {
 
                 <button
                   onClick={() => setIsCheckoutModalOpen(false)}
-                  className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-bold text-xs sm:text-sm shadow-md transition"
+                  className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0145F2] text-white font-bold text-xs sm:text-sm shadow-md transition"
                 >
                   Continue & Explore
                 </button>
@@ -1345,7 +1345,7 @@ export default function MembershipPlansPage() {
                 <button
                   onClick={handleConfirmSubscribe}
                   disabled={subscribing}
-                  className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0A2B6B] text-white font-black text-sm transition shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-full bg-[#0145F2] hover:bg-[#0145F2] text-white font-black text-sm transition shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2"
                 >
                   {subscribing ? (
                     <span>Processing Payment...</span>

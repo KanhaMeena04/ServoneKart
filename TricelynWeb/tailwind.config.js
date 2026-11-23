@@ -8,21 +8,21 @@ export default {
     extend: {
       colors: {
         brand: {
-          navy: '#07162E',       // Deep Navy - Dark background
-          royal: '#0A2B6B',      // Royal Blue - Primary gradient
-          vivid: '#0145F2',      // Vivid Blue - Gradient highlight
-          highlight: '#0D5AA6',  // Highlight Blue - Glow / accent
-          50: '#f0f5ff',
-          100: '#e0ecff',
-          200: '#c2d9ff',
-          300: '#94beff',
-          400: '#0D5AA6',        // Highlight Blue
-          500: '#0145F2',        // Vivid Blue (Primary CTA)
-          600: '#0A2B6B',        // Royal Blue (Primary Brand)
-          700: '#092359',
-          800: '#081c44',
-          900: '#07162E',        // Deep Navy (Dark Background)
-          dark: '#07162E',
+          navy: '#0145F2',
+          royal: '#0145F2',
+          vivid: '#0145F2',
+          highlight: '#0145F2',
+          50: '#EEF4FF',
+          100: '#DCE8FF',
+          200: '#BDD1FF',
+          300: '#90ADFF',
+          400: '#5E7FFF',
+          500: '#0145F2',
+          600: '#0145F2',
+          700: '#0038C7',
+          800: '#002FA3',
+          900: '#00297F',
+          dark: '#00297F',
         },
         accent: {
           green: '#10B981', // Quick commerce green
@@ -32,8 +32,8 @@ export default {
         }
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0145F2 100%)',
-        'primary-gradient': 'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0145F2 100%)',
+        'brand-gradient': 'linear-gradient(135deg, #0145F2 0%, #0145F2 50%, #90ADFF 100%)',
+        'primary-gradient': 'linear-gradient(135deg, #0145F2 0%, #0145F2 50%, #90ADFF 100%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -42,4 +42,3 @@ export default {
   },
   plugins: [],
 }
-

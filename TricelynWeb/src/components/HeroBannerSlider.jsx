@@ -11,8 +11,8 @@ const DEFAULT_SLIDES = [
     subtitle: 'Crisp seasonal greens, organic veggies & juicy fruits delivered straight from local Indore mandis',
     buttonText: 'Order Fresh',
     link: '/category/fruits-vegetables',
-    bgGradient: 'from-[#064e3b] via-[#047857] to-[#10b981]',
-    buttonClass: 'bg-white text-[#064e3b] hover:bg-emerald-50',
+    bgGradient: 'from-[#00297F] via-[#0145F2] to-[#90ADFF]',
+    buttonClass: 'bg-white text-[#0145F2] hover:bg-brand-50',
     image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200&q=80',
     alt: 'Fresh organic vegetables, fruits and greens'
   },
@@ -23,8 +23,8 @@ const DEFAULT_SLIDES = [
     subtitle: 'Pure dairy pouches, artisan whole-wheat breads, farm fresh eggs & butter at morning speed',
     buttonText: 'Shop Breakfast',
     link: '/category/dairy-bread-eggs',
-    bgGradient: 'from-[#002b80] via-[#0145F2] to-[#38bdf8]',
-    buttonClass: 'bg-white text-[#0145F2] hover:bg-blue-50',
+    bgGradient: 'from-[#00297F] via-[#0145F2] to-[#90ADFF]',
+    buttonClass: 'bg-white text-[#0145F2] hover:bg-brand-50',
     image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=1200&q=80',
     alt: 'Fresh dairy, breads and breakfast essentials'
   },
@@ -35,8 +35,8 @@ const DEFAULT_SLIDES = [
     subtitle: 'Beat the heat with iced sodas, cold-pressed fruit juices, coconut water & gourmet ice creams',
     buttonText: 'Explore Coolers',
     link: '/category/cold-drinks-juices',
-    bgGradient: 'from-[#9a3412] via-[#ea580c] to-[#f97316]',
-    buttonClass: 'bg-white text-[#ea580c] hover:bg-orange-50',
+    bgGradient: 'from-[#00297F] via-[#0145F2] to-[#90ADFF]',
+    buttonClass: 'bg-white text-[#0145F2] hover:bg-brand-50',
     image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=1200&q=80',
     alt: 'Chilled tropical juices and cold drinks'
   },
@@ -47,8 +47,8 @@ const DEFAULT_SLIDES = [
     subtitle: 'Crunchy Indore namkeen, imported chocolate bars, potato chips & cookies for instant cravings',
     buttonText: 'Grab Snacks',
     link: '/category/snacks-munchies',
-    bgGradient: 'from-[#3b0764] via-[#7c3aed] to-[#a855f7]',
-    buttonClass: 'bg-white text-[#7c3aed] hover:bg-purple-50',
+    bgGradient: 'from-[#00297F] via-[#0145F2] to-[#90ADFF]',
+    buttonClass: 'bg-white text-[#0145F2] hover:bg-brand-50',
     image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=1200&q=80',
     alt: 'Assorted chips, cookies and chocolates'
   }
@@ -75,7 +75,7 @@ const HeroBannerSlider = () => {
             subtitle: s.subtitle || 'Express doorstep grocery delivery in Indore',
             buttonText: s.buttonText || 'Shop Now',
             link: s.link || '/categories',
-            bgGradient: s.bgGradient || (idx % 2 === 0 ? 'from-[#064e3b] via-[#047857] to-[#10b981]' : 'from-[#002b80] via-[#0145F2] to-[#38bdf8]'),
+            bgGradient: s.bgGradient || 'from-[#00297F] via-[#0145F2] to-[#90ADFF]',
             buttonClass: 'bg-white text-gray-900 hover:bg-gray-100',
             image: s.image || DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image,
             alt: s.alt || s.title || 'Banner Slide'

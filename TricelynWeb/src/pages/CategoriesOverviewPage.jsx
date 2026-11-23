@@ -378,7 +378,7 @@
 //                 Explore Our Store
 //               </span>
 
-//               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#07162E]">
+//               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#00297F]">
 //                 Shop by Categories
 //               </h1>
 
@@ -456,7 +456,7 @@
 
 //                     {/* Content */}
 //                     <div className="p-3 sm:p-4">
-//                       <h2 className="font-bold text-sm sm:text-base text-[#07162E] group-hover:text-[#0145F2] transition-colors line-clamp-2 min-h-10">
+//                       <h2 className="font-bold text-sm sm:text-base text-[#00297F] group-hover:text-[#0145F2] transition-colors line-clamp-2 min-h-10">
 //                         {category.name}
 //                       </h2>
 
@@ -485,7 +485,7 @@
 //                 className="mx-auto text-gray-300 mb-3"
 //               />
 
-//               <h3 className="font-bold text-lg text-[#07162E]">
+//               <h3 className="font-bold text-lg text-[#00297F]">
 //                 No categories found
 //               </h3>
 
@@ -562,7 +562,7 @@
 //                 </span>
 //               </div>
 
-//               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#07162E]">
+//               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#00297F]">
 //                 {selectedCategory.name}
 //               </h1>
 
@@ -594,7 +594,7 @@
 
 //           {/* Sidebar */}
 //           <aside className="bg-white rounded-2xl border border-gray-100 p-4 h-fit">
-//             <h2 className="font-extrabold text-[#07162E] text-base mb-4">
+//             <h2 className="font-extrabold text-[#00297F] text-base mb-4">
 //               All Categories
 //             </h2>
 
@@ -719,7 +719,7 @@
 //             {/* Product Count */}
 //             <div className="flex items-center justify-between gap-3 mb-4">
 //               <div>
-//                 <h2 className="text-lg sm:text-xl font-extrabold text-[#07162E]">
+//                 <h2 className="text-lg sm:text-xl font-extrabold text-[#00297F]">
 //                   {selectedSubcategoryParam
 //                     ? selectedSubcategoryParam.replace(/-/g, ' ')
 //                     : selectedCategory.name}
@@ -751,7 +751,7 @@
 //                   />
 //                 </div>
 
-//                 <h3 className="text-lg font-extrabold text-[#07162E]">
+//                 <h3 className="text-lg font-extrabold text-[#00297F]">
 //                   No Products Found
 //                 </h3>
 

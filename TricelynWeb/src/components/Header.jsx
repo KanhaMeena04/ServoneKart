@@ -398,7 +398,7 @@ const Header = () => {
       {/* ============================================================
           MAIN NAVBAR: TRICELYN BRAND GRADIENT (Responsive Mobile + Desktop)
          ============================================================ */}
-      <div className="bg-gradient-to-r from-[#07162E] via-[#0A2B6B] to-[#0145F2] text-white shadow-md">
+      <div className="bg-gradient-to-r from-[#0145F2] via-[#0145F2] to-[#0145F2] text-white shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
 
           {/* ==================== MOBILE NAVBAR (< 768px) ==================== */}
@@ -474,7 +474,7 @@ const Header = () => {
                     value={searchQuery}
                     onFocus={() => setIsSearchFocused(true)}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder='Search "milk", "bread", "chips", "paneer"...'
+                    placeholder='Search for city, area, store, groceries, fresh produce, daily essentials...'
                     className="w-full pl-9 pr-8 py-2 text-xs bg-white text-gray-900 placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-xs"
                   />
                   <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 pointer-events-none" />
@@ -537,7 +537,7 @@ const Header = () => {
                     value={searchQuery}
                     onFocus={() => setIsSearchFocused(true)}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={platformMode === 'food' ? 'Search dishes, meals or fresh groceries...' : 'Search for groceries, fresh produce, daily essentials...'}
+                    placeholder={platformMode === 'food' ? 'Search dishes, meals or fresh groceries...' : 'Search for city, area, store, groceries, fresh produce, daily essentials...'}
                     className="w-full pl-5 pr-12 py-2.5 text-xs sm:text-sm bg-white text-gray-900 placeholder:text-gray-400 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm transition"
                   />
                   <button

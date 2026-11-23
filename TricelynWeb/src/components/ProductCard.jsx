@@ -138,7 +138,7 @@ const ProductCard = ({ product }) => {
           ) : quantity === 0 ? (
             <button
               onClick={() => addToCart(product, 1)}
-              className="w-full py-1.5 sm:py-2 bg-[#0145F2] hover:bg-[#0A2B6B] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+              className="w-full py-1.5 sm:py-2 bg-[#0145F2] hover:bg-[#0145F2] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>Add to Cart</span>

@@ -5,7 +5,7 @@ import { groceryService } from '../services/api';
 
 // Official Tricelyn Brand Theme Gradients (Royal Navy, Deep Emerald, Express Cobalt)
 const BRAND_THEME_GRADIENTS = [
-  'linear-gradient(135deg, #07162E 0%, #0A2B6B 50%, #0145F2 100%)', // Signature Tricelyn Royal Blue
+  'linear-gradient(135deg, #00297F 0%, #0145F2 50%, #0145F2 100%)', // Signature Tricelyn Royal Blue
   'linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%)', // Fresh Produce Deep Emerald
   'linear-gradient(135deg, #0c1a30 0%, #1e3a8a 50%, #2563eb 100%)', // Express Midnight Cobalt
 ];
