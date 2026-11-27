@@ -399,7 +399,7 @@ const HomePage = () => {
               STORE FINDER CARD (Placed at top when Hero is hidden)
               "Groceries in minutes, from your own supermarket."
              ============================================================ */}
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#061a3d] via-[#0145F2] to-[#00297F] text-white p-5 sm:p-7 md:p-9 border border-blue-900/60 shadow-lg">
+          {/* <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#061a3d] via-[#0145F2] to-[#00297F] text-white p-5 sm:p-7 md:p-9 border border-blue-900/60 shadow-lg">
            
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-60 h-60 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -410,7 +410,7 @@ const HomePage = () => {
               </h2>
 
               <form onSubmit={handleFindStores} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 relative">
-                {/* <div ref={areaInputRef} className="flex-1 relative">
+                <div ref={areaInputRef} className="flex-1 relative">
                   <input
                     type="text"
                     value={areaQuery}
@@ -483,16 +483,99 @@ const HomePage = () => {
                       )}
                     </div>
                   )}
-                </div> */}
-                {/* <button
+                </div> 
+                <button
                   type="submit"
                   className="px-6 sm:px-7 py-2.5 sm:py-3 bg-[#0145F2] hover:bg-blue-600 active:bg-blue-700 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                 >
                   <span>Find stores</span>
-                </button> */}
+                </button>
               </form>
             </div>
+          </div> */}
+
+
+           {/* ============================================================
+            2. SHOP BY CATEGORY SECTION
+            - Desktop: Full Round Circular Cards with Thin Blue Theme Border
+            - Mobile: 4-Column Quick-Commerce Grid (Matches Reference Screenshots 1 & 2)
+           ============================================================ */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
+              Shop by Category
+            </h2>
+            <Link
+              to="/categories"
+              className="text-xs font-bold text-[#0145F2] hover:text-blue-700 flex items-center gap-0.5 group"
+            >
+              <span>View All</span>
+              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
+
+          {/* DESKTOP VIEW: Circular Category Cards */}
+          <div className="hidden md:grid md:grid-cols-7 lg:grid-cols-7 gap-4 sm:gap-6">
+            {categories.slice(0, 7).map((cat) => (
+              <Link
+                key={cat.slug || cat._id}
+                to={`/category/${cat.slug}`}
+                className="group flex flex-col items-center text-center cursor-pointer"
+              >
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[2px] border border-[#0145F2]/35 group-hover:border-[#0145F2] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
+                    <img
+                      src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
+                      alt={cat.name}
+                      className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+
+                <span className="mt-2.5 text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0145F2] transition line-clamp-2 leading-tight text-center max-w-[105px]">
+                  {cat.shortName || cat.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          {/* MOBILE VIEW (< 768px): Single-Line Auto-Scrolling / Shuffling Circle Categories */}
+          <div className="md:hidden">
+            <div 
+              ref={mobileCatTrackRef}
+              onMouseEnter={() => setIsMobileCatPaused(true)}
+              onMouseLeave={() => setIsMobileCatPaused(false)}
+              onTouchStart={() => setIsMobileCatPaused(true)}
+              onTouchEnd={() => setTimeout(() => setIsMobileCatPaused(false), 2000)}
+              className="flex items-center gap-3.5 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1 -mx-1"
+            >
+              {shuffledCategories.map((cat, idx) => (
+                <Link
+                  key={cat.slug || cat._id || idx}
+                  to={`/category/${cat.slug}`}
+                  className="flex-shrink-0 flex flex-col items-center text-center group cursor-pointer w-[68px]"
+                >
+                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#00297F] via-[#0145F2] to-[#0145F2] shadow-xs group-active:scale-95 transition-transform duration-200">
+                    <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden flex items-center justify-center">
+                      <img
+                        src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80"}
+                        alt={cat.name}
+                        className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                  <span className="mt-1.5 text-[11px] font-bold text-gray-800 group-hover:text-[#0145F2] line-clamp-1 leading-tight text-center w-full px-0.5">
+                    {cat.shortName || cat.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        
 
           {/* ============================================================
               SEARCHED NEARBY STORES (Revealed ONLY after searching Find stores)
@@ -649,85 +732,7 @@ const HomePage = () => {
           <PromoOfferBanners />
         </section>
 
-        {/* ============================================================
-            2. SHOP BY CATEGORY SECTION
-            - Desktop: Full Round Circular Cards with Thin Blue Theme Border
-            - Mobile: 4-Column Quick-Commerce Grid (Matches Reference Screenshots 1 & 2)
-           ============================================================ */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-              Shop by Category
-            </h2>
-            <Link
-              to="/categories"
-              className="text-xs font-bold text-[#0145F2] hover:text-blue-700 flex items-center gap-0.5 group"
-            >
-              <span>View All</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-
-          {/* DESKTOP VIEW: Circular Category Cards */}
-          <div className="hidden md:grid md:grid-cols-7 lg:grid-cols-7 gap-4 sm:gap-6">
-            {categories.slice(0, 7).map((cat) => (
-              <Link
-                key={cat.slug || cat._id}
-                to={`/category/${cat.slug}`}
-                className="group flex flex-col items-center text-center cursor-pointer"
-              >
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-[2px] border border-[#0145F2]/35 group-hover:border-[#0145F2] bg-white shadow-xs group-hover:shadow-md group-hover:ring-2 group-hover:ring-blue-100/60 transition-all duration-300 flex items-center justify-center">
-                  <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
-                    <img
-                      src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80"}
-                      alt={cat.name}
-                      className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-
-                <span className="mt-2.5 text-xs sm:text-[13px] font-extrabold text-gray-800 group-hover:text-[#0145F2] transition line-clamp-2 leading-tight text-center max-w-[105px]">
-                  {cat.shortName || cat.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          {/* MOBILE VIEW (< 768px): Single-Line Auto-Scrolling / Shuffling Circle Categories */}
-          <div className="md:hidden">
-            <div 
-              ref={mobileCatTrackRef}
-              onMouseEnter={() => setIsMobileCatPaused(true)}
-              onMouseLeave={() => setIsMobileCatPaused(false)}
-              onTouchStart={() => setIsMobileCatPaused(true)}
-              onTouchEnd={() => setTimeout(() => setIsMobileCatPaused(false), 2000)}
-              className="flex items-center gap-3.5 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1 -mx-1"
-            >
-              {shuffledCategories.map((cat, idx) => (
-                <Link
-                  key={cat.slug || cat._id || idx}
-                  to={`/category/${cat.slug}`}
-                  className="flex-shrink-0 flex flex-col items-center text-center group cursor-pointer w-[68px]"
-                >
-                  <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#00297F] via-[#0145F2] to-[#0145F2] shadow-xs group-active:scale-95 transition-transform duration-200">
-                    <div className="w-full h-full rounded-full bg-white p-[2px] overflow-hidden flex items-center justify-center">
-                      <img
-                        src={cat.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80"}
-                        alt={cat.name}
-                        className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-                  </div>
-                  <span className="mt-1.5 text-[11px] font-bold text-gray-800 group-hover:text-[#0145F2] line-clamp-1 leading-tight text-center w-full px-0.5">
-                    {cat.shortName || cat.name}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+       
 
         {/* ============================================================
             3. BEST SELLERS PRODUCT GRID

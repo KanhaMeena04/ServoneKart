@@ -241,13 +241,13 @@ const OrderTrackingPage = () => {
           </Link>
 
           <div className="flex items-center gap-2">
-            <button
+            {/* <button
               onClick={() => setIsInvoiceOpen(true)}
               className="px-3 py-1.5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-xs font-bold text-gray-700 transition flex items-center gap-1 shadow-2xs"
             >
               <FileText className="w-3.5 h-3.5 text-[#0145F2]" />
               <span>Invoice</span>
-            </button>
+            </button> */}
             {!isCancelled && !isDelivered && currentStep <= 1 && (
               <button
                 onClick={() => setIsCancelModalOpen(true)}
