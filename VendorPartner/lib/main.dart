@@ -60,8 +60,8 @@ class RestaurantApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0055FF),
-          primary: const Color(0xFF0055FF),
+          seedColor: const Color(0xFF0145F2),
+          primary: const Color(0xFF0145F2),
           secondary: const Color(0xFF00B4D8),
           surface: Colors.white,
         ),

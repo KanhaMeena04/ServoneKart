@@ -154,10 +154,10 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                color: const Color(0xFF0145F2).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.workspace_premium, color: Color(0xFF0B3EDB), size: 40),
+              child: const Icon(Icons.workspace_premium, color: Color(0xFF0145F2), size: 40),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -198,7 +198,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B3EDB),
+                  backgroundColor: const Color(0xFF0145F2),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -267,7 +267,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF0B3EDB),
+                      color: Color(0xFF0145F2),
                     ),
                   ),
                 ],
@@ -324,7 +324,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                     _subscribeToPlan(plan, selectedMethod);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0B3EDB),
+                    backgroundColor: const Color(0xFF0145F2),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
@@ -357,16 +357,16 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0B3EDB).withValues(alpha: 0.06) : Colors.white,
+          color: isSelected ? const Color(0xFF0145F2).withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade200,
+            color: isSelected ? const Color(0xFF0145F2) : Colors.grey.shade200,
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade600, size: 22),
+            Icon(icon, color: isSelected ? const Color(0xFF0145F2) : Colors.grey.shade600, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -389,7 +389,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
             ),
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
+              color: isSelected ? const Color(0xFF0145F2) : Colors.grey.shade400,
               size: 20,
             ),
           ],
@@ -447,14 +447,14 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                          colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0145F2)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.3),
+                            color: const Color(0xFF0145F2).withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -557,7 +557,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                             child: ChoiceChip(
                               label: Text(labelText),
                               selected: isSelected,
-                              selectedColor: const Color(0xFF0B3EDB),
+                              selectedColor: const Color(0xFF0145F2),
                               backgroundColor: Colors.white,
                               labelStyle: TextStyle(
                                 color: isSelected ? Colors.white : const Color(0xFF334155),
@@ -580,10 +580,10 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFF0B3EDB).withValues(alpha: 0.3), width: 1.5),
+                        border: Border.all(color: const Color(0xFF0145F2).withValues(alpha: 0.3), width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.06),
+                            color: const Color(0xFF0145F2).withValues(alpha: 0.06),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -596,7 +596,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0B3EDB),
+                              color: const Color(0xFF0145F2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -651,7 +651,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                                     height: 7,
                                     margin: const EdgeInsets.only(top: 6, right: 10),
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFF0B3EDB),
+                                      color: Color(0xFF0145F2),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -686,7 +686,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
                                             content: Text('Base Free is already active by default. You can order freely!'),
-                                            backgroundColor: Color(0xFF0B3EDB),
+                                            backgroundColor: Color(0xFF0145F2),
                                           ),
                                         );
                                       } else {
@@ -694,7 +694,7 @@ class _PremierMembershipPageState extends State<PremierMembershipPage> {
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0B3EDB),
+                                backgroundColor: const Color(0xFF0145F2),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 elevation: 0,

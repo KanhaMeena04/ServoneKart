@@ -250,12 +250,12 @@ export default function InventoryManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0055ff] px-2.5 py-0.5 rounded-full">
+            <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-[#0145F2] px-2.5 py-0.5 rounded-full">
               👑 Super Admin Platform Control
             </span>
           </div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2 mt-1">
-            <Inventory className="text-[#0055ff]" />
+            <Inventory className="text-[#0145F2]" />
             Master Inventory & Stock Control Tower
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
@@ -330,7 +330,7 @@ export default function InventoryManagement() {
           {/* Store Partner Filter */}
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-              <Storefront className="text-[#0055ff] text-xs" />
+              <Storefront className="text-[#0145F2] text-xs" />
               <span>Dark Store / Mart Filter</span>
             </label>
             <Select
@@ -417,7 +417,7 @@ export default function InventoryManagement() {
       <TableContainer component={Paper} className="shadow-xs rounded-2xl overflow-hidden border border-gray-100 bg-white">
         {loading ? (
           <div className="p-12 text-center text-gray-500 space-y-3">
-            <CircularProgress size={32} sx={{ color: '#0055ff' }} />
+            <CircularProgress size={32} sx={{ color: '#0145F2' }} />
             <p className="text-xs font-bold">Synchronizing real-time inventory from platform...</p>
           </div>
         ) : items.length === 0 ? (
@@ -522,7 +522,7 @@ export default function InventoryManagement() {
                           onChange={(e) => handleStockChange(item._id, e.target.value)}
                           className={`w-16 text-center font-bold text-xs py-1.5 rounded-lg border outline-none ${
                             isModified
-                              ? 'border-[#0055ff] bg-blue-50/40 text-blue-900 ring-2 ring-blue-100'
+                              ? 'border-[#0145F2] bg-blue-50/40 text-blue-900 ring-2 ring-blue-100'
                               : 'border-gray-200 bg-gray-50 text-gray-900'
                           }`}
                         />
@@ -579,8 +579,8 @@ export default function InventoryManagement() {
                           checked={currentInStock && currentQty > 0}
                           onChange={() => toggleInStock(item)}
                           sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': { color: '#0055ff' },
-                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#0055ff' }
+                            '& .MuiSwitch-switchBase.Mui-checked': { color: '#0145F2' },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#0145F2' }
                           }}
                         />
                         <span className={`text-[10px] font-bold ${currentInStock && currentQty > 0 ? 'text-emerald-700' : 'text-gray-400'}`}>
@@ -598,7 +598,7 @@ export default function InventoryManagement() {
                           disabled={isSaving}
                           onClick={() => saveItemStock(item)}
                           startIcon={isSaving ? <CircularProgress size={12} sx={{ color: 'white' }} /> : <Save />}
-                          sx={{ backgroundColor: '#0055ff', '&:hover': { backgroundColor: '#0047d4' } }}
+                          sx={{ backgroundColor: '#0145F2', '&:hover': { backgroundColor: '#0047d4' } }}
                           className="capitalize rounded-lg text-xs py-1 px-3 shadow-2xs font-bold"
                         >
                           {isSaving ? 'Saving' : 'Save'}

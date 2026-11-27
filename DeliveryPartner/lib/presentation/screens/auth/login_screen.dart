@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Timer? _timer;
 
   // App Theme Color - Brand Vivid Blue
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
 
   @override
   void initState() {

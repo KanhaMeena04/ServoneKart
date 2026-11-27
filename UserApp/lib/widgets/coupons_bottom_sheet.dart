@@ -171,7 +171,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Coupon "${coupon.code}" applied!'),
-        backgroundColor: const Color(0xFF0B3EDB),
+        backgroundColor: const Color(0xFF0145F2),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -214,10 +214,10 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0B3EDB).withValues(alpha: 0.12),
+                              color: const Color(0xFF0145F2).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.verified_user_outlined, color: Color(0xFF0B3EDB), size: 20),
+                            child: const Icon(Icons.verified_user_outlined, color: Color(0xFF0145F2), size: 20),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -238,7 +238,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0B3EDB),
+                          color: const Color(0xFF0145F2),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -259,7 +259,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
                             children: [
                               const Padding(
                                 padding: EdgeInsets.only(top: 2),
-                                child: Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF0B3EDB)),
+                                child: Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF0145F2)),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -282,7 +282,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(ctx),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0B3EDB),
+                            backgroundColor: const Color(0xFF0145F2),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -333,7 +333,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
-    const brandColor = Color(0xFF0B3EDB);
+    const brandColor = Color(0xFF0145F2);
 
     return Container(
       decoration: BoxDecoration(
@@ -459,7 +459,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
   }
 
   Widget _buildCouponCard(BuildContext context, UnifiedCoupon coupon, bool isDark) {
-    const brandColor = Color(0xFF0B3EDB);
+    const brandColor = Color(0xFF0145F2);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -483,7 +483,7 @@ class _CouponsBottomSheetState extends State<CouponsBottomSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0B3EDB), Color(0xFF1E7554)],
+                colors: [Color(0xFF0145F2), Color(0xFF1E7554)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

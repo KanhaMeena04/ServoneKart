@@ -137,10 +137,10 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                color: const Color(0xFF0145F2).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.two_wheeler, color: Color(0xFF0B3EDB), size: 40),
+              child: const Icon(Icons.two_wheeler, color: Color(0xFF0145F2), size: 40),
             ),
             const SizedBox(height: 16),
             Text(
@@ -162,7 +162,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF0B3EDB),
+                color: const Color(0xFF0145F2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -181,7 +181,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B3EDB),
+                  backgroundColor: const Color(0xFF0145F2),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -250,7 +250,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFF0B3EDB),
+                      color: const Color(0xFF0145F2),
                     ),
                   ),
                 ],
@@ -307,7 +307,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                     _subscribeToPlan(plan, selectedMethod);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0B3EDB),
+                    backgroundColor: const Color(0xFF0145F2),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
@@ -340,16 +340,16 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0B3EDB).withValues(alpha: 0.06) : Colors.white,
+          color: isSelected ? const Color(0xFF0145F2).withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade200,
+            color: isSelected ? const Color(0xFF0145F2) : Colors.grey.shade200,
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade600, size: 22),
+            Icon(icon, color: isSelected ? const Color(0xFF0145F2) : Colors.grey.shade600, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -372,7 +372,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
             ),
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: isSelected ? const Color(0xFF0B3EDB) : Colors.grey.shade400,
+              color: isSelected ? const Color(0xFF0145F2) : Colors.grey.shade400,
               size: 20,
             ),
           ],
@@ -395,7 +395,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
         foregroundColor: const Color(0xFF07162E),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0B3EDB)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0145F2)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               physics: const BouncingScrollPhysics(),
@@ -455,10 +455,10 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF0B3EDB), width: 1.5),
+                        border: Border.all(color: const Color(0xFF0145F2), width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                            color: const Color(0xFF0145F2).withValues(alpha: 0.1),
                             blurRadius: 10,
                           ),
                         ],
@@ -468,7 +468,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: const BoxDecoration(
-                              color: Color(0xFF0B3EDB),
+                              color: Color(0xFF0145F2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.workspace_premium, color: Colors.amber, size: 24),
@@ -557,12 +557,12 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: isPro ? const Color(0xFF0B3EDB) : const Color(0xFFE2E8F0),
+                          color: isPro ? const Color(0xFF0145F2) : const Color(0xFFE2E8F0),
                           width: isPro ? 1.8 : 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: isPro ? const Color(0xFF0B3EDB).withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.03),
+                            color: isPro ? const Color(0xFF0145F2).withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.03),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
@@ -579,7 +579,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w900,
-                                  color: isPro ? const Color(0xFF0B3EDB) : const Color(0xFF64748B),
+                                  color: isPro ? const Color(0xFF0145F2) : const Color(0xFF64748B),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -587,7 +587,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0B3EDB),
+                                    color: const Color(0xFF0145F2),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
@@ -653,7 +653,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                                     height: 6,
                                     margin: const EdgeInsets.only(top: 6, right: 10),
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFF0B3EDB),
+                                      color: Color(0xFF0145F2),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -687,13 +687,13 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
                                             content: Text('Base Free is already your default plan. Ride freely!'),
-                                            backgroundColor: Color(0xFF0B3EDB),
+                                            backgroundColor: Color(0xFF0145F2),
                                           ),
                                         );
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isPro ? const Color(0xFF0B3EDB) : const Color(0xFF07162E),
+                                backgroundColor: isPro ? const Color(0xFF0145F2) : const Color(0xFF07162E),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 elevation: 0,
@@ -763,7 +763,7 @@ class _RiderPlansScreenState extends State<RiderPlansScreen> {
             height: 6,
             margin: const EdgeInsets.only(top: 6, right: 10),
             decoration: const BoxDecoration(
-              color: Color(0xFF0B3EDB),
+              color: Color(0xFF0145F2),
               shape: BoxShape.circle,
             ),
           ),

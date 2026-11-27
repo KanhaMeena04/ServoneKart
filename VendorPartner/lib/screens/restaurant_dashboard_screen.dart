@@ -326,12 +326,12 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> w
             margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                colors: [Color(0xFF0A2B6B), Color(0xFF0145F2)],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0B3EDB).withValues(alpha: 0.3),
+                  color: const Color(0xFF0145F2).withValues(alpha: 0.3),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),

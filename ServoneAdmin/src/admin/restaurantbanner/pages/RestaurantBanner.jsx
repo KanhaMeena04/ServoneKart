@@ -84,7 +84,7 @@ function RestaurantBanner() {
 
           <div className="flex items-center gap-2 sm:self-center">
             {loadingSetting ? (
-              <CircularProgress size={20} sx={{ color: '#0055ff' }} />
+              <CircularProgress size={20} sx={{ color: '#0145F2' }} />
             ) : (
               <FormControlLabel
                 control={

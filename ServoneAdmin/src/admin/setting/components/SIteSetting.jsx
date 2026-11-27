@@ -28,7 +28,7 @@ const PLATFORM_MODE_OPTIONS = [
     title: 'Grocery (Primary) + Food Delivery',
     badge: 'DUAL VERTICAL',
     desc: 'Grocery remains the core primary experience while also exposing Food Delivery & Restaurant discovery where supported.',
-    accent: '#0B3EDB',
+    accent: '#0145F2',
     bg: 'bg-blue-50 border-blue-500 text-blue-950'
   },
   {
@@ -57,7 +57,7 @@ const SiteSetting = () => {
     androidAppLink: 'https://play.google.com/store/apps/details?id=com.servonekart.userapp',
     siteEmail: 'care@tricelyn.com',
     siteContact: '9847192735',
-    menuColors: '#0B3EDB',
+    menuColors: '#0145F2',
     highlightColors: '#10b981',
     adminCommission: '20',
     restaurantCommission: '80',
@@ -87,7 +87,7 @@ const SiteSetting = () => {
     b2bMinOrderQty: 10,
     announcementEnabled: 'Yes',
     announcementText: 'Welcome to TRICELYN • "Groceries in minutes, from your own Supermarket" • Fast, Fresh & Doorstep Delivery in minutes!',
-    announcementColor: '#0B3EDB'
+    announcementColor: '#0145F2'
   });
 
   const getAuthHeaders = () => {
@@ -391,7 +391,7 @@ const SiteSetting = () => {
             />
           </div>
           <InputField
-            label="Ticker Background Color (e.g. #0B3EDB)"
+            label="Ticker Background Color (e.g. #0145F2)"
             name="announcementColor"
             value={settings.announcementColor}
             onChange={handleChange}

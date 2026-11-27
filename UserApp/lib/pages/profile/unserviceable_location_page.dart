@@ -354,7 +354,7 @@ class UnserviceableLocationPage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0B3EDB),
+                        backgroundColor: const Color(0xFF0145F2),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         shape: RoundedRectangleBorder(

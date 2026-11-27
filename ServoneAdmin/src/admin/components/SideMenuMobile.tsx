@@ -55,11 +55,11 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
               px: 2,
               py: 1,
               borderRadius: '14px',
-              border: '1px solid rgba(0, 85, 255, 0.35)',
+              border: '1px solid rgba(1, 69, 242, 0.35)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 14px rgba(0, 85, 255, 0.22)',
+              boxShadow: '0 4px 14px rgba(1, 69, 242, 0.22)',
             }}
           >
             <img
@@ -74,8 +74,8 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
               px: 1.2,
               py: 0.5,
               borderRadius: '10px',
-              bgcolor: 'rgba(0, 85, 255, 0.06)',
-              border: '1px solid rgba(0, 85, 255, 0.16)',
+              bgcolor: 'rgba(1, 69, 242, 0.06)',
+              border: '1px solid rgba(1, 69, 242, 0.16)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -83,7 +83,7 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-              <Typography sx={{ fontSize: '10px', fontWeight: 800, color: '#0B3EDB' }}>
+              <Typography sx={{ fontSize: '10px', fontWeight: 800, color: '#0145F2' }}>
                 HYPERLOCAL OPS LIVE
               </Typography>
             </Box>
@@ -93,16 +93,16 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
           </Box>
         </Box>
 
-        <Divider sx={{ borderColor: 'rgba(0, 85, 255, 0.08)' }} />
+        <Divider sx={{ borderColor: 'rgba(1, 69, 242, 0.08)' }} />
 
         <Stack sx={{ flexGrow: 1, overflowY: 'auto' }}>
           <MenuContent />
         </Stack>
 
-        <Divider sx={{ borderColor: 'rgba(11, 62, 219, 0.08)' }} />
+        <Divider sx={{ borderColor: 'rgba(1, 69, 242, 0.08)' }} />
 
         {/* Bottom Profile Pill */}
-        <Box sx={{ p: 1.6, bgcolor: 'rgba(11, 62, 219, 0.02)' }}>
+        <Box sx={{ p: 1.6, bgcolor: 'rgba(1, 69, 242, 0.02)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
               <Avatar sx={{ width: 32, height: 32, bgcolor: '#0A2B6B', fontSize: '0.78rem', fontWeight: 800 }}>
@@ -112,7 +112,7 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
                 <Typography noWrap sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#07162E' }}>
                   {user?.name || 'Super Admin'}
                 </Typography>
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#0B3EDB' }}>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#0145F2' }}>
                   {(user as any)?.roleName || 'Admin'}
                 </Typography>
               </Box>

@@ -22,7 +22,7 @@ class _RiderReloginScreenState extends State<RiderReloginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _phoneController;
 
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
 
   @override
   void initState() {

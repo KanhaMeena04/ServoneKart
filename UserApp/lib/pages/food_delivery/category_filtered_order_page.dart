@@ -137,7 +137,7 @@ class _CategoryFilteredOrderPageState
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
-    const primaryColor = Color(0xFF0B3EDB);
+    const primaryColor = Color(0xFF0145F2);
     const accentOrange = Color(0xFFE89D1E);
     final cart = context.watch<CartProvider>();
 

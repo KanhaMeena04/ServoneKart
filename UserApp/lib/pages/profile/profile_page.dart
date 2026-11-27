@@ -183,12 +183,12 @@ class ProfileTab extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF07162E), Color(0xFF0B3EDB)],
+                            colors: [Color(0xFF07162E), Color(0xFF0145F2)],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0B3EDB).withValues(alpha: 0.25),
+                              color: const Color(0xFF0145F2).withValues(alpha: 0.25),
                               blurRadius: 4,
                             ),
                           ],
@@ -329,14 +329,14 @@ class ProfileTab extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                          colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0145F2)],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0B3EDB).withValues(alpha: 0.25),
+                            color: const Color(0xFF0145F2).withValues(alpha: 0.25),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),

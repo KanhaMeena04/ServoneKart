@@ -45,10 +45,10 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
       position="fixed"
       sx={{
         display: { xs: 'auto', md: 'none' },
-        boxShadow: '0 2px 10px rgba(0, 85, 255, 0.08)',
+        boxShadow: '0 2px 10px rgba(1, 69, 242, 0.08)',
         bgcolor: '#ffffff',
         backgroundImage: 'none',
-        borderBottom: '1px solid rgba(0, 85, 255, 0.12)',
+        borderBottom: '1px solid rgba(1, 69, 242, 0.12)',
         top: 'var(--template-frame-height, 0px)',
       }}
     >
@@ -64,7 +64,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
         >
           {/* 1. Menu Button */}
           <MenuButton aria-label="menu" onClick={effectiveToggleDrawer(true)}>
-            <MenuRoundedIcon sx={{ color: '#0B3EDB' }} />
+            <MenuRoundedIcon sx={{ color: '#0145F2' }} />
           </MenuButton>
 
           {/* 2. Tricelyn Mobile Branded Logo */}
@@ -73,7 +73,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
             spacing={1}
             sx={{ justifyContent: 'start', flexGrow: 1, alignItems: 'center' }}
           >
-            <Box sx={{ bgcolor: '#021b44', px: 1.5, py: 0.5, borderRadius: '10px', border: '1px solid rgba(0, 85, 255, 0.3)', display: 'inline-flex', alignItems: 'center' }}>
+            <Box sx={{ bgcolor: '#021b44', px: 1.5, py: 0.5, borderRadius: '10px', border: '1px solid rgba(1, 69, 242, 0.3)', display: 'inline-flex', alignItems: 'center' }}>
               <img
                 src="/logo.png"
                 alt="Tricelyn Logo"
@@ -86,7 +86,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Search />
             <MenuButton showBadge aria-label="Open notifications" onClick={(e) => setNotifAnchorEl(e.currentTarget)}>
-              <NotificationsRoundedIcon sx={{ color: '#0B3EDB' }} />
+              <NotificationsRoundedIcon sx={{ color: '#0145F2' }} />
             </MenuButton>
             <Menu
               anchorEl={notifAnchorEl}
@@ -97,7 +97,7 @@ export default function AppNavbar({ open: propOpen, toggleDrawer: propToggleDraw
                 sx: { mt: 1.5, width: 280, borderRadius: 3, p: 1 }
               }}
             >
-              <Typography variant="subtitle2" sx={{ p: 1, fontWeight: 700, borderBottom: '1px solid #eee', color: '#0B3EDB' }}>
+              <Typography variant="subtitle2" sx={{ p: 1, fontWeight: 700, borderBottom: '1px solid #eee', color: '#0145F2' }}>
                 Notifications
               </Typography>
               <MenuItem onClick={() => setNotifAnchorEl(null)}>
@@ -122,7 +122,7 @@ export function CustomIcon() {
       sx={{
         width: '1.5rem',
         height: '1.5rem',
-        bgcolor: '#0B3EDB',
+        bgcolor: '#0145F2',
         borderRadius: '999px',
         display: 'flex',
         justifyContent: 'center',

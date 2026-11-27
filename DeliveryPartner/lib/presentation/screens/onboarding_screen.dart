@@ -15,7 +15,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const Color deepNavy = Color(0xFF07162E);
   static const Color royalBlue = Color(0xFF0A2B6B);
-  static const Color vividBlue = Color(0xFF0B3EDB);
+  static const Color vividBlue = Color(0xFF0145F2);
   static const Color highlightBlue = Color(0xFF0D5AA6);
 
   final List<Map<String, dynamic>> _slides = [

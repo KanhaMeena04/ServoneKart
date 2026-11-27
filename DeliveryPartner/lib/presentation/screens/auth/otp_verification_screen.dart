@@ -38,7 +38,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _pinController = TextEditingController();
   bool _isVerifying = false;
   bool _isResending = false;
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
 
   Future<void> _onVerify() async {
     final otp = _pinController.text.trim();

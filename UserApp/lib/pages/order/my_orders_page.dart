@@ -1056,7 +1056,7 @@ class _CancelOrTrackButtonState extends State<_CancelOrTrackButton> {
   Widget build(BuildContext context) {
     final status = widget.order['status']?.toString().toLowerCase() ?? '';
     final isCancelableStatus = status == 'pending' || status == 'placed' || status == 'preparing';
-    const primaryGreen = Color(0xFF0B3EDB);
+    const primaryGreen = Color(0xFF0145F2);
     
     final bool showTrack = ['pending', 'placed', 'preparing', 'ready', 'accepted', 'assigned', 'reached_restaurant', 'picked_up', 'out_for_delivery', 'on the way', 'on_the_way'].contains(status);
     final bool showCancel = isCancelableStatus && _canCancel;

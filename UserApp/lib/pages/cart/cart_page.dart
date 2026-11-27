@@ -10,6 +10,8 @@ import '../../core/models/restaurant_models.dart';
 import '../../services/coupon_api_service.dart';
 import '../checkout/order_success_page.dart';
 import '../payment/review_pay_page.dart';
+import '../payment/address_selection_page.dart';
+import 'payment_methods_page.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -58,9 +60,11 @@ class _CartPageState extends State<CartPage> {
 
   void _placeOrder(CartProvider cart) async {
     final cfg = context.read<PlatformConfigProvider>();
-    final isGrocery = cart.hasGroceryItems || (cfg.isGroceryActive && widget.restaurant == null);
+    final isGrocery = cart.hasGroceryItems ||
+        (cfg.isGroceryActive && widget.restaurant == null);
     final r = widget.restaurant;
-    if (r != null && (!r.isOpen || !r.isActive || r.isTemporarilyClosed || !r.isOnline)) {
+    if (r != null &&
+        (!r.isOpen || !r.isActive || r.isTemporarilyClosed || !r.isOnline)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isGrocery
@@ -80,7 +84,8 @@ class _CartPageState extends State<CartPage> {
       final diff = effectiveMinOrder - cart.totalAmount;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('⚠️ Minimum order amount is ₹${effectiveMinOrder.toInt()}. Add items worth ₹${diff.toStringAsFixed(0)} more.'),
+          content: Text(
+              '⚠️ Minimum order amount is ₹${effectiveMinOrder.toInt()}. Add items worth ₹${diff.toStringAsFixed(0)} more.'),
           backgroundColor: const Color(0xFFDC2626),
           duration: const Duration(seconds: 3),
         ),
@@ -90,13 +95,15 @@ class _CartPageState extends State<CartPage> {
 
     final userProvider = context.read<UserProvider>();
     String? token = await AuthService.getToken();
-    final isLoggedIn = (token != null && token.isNotEmpty) || userProvider.isLoggedIn;
+    final isLoggedIn =
+        (token != null && token.isNotEmpty) || userProvider.isLoggedIn;
 
     if (!isLoggedIn) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please log in with mobile number to place your order.'),
+          content:
+              Text('Please log in with mobile number to place your order.'),
           backgroundColor: AppColors.primary,
         ),
       );
@@ -106,7 +113,8 @@ class _CartPageState extends State<CartPage> {
       );
 
       token = await AuthService.getToken();
-      if ((token == null || token.isEmpty) && !context.read<UserProvider>().isLoggedIn) {
+      if ((token == null || token.isEmpty) &&
+          !context.read<UserProvider>().isLoggedIn) {
         return; // Login wasn't completed
       }
     }
@@ -117,7 +125,7 @@ class _CartPageState extends State<CartPage> {
     _showOrderPlacementWindow(
       context: context,
       cart: cart,
-      onConfirmed: () async {
+      onConfirmed: (chosenPaymentMethod) async {
         await Navigator.push(
           context,
           FlipPageRoute(
@@ -125,6 +133,7 @@ class _CartPageState extends State<CartPage> {
               subtotal: cart.totalAmount,
               deliveryFee: cart.deliveryFee,
               total: cart.finalAmount,
+              initialPaymentMethod: chosenPaymentMethod,
             ),
           ),
         );
@@ -134,13 +143,16 @@ class _CartPageState extends State<CartPage> {
 
   void _showNoteDialog(BuildContext context, CartProvider cart) {
     final controller = TextEditingController(text: cart.orderNote);
-    final isGrocery = cart.hasGroceryItems || context.read<PlatformConfigProvider>().isGroceryActive;
+    final isGrocery = cart.hasGroceryItems ||
+        context.read<PlatformConfigProvider>().isGroceryActive;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-            isGrocery ? 'Add Note for Partner Store' : 'Add Note for Restaurant',
+            isGrocery
+                ? 'Add Note for Partner Store'
+                : 'Add Note for Restaurant',
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         content: TextField(
           controller: controller,
@@ -156,7 +168,8 @@ class _CartPageState extends State<CartPage> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey))),
+              child:
+                  const Text('Cancel', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () {
               cart.setOrderNote(controller.text);
@@ -164,9 +177,11 @@ class _CartPageState extends State<CartPage> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Save Note', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Save Note', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -179,16 +194,19 @@ class _CartPageState extends State<CartPage> {
     String selectedTab = cart.orderType;
 
     List<String> dateOptions = PickupSlotHelper.getDynamicDates();
-    String selectedDate = cart.pickupDate.isNotEmpty && dateOptions.contains(cart.pickupDate)
-        ? cart.pickupDate
-        : dateOptions.first;
+    String selectedDate =
+        cart.pickupDate.isNotEmpty && dateOptions.contains(cart.pickupDate)
+            ? cart.pickupDate
+            : dateOptions.first;
     if (cart.pickupDate.isNotEmpty && !dateOptions.contains(cart.pickupDate)) {
       dateOptions.insert(0, cart.pickupDate);
       selectedDate = cart.pickupDate;
     }
 
-    List<String> timeSlotOptions = PickupSlotHelper.get30MinTimeSlots(selectedDate);
-    String selectedTimeSlot = cart.pickupTimeSlot.isNotEmpty && timeSlotOptions.contains(cart.pickupTimeSlot)
+    List<String> timeSlotOptions =
+        PickupSlotHelper.get30MinTimeSlots(selectedDate);
+    String selectedTimeSlot = cart.pickupTimeSlot.isNotEmpty &&
+            timeSlotOptions.contains(cart.pickupTimeSlot)
         ? cart.pickupTimeSlot
         : timeSlotOptions.first;
 
@@ -232,7 +250,8 @@ class _CartPageState extends State<CartPage> {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.close, size: 20, color: Colors.black87),
+                        child: const Icon(Icons.close,
+                            size: 20, color: Colors.black87),
                       ),
                     ),
                   ),
@@ -249,7 +268,8 @@ class _CartPageState extends State<CartPage> {
                           child: Column(
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 child: Text(
                                   'Delivery',
                                   style: TextStyle(
@@ -279,7 +299,8 @@ class _CartPageState extends State<CartPage> {
                           child: Column(
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 child: Text(
                                   'Pick-up',
                                   style: TextStyle(
@@ -328,7 +349,8 @@ class _CartPageState extends State<CartPage> {
                               lastDate: now.add(const Duration(days: 90)),
                             );
                             if (picked != null) {
-                              final formatted = PickupSlotHelper.formatDate(picked);
+                              final formatted =
+                                  PickupSlotHelper.formatDate(picked);
                               setSheetState(() {
                                 if (!dateOptions.contains(formatted)) {
                                   dateOptions.add(formatted);
@@ -338,10 +360,12 @@ class _CartPageState extends State<CartPage> {
                             }
                           },
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 8),
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_month, size: 18, color: AppColors.primary),
+                                Icon(Icons.calendar_month,
+                                    size: 18, color: AppColors.primary),
                                 SizedBox(width: 4),
                                 Text(
                                   'Calendar',
@@ -366,9 +390,12 @@ class _CartPageState extends State<CartPage> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: dateOptions.contains(selectedDate) ? selectedDate : dateOptions.first,
+                          value: dateOptions.contains(selectedDate)
+                              ? selectedDate
+                              : dateOptions.first,
                           isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                          icon: const Icon(Icons.keyboard_arrow_down,
+                              color: Colors.black54),
                           items: dateOptions.map((date) {
                             return DropdownMenuItem<String>(
                               value: date,
@@ -416,7 +443,8 @@ class _CartPageState extends State<CartPage> {
                               ? selectedTimeSlot
                               : timeSlotOptions.first,
                           isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                          icon: const Icon(Icons.keyboard_arrow_down,
+                              color: Colors.black54),
                           items: timeSlotOptions.map((slot) {
                             return DropdownMenuItem<String>(
                               value: slot,
@@ -446,7 +474,8 @@ class _CartPageState extends State<CartPage> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: const [
@@ -597,7 +626,8 @@ class _CartPageState extends State<CartPage> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.08),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.08),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
@@ -620,10 +650,13 @@ class _CartPageState extends State<CartPage> {
                                 ...groupItems.map((item) => _CartItemRow(
                                       item: item,
                                       onEdit: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
-                                            content: Text('Adjust quantity for ${item.product.name}'),
-                                            duration: const Duration(seconds: 1),
+                                            content: Text(
+                                                'Adjust quantity for ${item.product.name}'),
+                                            duration:
+                                                const Duration(seconds: 1),
                                           ),
                                         );
                                       },
@@ -637,7 +670,8 @@ class _CartPageState extends State<CartPage> {
                                 onEdit: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Edit options for ${item.product.name}'),
+                                      content: Text(
+                                          'Edit options for ${item.product.name}'),
                                       duration: const Duration(seconds: 1),
                                     ),
                                   );
@@ -655,7 +689,8 @@ class _CartPageState extends State<CartPage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(6),
                               ),
@@ -692,7 +727,8 @@ class _CartPageState extends State<CartPage> {
                   _OrderOptionsAndNotesCard(
                     cart: cart,
                     onAddNote: () => _showNoteDialog(context, cart),
-                    onSelectPickupSlot: () => _showPickupSlotModalSheet(context),
+                    onSelectPickupSlot: () =>
+                        _showPickupSlotModalSheet(context),
                   ),
 
                   const SizedBox(height: 12),
@@ -812,19 +848,25 @@ class _RestaurantHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cfg = context.watch<PlatformConfigProvider>();
-    final isGrocery = cart.hasGroceryItems || (cfg.isGroceryActive && restaurant == null);
+    final isGrocery =
+        cart.hasGroceryItems || (cfg.isGroceryActive && restaurant == null);
     final String name;
     final String subtitle;
 
     if (isGrocery) {
       if (cart.storeCount > 1) {
         name = 'Multi-Store Grocery Cart (${cart.storeCount} stores)';
-        subtitle = 'Quick Commerce • Auto-split & dispatched from nearest partner stores';
+        subtitle =
+            'Quick Commerce • Auto-split & dispatched from nearest partner stores';
       } else {
         final firstItemStore = cart.items.isNotEmpty
-            ? (cart.items.first.product.storeName ?? cart.items.first.product.restaurantName)
+            ? (cart.items.first.product.storeName ??
+                cart.items.first.product.restaurantName)
             : null;
-        name = firstItemStore ?? restaurant?.name ?? cart.restaurantName ?? 'Selected Partner Mart';
+        name = firstItemStore ??
+            restaurant?.name ??
+            cart.restaurantName ??
+            'Selected Partner Mart';
         subtitle = 'Fresh Groceries & Daily Essentials';
       }
     } else {
@@ -854,7 +896,8 @@ class _RestaurantHeaderCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFF6B7280), size: 22),
+              const Icon(Icons.chevron_right,
+                  color: Color(0xFF6B7280), size: 22),
             ],
           ),
           const SizedBox(height: 2),
@@ -881,7 +924,8 @@ class _CartItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.read<CartProvider>();
-    final String imageUrl = item.imageUrl.isNotEmpty ? item.imageUrl : item.product.image;
+    final String imageUrl =
+        item.imageUrl.isNotEmpty ? item.imageUrl : item.product.image;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -899,7 +943,8 @@ class _CartItemRow extends StatelessWidget {
                         width: 64,
                         height: 64,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _defaultImagePlaceholder(),
+                        errorBuilder: (_, __, ___) =>
+                            _defaultImagePlaceholder(),
                       )
                     : _defaultImagePlaceholder(),
               ),
@@ -922,9 +967,13 @@ class _CartItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      (item.product.weight?.isNotEmpty == true || item.product.unit?.isNotEmpty == true)
-                          ? '${item.product.weight ?? ''} ${item.product.unit ?? ''} • ${item.product.category.isNotEmpty ? item.product.category : 'Grocery'}'.trim()
-                          : (item.product.category.isNotEmpty ? item.product.category : 'Original'),
+                      (item.product.weight?.isNotEmpty == true ||
+                              item.product.unit?.isNotEmpty == true)
+                          ? '${item.product.weight ?? ''} ${item.product.unit ?? ''} • ${item.product.category.isNotEmpty ? item.product.category : 'Grocery'}'
+                              .trim()
+                          : (item.product.category.isNotEmpty
+                              ? item.product.category
+                              : 'Original'),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF9CA3AF),
@@ -952,7 +1001,9 @@ class _CartItemRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.2),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      width: 1.2),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -962,7 +1013,8 @@ class _CartItemRow extends StatelessWidget {
                           item.product.id, item.quantity - 1),
                       child: const Padding(
                         padding: EdgeInsets.all(4),
-                        child: Icon(Icons.remove, size: 14, color: AppColors.primary),
+                        child: Icon(Icons.remove,
+                            size: 14, color: AppColors.primary),
                       ),
                     ),
                     Padding(
@@ -981,7 +1033,8 @@ class _CartItemRow extends StatelessWidget {
                           item.product.id, item.quantity + 1),
                       child: const Padding(
                         padding: EdgeInsets.all(4),
-                        child: Icon(Icons.add, size: 14, color: AppColors.primary),
+                        child:
+                            Icon(Icons.add, size: 14, color: AppColors.primary),
                       ),
                     ),
                   ],
@@ -1024,7 +1077,8 @@ class _CartItemRow extends StatelessWidget {
       height: 64,
       color: AppColors.primary.withValues(alpha: 0.08),
       child: Icon(
-        (item.product.vertical == 'grocery' || (item.product.storeId?.isNotEmpty ?? false))
+        (item.product.vertical == 'grocery' ||
+                (item.product.storeId?.isNotEmpty ?? false))
             ? Icons.local_grocery_store_rounded
             : Icons.fastfood,
         color: AppColors.primary,
@@ -1112,11 +1166,13 @@ class _OffersSectionState extends State<_OffersSection> {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.stars_rounded, color: AppColors.primary, size: 20),
+                  const Icon(Icons.stars_rounded,
+                      color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1159,7 +1215,10 @@ class _OffersSectionState extends State<_OffersSection> {
           else if (_coupons.isNotEmpty) ...[
             ..._coupons.take(2).map((c) {
               final code = (c['code'] ?? 'OFFER').toString();
-              final desc = c['description'] ?? c['subHeading'] ?? c['title'] ?? 'Get special discount on your order';
+              final desc = c['description'] ??
+                  c['subHeading'] ??
+                  c['title'] ??
+                  'Get special discount on your order';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10.0),
                 child: _OfferCard(
@@ -1270,7 +1329,8 @@ class _OfferCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Text(
               code,
@@ -1387,7 +1447,6 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
               ),
             ],
           ),
-
           if (cart.orderType == 'pickup') ...[
             const SizedBox(height: 12),
             Container(
@@ -1395,11 +1454,13 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                  const Icon(Icons.storefront_rounded,
+                      color: AppColors.primary, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -1428,7 +1489,8 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
                   InkWell(
                     onTap: onSelectPickupSlot,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(8),
@@ -1447,19 +1509,22 @@ class _OrderOptionsAndNotesCard extends StatelessWidget {
               ),
             ),
           ],
-
           const SizedBox(height: 14),
           GestureDetector(
             onTap: onAddNote,
             child: Row(
               children: [
-                const Icon(Icons.edit_note_rounded, size: 20, color: Color(0xFF4B5563)),
+                const Icon(Icons.edit_note_rounded,
+                    size: 20, color: Color(0xFF4B5563)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     cart.orderNote != null
                         ? 'Note: ${cart.orderNote}'
-                        : ((cart.hasGroceryItems || context.watch<PlatformConfigProvider>().isGroceryActive)
+                        : ((cart.hasGroceryItems ||
+                                context
+                                    .watch<PlatformConfigProvider>()
+                                    .isGroceryActive)
                             ? 'Add a note for the partner store'
                             : 'Add a note for the restaurant'),
                     style: TextStyle(
@@ -1551,10 +1616,14 @@ class _DonationCard extends StatelessWidget {
                   width: 22,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: cart.isDonationChecked ? AppColors.primary : Colors.white,
+                    color: cart.isDonationChecked
+                        ? AppColors.primary
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: cart.isDonationChecked ? AppColors.primary : const Color(0xFFD1D5DB),
+                      color: cart.isDonationChecked
+                          ? AppColors.primary
+                          : const Color(0xFFD1D5DB),
                       width: 1.5,
                     ),
                   ),
@@ -1622,12 +1691,16 @@ class _TipRiderCard extends StatelessWidget {
                   onTap: () => cart.setSelectedTip(0.0),
                   child: Container(
                     margin: const EdgeInsets.only(right: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selectedTip == 0.0 ? AppColors.primary : Colors.white,
+                      color:
+                          selectedTip == 0.0 ? AppColors.primary : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: selectedTip == 0.0 ? AppColors.primary : const Color(0xFFE5E7EB),
+                        color: selectedTip == 0.0
+                            ? AppColors.primary
+                            : const Color(0xFFE5E7EB),
                       ),
                     ),
                     child: Text(
@@ -1635,7 +1708,9 @@ class _TipRiderCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: selectedTip == 0.0 ? Colors.white : const Color(0xFF374151),
+                        color: selectedTip == 0.0
+                            ? Colors.white
+                            : const Color(0xFF374151),
                       ),
                     ),
                   ),
@@ -1647,12 +1722,15 @@ class _TipRiderCard extends StatelessWidget {
                     onTap: () => cart.setSelectedTip(opt),
                     child: Container(
                       margin: const EdgeInsets.only(right: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 8),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primary : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : const Color(0xFFE5E7EB),
+                          color: isSelected
+                              ? AppColors.primary
+                              : const Color(0xFFE5E7EB),
                         ),
                       ),
                       child: Text(
@@ -1660,7 +1738,9 @@ class _TipRiderCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isSelected ? Colors.white : const Color(0xFF374151),
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF374151),
                         ),
                       ),
                     ),
@@ -1710,10 +1790,11 @@ class _BillDetailsCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Item total
-          _BillRow(label: 'Item total', valueStr: '₹${subtotal.toStringAsFixed(0)}'),
+          _BillRow(
+              label: 'Item total', valueStr: '₹${subtotal.toStringAsFixed(0)}'),
           const SizedBox(height: 10),
 
-          // Delivery Partner Fee (up to 4 km)
+          // Delivery charges
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1722,7 +1803,7 @@ class _BillDetailsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Delivery partner fee (up to 4 km)',
+                    'Delivery charges',
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w500,
@@ -1744,7 +1825,9 @@ class _BillDetailsCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: delivery == 0 ? AppColors.primary : const Color(0xFF1F2937),
+                  color: delivery == 0
+                      ? AppColors.primary
+                      : const Color(0xFF1F2937),
                 ),
               ),
             ],
@@ -1755,7 +1838,9 @@ class _BillDetailsCard extends StatelessWidget {
           if (cart.isPlatformFeeEnabled) ...[
             _BillRow(
               label: 'Platform fee',
-              valueStr: platformFee == 0 ? 'Free' : '₹${platformFee.toStringAsFixed(2)}',
+              valueStr: platformFee == 0
+                  ? 'Free'
+                  : '₹${platformFee.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 10),
           ],
@@ -1763,10 +1848,13 @@ class _BillDetailsCard extends StatelessWidget {
           // Store / Restaurant Packaging fee
           if (cart.isPackagingFeeEnabled) ...[
             _BillRow(
-              label: (cart.hasGroceryItems || context.watch<PlatformConfigProvider>().isGroceryActive)
+              label: (cart.hasGroceryItems ||
+                      context.watch<PlatformConfigProvider>().isGroceryActive)
                   ? 'Store packaging & handling'
                   : 'Restaurant packaging fee',
-              valueStr: packagingFee == 0 ? 'Free' : '₹${packagingFee.toStringAsFixed(2)}',
+              valueStr: packagingFee == 0
+                  ? 'Free'
+                  : '₹${packagingFee.toStringAsFixed(2)}',
             ),
             const SizedBox(height: 10),
           ],
@@ -1829,11 +1917,15 @@ class _BillDetailsCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Grand Total
-          _BillRow(label: 'Grand Total', valueStr: '₹${grandTotalRaw.toStringAsFixed(2)}'),
+          _BillRow(
+              label: 'Grand Total',
+              valueStr: '₹${grandTotalRaw.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
 
           // Cash round off
-          _BillRow(label: 'Cash round off', valueStr: '₹${cashRoundOff.toStringAsFixed(2)}'),
+          _BillRow(
+              label: 'Cash round off',
+              valueStr: '₹${cashRoundOff.toStringAsFixed(2)}'),
           const SizedBox(height: 10),
 
           // To pay
@@ -1900,8 +1992,6 @@ class _BillRow extends StatelessWidget {
   }
 }
 
-
-
 // ── Screenshot 2: Cancellation Policy Box ────────────────────────────────────
 class _CancellationPolicyCard extends StatelessWidget {
   const _CancellationPolicyCard();
@@ -1949,7 +2039,7 @@ class _CancellationPolicyCard extends StatelessWidget {
 void _showOrderPlacementWindow({
   required BuildContext context,
   required CartProvider cart,
-  required Function() onConfirmed,
+  required Function(String paymentMethod) onConfirmed,
 }) {
   showModalBottomSheet(
     context: context,
@@ -1965,7 +2055,7 @@ void _showOrderPlacementWindow({
 
 class _OrderPlacementBottomSheet extends StatefulWidget {
   final CartProvider cart;
-  final Function() onConfirmed;
+  final Function(String paymentMethod) onConfirmed;
 
   const _OrderPlacementBottomSheet({
     required this.cart,
@@ -1973,7 +2063,8 @@ class _OrderPlacementBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<_OrderPlacementBottomSheet> createState() => _OrderPlacementBottomSheetState();
+  State<_OrderPlacementBottomSheet> createState() =>
+      _OrderPlacementBottomSheetState();
 }
 
 class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
@@ -1982,6 +2073,7 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
   Timer? _countdownTimer;
   int _secondsRemaining = 60;
   bool _isCancelled = false;
+  String _selectedPaymentMethod = 'Cash on Delivery';
 
   @override
   void initState() {
@@ -2001,10 +2093,271 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
         _countdownTimer?.cancel();
         if (!_isCancelled) {
           Navigator.pop(context);
-          widget.onConfirmed();
+          widget.onConfirmed(_selectedPaymentMethod);
         }
       }
     });
+  }
+
+  IconData _getPaymentIcon(String method) {
+    if (method.contains('Card')) return Icons.credit_card_rounded;
+    if (method.contains('UPI') ||
+        method.contains('Paytm') ||
+        method.contains('PhonePe') ||
+        method.contains('Google Pay')) {
+      return Icons.account_balance_wallet_rounded;
+    }
+    if (method.contains('Bank') || method.contains('Netbanking')) {
+      return Icons.account_balance_rounded;
+    }
+    return Icons.money_rounded;
+  }
+
+  String _getPaymentTitle(String method, double toPay) {
+    if (method == 'Card Payment' || method.contains('Card')) {
+      return 'Pay ₹${toPay.toStringAsFixed(0)} via Card';
+    }
+    if (method.contains('UPI') ||
+        method.contains('Paytm') ||
+        method.contains('PhonePe') ||
+        method.contains('Google Pay')) {
+      return 'Pay ₹${toPay.toStringAsFixed(0)} via UPI';
+    }
+    if (method.contains('Bank') || method.contains('Netbanking')) {
+      return 'Pay ₹${toPay.toStringAsFixed(0)} via Direct Bank / Netbanking';
+    }
+    return 'Pay ₹${toPay.toStringAsFixed(0)} on delivery (UPI/cash)';
+  }
+
+  String _getPaymentSubtitle(String method) {
+    if (method == 'Card Payment' || method.contains('Card')) {
+      return 'Credit or Debit Card Payment';
+    }
+    if (method.contains('UPI') ||
+        method.contains('Paytm') ||
+        method.contains('PhonePe') ||
+        method.contains('Google Pay')) {
+      return 'Google Pay, PhonePe, Paytm or UPI ID';
+    }
+    if (method.contains('Bank') || method.contains('Netbanking')) {
+      return 'Direct Pay via Bank (SBI, HDFC, ICICI, etc.)';
+    }
+    return 'Cash or UPI at time of doorstep delivery';
+  }
+
+  Future<void> _openPaymentMethodSelection(BuildContext context) async {
+    final toPay = widget.cart.finalAmount;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        final isDark = Theme.of(modalCtx).brightness == Brightness.dark;
+        String tempSelected = _selectedPaymentMethod;
+
+        final paymentOptions = [
+          {
+            'name': 'Cash on Delivery',
+            'title': 'Cash on Delivery (COD)',
+            'subtitle': 'Pay with Cash or UPI on delivery at doorstep',
+            'icon': Icons.money_rounded,
+            'color': const Color(0xFF10B981),
+          },
+          {
+            'name': 'Card Payment',
+            'title': 'Credit / Debit Card',
+            'subtitle': 'Visa, MasterCard, RuPay, Maestro & more',
+            'icon': Icons.credit_card_rounded,
+            'color': const Color(0xFF0145F2),
+          },
+          {
+            'name': 'UPI',
+            'title': 'UPI (GPay / PhonePe / Paytm / UPI ID)',
+            'subtitle': 'Instant & secure UPI payment via any app or ID',
+            'icon': Icons.account_balance_wallet_rounded,
+            'color': const Color(0xFF6366F1),
+          },
+          {
+            'name': 'Netbanking',
+            'title': 'Direct Pay via Bank (Netbanking)',
+            'subtitle': 'SBI, HDFC, ICICI, Axis and all major Indian banks',
+            'icon': Icons.account_balance_rounded,
+            'color': const Color(0xFFF59E0B),
+          },
+        ];
+
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Payment Method',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1F2937),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        onPressed: () => Navigator.pop(modalCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...paymentOptions.map((opt) {
+                    final optName = opt['name'] as String;
+                    final isSelected = tempSelected == optName;
+                    final optColor = opt['color'] as Color;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? (isSelected
+                                ? AppColors.primary.withValues(alpha: 0.15)
+                                : const Color(0xFF2A2A2A))
+                            : (isSelected
+                                ? AppColors.primary.withValues(alpha: 0.06)
+                                : const Color(0xFFF9FAFB)),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : (isDark
+                                  ? Colors.grey.shade800
+                                  : const Color(0xFFE5E7EB)),
+                          width: isSelected ? 1.8 : 1,
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          setModalState(() => tempSelected = optName);
+                          setState(() => _selectedPaymentMethod = optName);
+                          Navigator.pop(modalCtx);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: optColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  opt['icon'] as IconData,
+                                  color: optColor,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      opt['title'] as String,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1F2937),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      opt['subtitle'] as String,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark
+                                            ? Colors.grey.shade400
+                                            : const Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Radio<String>(
+                                value: optName,
+                                groupValue: tempSelected,
+                                activeColor: AppColors.primary,
+                                onChanged: (v) {
+                                  if (v != null) {
+                                    setModalState(() => tempSelected = v);
+                                    setState(() => _selectedPaymentMethod = v);
+                                    Navigator.pop(modalCtx);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(modalCtx);
+                        final selected = await Navigator.push<String>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                PaymentMethodsPage(totalAmount: toPay),
+                          ),
+                        );
+                        if (selected != null && mounted) {
+                          setState(() => _selectedPaymentMethod = selected);
+                        }
+                      },
+                      icon: const Icon(Icons.tune_rounded,
+                          size: 16, color: AppColors.primary),
+                      label: const Text(
+                        'View All Payment Gateways & Apps',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -2055,10 +2408,12 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
             children: [
               // Modal Top Handle & Header Bar
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -2082,7 +2437,8 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF1F2937),
                           ),
                         ),
                       ],
@@ -2107,51 +2463,79 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                         margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                          color:
+                              isDark ? const Color(0xFF2A2A2A) : Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? Colors.grey.shade800 : const Color(0xFFE5E7EB)),
+                          border: Border.all(
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : const Color(0xFFE5E7EB)),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.home_rounded, color: AppColors.primary, size: 24),
+                              child: const Icon(Icons.home_rounded,
+                                  color: AppColors.primary, size: 24),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Builder(
                                 builder: (context) {
                                   final cart = context.watch<CartProvider>();
-                                  final cfg = context.watch<PlatformConfigProvider>();
-                                  final isGrocery = cart.hasGroceryItems || cfg.isGroceryActive;
-                                  final addrProvider = context.watch<AddressProvider>();
-                                  final selectedAddr = addrProvider.addresses.isNotEmpty ? addrProvider.addresses.first : null;
+                                  final cfg =
+                                      context.watch<PlatformConfigProvider>();
+                                  final isGrocery = cart.hasGroceryItems ||
+                                      cfg.isGroceryActive;
+                                  final addrProvider =
+                                      context.watch<AddressProvider>();
+                                  final selectedAddr =
+                                      addrProvider.addresses.isNotEmpty
+                                          ? addrProvider.addresses.first
+                                          : null;
                                   final String addrTitle = cart.isSelfPickup
-                                      ? (isGrocery ? 'Pickup from Partner Store' : 'Pickup from Restaurant')
-                                      : (selectedAddr != null ? 'Delivering to ${selectedAddr.label.isNotEmpty ? selectedAddr.label : "Home"}' : 'Select Delivery Address');
+                                      ? (isGrocery
+                                          ? 'Pickup from Partner Store'
+                                          : 'Pickup from Restaurant')
+                                      : (selectedAddr != null
+                                          ? 'Delivering to ${selectedAddr.label.isNotEmpty ? selectedAddr.label : "Home"}'
+                                          : 'Select Delivery Address');
                                   final String addrSubtitle = cart.isSelfPickup
-                                      ? (cart.restaurantAddress ?? cart.restaurantName ?? (isGrocery ? 'Partner Store Location' : 'Restaurant Location'))
-                                      : (selectedAddr?.fullAddress ?? 'Tap to select delivery address');
+                                      ? (cart.restaurantAddress ??
+                                          cart.restaurantName ??
+                                          (isGrocery
+                                              ? 'Partner Store Location'
+                                              : 'Restaurant Location'))
+                                      : (selectedAddr?.fullAddress ??
+                                          'Tap to select delivery address');
 
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         addrTitle,
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w900,
-                                          color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1F2937),
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         addrSubtitle,
-                                        style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280)),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: isDark
+                                                ? Colors.grey.shade400
+                                                : const Color(0xFF6B7280)),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -2167,22 +2551,31 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       // Payment Method Banner Card
                       Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                          color:
+                              isDark ? const Color(0xFF2A2A2A) : Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? Colors.grey.shade800 : const Color(0xFFE5E7EB)),
+                          border: Border.all(
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : const Color(0xFFE5E7EB)),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 24),
+                              child: const Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: AppColors.primary,
+                                  size: 24),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -2194,21 +2587,30 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w900,
-                                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1F2937),
                                     ),
                                   ),
                                   Builder(
                                     builder: (context) {
-                                      final userProvider = context.watch<UserProvider>();
+                                      final userProvider =
+                                          context.watch<UserProvider>();
                                       if (userProvider.isCodBlocked) {
                                         return const Text(
                                           'Online / Wallet (COD Blocked by Admin)',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.red),
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.red),
                                         );
                                       }
                                       return const Text(
                                         'Cash on Delivery (UPI/Cash)',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary),
                                       );
                                     },
                                   ),
@@ -2264,7 +2666,8 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -2282,15 +2685,25 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
           ),
           const SizedBox(height: 16),
 
-          // Pay Card (Clickable)
+          // Pay Card (Clickable - Select Payment Method)
           GestureDetector(
-            onTap: () => _showBillDetailsModal(context),
+            onTap: () async {
+              _animController.stop();
+              await _openPaymentMethodSelection(context);
+              if (mounted && !_isCancelled) {
+                _animController.forward();
+              }
+            },
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF9FAFB),
+                color:
+                    isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? Colors.grey.shade800 : const Color(0xFFE5E7EB)),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.grey.shade800
+                        : const Color(0xFFE5E7EB)),
               ),
               child: Row(
                 children: [
@@ -2300,7 +2713,8 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       color: AppColors.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 22),
+                    child: Icon(_getPaymentIcon(_selectedPaymentMethod),
+                        color: AppColors.primary, size: 22),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -2308,37 +2722,59 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pay ₹${toPay.toStringAsFixed(0)} on delivery (UPI/cash)',
+                          _getPaymentTitle(_selectedPaymentMethod, toPay),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF1F2937),
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Cash or UPI at time of doorstep delivery',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                        Text(
+                          _getPaymentSubtitle(_selectedPaymentMethod),
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : const Color(0xFF6B7280)),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 20),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Color(0xFF9CA3AF), size: 20),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
 
-          // Delivery Address Card (Clickable)
+          // Delivery Address Card (Clickable - Select or Add Address)
           GestureDetector(
-            onTap: () => _showBillDetailsModal(context),
+            onTap: () async {
+              _animController.stop();
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddressSelectionPage()),
+              );
+              if (mounted) {
+                setState(() {});
+                if (!_isCancelled) {
+                  _animController.forward();
+                }
+              }
+            },
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF9FAFB),
+                color:
+                    isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? Colors.grey.shade800 : const Color(0xFFE5E7EB)),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.grey.shade800
+                        : const Color(0xFFE5E7EB)),
               ),
               child: Row(
                 children: [
@@ -2348,7 +2784,8 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       color: AppColors.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.home_rounded, color: AppColors.primary, size: 22),
+                    child: const Icon(Icons.home_rounded,
+                        color: AppColors.primary, size: 22),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -2356,15 +2793,28 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       builder: (context) {
                         final cart = context.watch<CartProvider>();
                         final cfg = context.watch<PlatformConfigProvider>();
-                        final isGrocery = cart.hasGroceryItems || cfg.isGroceryActive;
+                        final isGrocery =
+                            cart.hasGroceryItems || cfg.isGroceryActive;
                         final addrProvider = context.watch<AddressProvider>();
-                        final selectedAddr = addrProvider.addresses.isNotEmpty ? addrProvider.addresses.first : null;
+                        final selectedAddr = addrProvider.defaultAddress ??
+                            (addrProvider.addresses.isNotEmpty
+                                ? addrProvider.addresses.first
+                                : null);
                         final String addrTitle = cart.isSelfPickup
-                            ? (isGrocery ? 'Pickup from Partner Store' : 'Pickup from Restaurant')
-                            : (selectedAddr != null ? 'Delivering to ${selectedAddr.label.isNotEmpty ? selectedAddr.label : "Home"}' : 'Select Delivery Address');
+                            ? (isGrocery
+                                ? 'Pickup from Partner Store'
+                                : 'Pickup from Restaurant')
+                            : (selectedAddr != null
+                                ? 'Delivering to ${selectedAddr.label.isNotEmpty ? selectedAddr.label : "Home"}'
+                                : 'Select Delivery Address');
                         final String addrSubtitle = cart.isSelfPickup
-                            ? (cart.restaurantAddress ?? cart.restaurantName ?? (isGrocery ? 'Partner Store Location' : 'Restaurant Location'))
-                            : (selectedAddr?.fullAddress ?? 'Tap to select delivery address');
+                            ? (cart.restaurantAddress ??
+                                cart.restaurantName ??
+                                (isGrocery
+                                    ? 'Partner Store Location'
+                                    : 'Restaurant Location'))
+                            : (selectedAddr?.fullAddress ??
+                                'Tap to select delivery address');
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2374,13 +2824,19 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1F2937),
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               addrSubtitle,
-                              style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280)),
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : const Color(0xFF6B7280)),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -2389,7 +2845,8 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       },
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 20),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Color(0xFF9CA3AF), size: 20),
                 ],
               ),
             ),
@@ -2408,7 +2865,9 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                       return LinearProgressIndicator(
                         value: _animController.value,
                         minHeight: 12,
-                        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                        backgroundColor: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
                         color: AppColors.primary,
                       );
                     },
@@ -2419,7 +2878,8 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
               GestureDetector(
                 onTap: _cancelOrder,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -2447,7 +2907,7 @@ class _OrderPlacementBottomSheetState extends State<_OrderPlacementBottomSheet>
                 _animController.stop();
                 _countdownTimer?.cancel();
                 Navigator.pop(context);
-                widget.onConfirmed();
+                widget.onConfirmed(_selectedPaymentMethod);
               },
               child: const Text(
                 'Confirm Order Immediately >',
@@ -2471,7 +2931,8 @@ class _PopularWithOrderSection extends StatefulWidget {
   const _PopularWithOrderSection({this.restaurant});
 
   @override
-  State<_PopularWithOrderSection> createState() => _PopularWithOrderSectionState();
+  State<_PopularWithOrderSection> createState() =>
+      _PopularWithOrderSectionState();
 }
 
 class _PopularWithOrderSectionState extends State<_PopularWithOrderSection> {
@@ -2484,7 +2945,8 @@ class _PopularWithOrderSectionState extends State<_PopularWithOrderSection> {
       if (!mounted) return;
       final cfg = context.read<PlatformConfigProvider>();
       final cart = context.read<CartProvider>();
-      if (widget.restaurant == null && (cfg.isGroceryActive || cart.hasGroceryItems)) {
+      if (widget.restaurant == null &&
+          (cfg.isGroceryActive || cart.hasGroceryItems)) {
         _loadGrocerySuggestions();
       }
     });
@@ -2498,7 +2960,8 @@ class _PopularWithOrderSectionState extends State<_PopularWithOrderSection> {
         setState(() {
           _grocerySuggestions = list
               .take(8)
-              .map((raw) => GroceryApiService.toProduct(Map<String, dynamic>.from(raw as Map)))
+              .map((raw) => GroceryApiService.toProduct(
+                  Map<String, dynamic>.from(raw as Map)))
               .toList();
         });
       }
@@ -2509,7 +2972,8 @@ class _PopularWithOrderSectionState extends State<_PopularWithOrderSection> {
   Widget build(BuildContext context) {
     final cfg = context.watch<PlatformConfigProvider>();
     final cart = context.watch<CartProvider>();
-    final isGrocery = widget.restaurant == null && (cfg.isGroceryActive || cart.hasGroceryItems);
+    final isGrocery = widget.restaurant == null &&
+        (cfg.isGroceryActive || cart.hasGroceryItems);
 
     if (isGrocery) {
       if (_grocerySuggestions.isEmpty) return const SizedBox.shrink();
@@ -2539,7 +3003,8 @@ class _PopularWithOrderSectionState extends State<_PopularWithOrderSection> {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: _grocerySuggestions.length,
-                itemBuilder: (ctx, idx) => _PopularProductCard(product: _grocerySuggestions[idx]),
+                itemBuilder: (ctx, idx) =>
+                    _PopularProductCard(product: _grocerySuggestions[idx]),
               ),
             ),
           ],
@@ -2614,7 +3079,8 @@ class _PopularProductCard extends StatelessWidget {
                 width: 130,
                 height: 110,
                 color: AppColors.primary.withValues(alpha: 0.08),
-                child: const Icon(Icons.local_grocery_store_rounded, color: AppColors.primary),
+                child: const Icon(Icons.local_grocery_store_rounded,
+                    color: AppColors.primary),
               ),
             ),
           ),
@@ -2634,8 +3100,12 @@ class _PopularProductCard extends StatelessWidget {
                 onTap: () {
                   context.read<CartProvider>().addGroceryItem(
                         product,
-                        storeId: product.storeId ?? product.restaurantId ?? 'store_tricelyn_indore_01',
-                        storeName: product.storeName ?? product.restaurantName ?? 'Tricelyn Partner Mart',
+                        storeId: product.storeId ??
+                            product.restaurantId ??
+                            'store_tricelyn_indore_01',
+                        storeName: product.storeName ??
+                            product.restaurantName ??
+                            'Tricelyn Partner Mart',
                         storeImageUrl: product.image,
                       );
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -2736,7 +3206,9 @@ class _PopularCardState extends State<_PopularCard> {
                     child: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
                       size: 16,
-                      color: isFavorite ? AppColors.primary : const Color(0xFF6B7280),
+                      color: isFavorite
+                          ? AppColors.primary
+                          : const Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -2744,7 +3216,6 @@ class _PopularCardState extends State<_PopularCard> {
             ],
           ),
           const SizedBox(height: 8),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -2788,13 +3259,13 @@ class _PopularCardState extends State<_PopularCard> {
                     color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Icon(Icons.add, size: 16, color: Color(0xFF1F2937)),
+                  child:
+                      const Icon(Icons.add, size: 16, color: Color(0xFF1F2937)),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 2),
-
           Text(
             widget.item.name,
             style: const TextStyle(
@@ -2868,7 +3339,6 @@ class _PaymentBar extends StatelessWidget {
               ),
             ],
           ),
-
           SizedBox(
             height: 48,
             child: ElevatedButton(
@@ -3037,4 +3507,3 @@ class _DeliveryRespectNoteCard extends StatelessWidget {
     );
   }
 }
-

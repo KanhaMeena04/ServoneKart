@@ -163,20 +163,6 @@ class ProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (product.storeName != null &&
-                        product.storeName!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        product.storeName!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -507,39 +493,73 @@ class ProductDetailSheet extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      /// Rating & Store
+                      /// Rating
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.green, size: 18),
+                          const Icon(Icons.star, color: Colors.amber, size: 18),
                           const SizedBox(width: 5),
                           Text(
                             product.rating.toStringAsFixed(1),
                             style: TextStyle(
-                              color: isDark ? Colors.grey : Colors.black,
+                              color: isDark ? Colors.grey[300] : Colors.black,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          if (product.storeName != null &&
-                              product.storeName!.isNotEmpty) ...[
-                            const SizedBox(width: 12),
-                            const Icon(Icons.storefront_rounded,
-                                size: 16, color: AppColors.primary),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                product.storeName!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
+
+                      if (product.storeName != null &&
+                          product.storeName!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.primary.withOpacity(0.15)
+                                : AppColors.primary.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.25),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.storefront_rounded,
+                                  size: 18, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Store / Vendor',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: isDark
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      product.storeName!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: 15),
 

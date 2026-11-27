@@ -16,7 +16,7 @@ class CurvedBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF0B3EDB);
+    const primaryColor = Color(0xFF0145F2);
     const accentOrange = Color(0xFF0D5AA6);
     final barBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
@@ -100,13 +100,13 @@ class CurvedBottomNavBar extends StatelessWidget {
                     width: 2.0,
                   ),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                    colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0145F2)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0B3EDB).withValues(alpha: 0.45),
+                      color: const Color(0xFF0145F2).withValues(alpha: 0.45),
                       blurRadius: 12,
                       spreadRadius: 2,
                       offset: const Offset(0, 4),

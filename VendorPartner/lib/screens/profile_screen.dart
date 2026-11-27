@@ -250,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF0B3EDB)),
+              leading: const Icon(Icons.photo_library, color: Color(0xFF0145F2)),
               title: Text('Choose from Gallery', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(ctx);
@@ -258,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF0B3EDB)),
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF0145F2)),
               title: Text('Take a Photo', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(ctx);
@@ -329,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('✅ Profile picture updated successfully!'),
-                backgroundColor: Color(0xFF0B3EDB),
+                backgroundColor: Color(0xFF0145F2),
               ),
             );
           }
@@ -358,10 +358,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Widget fallbackIcon() => Container(
           width: 70,
           height: 70,
-          color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+          color: const Color(0xFF0145F2).withValues(alpha: 0.1),
           child: Icon(
             isGrocery ? Icons.storefront_rounded : Icons.restaurant_rounded,
-            color: const Color(0xFF0B3EDB),
+            color: const Color(0xFF0145F2),
             size: 32,
           ),
         );
@@ -373,7 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         height: 70,
         color: Colors.grey[100],
         child: const Center(
-          child: CircularProgressIndicator(color: Color(0xFF0B3EDB), strokeWidth: 3),
+          child: CircularProgressIndicator(color: Color(0xFF0145F2), strokeWidth: 3),
         ),
       );
     } else if (_image.startsWith('http://') || _image.startsWith('https://')) {
@@ -520,7 +520,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             centerTitle: false,
           ),
           body: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF0B3EDB)))
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF0145F2)))
               : SingleChildScrollView(
                   child: Column(
                     children: [
@@ -545,7 +545,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     padding: const EdgeInsets.all(3),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: const Color(0xFF0B3EDB), width: 2),
+                                      border: Border.all(color: const Color(0xFF0145F2), width: 2),
                                     ),
                                     child: _buildProfileAvatar(isGrocery),
                                   ),
@@ -555,7 +555,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(6),
                                       decoration: const BoxDecoration(
-                                        color: Color(0xFF0B3EDB),
+                                        color: Color(0xFF0145F2),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
@@ -585,7 +585,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
+                                          color: const Color(0xFF0145F2).withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
@@ -593,7 +593,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           style: GoogleFonts.poppins(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF0B3EDB),
+                                            color: const Color(0xFF0145F2),
                                           ),
                                         ),
                                       ),
@@ -634,7 +634,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0B3EDB),
+                          color: const Color(0xFF0145F2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -745,8 +745,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: const Color(0xFF0B3EDB).withValues(alpha: 0.1),
-        child: Icon(icon, color: const Color(0xFF0B3EDB), size: 20),
+        backgroundColor: const Color(0xFF0145F2).withValues(alpha: 0.1),
+        child: Icon(icon, color: const Color(0xFF0145F2), size: 20),
       ),
       title: Text(title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF2C2C2C))),
       subtitle: subtitle != null ? Text(subtitle, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)) : null,

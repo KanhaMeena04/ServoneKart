@@ -60,14 +60,14 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Tricelyn Delivery Partner',
         // theme: ThemeData(
-        //   primarySwatch: const Color(0xFF0055FF),
+        //   primarySwatch: const Color(0xFF0145F2),
         //   useMaterial3: true,
         // ),
         theme: ThemeData(
-          primaryColor: const Color(0xFF0055FF),
+          primaryColor: const Color(0xFF0145F2),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF0055FF),
-            primary: const Color(0xFF0055FF),
+            seedColor: const Color(0xFF0145F2),
+            primary: const Color(0xFF0145F2),
             secondary: const Color(0xFF00B4D8),
             surface: Colors.white,
           ),

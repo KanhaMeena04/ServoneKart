@@ -40,7 +40,7 @@ import PageHeader from "../../components/PageHeader";
 import { getName, getAddress } from "../../../utils/orderData";
 
 // BRAND CONSTANTS
-const BRAND_MAIN = "#0055ff";
+const BRAND_MAIN = "#0145F2";
 const BRAND_BG_LIGHT = "#eff6ff";
 
 const formatIST = (dateStr) => {
@@ -386,7 +386,7 @@ const ViewOrder = () => {
               {/* 1. Customer Details */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0055ff] flex items-center gap-1">
+                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0145F2] flex items-center gap-1">
                     <Person sx={{ fontSize: 16 }} /> Customer Details
                   </span>
                   <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
@@ -421,7 +421,7 @@ const ViewOrder = () => {
               {/* 2. Restaurant Details */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0055ff] flex items-center gap-1">
+                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0145F2] flex items-center gap-1">
                     <Storefront sx={{ fontSize: 16 }} /> Vendor Partner Details
                   </span>
                   <span className="text-xs font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
@@ -452,7 +452,7 @@ const ViewOrder = () => {
               {/* 3. Rider Details (Always present!) */}
               <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100/80 hover:border-gray-200 transition-all">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0055ff] flex items-center gap-1">
+                  <span className="font-bold uppercase text-[11px] tracking-wider text-[#0145F2] flex items-center gap-1">
                     <TwoWheeler sx={{ fontSize: 16 }} /> Delivery Partner Details
                   </span>
                   <span
@@ -660,7 +660,7 @@ const ViewOrder = () => {
               </div>
 
               {/* Right: Amount Calculation Card */}
-              <Paper elevation={0} sx={{ bgcolor: BRAND_BG_LIGHT, p: 4, borderRadius: 3, border: "1px solid rgba(0, 85, 255, 0.15)" }}>
+              <Paper elevation={0} sx={{ bgcolor: BRAND_BG_LIGHT, p: 4, borderRadius: 3, border: "1px solid rgba(1, 69, 242, 0.15)" }}>
                 <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between text-gray-600">
                     <span>Item Total</span>
@@ -700,7 +700,7 @@ const ViewOrder = () => {
                       <span className="font-extrabold">- ₹ {Number(order?.discount || 0).toFixed(2)}</span>
                     </div>
                   )}
-                  <Divider sx={{ my: 1.5, borderColor: "rgba(0, 85, 255, 0.18)" }} />
+                  <Divider sx={{ my: 1.5, borderColor: "rgba(1, 69, 242, 0.18)" }} />
                   <div className="flex justify-between items-center text-lg">
                     <span className="font-bold text-gray-900">Grand Total</span>
                     <span className="font-black text-xl" style={{ color: BRAND_MAIN }}>

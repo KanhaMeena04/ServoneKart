@@ -47,7 +47,7 @@ class _LocationPageState extends State<LocationPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      tileColor: const Color(0xFF0B3EDB),
+                      tileColor: const Color(0xFF0145F2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -132,7 +132,7 @@ class _LocationPageState extends State<LocationPage> {
                                                   ? Icons.business_outlined
                                                   : Icons.location_on_outlined,
                                           size: 20,
-                                          color: const Color(0xFF0B3EDB),
+                                          color: const Color(0xFF0145F2),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(address.label,
@@ -298,7 +298,7 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Address' : 'Add Complete Address'),
-        backgroundColor: const Color(0xFF0B3EDB),
+        backgroundColor: const Color(0xFF0145F2),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -344,7 +344,7 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
               CheckboxListTile(
                 title: const Text('Set as Default Delivery Address', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 value: _isDefault,
-                activeColor: const Color(0xFF0B3EDB),
+                activeColor: const Color(0xFF0145F2),
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) => setState(() => _isDefault = val ?? false),
               ),
@@ -355,7 +355,7 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
                 child: ElevatedButton(
                   onPressed: () => _save(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0B3EDB),
+                    backgroundColor: const Color(0xFF0145F2),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
@@ -385,10 +385,10 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0B3EDB) : const Color(0xFFF3F4F6),
+          color: isSelected ? const Color(0xFF0145F2) : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0B3EDB) : const Color(0xFFE5E7EB),
+            color: isSelected ? const Color(0xFF0145F2) : const Color(0xFFE5E7EB),
           ),
         ),
         child: Row(
@@ -417,11 +417,11 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-        prefixIcon: Icon(icon, color: const Color(0xFF0B3EDB), size: 20),
+        prefixIcon: Icon(icon, color: const Color(0xFF0145F2), size: 20),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0B3EDB), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF0145F2), width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -459,7 +459,7 @@ class _AddEditAddressPageState extends State<AddEditAddressPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.address != null ? 'Address updated' : 'Address saved successfully'),
-            backgroundColor: const Color(0xFF0B3EDB),
+            backgroundColor: const Color(0xFF0145F2),
           ),
         );
       }

@@ -20,8 +20,17 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
   void initState() {
     super.initState();
     _selectedIndex = widget.selectedIndex;
-    Future.microtask(() {
-      context.read<AddressProvider>().fetchAddresses();
+    Future.microtask(() async {
+      await context.read<AddressProvider>().fetchAddresses();
+      if (!mounted) return;
+      final addrs = context.read<AddressProvider>().addresses;
+      final defAddr = context.read<AddressProvider>().defaultAddress;
+      if (_selectedIndex == null && addrs.isNotEmpty) {
+        final defIdx = defAddr != null ? addrs.indexWhere((a) => a.id == defAddr.id) : 0;
+        setState(() {
+          _selectedIndex = defIdx >= 0 ? defIdx : 0;
+        });
+      }
     });
   }
 
@@ -65,7 +74,7 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text('Add Delivery Address', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: AppColors.primary,
                 minimumSize: const Size(double.infinity, 54),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -82,7 +91,7 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          border: Border.all(color: _selectedIndex == i ? Colors.green : Colors.transparent, width: 2),
+                          border: Border.all(color: _selectedIndex == i ? AppColors.primary : const Color(0xFFE5E7EB), width: 1.8),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10)
@@ -134,10 +143,11 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
                               Radio<int>(
                                 value: i,
                                 groupValue: _selectedIndex,
-                                activeColor: Colors.green,
+                                activeColor: AppColors.primary,
                                 onChanged: (val) {
                                   if (val != null) {
                                     setState(() => _selectedIndex = val);
+                                    context.read<AddressProvider>().setDefaultAddress(addr.id);
                                   }
                                 },
                               ),
@@ -151,6 +161,7 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
                           ),
                           onTap: () {
                             setState(() => _selectedIndex = i);
+                            context.read<AddressProvider>().setDefaultAddress(addr.id);
                           },
                         ),
                       );
@@ -162,11 +173,16 @@ class _AddressSelectionPageState extends State<AddressSelectionPage> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context, _selectedIndex);
+                onPressed: () async {
+                  if (_selectedIndex != null && _selectedIndex! < addresses.length) {
+                    await context.read<AddressProvider>().setDefaultAddress(addresses[_selectedIndex!].id);
+                  }
+                  if (context.mounted) {
+                    Navigator.pop(context, _selectedIndex);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),

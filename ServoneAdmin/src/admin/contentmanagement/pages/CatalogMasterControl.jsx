@@ -50,7 +50,7 @@ import {
 import api from "../../../utils/api";
 import CategoryTable from "../../categories/components/CategoryTable";
 
-const PRIMARY_COLOR = "#0B3EDB";
+const PRIMARY_COLOR = "#0145F2";
 const ACCENT_COLOR = "#021b44";
 
 export default function CatalogMasterControl() {

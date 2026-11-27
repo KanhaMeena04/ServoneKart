@@ -55,7 +55,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         gradient: isDark
             ? null
             : const LinearGradient(
-                colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0B3EDB)],
+                colors: [Color(0xFF07162E), Color(0xFF0A2B6B), Color(0xFF0145F2)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

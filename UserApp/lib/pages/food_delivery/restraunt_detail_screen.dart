@@ -466,7 +466,7 @@ class _MenuSheetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color green = Color(0xFF0B3EDB);
+    const Color green = Color(0xFF0145F2);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),

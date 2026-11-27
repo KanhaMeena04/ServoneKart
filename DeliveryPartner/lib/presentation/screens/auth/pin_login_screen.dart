@@ -91,7 +91,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
               child: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF0B3EDB), Color(0xFF0B3EDB)],
+                    colors: [Color(0xFF0145F2), Color(0xFF0145F2)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -157,7 +157,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                               errorBuilder: (context, error, stackTrace) => Icon(
                                 Icons.delivery_dining_rounded,
                                 size: isKeyboardOpen ? 24 : 40,
-                                color: const Color(0xFF0B3EDB),
+                                color: const Color(0xFF0145F2),
                               ),
                             ),
                           ),
@@ -244,7 +244,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.phone_android_rounded, color: Color(0xFF0B3EDB), size: 22),
+                                          const Icon(Icons.phone_android_rounded, color: Color(0xFF0145F2), size: 22),
                                           const SizedBox(width: 12),
                                           Text(
                                             '+91',
@@ -293,7 +293,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                                   defaultPinTheme: defaultPinTheme,
                                   focusedPinTheme: defaultPinTheme.copyWith(
                                     decoration: defaultPinTheme.decoration!.copyWith(
-                                      border: Border.all(color: const Color(0xFF0B3EDB), width: 2),
+                                      border: Border.all(color: const Color(0xFF0145F2), width: 2),
                                     ),
                                   ),
                                   onCompleted: (_) => _loginWithPin(),

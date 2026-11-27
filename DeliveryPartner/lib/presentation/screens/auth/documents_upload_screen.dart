@@ -52,7 +52,7 @@ class _DocumentsUploadScreenState extends State<DocumentsUploadScreen> {
   Uint8List? _aadhaarBytes;
 
   final ImagePicker _picker = ImagePicker();
-  static const Color primaryGreen = Color(0xFF0B3EDB);
+  static const Color primaryGreen = Color(0xFF0145F2);
 
   Future<void> _pickDocumentImage(Function(Uint8List) onPicked) async {
     showModalBottomSheet(
