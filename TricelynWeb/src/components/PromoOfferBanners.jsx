@@ -1,200 +1,179 @@
-// import React, { useState, useEffect } from 'react';
-// import { Link } from 'react-router-dom';
-// import { ArrowRight, Sparkles } from 'lucide-react';
-// import { groceryService } from '../services/api';
-
-// // Official Tricelyn Brand Theme Gradients (Royal Navy, Deep Emerald, Express Cobalt)
-// const BRAND_THEME_GRADIENTS = [
-//   'linear-gradient(135deg, #00297F 0%, #0145F2 50%, #0145F2 100%)', // Signature Tricelyn Royal Blue
-//   'linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%)', // Fresh Produce Deep Emerald
-//   'linear-gradient(135deg, #0c1a30 0%, #1e3a8a 50%, #2563eb 100%)', // Express Midnight Cobalt
-// ];
-
-// const resolveCardBackground = (card, idx) => {
-//   if (card?.bgGradient && (card.bgGradient.includes('linear-gradient') || card.bgGradient.startsWith('#') || card.bgGradient.startsWith('rgb'))) {
-//     return card.bgGradient;
-//   }
-//   return BRAND_THEME_GRADIENTS[idx % BRAND_THEME_GRADIENTS.length];
-// };
-
-// const DEFAULT_CARDS = [
-//   {
-//     id: 'kitchen-staples',
-//     badge: 'FLAT 30% OFF',
-//     title: 'Kitchen Staples & Pure Ghee',
-//     subtitle: 'Premium basmati rice, organic dals, pure spices & cold-pressed oils',
-//     buttonText: 'Order Staples',
-//     link: '/category/atta-rice-dal',
-//     bgGradient: BRAND_THEME_GRADIENTS[0],
-//     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=700&q=80',
-//     alt: 'Kitchen staples, rice, pulses, and spices'
-//   },
-//   {
-//     id: 'home-cleaning',
-//     badge: 'EVERYDAY SAVINGS',
-//     title: 'Home Care & Disinfectants',
-//     subtitle: 'Top brand detergents, floor cleaners, kitchen sprays & air fresheners',
-//     buttonText: 'Shop Cleaners',
-//     link: '/category/cleaning-essentials',
-//     bgGradient: BRAND_THEME_GRADIENTS[1],
-//     image: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=700&q=80',
-//     alt: 'Household cleaning supplies and detergents'
-//   },
-//   {
-//     id: 'personal-care',
-//     badge: 'STARTING @ ₹49',
-//     title: 'Personal Care & Grooming',
-//     subtitle: 'Herbal body washes, shampoos, oral hygiene & daily skincare essentials',
-//     buttonText: 'Explore Range',
-//     link: '/category/personal-care',
-//     bgGradient: BRAND_THEME_GRADIENTS[2],
-//     image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=700&q=80',
-//     alt: 'Personal care, grooming and skincare products'
-//   }
-// ];
-
-// const PromoOfferBanners = () => {
-//   const [cards, setCards] = useState(DEFAULT_CARDS);
-
-//   // Fetch dynamic offer cards from Master Admin
-//   useEffect(() => {
-//     let isMounted = true;
-//     const fetchOffers = async () => {
-//       try {
-//         const res = await groceryService.getBanners();
-//         if (isMounted && res?.data?.offerBanners && Array.isArray(res.data.offerBanners) && res.data.offerBanners.length > 0) {
-//           const mapped = res.data.offerBanners.map((c, idx) => ({
-//             id: c.id || `offer-${idx}`,
-//             badge: c.badge || c.highlight || 'SPECIAL OFFER',
-//             title: c.title || 'Special Deal',
-//             subtitle: c.subtitle || 'Best offers on daily essentials',
-//             buttonText: c.buttonText || 'Shop Now',
-//             link: c.link || '/categories',
-//             bgGradient: resolveCardBackground(c, idx),
-//             image: c.image || DEFAULT_CARDS[idx % DEFAULT_CARDS.length].image,
-//             alt: c.alt || c.title || 'Offer Card'
-//           }));
-//           setCards(mapped);
-//         }
-//       } catch (err) {
-//         console.warn('Using default promo offer cards:', err.message);
-//       }
-//     };
-//     fetchOffers();
-//     return () => { isMounted = false; };
-//   }, []);
-
-//   if (!cards || cards.length === 0) return null;
-
-//   return (
-//     <section className="w-full">
-//       {/* 
-//         Promotional Offer Cards:
-//         - Mobile (< 768px): Smooth swipeable horizontal snap carousel (w-[82vw])
-//         - Desktop (>= 768px): 3 Equal side-by-side columns
-//       */}
-//       <div className="flex overflow-x-auto pb-2 scrollbar-none snap-x md:grid md:grid-cols-3 gap-3.5 sm:gap-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-//         {cards.map((card, idx) => (
-//           <div
-//             key={card.id || idx}
-//             style={{ background: resolveCardBackground(card, idx) }}
-//             className="w-[82vw] sm:w-[70vw] md:w-auto flex-shrink-0 snap-start relative rounded-2xl md:rounded-3xl p-5 sm:p-6 overflow-hidden flex flex-col justify-between min-h-[165px] sm:min-h-[175px] shadow-sm hover:shadow-md transition-all duration-200 group border border-white/10 text-white"
-//           >
-//             {/* Ambient Background Glow Accents */}
-//             <div className="absolute top-0 right-0 w-32 h-32 bg-white/15 rounded-full blur-xl pointer-events-none" />
-//             <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/20 rounded-full blur-lg pointer-events-none" />
-
-//             {/* Left Contrast Protection Shield for 100% Text Readability */}
-//             <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none" />
-
-//             {/* Right Image: Edge-to-edge full height, seamlessly blended */}
-//             <div className="absolute right-0 top-0 bottom-0 w-[45%] sm:w-[42%] pointer-events-none flex items-center justify-end overflow-hidden">
-//               <img
-//                 src={card.image}
-//                 alt={card.alt}
-//                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-//                 style={{
-//                   maskImage: 'linear-gradient(to right, transparent 0%, black 25%, black 100%)',
-//                   WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%, black 100%)'
-//                 }}
-//                 loading="lazy"
-//               />
-//             </div>
-
-//             {/* Left Content Area */}
-//             <div className="relative z-10 max-w-[62%] sm:max-w-[60%] space-y-1 sm:space-y-1.5 drop-shadow-sm">
-//               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase bg-white/20 text-white border border-white/30 backdrop-blur-sm">
-//                 <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-//                 <span>{card.badge}</span>
-//               </span>
-
-//               <h3 className="text-base sm:text-lg md:text-xl font-black text-white leading-tight tracking-tight">
-//                 {card.title}
-//               </h3>
-
-//               <p className="text-xs text-white/90 font-medium line-clamp-2 leading-snug">
-//                 {card.subtitle}
-//               </p>
-//             </div>
-
-//             {/* Action Button */}
-//             <div className="relative z-10 pt-3">
-//               <Link
-//                 to={card.link}
-//                 className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-1.5 sm:py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-full text-xs font-black shadow-xs transition-transform active:scale-95"
-//               >
-//                 <span>{card.buttonText}</span>
-//                 <ArrowRight className="w-3.5 h-3.5" />
-//               </Link>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default PromoOfferBanners;
-
-
-
-
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import groceryBanner from '../assets/Fresh Groceries, Delivered Fast.png';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const GroceryHeroBanner = () => {
+import bannerProduce from '../assets/Fresh Groceries, Delivered Fast.png';
+import bannerDairy from '../assets/banner_dairy_eggs.png';
+import bannerStaples from '../assets/banner_kitchen_staples.png';
+import bannerSnacks from '../assets/banner_snacks_drinks.png';
+import bannerCleaning from '../assets/banner_cleaning_care.png';
+
+const BANNER_SLIDES = [
+  {
+    id: 'slide-fresh-groceries',
+    title: 'Fresh Groceries, Delivered Fast',
+    subtitle: 'Delivery in minutes • Farm Fresh Daily',
+    image: bannerProduce,
+    link: '/category/fruits-vegetables',
+    alt: 'Fresh Groceries, Delivered Fast - Shop fruits, vegetables and daily essentials on Tricelyn',
+  },
+  {
+    id: 'slide-dairy-eggs',
+    title: 'Pure Dairy & Farm Fresh Eggs',
+    subtitle: 'Delivery in minutes • Fresh Daily Morning Speed',
+    image: bannerDairy,
+    link: '/category/dairy-bread-eggs',
+    alt: 'Pure Dairy and Farm Fresh Eggs - Milk, butter, bread and eggs delivered in minutes',
+  },
+  {
+    id: 'slide-kitchen-staples',
+    title: 'Kitchen Staples & Pure Ghee',
+    subtitle: 'Delivery in minutes • Premium Rice, Atta & Oils',
+    image: bannerStaples,
+    link: '/category/atta-rice-dal',
+    alt: 'Kitchen Staples and Pure Ghee - Premium basmati rice, organic dals and cooking oils',
+  },
+  {
+    id: 'slide-snacks-drinks',
+    title: 'Snacks, Munchies & Cold Drinks',
+    subtitle: 'Delivery in minutes • Instant Midnight Cravings',
+    image: bannerSnacks,
+    link: '/category/snacks-munchies',
+    alt: 'Snacks, Munchies and Cold Drinks - Chips, chocolates, ice creams and beverages',
+  },
+  {
+    id: 'slide-home-cleaning',
+    title: 'Home Cleaning & Personal Care',
+    subtitle: 'Delivery in minutes • Everyday Savings On Essentials',
+    image: bannerCleaning,
+    link: '/category/cleaning-essentials',
+    alt: 'Home Cleaning and Personal Care - Detergents, disinfectants and personal grooming',
+  },
+];
+
+const PromoOfferBanners = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  // Auto-scroll effect: changes slide every 4 seconds when not paused
+  useEffect(() => {
+    if (isPaused) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [isPaused]);
+
+  const handlePrev = (e) => {
+    if (e) e.preventDefault();
+    setCurrentIndex((prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length);
+  };
+
+  const handleNext = (e) => {
+    if (e) e.preventDefault();
+    setCurrentIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+  };
+
+  const handleTouchStart = (e) => {
+    setIsPaused(true);
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+    setTimeout(() => setIsPaused(false), 2000);
+  };
+
   return (
     <section className="w-full px-3 sm:px-4 lg:px-0">
-      <div className="relative w-full max-w-[1600px] mx-auto overflow-hidden rounded-xl sm:rounded-2xl bg-[#07162E] shadow-sm group">
-
-        <Link
-          to="/categories"
-          aria-label="Shop fresh groceries on Tricelyn"
-          className="block w-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500"
+      <div
+        className="relative w-full max-w-[1600px] mx-auto overflow-hidden rounded-xl sm:rounded-2xl bg-[#07162E] shadow-sm group select-none"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Carousel Slides Container */}
+        <div
+          className="flex transition-transform duration-700 ease-in-out w-full"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
-          <img
-            src={groceryBanner}
-            alt="Fresh Groceries, Delivered Fast - Shop daily essentials on Tricelyn"
-            className="
-              block
-              w-full
-              h-auto
-              object-contain
-              transition-transform
-              duration-500
-              ease-out
-              group-hover:scale-[1.01]
-            "
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
-        </Link>
+          {BANNER_SLIDES.map((slide, idx) => (
+            <div key={slide.id || idx} className="min-w-full flex-shrink-0">
+              <Link
+                to={slide.link}
+                aria-label={slide.title}
+                className="block w-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500"
+              >
+                <img
+                  src={slide.image}
+                  alt={slide.alt}
+                  className="block w-full h-auto object-contain transition-transform duration-500 ease-out group-hover:scale-[1.01]"
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={idx === 0 ? 'high' : 'auto'}
+                  decoding="async"
+                />
+              </Link>
+            </div>
+          ))}
+        </div>
 
+        {/* Left Arrow Button */}
+        <button
+          type="button"
+          onClick={handlePrev}
+          aria-label="Previous Banner"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md active:scale-95 z-20 cursor-pointer"
+        >
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+
+        {/* Right Arrow Button */}
+        <button
+          type="button"
+          onClick={handleNext}
+          aria-label="Next Banner"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md active:scale-95 z-20 cursor-pointer"
+        >
+          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+
+        {/* Indicators Dots */}
+        <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-20">
+          {BANNER_SLIDES.map((_, dotIdx) => (
+            <button
+              key={dotIdx}
+              type="button"
+              onClick={() => setCurrentIndex(dotIdx)}
+              aria-label={`Go to slide ${dotIdx + 1}`}
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                currentIndex === dotIdx
+                  ? 'w-6 sm:w-8 bg-white shadow-sm'
+                  : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
 };
 
-export default GroceryHeroBanner;
+export const GroceryHeroBanner = PromoOfferBanners;
+export default PromoOfferBanners;

@@ -496,6 +496,11 @@ const HomePage = () => {
 
 
            {/* ============================================================
+            1. HERO PROMOTIONAL AUTO-SCROLLING BANNER SLIDER
+           ============================================================ */}
+          <PromoOfferBanners />
+
+          {/* ============================================================
             2. SHOP BY CATEGORY SECTION
             - Desktop: Full Round Circular Cards with Thin Blue Theme Border
             - Mobile: 4-Column Quick-Commerce Grid (Matches Reference Screenshots 1 & 2)
@@ -728,8 +733,6 @@ const HomePage = () => {
               )}
             </div>
           )}
-
-          <PromoOfferBanners />
         </section>
 
        
