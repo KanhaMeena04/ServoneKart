@@ -1037,9 +1037,9 @@ const CategoriesOverviewPage = () => {
           {/* Heading */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
             <div>
-              <p className="text-green-700 text-xs font-bold uppercase tracking-[2px]">
+              {/* <p className="text-green-700 text-xs font-bold uppercase tracking-[2px]">
                 ServoneKart Grocery Store
-              </p>
+              </p> */}
               <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-[#20232a] mt-2">
                 Shop by Category
               </h1>
@@ -1048,13 +1048,13 @@ const CategoriesOverviewPage = () => {
               </p>
             </div>
 
-            <span className="text-sm text-gray-500 font-medium">
+            {/* <span className="text-sm text-gray-500 font-medium">
               {categories.length} Categories
-            </span>
+            </span> */}
           </div>
 
           {/* Search */}
-          <div className="relative max-w-2xl mb-7">
+          {/* <div className="relative max-w-2xl mb-7">
             <Search
               size={19}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
@@ -1073,7 +1073,7 @@ const CategoriesOverviewPage = () => {
                 <X size={18} />
               </button>
             )}
-          </div>
+          </div> */}
 
           {/* Categories Grid */}
           {visibleCategories.length ? (
