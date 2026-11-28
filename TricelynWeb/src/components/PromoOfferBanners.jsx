@@ -57,7 +57,7 @@ const PromoOfferBanners = () => {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // Auto-scroll effect: changes slide every 4 seconds when not paused
+  // Auto-scroll effect: advances every 4 seconds when not hovered/touched
   useEffect(() => {
     if (isPaused) return;
 
@@ -89,7 +89,7 @@ const PromoOfferBanners = () => {
 
   const handleTouchEnd = () => {
     const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) {
+    if (Math.abs(diff) > 40) {
       if (diff > 0) {
         handleNext();
       } else {
@@ -102,37 +102,52 @@ const PromoOfferBanners = () => {
   return (
     <section className="w-full px-3 sm:px-4 lg:px-0">
       <div
-        className="relative w-full max-w-[1600px] mx-auto overflow-hidden rounded-xl sm:rounded-2xl bg-[#07162E] shadow-sm group select-none"
+        className="relative w-full max-w-[1600px] mx-auto overflow-hidden rounded-xl sm:rounded-2xl bg-[#07162E] shadow-sm group select-none aspect-[1376/768] sm:aspect-[16/9]"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Carousel Slides Container */}
-        <div
-          className="flex transition-transform duration-700 ease-in-out w-full"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        >
-          {BANNER_SLIDES.map((slide, idx) => (
-            <div key={slide.id || idx} className="min-w-full flex-shrink-0">
+        {/* Slides: Perfectly aligned with zero gap */}
+        {BANNER_SLIDES.map((slide, idx) => {
+          let offset = idx - currentIndex;
+          if (offset > BANNER_SLIDES.length / 2) {
+            offset -= BANNER_SLIDES.length;
+          } else if (offset < -BANNER_SLIDES.length / 2) {
+            offset += BANNER_SLIDES.length;
+          }
+
+          const isVisible = Math.abs(offset) <= 1;
+
+          return (
+            <div
+              key={slide.id || idx}
+              className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out ${
+                isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              style={{
+                transform: `translateX(${offset * 100}%)`,
+                zIndex: offset === 0 ? 10 : 5,
+              }}
+            >
               <Link
                 to={slide.link}
                 aria-label={slide.title}
-                className="block w-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500"
+                className="block w-full h-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500"
               >
                 <img
                   src={slide.image}
                   alt={slide.alt}
-                  className="block w-full h-auto object-contain transition-transform duration-500 ease-out group-hover:scale-[1.01]"
+                  className="w-full h-full object-cover object-center block"
                   loading={idx === 0 ? 'eager' : 'lazy'}
                   fetchPriority={idx === 0 ? 'high' : 'auto'}
                   decoding="async"
                 />
               </Link>
             </div>
-          ))}
-        </div>
+          );
+        })}
 
         {/* Left Arrow Button */}
         <button
@@ -154,7 +169,7 @@ const PromoOfferBanners = () => {
           <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
-        {/* Indicators Dots */}
+        {/* Indicator Dots */}
         <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-20">
           {BANNER_SLIDES.map((_, dotIdx) => (
             <button
