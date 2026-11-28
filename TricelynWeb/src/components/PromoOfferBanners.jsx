@@ -161,7 +161,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import groceryBanner from '../../dist/assets/Fresh Groceries, Delivered Fast.png';
+import groceryBanner from '../assets/Fresh Groceries, Delivered Fast.png';
 
 const GroceryHeroBanner = () => {
   return (
